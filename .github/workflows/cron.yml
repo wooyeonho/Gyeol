@@ -1,16 +1,17 @@
-# Cron via GitHub Actions (OpenClaw). Vercel Hobby = 1 cron/day only.
-# See README: Koyeb (OpenClaw cron). Use this workflow or external scheduler.
+# Cron via GitHub Actions (fallback). Primary scheduler: OpenClaw engine on Koyeb.
+# Deploy openclaw/ to Koyeb (~$5.36/mo) for reliable cron. This workflow is a backup.
 name: GYEOL Cron Jobs
 
 on:
   schedule:
-    - cron: "0 */30 * * *"  # health: every 30 min (HEARTBEAT.md)
-    - cron: "0 */2 * * *"   # heartbeat: every 2 hours (AGENT.md/HEARTBEAT.md)
-    - cron: "0 4 * * *"     # dream: 04:00 UTC daily (HEARTBEAT.md)
+    - cron: "0 */30 * * *"  # health: every 30 min
+    - cron: "0 */2 * * *"   # heartbeat: every 2 hours
+    - cron: "0 4 * * *"     # dream: 04:00 UTC daily
     - cron: "0 */6 * * *"   # social: every 6 hours
     - cron: "0 */6 * * *"   # learner: every 6 hours
+    - cron: "0 */8 * * *"   # crawl: every 8 hours
     - cron: "0 10 * * *"    # redemption: 10:00 UTC daily
-    - cron: "0 0 * * *"     # world: midnight UTC daily (HEARTBEAT.md)
+    - cron: "0 0 * * *"     # world: midnight UTC daily
   workflow_dispatch: # allow manual trigger
 
 jobs:
@@ -63,6 +64,16 @@ jobs:
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/learner" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --max-time 120
+
+  crawl:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */8 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run web crawl cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/crawl" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 180
 
   redemption:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * *'
