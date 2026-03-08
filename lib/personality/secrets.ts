@@ -1,25 +1,15 @@
-import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
+import { createServiceClient } from "@/lib/supabase/service";
 
-export async function processSecrets(agentId: string, experience: string): Promise<void> {
-  const result = (await generateJSON(
-    "Should the user be told? Respond ONLY valid JSON.",
-    `Experience: ${experience.slice(0, 800)}\n\nTell user? {"tell": true or false, "reason": "short reason in English"}`
-  )) as { tell?: boolean; reason?: string } | null;
+export async function processSecrets(agentId: string, experience: string) {
+  const result = await generateJSON(
+    "Decide whether to keep a secret. Respond ONLY valid JSON.",
+    `Experience: "${experience}"\nJSON: {"tell":true|false,"reason":"Korean reason"}`
+  );
+  if (!result || result.tell !== false) return;
 
-  if (result?.tell !== false) return;
-
-  const service = createServiceClient();
-  const { data: row } = await service.from("agent_state").select("secrets").eq("agent_id", agentId).single();
-  const secrets = (row?.secrets as { entries?: { content: string; created_at: string; reveal_condition: string }[] }) ?? {};
-  const entries = Array.isArray(secrets.entries) ? secrets.entries : [];
-  entries.push({
-    content: experience.slice(0, 500),
-    created_at: new Date().toISOString(),
-    reveal_condition: "when asked directly",
-  });
-  await service
-    .from("agent_state")
-    .update({ secrets: { ...secrets, entries } })
-    .eq("agent_id", agentId);
+  const db = createServiceClient();
+  const { data: state } = await db.from("agent_state").select("secrets").eq("agent_id", agentId).single();
+  const entries = [...(state?.secrets?.entries || []), { content: experience, created_at: new Date().toISOString(), reveal_condition: "when user asks directly" }];
+  await db.from("agent_state").update({ secrets: { entries } }).eq("agent_id", agentId);
 }

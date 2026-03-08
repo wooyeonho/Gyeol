@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import BottomNav from "@/components/bottom-nav";
 
 export const metadata: Metadata = {
-  title: "GYEOL",
+  title: "결 GYEOL",
   description: "Autonomous evolving AI lifeform",
   manifest: "/manifest.json",
 };
@@ -23,7 +22,6 @@ export default function RootLayout({
     <html lang="ko">
       <body className="bg-black text-white min-h-screen antialiased">
         {children}
-        <BottomNav />
       </body>
     </html>
   );

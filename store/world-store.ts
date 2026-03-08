@@ -1,22 +1,13 @@
 import { create } from "zustand";
+import { createClient } from "@/lib/supabase/client";
 
-type WorldState = { weather?: { name?: string }; [key: string]: unknown };
-
-type WorldStore = {
-  worldState: WorldState | null;
-  fetchWorldState: () => Promise<void>;
-};
+interface WorldStore { worldState: any | null; fetchWorldState: () => Promise<void> }
 
 export const useWorldStore = create<WorldStore>((set) => ({
   worldState: null,
-
-  async fetchWorldState() {
-    try {
-      const res = await fetch("/api/world/state");
-      const data = res.ok ? await res.json() : null;
-      set({ worldState: data?.worldState ?? null });
-    } catch (e) {
-      console.error("fetchWorldState error", e);
-    }
+  fetchWorldState: async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("world_state").select("*").eq("id", "global").single();
+    set({ worldState: data });
   },
 }));

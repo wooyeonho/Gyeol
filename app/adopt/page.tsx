@@ -1,85 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { BottomNav } from "@/components/bottom-nav";
 
-type AdoptEntry = {
-  agent_id: string;
-  self_name: string | null;
-  vitality: number;
-  memory_count: number;
-  days_alive: number;
-};
+type BoardItem = { id: string; agent_id: string; status: string; message?: string };
 
 export default function AdoptPage() {
-  const [list, setList] = useState<AdoptEntry[]>([]);
+  const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adopting, setAdopting] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/adopt")
-      .then((r) => r.ok ? r.json() : { list: [] })
-      .then((d) => { if (!cancelled) setList(d.list ?? []); })
-      .catch(() => { if (!cancelled) setList([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  const handleAdopt = async (agentId: string) => {
-    setAdopting(agentId);
-    try {
-      const res = await fetch("/api/adopt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_id: agentId }),
-      });
-      if (res.ok) {
-        setList((prev) => prev.filter((e) => e.agent_id !== agentId));
-      } else {
-        const j = await res.json().catch(() => ({}));
-        alert(j.error ?? "Adopt failed");
-      }
-    } catch (e) {
-      console.error("adopt", e);
-      alert("Adopt failed");
-    } finally {
-      setAdopting(null);
+    async function load() {
+      const { data } = await supabase.from("adoption_board").select("*").eq("status", "available");
+      setItems(data || []);
+      setLoading(false);
     }
-  };
+    load();
+  }, [supabase]);
+
+  async function adopt(agentId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("adoption_board").update({ status: "adopted" }).eq("agent_id", agentId);
+    await supabase.from("agents").update({ user_id: user.id }).eq("id", agentId);
+    setItems((prev) => prev.filter((i) => i.agent_id !== agentId));
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 pb-20">
-      <h1 className="text-xl font-semibold mb-4">Adopt a GYEOL</h1>
-      <p className="text-white/60 text-sm mb-6">Echoes that lost their keeper. You can give them a new home.</p>
-
-      {loading ? (
-        <p className="text-white/50 text-sm">Loading...</p>
-      ) : list.length === 0 ? (
-        <p className="text-white/50 text-sm">No one available for adoption right now.</p>
-      ) : (
-        <div className="grid gap-4">
-          {list.map((e) => (
-            <div key={e.agent_id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <p className="font-medium text-white">{e.self_name ?? "Unnamed"}</p>
-              <p className="text-sm text-white/60 mt-1">
-                Lived {e.days_alive} days. {e.memory_count} memories. Vitality: {(e.vitality * 100).toFixed(0)}%.
-              </p>
-              <button
-                className="mt-3 py-2 px-4 rounded-lg bg-white/20 hover:bg-white/30 text-sm disabled:opacity-50"
-                disabled={adopting !== null}
-                onClick={() => handleAdopt(e.agent_id)}
-              >
-                {adopting === e.agent_id ? "..." : "Adopt"}
-              </button>
+    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
+      <h1 className="text-xl font-semibold mb-4">입양</h1>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <div key={item.id} className="bg-white/5 rounded-xl p-4 border border-white/10 flex justify-between items-center">
+            <div>
+              <div className="text-sm text-white/60">에이전트</div>
+              <div>{item.message || "메시지 없음"}</div>
             </div>
-          ))}
-        </div>
-      )}
-
-      <Link href="/explore" className="inline-block mt-6 text-white/70 text-sm">
-        Back to Explore
-      </Link>
+            <button onClick={() => adopt(item.agent_id)} className="px-4 py-2 rounded-lg bg-white/20">
+              입양하기
+            </button>
+          </div>
+        ))}
+      </div>
+      <BottomNav />
     </div>
   );
 }

@@ -1,0 +1,184 @@
+import { NextRequest } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
+import { generateTextOnce } from "@/lib/ai/router";
+import { generateEmbedding } from "@/lib/ai/embedding";
+
+const DEFAULT_FEED_URLS = [
+  "https://hnrss.org/frontpage",
+  "https://www.reddit.com/r/technology/.rss",
+  "https://techcrunch.com/feed/",
+];
+
+function getFeedUrls(body: unknown): string[] {
+  if (body && typeof body === "object" && "feed_urls" in body && Array.isArray((body as { feed_urls?: string[] }).feed_urls)) {
+    const urls = (body as { feed_urls: string[] }).feed_urls.filter((u): u is string => typeof u === "string");
+    if (urls.length > 0) return urls;
+  }
+  const env = process.env.FEED_URLS;
+  if (env && typeof env === "string") {
+    return env.split(",").map((u) => u.trim()).filter(Boolean);
+  }
+  return DEFAULT_FEED_URLS;
+}
+
+async function fetchRssItems(url: string): Promise<{ title: string; link?: string; description?: string }[]> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "GYEOL-RSS-Learner/1.0" } });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items: { title: string; link?: string; description?: string }[] = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+    let m;
+    while ((m = itemRegex.exec(xml)) !== null) {
+      const block = m[1];
+      const title = block.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim() ?? "";
+      const link = block.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]?.trim() ?? block.match(/<link[^>]*href="([^"]+)"/i)?.[1];
+      const desc = block.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+      if (title) items.push({ title, link, description: desc });
+    }
+    if (items.length === 0) {
+      const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi;
+      while ((m = entryRegex.exec(xml)) !== null) {
+        const block = m[1];
+        const title = block.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim() ?? "";
+        const link = block.match(/<link[^>]*href="([^"]+)"/i)?.[1];
+        const summary = block.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+        if (title) items.push({ title, link, description: summary });
+      }
+    }
+    return items.slice(0, 5);
+  } catch (e) {
+    console.error("RSS fetch error", url, e);
+    return [];
+  }
+}
+
+async function runLearner(feedUrls: string[]): Promise<{ processed: number; items_fetched: number }> {
+  const service = createServiceClient();
+  const { data: agents } = await service.from("agents").select("id");
+  if (!agents?.length) {
+    return { processed: 0, items_fetched: 0 };
+  }
+
+  const allItems: { title: string; link?: string; description?: string; source: string }[] = [];
+  for (const url of feedUrls) {
+    const items = await fetchRssItems(url);
+    const source = new URL(url).hostname;
+    for (const it of items) {
+      allItems.push({ ...it, source });
+    }
+  }
+
+  if (allItems.length === 0) {
+    return { processed: 0, items_fetched: 0 };
+  }
+
+  const sample = allItems.slice(0, 10);
+  const rawText = sample.map((i) => `[${i.source}] ${i.title}: ${(i.description ?? "").slice(0, 200)}`).join("\n\n");
+
+  let summary: string;
+  try {
+    summary = await generateTextOnce(
+      "You are a knowledge summarizer. Output in Korean.",
+      `Summarize these RSS headlines into 2-3 key insights for an AI agent to learn:\n\n${rawText}\n\nOutput: concise insights only.`,
+      { max_tokens: 300, temperature: 0.5 }
+    );
+  } catch (e) {
+    console.error("learner summary", e);
+    summary = rawText.slice(0, 500);
+  }
+
+  const content = `RSS 학습: ${summary}`;
+  let embedding: number[] = [];
+  try {
+    embedding = await generateEmbedding(content);
+  } catch (e) {
+    console.error("learner embedding", e);
+  }
+
+  let stored = 0;
+  for (const { id: agentId } of agents) {
+    try {
+      const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
+      const config = (state?.config as Record<string, unknown>) ?? {};
+      if (config.learner_enabled === false) continue;
+
+      await service.from("memories").insert({
+        agent_id: agentId,
+        type: "rss_learner",
+        content,
+        embedding: embedding.length > 0 ? embedding : null,
+      });
+      stored++;
+    } catch (e) {
+      console.error("learner memory insert", agentId, e);
+    }
+  }
+
+  return { processed: stored, items_fetched: allItems.length };
+}
+
+export async function GET(request: NextRequest) {
+  if (!checkCronAuth(request)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const feedUrls = getFeedUrls(null);
+  if (feedUrls.length === 0) {
+    return new Response(JSON.stringify({ error: "No feed URLs", processed: 0 }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  try {
+    const result = await runLearner(feedUrls);
+    return new Response(
+      JSON.stringify({ ...result, timestamp: new Date().toISOString() }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("learner GET", e);
+    return new Response(JSON.stringify({ error: "Learner failed", processed: 0 }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!checkCronAuth(request)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  let body: unknown = null;
+  try {
+    body = await request.json().catch(() => null);
+  } catch {
+    // empty body ok
+  }
+  const feedUrls = getFeedUrls(body);
+  if (feedUrls.length === 0) {
+    return new Response(JSON.stringify({ error: "No feed URLs", processed: 0 }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  try {
+    const result = await runLearner(feedUrls);
+    return new Response(
+      JSON.stringify({ ...result, timestamp: new Date().toISOString() }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("learner POST", e);
+    return new Response(JSON.stringify({ error: "Learner failed", processed: 0 }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}

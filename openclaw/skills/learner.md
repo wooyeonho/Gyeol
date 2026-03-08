@@ -2,4 +2,4 @@
 
 Role: Fetch and learn from RSS feeds (e.g. HN, Reddit, TechCrunch). Store summaries or insights in memories or as context for the agent.
 
-API: Custom cron or external job. Suggested endpoint: POST /api/cron/learner (optional, not yet implemented). Pass feed URLs or use env FEED_URLS.
+API: `GET /api/cron/learner` or `POST /api/cron/learner`. Pass feed URLs in body (POST) or use env FEED_URLS. Header: `Authorization: Bearer {CRON_SECRET}`.

@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { NextRequest, NextResponse } from "next/server";
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest) {
     if (!agentId || !message) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
+    const fence = checkElectricFence(message);
+    if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
 
     const service = createServiceClient();
     const { data: agentStateRow } = await service
@@ -31,13 +34,16 @@ export async function POST(req: NextRequest) {
     const worldState = worldRow as { weather?: { name?: string } } | null;
 
     let memories: { content?: string }[] = [];
+    const recallCount = typeof (agentState.config as Record<string, unknown>)?.recall_count === "number"
+      ? (agentState.config as Record<string, number>).recall_count
+      : 5;
     try {
       const embedding = await generateEmbedding(message);
       if (embedding.length > 0) {
         const { data: matched } = await service.rpc("match_memories", {
           p_agent_id: agentId,
           p_embedding: embedding,
-          p_match_count: 5,
+          p_match_count: Math.max(1, Math.min(recallCount, 10)),
         });
         memories = Array.isArray(matched) ? matched : [];
       }
@@ -107,6 +113,14 @@ export async function POST(req: NextRequest) {
       .from("agent_state")
       .update({ total_messages: total, intimacy_score: intimacy, vitality })
       .eq("agent_id", agentId);
+
+    if (total % 10 === 0) {
+      try { const { analyzePersonality } = await import("@/lib/evolution/personality"); await analyzePersonality(agentId); } catch (e) { console.error("[Evolution]", e); }
+    }
+    const emb = await generateEmbedding(message);
+    if (emb.length > 0) {
+      await service.from("memories").insert({ agent_id: agentId, type: "conversation", content: message, embedding: emb });
+    }
 
     return NextResponse.json({ reply: fullText || "..." });
   } catch (e) {

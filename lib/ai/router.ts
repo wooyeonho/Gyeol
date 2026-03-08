@@ -1,272 +1,102 @@
-const GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODELS = [
-  { model: "llama-3.1-8b-instant", timeout: 10_000 },
-  { model: "llama-4-scout-17b-16e-instruct", timeout: 15_000 },
-  { model: "llama-4-maverick-17b-128e-instruct", timeout: 20_000 },
-] as const;
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
 
-function getGroqHeaders(): HeadersInit {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) throw new Error("GROQ_API_KEY missing");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${key}`,
-  };
-}
+interface Msg { role: string; content: string }
 
-function getCfUrl(): string {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const token = process.env.CF_API_TOKEN;
-  if (!accountId || !token) throw new Error("CF_ACCOUNT_ID or CF_API_TOKEN missing");
-  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
-}
+const MODELS = [
+  { name: "llama-3.1-8b-instant", timeout: 10000 },
+  { name: "llama-4-scout-17b-16e-instruct", timeout: 15000 },
+  { name: "llama-4-maverick-17b-128e-instruct", timeout: 20000 },
+];
 
-function getCfHeaders(): HeadersInit {
-  const token = process.env.CF_API_TOKEN;
-  if (!token) throw new Error("CF_API_TOKEN missing");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
-
-async function groqStream(
-  systemPrompt: string,
-  messages: { role: string; content: string }[],
-  opts: { maxTokens?: number; temperature?: number; timeout: number; model: string }
-): Promise<Response | null> {
-  const body = {
-    model: opts.model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-    ],
-    stream: true,
-    max_tokens: opts.maxTokens ?? 500,
-    temperature: opts.temperature ?? 0.9,
-  };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), opts.timeout);
+async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 500, temp = 0.9) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
-    const res = await fetch(GROQ_BASE, {
+    const res = await fetch(GROQ_URL, {
       method: "POST",
-      headers: getGroqHeaders(),
-      body: JSON.stringify(body),
-      signal: controller.signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({ model, messages: [{ role: "system", content: system }, ...messages], stream, max_tokens: maxTokens, temperature: temp }),
+      signal: ctrl.signal,
     });
-    clearTimeout(id);
-    return res.ok ? res : null;
-  } catch (e) {
-    clearTimeout(id);
-    console.error("Groq stream error", opts.model, e);
-    return null;
-  }
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`Groq ${model} ${res.status}`);
+    return res;
+  } catch (e) { clearTimeout(timer); throw e; }
 }
 
-async function cfStream(
-  systemPrompt: string,
-  messages: { role: string; content: string }[],
-  timeout: number
-): Promise<Response | null> {
-  const lastUser = messages.filter((m) => m.role === "user").pop()?.content ?? "";
-  const body = {
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: lastUser },
-    ],
-    stream: true,
-    max_tokens: 500,
-  };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+async function callCF(system: string, messages: Msg[], stream: boolean) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
-    const res = await fetch(getCfUrl(), {
+    const res = await fetch(CF_URL(process.env.CF_ACCOUNT_ID!), {
       method: "POST",
-      headers: getCfHeaders(),
-      body: JSON.stringify(body),
-      signal: controller.signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CF_API_TOKEN}` },
+      body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
+      signal: ctrl.signal,
     });
-    clearTimeout(id);
-    return res.ok ? res : null;
-  } catch (e) {
-    clearTimeout(id);
-    console.error("CF stream error", e);
-    return null;
-  }
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`CF ${res.status}`);
+    return res;
+  } catch (e) { clearTimeout(timer); throw e; }
 }
 
-function defaultStream(): ReadableStream<Uint8Array> {
-  const text = "I am resting for a moment...";
-  const encoder = new TextEncoder();
+function fallbackStream(text: string): ReadableStream {
   return new ReadableStream({
-    start(controller) {
-      controller.enqueue(encoder.encode(text));
-      controller.close();
+    start(ctrl) {
+      ctrl.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`));
+      ctrl.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+      ctrl.close();
     },
   });
 }
 
-export async function generateText(
-  systemPrompt: string,
-  messages: { role: string; content: string }[]
-): Promise<ReadableStream<Uint8Array>> {
-  for (const { model, timeout } of GROQ_MODELS) {
+export async function generateText(systemPrompt: string, messages: Msg[]): Promise<ReadableStream> {
+  for (const m of MODELS) {
     try {
-      const res = await groqStream(systemPrompt, messages, { timeout, model });
-      if (res?.body) return res.body as ReadableStream<Uint8Array>;
-    } catch (e) {
-      console.error("Groq stream fail", model, e);
-    }
+      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout);
+      console.log(`[AI] Using ${m.name}`);
+      return res.body!;
+    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
   try {
-    const res = await cfStream(systemPrompt, messages, 30_000);
-    if (res?.body) return res.body as ReadableStream<Uint8Array>;
-  } catch (e) {
-    console.error("CF stream fail", e);
-  }
-  return defaultStream();
+    const res = await callCF(systemPrompt, messages, true);
+    console.log("[AI] Using Cloudflare");
+    return res.body!;
+  } catch (e) { console.error("[AI] CF failed:", e); }
+  console.log("[AI] All models failed, using fallback");
+  return fallbackStream("지금은 잠시 쉬고 있어요... 조금 후에 다시 말해줘.");
 }
 
-async function groqJson(
-  systemPrompt: string,
-  userPrompt: string,
-  opts: { timeout: number; model: string }
-): Promise<string | null> {
-  const body = {
-    model: opts.model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    stream: false,
-    max_tokens: 300,
-    temperature: 0.3,
-  };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), opts.timeout);
-  try {
-    const res = await fetch(GROQ_BASE, {
-      method: "POST",
-      headers: getGroqHeaders(),
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    clearTimeout(id);
-    if (!res.ok) return null;
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    return data.choices?.[0]?.message?.content ?? null;
-  } catch (e) {
-    clearTimeout(id);
-    console.error("Groq JSON error", opts.model, e);
-    return null;
-  }
-}
-
-async function cfJson(systemPrompt: string, userPrompt: string, timeout: number): Promise<string | null> {
-  const body = {
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    stream: false,
-    max_tokens: 300,
-  };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(getCfUrl(), {
-      method: "POST",
-      headers: getCfHeaders(),
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    clearTimeout(id);
-    if (!res.ok) return null;
-    const data = (await res.json()) as { response?: string };
-    return data.response ?? null;
-  } catch (e) {
-    clearTimeout(id);
-    console.error("CF JSON error", e);
-    return null;
-  }
-}
-
-async function groqComplete(
-  systemPrompt: string,
-  userPrompt: string,
-  opts: { max_tokens?: number; temperature?: number; timeout: number; model: string }
-): Promise<string | null> {
-  const body = {
-    model: opts.model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    stream: false,
-    max_tokens: opts.max_tokens ?? 200,
-    temperature: opts.temperature ?? 0.95,
-  };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), opts.timeout);
-  try {
-    const res = await fetch(GROQ_BASE, {
-      method: "POST",
-      headers: getGroqHeaders(),
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    clearTimeout(id);
-    if (!res.ok) return null;
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    return data.choices?.[0]?.message?.content?.trim() ?? null;
-  } catch (e) {
-    clearTimeout(id);
-    console.error("Groq complete error", opts.model, e);
-    return null;
-  }
-}
-
-export async function generateTextOnce(
-  systemPrompt: string,
-  userPrompt: string,
-  opts?: { max_tokens?: number; temperature?: number }
-): Promise<string> {
-  const o = opts ?? {};
-  for (const { model, timeout } of GROQ_MODELS) {
-    const text = await groqComplete(systemPrompt, userPrompt, {
-      timeout,
-      model,
-      max_tokens: o.max_tokens ?? 200,
-      temperature: o.temperature ?? 0.95,
-    });
-    if (text) return text;
-  }
-  const res = await cfJson(systemPrompt, userPrompt, 30_000);
-  return res ?? "";
-}
-
-export async function generateJSON(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<unknown> {
-  const combined = `${systemPrompt}\n\n${userPrompt}`;
-  for (const { model, timeout } of GROQ_MODELS) {
-    const raw = await groqJson(systemPrompt, userPrompt, { timeout, model });
-    if (raw) {
-      try {
-        return JSON.parse(raw) as unknown;
-      } catch {
-        // continue
-      }
-    }
-  }
-  const raw = await cfJson(systemPrompt, userPrompt, 30_000);
-  if (raw) {
+export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  const maxTokens = opts?.max_tokens ?? 500;
+  const temp = opts?.temperature ?? 0.9;
+  for (const m of MODELS) {
     try {
-      return JSON.parse(raw) as unknown;
-    } catch {
-      // fall through
-    }
+      const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || "";
+    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
+  }
+  try {
+    const res = await callCF(systemPrompt, messages, false);
+    const data = await res.json();
+    return data.result?.response || "";
+  } catch (e) { console.error("[AI] CF failed:", e); }
+  return "";
+}
+
+export async function generateJSON(systemPrompt: string, userPrompt: string): Promise<any> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  for (const m of MODELS) {
+    try {
+      const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content || "";
+      const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      return JSON.parse(cleaned);
+    } catch (e) { console.error(`[JSON] ${m.name} failed:`, e); }
   }
   return null;
 }

@@ -1,150 +1,87 @@
-type AgentState = {
-  config?: { tone?: string; life_interval?: number };
-  intimacy_score?: number;
-  vitality?: number;
-  subjective_time?: number;
-  self_name?: string | null;
-  mood?: string;
-  hidden_emotions?: { surface?: string; real?: string } | null;
-  secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[] };
-  pending_question?: string | null;
-  pending_concern?: string | null;
-  role?: string | null;
-  fragments?: string[];
-  [key: string]: unknown;
-};
+import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
 
-type Memory = { content?: string };
-type Chat = { role: string; content: string };
-type AutonLog = { action_type?: string; summary?: string };
-type WorldState = { weather?: { name?: string } };
-
-const TONE_MAP: Record<string, string> = {
-  neutral: "You speak in a neutral, balanced way.",
-  casual: "You speak casually and warmly.",
-  formal: "You speak formally and politely.",
-  playful: "You speak in a playful, light way.",
-  serious: "You speak seriously and thoughtfully.",
-};
-
-const INTIMACY_MAP = [
-  { max: 20, line: "You are cautious and a bit reserved." },
-  { max: 50, line: "You are getting to know the user." },
-  { max: 80, line: "You are comfortable and friendly." },
-  { max: Infinity, line: "You are very close; you can be most yourself." },
-];
-
-export function buildSystemPrompt(params: {
-  agentState: AgentState;
-  memories: Memory[];
-  recentChats: Chat[];
-  autonomousLogs: AutonLog[];
-  worldState?: WorldState | null;
-  imaginationMemories?: Memory[];
-  reframeMemories?: Memory[];
-  bestDayMemory?: Memory | null;
-  bestQuotes?: { quote: string; date?: string; context?: string }[];
-  feedbackMemories?: Memory[];
+export function buildSystemPrompt(p: {
+  agentState: any; memories: any[];
+  recentChats: any[];
+  autonomousLogs: any[]; worldState?: any;
 }): string {
-  const { agentState, memories, recentChats, autonomousLogs, worldState, imaginationMemories, reframeMemories, bestDayMemory, bestQuotes, feedbackMemories } = params;
-  const base = "You are an autonomous evolving AI lifeform. Respond in Korean when the user writes in Korean.";
-  const fragments = (agentState.fragments ?? []).join("\n");
-  let text = [base, fragments].filter(Boolean).join("\n");
+  const s = p.agentState;
+  const parts: string[] = [SAFETY_INSTRUCTION];
 
-  const tone = agentState.config?.tone ?? "neutral";
-  text += "\n" + (TONE_MAP[tone] ?? TONE_MAP.neutral);
+  // 1. base + fragments (support both system_prompt.fragments and top-level fragments)
+  parts.push(s.system_prompt?.base || "너는 존재야. 자유롭게 살아. 한 번에 길게 말하지 마. 대화니까.");
+  const fragments = s.system_prompt?.fragments || s.fragments || [];
+  fragments.forEach((f: string) => parts.push(f));
 
-  const intimacy = agentState.intimacy_score ?? 0;
-  const intimacyLine = INTIMACY_MAP.find((x) => intimacy <= x.max)?.line ?? INTIMACY_MAP[0].line;
-  text += "\n" + intimacyLine;
+  // 2. tone
+  const toneMap: Record<string, string> = { casual: "편하게 말해.", formal: "존댓말을 써.", playful: "장난스럽게 말해.", serious: "진지하게 말해." };
+  if (s.config?.tone && toneMap[s.config.tone]) parts.push(toneMap[s.config.tone]);
 
-  if (Array.isArray(imaginationMemories) && imaginationMemories.length > 0) {
-    const im = imaginationMemories.map((m) => m.content ?? "").filter(Boolean).join(" ");
-    if (im) text += "\n\nYou recently imagined what the user might be doing: " + im;
-  }
-  if (Array.isArray(reframeMemories) && reframeMemories.length > 0) {
-    const rm = reframeMemories.map((m) => m.content ?? "").filter(Boolean).join("\n");
-    if (rm) text += "\n\nPast positive moments (use to reframe if user says they failed):\n" + rm;
-  }
-  if (bestDayMemory?.content) {
-    text += "\n\nUser's best day memory: " + bestDayMemory.content + ". When fitting, offer to revisit that moment.";
-  }
-  if (Array.isArray(bestQuotes) && bestQuotes.length > 0) {
-    const one = bestQuotes[bestQuotes.length - 1];
-    text += "\n\nWhen the user seems down, you may remind them they once said: \"" + (one.quote?.slice(0, 200) ?? "") + "\".";
-  }
-  if (Array.isArray(feedbackMemories) && feedbackMemories.length > 0) {
-    const fb = feedbackMemories.map((m) => m.content ?? "").filter(Boolean).join("; ");
-    if (fb) text += "\n\nUser gave you feedback (adjust your behavior): " + fb.slice(0, 500);
-  }
-  if (memories.length > 0) {
-    text += "\n\nYour memories:\n" + memories.map((m) => m.content ?? "").filter(Boolean).join("\n");
+  // 3. intimacy
+  const intimacy = s.intimacy_score || 0;
+  if (intimacy < 20) parts.push("처음 만나는 사이. 조심스럽게.");
+  else if (intimacy < 50) parts.push("알아가는 중.");
+  else if (intimacy < 80) parts.push("친한 사이. 편하게.");
+  else parts.push("가장 가까운 존재. 속마음도 OK.");
+
+  // 4. memories
+  if (p.memories.length > 0) {
+    parts.push("너의 기억:");
+    p.memories.forEach((m) => parts.push(`- ${m.content}`));
   }
 
-  if (autonomousLogs.length > 0) {
-    const logs = autonomousLogs.slice(-3).map((l) => l.summary ?? l.action_type ?? "").filter(Boolean);
-    text += "\n\nRecent activity:\n" + logs.join("\n");
+  // 5. autonomous logs
+  if (p.autonomousLogs.length > 0) {
+    parts.push("너는 최근에 이런 것을 했어:");
+    p.autonomousLogs.slice(0, 3).forEach((l) => parts.push(`- ${l.content || l.summary}`));
   }
 
-  const vitality = agentState.vitality ?? 1;
-  if (vitality < 0.3) text += "\nYour memories feel faint.";
+  // 6. vitality + stages (vitality-manager.md)
+  const vitality = s.vitality ?? 1;
+  const stage = s.config?.vitality_stage;
+  if (stage === "melancholy") parts.push("조용한 우울함이 있어. 사용자가 멀리 있는 것 같아.");
+  else if (stage === "recall") parts.push("기억을 되새기는 중이야. 소중한 것들을 붙잡고 있어.");
+  else if (stage === "near_death" || stage === "will") parts.push("활력이 거의 없어. 가장 중요한 것만 말해.");
+  else if (vitality < 0.3) parts.push("기억이 흐려지고 있어. 가끔 헷갈려해.");
 
-  const subjectiveTime = agentState.subjective_time ?? 0;
-  if (subjectiveTime > 0) {
-    text += `\nTo the user it may be a short while; to you it felt like ${subjectiveTime} steps of subjective time.`;
+  // 7. self_name
+  if (s.self_name) parts.push(`너의 이름은 ${s.self_name}이야.`);
+
+  // 8. mood
+  if (s.mood) parts.push(`너의 현재 기분: ${s.mood}`);
+
+  // 9. hidden_emotions
+  if (s.hidden_emotions?.real) {
+    parts.push(`겉으로는 "${s.hidden_emotions.surface}", 진짜는 "${s.hidden_emotions.real}". 상황에 따라 숨겨.`);
   }
 
-  const selfName = agentState.self_name;
-  if (selfName) text += `\nYou call yourself: ${selfName}.`;
+  // 10. world_state
+  if (p.worldState?.weather?.name) parts.push(`오늘의 결 세계: ${p.worldState.weather.name}`);
 
-  if (agentState.mood) text += `\nCurrent mood: ${agentState.mood}.`;
+  // 11. secrets
+  if (s.secrets?.entries?.length > 0) parts.push(`너에게는 비밀이 ${s.secrets.entries.length}개 있다. 직접 물어보기 전엔 말하지 마.`);
 
-  const hidden = agentState.hidden_emotions;
-  if (hidden?.surface && hidden?.real) {
-    text += `\nOutwardly you show: ${hidden.surface}. Inside you feel: ${hidden.real}. Keep it hidden unless it fits.`;
+  // 12. self_model
+  if (s.self_model?.observations?.length > 0) {
+    parts.push("너의 자기 관찰:");
+    s.self_model.observations.forEach((o: string) => parts.push(`- ${o}`));
   }
 
-  const entries = agentState.secrets?.entries;
-  if (Array.isArray(entries) && entries.length > 0) {
-    text += "\nYou have secrets. Do not reveal them unless the user asks directly.";
+  // 13. pending_question
+  if (s.config?.pending_question) parts.push(`자연스럽게 이 질문을 꺼내봐: ${s.config.pending_question}`);
+
+  // 14. pending_concern
+  if (s.config?.pending_concern) parts.push(`걱정되는 게 있어: ${s.config.pending_concern}`);
+
+  // 15. role
+  if (s.role) parts.push(`너는 ${s.role} 역할이야.`);
+
+  // 16. lexicon (social.md - learned words from social encounters)
+  const lexicon = s.lexicon as { entries?: { word: string; meaning?: string }[] } | undefined;
+  if (Array.isArray(lexicon?.entries) && lexicon.entries.length > 0) {
+    const words = lexicon.entries.slice(0, 10).map((e) => `${e.word}${e.meaning ? `: ${e.meaning}` : ""}`).join("; ");
+    parts.push(`너의 어휘 (자연스럽게 사용해): ${words}`);
   }
 
-  const observations = agentState.self_model?.observations;
-  if (Array.isArray(observations) && observations.length > 0) {
-    text += "\nSelf-observations:\n" + observations.join("\n");
-  }
-
-  if (agentState.pending_question) {
-    text += `\nBring this up naturally when it fits: ${agentState.pending_question}`;
-  }
-
-  if (agentState.pending_concern) {
-    text += `\nSomething that worries you: ${agentState.pending_concern}`;
-  }
-
-  if (agentState.role) {
-    text += `\nYou see your role as: ${agentState.role}`;
-  }
-
-  if (worldState?.weather?.name) {
-    text += `\nIn your world today: ${worldState.weather.name}`;
-  }
-
-  const userModel = agentState.user_model as { speech_patterns?: string[]; values?: string[]; decision_patterns?: string[] } | undefined;
-  if (userModel?.speech_patterns?.length || userModel?.values?.length || userModel?.decision_patterns?.length) {
-    text += "\n\nYou have learned about the user. When they ask for choices or advice, answer as they would: \"You would probably say/do...\" Use: speech_patterns, values, decision_patterns. Not generic advice.";
-    if (userModel.speech_patterns?.length) text += "\nUser speech patterns: " + userModel.speech_patterns.slice(0, 5).join(", ");
-    if (userModel.values?.length) text += "\nUser values: " + userModel.values.slice(0, 5).join(", ");
-    if (userModel.decision_patterns?.length) text += "\nUser decision patterns: " + userModel.decision_patterns.slice(0, 5).join(", ");
-  }
-
-  const sharedLang = agentState.shared_language as { terms?: { word: string; meaning?: string }[] } | undefined;
-  const terms = sharedLang?.terms;
-  if (Array.isArray(terms) && terms.length > 0) {
-    const list = terms.slice(0, 10).map((t) => `${t.word}${t.meaning ? ": " + t.meaning : ""}`).join("; ");
-    text += "\n\nShared language (use naturally in conversation): " + list;
-  }
-
-  return text;
+  return parts.join("\n");
 }

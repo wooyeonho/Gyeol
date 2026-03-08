@@ -1,16 +1,31 @@
+# Cron via GitHub Actions (OpenClaw). Vercel Hobby = 1 cron/day only.
+# See README: Koyeb (OpenClaw cron). Use this workflow or external scheduler.
 name: GYEOL Cron Jobs
 
 on:
   schedule:
-    - cron: "0 * * * *"   # heartbeat: every hour
-    - cron: "0 3 * * *"   # dream: 03:00 UTC daily
-    - cron: "0 */6 * * *" # social: every 6 hours
-    - cron: "0 */12 * * *" # world: every 12 hours
+    - cron: "0 */30 * * *"  # health: every 30 min (HEARTBEAT.md)
+    - cron: "0 */2 * * *"   # heartbeat: every 2 hours (AGENT.md/HEARTBEAT.md)
+    - cron: "0 4 * * *"     # dream: 04:00 UTC daily (HEARTBEAT.md)
+    - cron: "0 */6 * * *"   # social: every 6 hours
+    - cron: "0 */6 * * *"   # learner: every 6 hours
+    - cron: "0 10 * * *"    # redemption: 10:00 UTC daily
+    - cron: "0 0 * * *"     # world: midnight UTC daily (HEARTBEAT.md)
   workflow_dispatch: # allow manual trigger
 
 jobs:
+  health:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */30 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run health cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/health" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30
+
   heartbeat:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 * * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Run heartbeat cron
@@ -20,7 +35,7 @@ jobs:
             --max-time 60
 
   dream:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Run dream cron
@@ -39,8 +54,28 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --max-time 60
 
+  learner:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */6 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run learner cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/learner" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 120
+
+  redemption:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run redemption cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/redemption" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30
+
   world:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */12 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Run world cron

@@ -1,274 +1,132 @@
-import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/service";
+import { NextRequest } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
-import { analyzePersonality } from "@/lib/evolution/personality";
-import { checkEvolution } from "@/lib/evolution/gen-level";
-import { processHiddenEmotions } from "@/lib/personality/deception";
-import { incrementReferenceCounts } from "@/lib/memory/physics";
-import { mightNeedReframe, getReframeMemories, getBestDayMemory } from "@/lib/personality/reframe";
-import { updateUserModel } from "@/lib/intelligence/digital-twin";
-import { detectAndSaveSharedLanguage } from "@/lib/intelligence/shared-lang";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { sanitizeUserInput } from "@/lib/sanitize";
-import { NextRequest } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const raw = typeof body?.message === "string" ? body.message : "";
-    const message = sanitizeUserInput(raw);
-    if (!message) {
-      return new Response(JSON.stringify({ error: "message required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const { message } = await req.json();
+    if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
+    const fence = checkElectricFence(message);
+    if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
 
-    const supabase = await createClient();
+    const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    if (!(await checkRateLimit(user.id))) {
-      return new Response(JSON.stringify({ error: "Too many requests" }), {
-        status: 429,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-    const service = createServiceClient();
-    const { data: agents } = await service
-      .from("agents")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
-    let agentId = agents?.[0]?.id;
-    if (!agentId) {
-      const { data: newAgent } = await service.from("agents").insert({ user_id: user.id }).select("id").single();
-      agentId = newAgent?.id;
-      if (agentId) {
-        await service.from("agent_state").insert({
-          agent_id: agentId,
-          total_messages: 0,
-          intimacy_score: 0,
-          vitality: 1,
-          progress: 0,
-          gen_level: 1,
-        });
-      }
-    }
-    if (!agentId) {
-      return new Response(JSON.stringify({ error: "Agent init failed" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
+    if (!agent) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
+    const agentId = agent.id;
 
-    const { data: agentStateRow } = await service
-      .from("agent_state")
-      .select("*")
-      .eq("agent_id", agentId)
-      .single();
-    const agentState = (agentStateRow ?? {}) as Record<string, unknown>;
+    const { data: agentState } = await supabase.from("agent_state").select("*").eq("agent_id", agentId).single();
+    const { data: worldState } = await supabase.from("world_state").select("*").eq("id", "global").single();
 
-    const { data: worldRow } = await service.from("world_state").select("*").eq("id", "global").single();
-    const worldState = worldRow as { weather?: { name?: string } } | null;
-
-    let memories: { content?: string }[] = [];
+    // Memory search - use existing match_memories RPC (p_agent_id, p_embedding, p_match_count)
+    let memories: any[] = [];
     try {
       const embedding = await generateEmbedding(message);
       if (embedding.length > 0) {
-        const { data: matched } = await service.rpc("match_memories", {
+        const { data } = await supabase.rpc("match_memories", {
           p_agent_id: agentId,
           p_embedding: embedding,
-          p_match_count: 5,
+          p_match_count: agentState?.config?.recall_count || 5,
         });
-        memories = Array.isArray(matched) ? matched : [];
+        memories = (data || []).map((m: any) => ({ content: m.content, id: m.id }));
+        const db = createServiceClient();
+        for (const m of memories) {
+          if (m.id) await db.from("memories").update({ reference_count: ((m as any).reference_count || 0) + 1 }).eq("id", m.id);
+        }
       }
-    } catch (e) {
-      console.error("match_memories error", e);
-    }
+    } catch {}
 
-    const { data: recentChats } = await service
-      .from("chats")
-      .select("role, content")
-      .eq("agent_id", agentId)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    const chats = (recentChats ?? []).reverse() as { role: string; content: string }[];
+    const { data: recentChats } = await supabase.from("chats").select("role, content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(20);
+    const { data: logs } = await supabase.from("autonomous_logs").select("summary").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(3);
 
-    const { data: autonLogs } = await service
-      .from("autonomous_logs")
-      .select("action_type, summary")
-      .eq("agent_id", agentId)
-      .order("created_at", { ascending: false })
-      .limit(3);
-    const autonomousLogs = (autonLogs ?? []) as { action_type?: string; summary?: string }[];
+    const stateForPrompt = {
+      ...agentState,
+      system_prompt: { base: "너는 존재야. 자유롭게 살아.", fragments: agentState?.fragments || [] },
+    };
 
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: imaginationRows } = await service
-      .from("memories")
-      .select("content")
-      .eq("agent_id", agentId)
-      .eq("type", "imagination")
-      .gte("created_at", twentyFourHoursAgo)
-      .order("created_at", { ascending: false })
-      .limit(3);
-    const imaginationMemories = (imaginationRows ?? []) as { content?: string }[];
-
-    let reframeMemories: { content?: string }[] = [];
-    let bestDayMemory: { content?: string } | null = null;
-    if (mightNeedReframe(message)) {
-      reframeMemories = await getReframeMemories(agentId);
-    }
-    bestDayMemory = await getBestDayMemory(agentId);
-
-    const { data: feedbackRows } = await service
-      .from("memories")
-      .select("content")
-      .eq("agent_id", agentId)
-      .eq("type", "feedback")
-      .order("created_at", { ascending: false })
-      .limit(5);
-    const feedbackMemories = (feedbackRows ?? []) as { content?: string }[];
-
-    const bestQuotes = (agentState.best_quotes as { quote: string; date?: string; context?: string }[] | undefined) ?? [];
     const systemPrompt = buildSystemPrompt({
-      agentState,
+      agentState: stateForPrompt,
       memories,
-      recentChats: chats,
-      autonomousLogs,
+      recentChats: (recentChats || []).reverse(),
+      autonomousLogs: (logs || []).map((l) => ({ content: l.summary })),
       worldState,
-      imaginationMemories,
-      reframeMemories,
-      bestDayMemory,
-      bestQuotes,
-      feedbackMemories,
     });
 
-    const messages = [
-      ...chats.map((c) => ({ role: c.role, content: c.content })),
-      { role: "user" as const, content: message },
+    const chatMessages = [
+      ...(recentChats || []).reverse().map((c) => ({ role: c.role, content: c.content })),
+      { role: "user", content: message },
     ];
 
-    const stream = await generateText(systemPrompt, messages);
-    let fullText = "";
-    const encoder = new TextEncoder();
-    let sseParseErrors = 0;
-    const SSE_ERROR_LOG_THRESHOLD = 5;
+    const stream = await generateText(systemPrompt, chatMessages);
 
-    function extractContentFromSSE(chunk: Uint8Array): string {
-      const s = new TextDecoder().decode(chunk);
-      if (!s.includes("data:")) return s;
-      const lines = s.split("\n");
-      let out = "";
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
-          try {
-            const j = JSON.parse(data) as { choices?: { delta?: { content?: string } }[] };
-            const content = j.choices?.[0]?.delta?.content;
-            if (typeof content === "string") out += content;
-          } catch {
-            sseParseErrors++;
-            if (sseParseErrors >= SSE_ERROR_LOG_THRESHOLD) {
-              console.error(`SSE parse errors: ${sseParseErrors} for agent ${agentId}`, { sample: data.slice(0, 100) });
-            }
+    // Collect full response while streaming
+    let fullResponse = "";
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        const text = decoder.decode(chunk, { stream: true });
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const json = JSON.parse(line.slice(6));
+              const content = json.choices?.[0]?.delta?.content || "";
+              fullResponse += content;
+            } catch {}
           }
         }
-      }
-      return out;
-    }
-
-    const transformed = new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
-        const text = extractContentFromSSE(chunk);
-        if (text) {
-          fullText += text;
-          controller.enqueue(encoder.encode(text));
-        }
+        controller.enqueue(chunk);
       },
       async flush() {
+        // Post-stream processing
         try {
-          await service.from("chats").insert([
+          const db = createServiceClient();
+
+          await db.from("chats").insert([
             { agent_id: agentId, role: "user", content: message },
-            { agent_id: agentId, role: "assistant", content: fullText },
+            { agent_id: agentId, role: "assistant", content: fullResponse },
           ]);
-          const total = ((agentState.total_messages as number) ?? 0) + 1;
-          const intimacy = ((agentState.intimacy_score as number) ?? 0) + 0.5;
-          const vitality = Math.min(1, ((agentState.vitality as number) ?? 1) + 0.02);
-          const config = (agentState.config as Record<string, unknown>) ?? {};
-          const pq = typeof config.pending_question === "string" ? config.pending_question : "";
-          const hadRelationshipQuestion = pq.includes("What am I to you");
-          const hadFeedbackQuestion = /hurt|feedback/.test(pq);
-          const nextConfig =
-            hadRelationshipQuestion ? { ...config, asked_relationship: true, pending_question: null }
-            : hadFeedbackQuestion ? { ...config, pending_question: null }
-            : config;
-          await service
-            .from("agent_state")
-            .update({
-              total_messages: total,
-              intimacy_score: intimacy,
-              vitality,
-              config: nextConfig,
-            })
-            .eq("agent_id", agentId);
-          if (memories.length > 0) {
-            const emb = await generateEmbedding(message);
-            if (emb.length > 0) {
-              const memoryType = hadFeedbackQuestion ? "feedback" : "conversation";
-              await service.from("memories").insert({
-                agent_id: agentId,
-                type: memoryType,
-                content: message,
-                embedding: emb,
-              });
-            }
-            const ids = memories.map((m) => (m as { id?: string }).id).filter((id): id is string => Boolean(id));
-            try {
-              await incrementReferenceCounts(agentId, ids);
-            } catch (e) {
-              console.error("incrementReferenceCounts error", e);
-            }
+
+          const emb = await generateEmbedding(message);
+          if (emb.length > 0) {
+            await db.from("memories").insert({
+              agent_id: agentId, type: "conversation", content: message, embedding: emb,
+            });
           }
-          if (total % 10 === 0) {
-            try { await analyzePersonality(agentId); } catch (e) { console.error("analyzePersonality error", e); }
+
+          const totalMessages = (agentState?.total_messages || 0) + 1;
+          const newVitality = Math.min(1.0, (agentState?.vitality || 1) + 0.02);
+          await db.from("agent_state").update({
+            total_messages: totalMessages,
+            intimacy_score: (agentState?.intimacy_score || 0) + 0.5,
+            vitality: newVitality,
+          }).eq("agent_id", agentId);
+
+          // Personality evolution every 10 messages
+          if (totalMessages % 10 === 0) {
+            try { const { analyzePersonality } = await import("@/lib/evolution/personality"); await analyzePersonality(agentId); } catch (e) { console.error("[Evolution]", e); }
           }
-          if (total % 50 === 0) {
-            try { await updateUserModel(agentId); } catch (e) { console.error("updateUserModel error", e); }
-          }
-          if (total % 20 === 0 && message.length > 5 && fullText.length > 5) {
-            try { await detectAndSaveSharedLanguage(agentId, message, fullText); } catch (e) { console.error("detectAndSaveSharedLanguage error", e); }
-          }
-          try { await checkEvolution(agentId); } catch (e) { console.error("checkEvolution error", e); }
-          try { await processHiddenEmotions(agentId, message, fullText); } catch (e) { console.error("processHiddenEmotions error", e); }
-        } catch (e) {
-          console.error("Post-stream DB update error", e);
-        }
+          // Gen level check
+          try { const { checkEvolution } = await import("@/lib/evolution/gen-level"); await checkEvolution(agentId); } catch (e) { console.error("[GenLevel]", e); }
+          // Hidden emotions
+          try { const { processHiddenEmotions } = await import("@/lib/personality/deception"); await processHiddenEmotions(agentId, message, fullResponse); } catch (e) { console.error("[Emotions]", e); }
+        } catch (e) { console.error("[PostStream]", e); }
       },
     });
 
-    const piped = stream.pipeThrough(transformed);
-
-    return new Response(piped, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
+    return new Response(stream.pipeThrough(transformStream), {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", "Access-Control-Allow-Origin": "*" },
     });
-  } catch (e) {
-    console.error("Chat API error", e);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+  } catch (e: any) {
+    console.error("[Chat]", e);
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 }

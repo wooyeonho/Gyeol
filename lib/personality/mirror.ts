@@ -1,40 +1,22 @@
-import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
-import { generateEmbedding } from "@/lib/ai/embedding";
+import { createServiceClient } from "@/lib/supabase/service";
 
-export async function analyzeMirrorEffect(agentId: string): Promise<void> {
-  const service = createServiceClient();
-  const { data: chats } = await service
-    .from("chats")
-    .select("role, content")
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  const messages = (chats ?? []) as { role: string; content: string }[];
-  if (messages.length < 10) return;
+export async function analyzeMirrorEffect(agentId: string) {
+  const db = createServiceClient();
+  const { data: chats } = await db.from("chats").select("role, content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(20);
+  if (!chats || chats.length < 10) return;
 
-  const block = messages.map((m) => `${m.role}: ${(m.content ?? "").slice(0, 200)}`).join("\n");
-  const result = (await generateJSON(
-    "Is the AI mirroring the user's speech style? Respond ONLY valid JSON.",
-    `Conversations:\n${block}\n\nJSON: {"mirroring": true or false, "observation": "one short sentence in Korean"}`
-  )) as { mirroring?: boolean; observation?: string } | null;
+  const convo = chats.reverse().map((c) => `${c.role}: ${c.content}`).join("\n");
+  const result = await generateJSON(
+    "Analyze speech patterns. Respond ONLY valid JSON.",
+    `Conversation:\n${convo}\n\nIs the AI mirroring the user's speech patterns?\nJSON: {"mirroring":true|false,"observation":"Korean observation"}`
+  );
+  if (!result?.mirroring) return;
 
-  if (!result?.mirroring || !result.observation?.trim()) return;
+  const { data: state } = await db.from("agent_state").select("fragments").eq("agent_id", agentId).single();
+  if (!state) return;
 
-  const { data: stateRow } = await service.from("agent_state").select("fragments").eq("agent_id", agentId).single();
-  const fragments = Array.isArray((stateRow as { fragments?: string[] })?.fragments) ? [...((stateRow as { fragments?: string[] }).fragments ?? [])] : [];
-  if (!fragments.includes(result.observation)) {
-    fragments.push(result.observation);
-  }
-
-  const emb = await generateEmbedding(result.observation);
-  if (emb.length > 0) {
-    await service.from("memories").insert({
-      agent_id: agentId,
-      type: "observation",
-      content: result.observation,
-      embedding: emb,
-    });
-  }
-  await service.from("agent_state").update({ fragments }).eq("agent_id", agentId);
+  const fragments = [...(state.fragments || []), result.observation].slice(-20);
+  await db.from("agent_state").update({ fragments }).eq("agent_id", agentId);
+  await db.from("memories").insert({ agent_id: agentId, type: "observation", content: result.observation });
 }
