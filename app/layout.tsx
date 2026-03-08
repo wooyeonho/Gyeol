@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "결 GYEOL",
-  description: "Autonomous evolving AI lifeform",
+  description: "자율 진화하는 AI 생명체와 함께하는 일상",
   manifest: "/manifest.json",
 };
 
@@ -20,7 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="bg-black text-white min-h-screen antialiased">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+        />
+      </head>
+      <body className="bg-[var(--background)] text-[var(--foreground)] min-h-screen antialiased">
         {children}
       </body>
     </html>

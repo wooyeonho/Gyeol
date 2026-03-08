@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BottomNav } from "@/components/bottom-nav";
 
 type Log = { action_type: string; summary?: string; created_at: string };
-type Artifact = { id: string; type: string; content?: string; title?: string; is_preserved?: boolean; created_at: string };
+type Artifact = { id: string; type: string; content?: string; is_preserved?: boolean; created_at: string };
 
 const TYPE_STYLES: Record<string, string> = {
   heartbeat: "bg-white/10",
@@ -33,7 +33,7 @@ export default function ActivityPage() {
 
       const agentId = agents.id;
       const { data: logData } = await supabase.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
-      const { data: artData } = await supabase.from("artifacts").select("id, type, content, title, is_preserved, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
+      const { data: artData } = await supabase.from("artifacts").select("id, type, content, is_preserved, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
 
       setLogs(((logData as Log[] | null) || []).map((l: Log) => ({ ...l, kind: "log" as const })));
       setArtifacts(((artData as Artifact[] | null) || []).map((a: Artifact) => ({ ...a, kind: "artifact" as const })));
@@ -79,7 +79,7 @@ export default function ActivityPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="text-xs text-white/50">{(item as Artifact).type}</div>
-                    <div className="text-sm mt-1">{(item as Artifact).title || (item as Artifact).content?.slice(0, 80)}</div>
+                    <div className="text-sm mt-1">{(item as Artifact).content?.slice(0, 80) || "—"}</div>
                   </div>
                   <button
                     onClick={() => togglePreserved((item as Artifact).id, (item as Artifact).is_preserved || false)}

@@ -40,7 +40,7 @@ export function ChatPanel() {
             className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {m.role === "user" ? (
-              <div className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%]">
+              <div className="bg-[var(--accent-muted)] rounded-2xl px-4 py-2 max-w-[80%]">
                 {m.content}
               </div>
             ) : (
@@ -64,12 +64,12 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           placeholder="무엇이든 말해봐..."
           disabled={isStreaming}
-          className="flex-1 bg-white/5 rounded-full px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 disabled:opacity-50"
+          className="flex-1 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-full px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/50 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={isStreaming || !input.trim()}
-          className="px-4 py-3 rounded-full bg-white/10 text-white disabled:opacity-50"
+          className="px-4 py-3 rounded-full bg-[var(--accent-muted)] text-[var(--accent)] font-medium disabled:opacity-50 hover:bg-[var(--accent)]/25 transition-colors"
         >
           전송
         </button>

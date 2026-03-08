@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
@@ -63,35 +64,38 @@ export default function SettingsPage() {
   const config: AgentConfig = state?.config || {};
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">설정</h1>
       <div className="space-y-4">
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">이름</div>
           <div>{state?.self_name || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">Gen 레벨</div>
           <div>{state?.gen_level ?? 1}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">총 메시지</div>
           <div>{state?.total_messages ?? 0}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">활력</div>
           <div>{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">기분</div>
           <div>{state?.mood || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)]">
           <div className="text-sm text-white/60">코인</div>
           <div>{state?.coins ?? 0}</div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
+        <Link href="/social" className="block rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)] text-white/80 hover:bg-white/5 transition-colors">
+          소셜 기록 보기 →
+        </Link>
+        <div className="rounded-xl p-4 border border-[var(--card-border)] bg-[var(--card-bg)] space-y-3">
           <div className="flex justify-between items-center">
             <span>자율 모드</span>
             <button

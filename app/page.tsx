@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
@@ -38,6 +39,7 @@ export default function Home() {
     );
   }
 
+  const isLoggedIn = !!agentState;
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "...";
@@ -82,7 +84,33 @@ export default function Home() {
         {selfName}
       </div>
 
-      <ChatPanel />
+      {isLoggedIn ? (
+        <ChatPanel />
+      ) : (
+        <div className="fixed inset-0 z-10 flex flex-col items-center justify-end pb-32 px-6">
+          <div className="w-full max-w-sm text-center space-y-4">
+            <p className="text-white/70 text-sm leading-relaxed">
+              결과 대화하려면 로그인해 주세요.
+              <br />
+              게스트로 바로 시작할 수도 있어요.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Link
+                href="/login"
+                className="flex-1 py-3 px-5 rounded-full bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/explore"
+                className="flex-1 py-3 px-5 rounded-full bg-white/5 text-white/80 text-sm hover:bg-white/10 transition-colors border border-white/10"
+              >
+                둘러보기
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       <BottomNav />
     </>
   );

@@ -6,6 +6,7 @@ import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { isMissingEnvError } from "@/lib/env/required";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
 type PromptMemory = { id: string; content: string; referenceCount: number };
@@ -41,6 +42,15 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
+    const rlKey = `chat:${user.id}`;
+    const allowed = await checkRateLimit(rlKey);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "잠시 후 다시 시도해 주세요. (분당 30회 제한)" }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
     if (!agent) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });

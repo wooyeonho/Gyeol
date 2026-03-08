@@ -15,7 +15,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     try {
       const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
-      if (!res.ok) throw new Error(`${res.status}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = res.status === 429 ? (data.error || "잠시 후 다시 시도해 주세요") : (data.error || `오류 (${res.status})`);
+        throw new Error(msg);
+      }
 
       const reader = res.body?.getReader();
       if (!reader) return;
@@ -42,9 +46,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
     } catch (e) {
       console.error("[Chat]", e);
+      const errMsg = e instanceof Error ? e.message : "지금은 잠시 쉬고 있어요...";
       set((s) => {
         const msgs = [...s.messages];
-        msgs[msgs.length - 1] = { role: "assistant", content: "지금은 잠시 쉬고 있어요..." };
+        msgs[msgs.length - 1] = { role: "assistant", content: errMsg };
         return { messages: msgs };
       });
     }
