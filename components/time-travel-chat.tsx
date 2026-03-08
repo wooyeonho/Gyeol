@@ -30,7 +30,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
         body: JSON.stringify({ target_date: targetDate, message: text }),
       });
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, { role: "assistant", content: "Could not reach past self." }]);
+        setMessages((m) => [...m, { role: "assistant", content: "과거의 나와 연결하지 못했어요." }]);
         return;
       }
       const reader = res.body.getReader();
@@ -54,26 +54,26 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
         }
       }
       setMessages((m) => [...m, { role: "assistant", content: full || "..." }]);
-    } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: "Error." }]);
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "오류가 발생했어요." }]);
     } finally {
       setStreaming(false);
     }
   }
 
   return (
-    <div className="flex flex-col h-full max-h-[70vh] rounded-xl overflow-hidden bg-[#2a2520] border border-amber-900/50">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-amber-900/30 bg-[#1f1b18]">
-        <span className="text-amber-200/90 text-sm">Past self · {new Date(targetDate).toLocaleDateString()}</span>
+    <div className="flex flex-col h-full max-h-[70vh] rounded-xl overflow-hidden bg-black/40 border border-white/10">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/[0.02]">
+        <span className="text-white/80 text-sm">과거의 나 · {new Date(targetDate).toLocaleDateString("ko-KR")}</span>
         {onClose && (
-          <button type="button" onClick={onClose} className="text-amber-200/70 hover:text-amber-200 text-sm">
-            Close
+          <button type="button" onClick={onClose} className="text-white/50 hover:text-white/80 text-sm">
+            닫기
           </button>
         )}
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
-          <p className="text-amber-200/50 text-sm">Send a message to your past self at this date.</p>
+          <p className="text-white/50 text-sm">선택한 날짜의 나에게 메시지를 보내보세요.</p>
         )}
         {messages.map((msg, i) => (
           <div
@@ -83,8 +83,8 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                 msg.role === "user"
-                  ? "bg-amber-900/40 text-amber-100"
-                  : "bg-amber-950/50 text-amber-200/90"
+                  ? "bg-white/10 text-white"
+                  : "bg-white/5 text-white/90"
               }`}
             >
               {msg.content}
@@ -93,29 +93,29 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
         ))}
         {streaming && (
           <div className="flex justify-start">
-            <span className="w-2 h-4 bg-amber-400/60 animate-pulse rounded" />
+            <span className="w-2 h-4 bg-white/60 animate-pulse rounded" />
           </div>
         )}
         <div ref={bottomRef} />
       </div>
-      <div className="p-2 border-t border-amber-900/30">
+      <div className="p-2 border-t border-white/10">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-            placeholder="Message..."
-            className="flex-1 rounded-lg bg-[#1f1b18] border border-amber-900/30 px-3 py-2 text-sm text-amber-100 placeholder-amber-200/40"
+            placeholder="메시지..."
+            className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-white/40"
             disabled={streaming}
           />
           <button
             type="button"
             onClick={send}
             disabled={streaming || !input.trim()}
-            className="rounded-lg bg-amber-800/60 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-50"
+            className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            Send
+            보내기
           </button>
         </div>
       </div>
