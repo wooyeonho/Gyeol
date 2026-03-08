@@ -6,6 +6,8 @@ import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { isMissingEnvError } from "@/lib/env/required";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
 
 type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
 type PromptMemory = { id: string; content: string; referenceCount: number };
@@ -33,7 +35,7 @@ function getAllowedOrigin(req: NextRequest): string | null {
 export async function POST(req: NextRequest) {
   try {
     const payload = (await req.json()) as { message?: unknown };
-    const message = typeof payload.message === "string" ? payload.message.trim() : "";
+    const message = typeof payload.message === "string" ? sanitizeUserInput(payload.message) : "";
     if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
     const fence = checkElectricFence(message);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
@@ -41,6 +43,13 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const allowed = await checkRateLimit(`chat:${user.id}`, { userId: user.id, maxPerWindow: 40, windowMs: 60_000 });
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
     if (!agent) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
@@ -51,12 +60,13 @@ export async function POST(req: NextRequest) {
 
     // Memory search - use existing match_memories RPC (p_agent_id, p_embedding, p_match_count)
     let memories: PromptMemory[] = [];
+    let userEmbedding: number[] | null = null;
     try {
-      const embedding = await generateEmbedding(message);
-      if (embedding.length > 0) {
+      userEmbedding = await generateEmbedding(message);
+      if (userEmbedding.length > 0) {
         const { data } = await supabase.rpc("match_memories", {
           p_agent_id: agentId,
-          p_embedding: embedding,
+          p_embedding: userEmbedding,
           p_match_count: agentState?.config?.recall_count || 5,
         });
         const matched = Array.isArray(data) ? (data as MemoryMatch[]) : [];
@@ -132,10 +142,9 @@ export async function POST(req: NextRequest) {
             { agent_id: agentId, role: "assistant", content: fullResponse },
           ]);
 
-          const emb = await generateEmbedding(message);
-          if (emb.length > 0) {
+          if (userEmbedding && userEmbedding.length > 0) {
             await db.from("memories").insert({
-              agent_id: agentId, type: "conversation", content: message, embedding: emb,
+              agent_id: agentId, type: "conversation", content: message, embedding: userEmbedding,
             });
           }
 

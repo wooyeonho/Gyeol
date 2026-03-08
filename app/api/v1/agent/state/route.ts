@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 function checkApiKey(request: NextRequest): boolean {
@@ -10,6 +11,10 @@ export async function GET(request: NextRequest) {
   if (!checkApiKey(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const source = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const allowed = await checkRateLimit(`v1-state:${source}`, { maxPerWindow: 120, windowMs: 60_000 });
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   const agentId = request.nextUrl.searchParams.get("agent_id");
   if (!agentId) return NextResponse.json({ error: "agent_id required" }, { status: 400 });
 

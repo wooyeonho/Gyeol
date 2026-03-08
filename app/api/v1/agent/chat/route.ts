@@ -3,6 +3,8 @@ import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
@@ -42,9 +44,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    const source = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const allowed = await checkRateLimit(`v1-chat:${source}`, { maxPerWindow: 30, windowMs: 60_000 });
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
     const body = await request.json().catch(() => ({}));
     const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const message = typeof body?.message === "string" ? body.message.trim() : "";
+    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
     if (!agentId || !message) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }

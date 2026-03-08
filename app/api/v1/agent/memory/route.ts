@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
 import { NextRequest, NextResponse } from "next/server";
 
 function checkApiKey(request: NextRequest): boolean {
@@ -12,9 +14,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    const source = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const allowed = await checkRateLimit(`v1-memory:${source}`, { maxPerWindow: 40, windowMs: 60_000 });
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
     const body = await request.json().catch(() => ({}));
     const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const content = typeof body?.content === "string" ? body.content.trim() : "";
+    const content = typeof body?.content === "string" ? sanitizeUserInput(body.content) : "";
     const type = typeof body?.type === "string" ? body.type : "conversation";
     if (!agentId || !content) {
       return NextResponse.json({ error: "agent_id and content required" }, { status: 400 });

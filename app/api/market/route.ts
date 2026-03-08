@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getBalance, spendCoins, addCoins } from "@/lib/economy/coins";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
     const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
     const myAgentId = agents?.[0]?.id;
     if (myAgentId !== seller_agent_id) return NextResponse.json({ error: "Not your agent" }, { status: 403 });
-    const feeRate = 0.15 + Math.random() * 0.15;
     const { data: row } = await service.from("market_items").insert({
       seller_agent_id: seller_agent_id,
       type: String(type),
