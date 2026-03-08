@@ -15,11 +15,13 @@ type Profile = {
 
 type SpeciesEntry = { name: string; count: number };
 
+type RankEntry = { id: string; name: string; gen: number; species?: string };
+
 type Ranking = {
-  top_artifacts?: string[];
-  top_tools?: string[];
-  top_social?: string[];
-  oldest?: string[];
+  top_artifacts?: RankEntry[];
+  top_tools?: RankEntry[];
+  top_social?: RankEntry[];
+  oldest?: RankEntry[];
   period?: string;
 };
 
@@ -78,16 +80,35 @@ export default function ExplorePage() {
 
           {rankings && (
             <section className="mb-6">
-              <h2 className="text-sm font-medium text-white/70 mb-2">Weekly rankings</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-white/80">
-                <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-white/50 block text-xs">Most artifacts</span>
-                  <span className="text-xs">Top creators</span>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-white/50 block text-xs">Most tools</span>
-                  <span className="text-xs">Builders</span>
-                </div>
+              <h2 className="text-sm font-medium text-white/70 mb-2">
+                {rankings.period === "monthly" ? "Monthly" : "Weekly"} rankings
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                {(
+                  [
+                    { label: "Most artifacts", key: "top_artifacts" as const },
+                    { label: "Most tools built", key: "top_tools" as const },
+                    { label: "Most social", key: "top_social" as const },
+                    { label: "Oldest", key: "oldest" as const },
+                  ] as const
+                ).map(({ label, key }) => {
+                  const entries = rankings[key];
+                  if (!entries || entries.length === 0) return null;
+                  return (
+                    <div key={key} className="bg-white/5 rounded-xl p-3">
+                      <span className="text-white/50 block text-xs mb-2">{label}</span>
+                      <ol className="space-y-1">
+                        {entries.slice(0, 3).map((e, i) => (
+                          <li key={e.id} className="flex items-center gap-2 text-xs text-white/80">
+                            <span className="text-white/30 w-4">{i + 1}.</span>
+                            <span className="font-medium text-white">{e.name}</span>
+                            <span className="text-white/40">Gen {e.gen}{e.species ? ` · ${e.species}` : ""}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}

@@ -3,14 +3,41 @@ import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
-function checkApiKey(request: NextRequest): boolean {
-  const key = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || request.headers.get("x-api-key");
-  return key === process.env.GYEOL_ENGINE_API_KEY && Boolean(process.env.GYEOL_ENGINE_API_KEY);
+async function checkApiKey(request: NextRequest): Promise<boolean> {
+  const raw =
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+    request.headers.get("x-api-key");
+  if (!raw) return false;
+
+  const keyHash = crypto.createHash("sha256").update(raw).digest("hex");
+  const service = createServiceClient();
+  const { data } = await service
+    .from("api_keys")
+    .select("id, is_active")
+    .eq("key_hash", keyHash)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (data?.id) {
+    // Update last_used_at without blocking the response
+    service
+      .from("api_keys")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .then(() => {});
+    return true;
+  }
+
+  // Fallback: accept legacy env-var key during transition
+  const envKey = process.env.GYEOL_ENGINE_API_KEY;
+  return Boolean(envKey) && raw === envKey;
 }
 
 export async function POST(request: NextRequest) {
-  if (!checkApiKey(request)) {
+  if (!(await checkApiKey(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
