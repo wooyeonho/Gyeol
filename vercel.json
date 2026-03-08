@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/heartbeat",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/dream",
@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/social",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/world",
-      "schedule": "0 */12 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
