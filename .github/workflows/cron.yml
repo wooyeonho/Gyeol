@@ -1,0 +1,50 @@
+name: GYEOL Cron Jobs
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # heartbeat: every hour
+    - cron: "0 3 * * *"   # dream: 03:00 UTC daily
+    - cron: "0 */6 * * *" # social: every 6 hours
+    - cron: "0 */12 * * *" # world: every 12 hours
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  heartbeat:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run heartbeat cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/heartbeat" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
+
+  dream:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run dream cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/dream" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
+
+  social:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */6 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run social cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/social" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
+
+  world:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */12 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run world cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/world" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
