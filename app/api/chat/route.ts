@@ -6,9 +6,33 @@ import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 
+type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
+type PromptMemory = { id: string; content: string; referenceCount: number };
+type ChatRow = { role: string; content: string };
+type LogRow = { summary: string };
+type StreamChunk = { choices?: Array<{ delta?: { content?: string } }> };
+
+function getAllowedOrigin(req: NextRequest): string | null {
+  const origin = req.headers.get("origin");
+  if (!origin) return null;
+
+  const sameOrigin = origin === req.nextUrl.origin;
+  if (sameOrigin) return origin;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) return null;
+
+  try {
+    return new URL(origin).origin === new URL(appUrl).origin ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { message } = await req.json();
+    const payload = (await req.json()) as { message?: unknown };
+    const message = typeof payload.message === "string" ? payload.message.trim() : "";
     if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
     const fence = checkElectricFence(message);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
@@ -25,7 +49,7 @@ export async function POST(req: NextRequest) {
     const { data: worldState } = await supabase.from("world_state").select("*").eq("id", "global").single();
 
     // Memory search - use existing match_memories RPC (p_agent_id, p_embedding, p_match_count)
-    let memories: any[] = [];
+    let memories: PromptMemory[] = [];
     try {
       const embedding = await generateEmbedding(message);
       if (embedding.length > 0) {
@@ -34,16 +58,29 @@ export async function POST(req: NextRequest) {
           p_embedding: embedding,
           p_match_count: agentState?.config?.recall_count || 5,
         });
-        memories = (data || []).map((m: any) => ({ content: m.content, id: m.id }));
+        const matched = Array.isArray(data) ? (data as MemoryMatch[]) : [];
+        memories = matched.map((m) => ({
+          content: m.content,
+          id: m.id ?? "",
+          referenceCount: m.reference_count ?? 0,
+        }));
         const db = createServiceClient();
         for (const m of memories) {
-          if (m.id) await db.from("memories").update({ reference_count: ((m as any).reference_count || 0) + 1 }).eq("id", m.id);
+          if (m.id) {
+            await db
+              .from("memories")
+              .update({ reference_count: m.referenceCount + 1 })
+              .eq("id", m.id);
+          }
         }
       }
     } catch {}
 
     const { data: recentChats } = await supabase.from("chats").select("role, content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(20);
     const { data: logs } = await supabase.from("autonomous_logs").select("summary").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(3);
+    const recentChatRows = (recentChats || []) as ChatRow[];
+    const logRows = (logs || []) as LogRow[];
+    const chronologicalChats = [...recentChatRows].reverse();
 
     const stateForPrompt = {
       ...agentState,
@@ -53,13 +90,13 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt({
       agentState: stateForPrompt,
       memories,
-      recentChats: (recentChats || []).reverse(),
-      autonomousLogs: (logs || []).map((l) => ({ content: l.summary })),
+      recentChats: chronologicalChats,
+      autonomousLogs: logRows.map((l) => ({ content: l.summary })),
       worldState,
     });
 
     const chatMessages = [
-      ...(recentChats || []).reverse().map((c) => ({ role: c.role, content: c.content })),
+      ...chronologicalChats.map((c) => ({ role: c.role, content: c.content })),
       { role: "user", content: message },
     ];
 
@@ -67,7 +104,6 @@ export async function POST(req: NextRequest) {
 
     // Collect full response while streaming
     let fullResponse = "";
-    const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
     const transformStream = new TransformStream({
@@ -77,7 +113,7 @@ export async function POST(req: NextRequest) {
         for (const line of lines) {
           if (line.startsWith("data: ") && line !== "data: [DONE]") {
             try {
-              const json = JSON.parse(line.slice(6));
+              const json = JSON.parse(line.slice(6)) as StreamChunk;
               const content = json.choices?.[0]?.delta?.content || "";
               fullResponse += content;
             } catch {}
@@ -122,11 +158,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new Response(stream.pipeThrough(transformStream), {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive", "Access-Control-Allow-Origin": "*" },
-    });
-  } catch (e: any) {
+    const allowedOrigin = getAllowedOrigin(req);
+    const headers: HeadersInit = {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    };
+    if (allowedOrigin) {
+      headers["Access-Control-Allow-Origin"] = allowedOrigin;
+      headers.Vary = "Origin";
+    }
+
+    return new Response(stream.pipeThrough(transformStream), { headers });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
     console.error("[Chat]", e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }

@@ -1,13 +1,20 @@
 import { generateJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 
+type PersonalityResult = {
+  tone_suggestion?: "casual" | "formal" | "playful" | "serious";
+  new_fragment?: string | null;
+  mood?: "happy" | "sad" | "curious" | "angry" | "neutral";
+  visual_suggestion?: { color?: string; animation?: "float" | "pulse-fast" | "breathe-slow" } | null;
+};
+
 export async function analyzePersonality(agentId: string) {
   const db = createServiceClient();
   const { data: chats } = await db.from("chats").select("content").eq("agent_id", agentId).eq("role", "user").order("created_at", { ascending: false }).limit(10);
   if (!chats || chats.length < 5) return;
 
   const convos = chats.map((c) => c.content).join("\n");
-  const result = await generateJSON(
+  const result = await generateJSON<PersonalityResult>(
     "Analyze conversations. Respond ONLY with valid JSON. No explanation.",
     `Conversations:\n${convos}\n\nJSON: {"tone_suggestion":"casual|formal|playful|serious","new_fragment":"one Korean sentence insight or null","mood":"happy|sad|curious|angry|neutral","visual_suggestion":{"color":"#hex","animation":"float|pulse-fast|breathe-slow"}|null}`
   );
@@ -16,7 +23,7 @@ export async function analyzePersonality(agentId: string) {
   const { data: state } = await db.from("agent_state").select("*").eq("agent_id", agentId).single();
   if (!state) return;
 
-  const updates: any = {};
+  const updates: Record<string, unknown> = {};
   if (result.tone_suggestion) updates.config = { ...state.config, tone: result.tone_suggestion };
   if (result.mood) updates.mood = result.mood;
   if (result.new_fragment && result.new_fragment !== "null") {

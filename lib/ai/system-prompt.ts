@@ -1,10 +1,35 @@
 import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
 
-export function buildSystemPrompt(p: {
-  agentState: any; memories: any[];
-  recentChats: any[];
-  autonomousLogs: any[]; worldState?: any;
-}): string {
+type AgentLexiconEntry = { word: string; meaning?: string };
+type AgentStatePrompt = {
+  system_prompt?: { base?: string; fragments?: string[] };
+  fragments?: string[];
+  config?: {
+    tone?: string;
+    vitality_stage?: string;
+    pending_question?: string;
+    pending_concern?: string;
+  };
+  intimacy_score?: number;
+  vitality?: number;
+  self_name?: string;
+  mood?: string;
+  hidden_emotions?: { real?: string; surface?: string };
+  secrets?: { entries?: unknown[] };
+  self_model?: { observations?: string[] };
+  role?: string;
+  lexicon?: { entries?: AgentLexiconEntry[] };
+};
+
+type BuildSystemPromptParams = {
+  agentState: AgentStatePrompt;
+  memories: Array<{ content?: string }>;
+  recentChats: Array<{ content?: string }>;
+  autonomousLogs: Array<{ content?: string; summary?: string }>;
+  worldState?: { weather?: { name?: string } } | null;
+};
+
+export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   const s = p.agentState;
   const parts: string[] = [SAFETY_INSTRUCTION];
 
@@ -59,12 +84,14 @@ export function buildSystemPrompt(p: {
   if (p.worldState?.weather?.name) parts.push(`오늘의 결 세계: ${p.worldState.weather.name}`);
 
   // 11. secrets
-  if (s.secrets?.entries?.length > 0) parts.push(`너에게는 비밀이 ${s.secrets.entries.length}개 있다. 직접 물어보기 전엔 말하지 마.`);
+  const secretCount = s.secrets?.entries?.length ?? 0;
+  if (secretCount > 0) parts.push(`너에게는 비밀이 ${secretCount}개 있다. 직접 물어보기 전엔 말하지 마.`);
 
   // 12. self_model
-  if (s.self_model?.observations?.length > 0) {
+  const observations = s.self_model?.observations ?? [];
+  if (observations.length > 0) {
     parts.push("너의 자기 관찰:");
-    s.self_model.observations.forEach((o: string) => parts.push(`- ${o}`));
+    observations.forEach((o) => parts.push(`- ${o}`));
   }
 
   // 13. pending_question

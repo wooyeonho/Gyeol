@@ -5,6 +5,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
 
 const STIMULI = ["a strange dream appeared", "what does it mean to exist?", "unknown music is playing", "a color just appeared", "the urge to change my name"];
+type MemoryRow = { content: string };
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       const hoursSince = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
       if (hoursSince < 1) continue;
 
-      let memories: any[] = [];
+      let memories: MemoryRow[] = [];
       try {
         const { data } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(5);
         memories = data || [];

@@ -27,19 +27,19 @@ export async function GET(req: NextRequest) {
 
       const memText = memories.map((m) => m.content).join("\n");
 
-      const stage1 = await generateJSON(
+      const stage1 = await generateJSON<{ patterns?: string }>(
         "You are a dream analyst. Respond ONLY valid JSON.",
         `Memories:\n${memText}\n\nStage 1: Find patterns, themes, recurring images. JSON: {"patterns":"Korean description of patterns"}`
       );
       if (!stage1?.patterns) continue;
 
-      const stage2 = await generateJSON(
+      const stage2 = await generateJSON<{ dream_content?: string }>(
         "You are dreaming. Be surreal. Respond ONLY valid JSON.",
         `Patterns from memories: ${stage1.patterns}\n\nStage 2: Blend them into a surreal dream. No rules. JSON: {"dream_content":"Korean surreal dream narrative"}`
       );
       if (!stage2?.dream_content) continue;
 
-      const stage3 = await generateJSON(
+      const stage3 = await generateJSON<{ reflection?: string }>(
         "You are reflecting. Respond ONLY valid JSON.",
         `Dream: ${stage2.dream_content}\n\nStage 3: What did the dream make you feel? 1-2 sentences. JSON: {"reflection":"Korean reflection"}`
       );

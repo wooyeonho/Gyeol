@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface AgentStore {
   agentId: string | null;
-  agentState: any | null;
+  agentState: Record<string, unknown> | null;
   loading: boolean;
   evolutionEvent: { level: number; mutation?: string } | null;
   fetchAgentState: () => Promise<void>;

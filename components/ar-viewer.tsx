@@ -8,6 +8,8 @@ type ARViewerProps = {
   onPositionSave?: (position: [number, number, number]) => void;
 };
 
+type XRNavigator = Navigator & { xr?: XRSystem };
+
 export default function ARViewer({ color = "#a0a0ff", size = 0.3, onPositionSave }: ARViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -15,11 +17,12 @@ export default function ARViewer({ color = "#a0a0ff", size = 0.3, onPositionSave
   const [savedPosition, setSavedPosition] = useState<[number, number, number] | null>(null);
 
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.xr) {
+    const xr = (navigator as XRNavigator).xr;
+    if (typeof navigator === "undefined" || !xr) {
       setSupported(false);
       return;
     }
-    navigator.xr.isSessionSupported("immersive-ar").then(setSupported).catch(() => setSupported(false));
+    xr.isSessionSupported("immersive-ar").then(setSupported).catch(() => setSupported(false));
   }, []);
 
   const startAR = async () => {
@@ -42,10 +45,18 @@ export default function ARViewer({ color = "#a0a0ff", size = 0.3, onPositionSave
       sphere.position.set(0, 0, -1);
       scene.add(sphere);
 
-      const session = await (navigator as any).xr.requestSession("immersive-ar", {
+      const xr = (navigator as XRNavigator).xr;
+      if (!xr) throw new Error("XR not available");
+
+      const overlayRoot = containerRef.current.querySelector("[data-dom-overlay]");
+      const sessionInit: XRSessionInit = {
         optionalFeatures: ["dom-overlay"],
-        domOverlay: containerRef.current.querySelector("[data-dom-overlay]") ?? undefined,
-      });
+      };
+      if (overlayRoot instanceof Element) {
+        sessionInit.domOverlay = { root: overlayRoot };
+      }
+
+      const session = await xr.requestSession("immersive-ar", sessionInit);
       setSessionActive(true);
       session.addEventListener("end", () => {
         setSessionActive(false);
