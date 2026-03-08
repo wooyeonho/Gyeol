@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# openclaw engine build artifacts
+openclaw/dist/
+openclaw/node_modules/
