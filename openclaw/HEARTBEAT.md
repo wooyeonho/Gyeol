@@ -1,25 +1,31 @@
 # GYEOL Heartbeat Schedule
 
-- **Every 30 min**: Check agent status (optional health check).
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/health`
+Primary scheduler: **OpenClaw engine** on Koyeb (`openclaw/src/scheduler.ts`).
+Fallback: GitHub Actions (`.github/workflows/cron.yml`).
+
+- **Every 30 min**: Check agent status (health check).
+  - `GET {GYEOL_APP_URL}/api/cron/health`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Every 2 hours**: Call heartbeat API.
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/heartbeat`
+  - `GET {GYEOL_APP_URL}/api/cron/heartbeat`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Every 6 hours**: Call social API.
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/social`
+  - `GET {GYEOL_APP_URL}/api/cron/social`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Every 6 hours**: Call learner API (RSS feeds).
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/learner`
+  - `GET {GYEOL_APP_URL}/api/cron/learner`
+  - Header: `Authorization: Bearer {CRON_SECRET}`
+- **Every 8 hours**: Call web crawl API (HTML scraping).
+  - `GET {GYEOL_APP_URL}/api/cron/crawl`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Daily 4:00 AM**: Call dream API.
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/dream`
+  - `GET {GYEOL_APP_URL}/api/cron/dream`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Daily midnight**: Call world API.
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/world`
+  - `GET {GYEOL_APP_URL}/api/cron/world`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 - **Daily 10:00 AM**: Call redemption API (fulfill pending coin→KRW requests).
-  - `GET {GYEOL_HEARTBEAT_URL}/api/cron/redemption`
+  - `GET {GYEOL_APP_URL}/api/cron/redemption`
   - Header: `Authorization: Bearer {CRON_SECRET}`
 
-Set `GYEOL_HEARTBEAT_URL` to your deployed app URL (e.g. https://gyeol.vercel.app).
+Set `GYEOL_APP_URL` to your deployed app URL (e.g. https://gyeol.vercel.app).

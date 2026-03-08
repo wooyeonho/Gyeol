@@ -1,0 +1,21 @@
+{
+  "name": "openclaw-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GYEOL autonomous engine — Koyeb deployable cron scheduler, web crawler, platform router",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}
