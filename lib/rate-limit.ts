@@ -1,20 +1,24 @@
+import { createServiceClient } from "@/lib/supabase/service";
+
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
-const store = new Map<string, number[]>();
 
-function prune(key: string, now: number): void {
-  const times = store.get(key) ?? [];
-  const valid = times.filter((t) => now - t < WINDOW_MS);
-  if (valid.length === 0) store.delete(key);
-  else store.set(key, valid);
-}
+export async function checkRateLimit(key: string): Promise<boolean> {
+  const service = createServiceClient();
+  const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
 
-export function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  prune(key, now);
-  const times = store.get(key) ?? [];
-  if (times.length >= MAX_PER_WINDOW) return false;
-  times.push(now);
-  store.set(key, times);
+  // Remove expired entries for this key
+  await service.from("rate_limits").delete().eq("rl_key", key).lt("created_at", windowStart);
+
+  // Count requests in current window
+  const { count } = await service
+    .from("rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("rl_key", key)
+    .gte("created_at", windowStart);
+
+  if ((count ?? 0) >= MAX_PER_WINDOW) return false;
+
+  await service.from("rate_limits").insert({ rl_key: key });
   return true;
 }

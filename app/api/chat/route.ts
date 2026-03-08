@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
-    if (!checkRateLimit(user.id)) {
+    if (!(await checkRateLimit(user.id))) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
         status: 429,
         headers: { "Content-Type": "application/json" },
@@ -159,6 +159,8 @@ export async function POST(request: NextRequest) {
     const stream = await generateText(systemPrompt, messages);
     let fullText = "";
     const encoder = new TextEncoder();
+    let sseParseErrors = 0;
+    const SSE_ERROR_LOG_THRESHOLD = 5;
 
     function extractContentFromSSE(chunk: Uint8Array): string {
       const s = new TextDecoder().decode(chunk);
@@ -174,7 +176,10 @@ export async function POST(request: NextRequest) {
             const content = j.choices?.[0]?.delta?.content;
             if (typeof content === "string") out += content;
           } catch {
-            // ignore
+            sseParseErrors++;
+            if (sseParseErrors >= SSE_ERROR_LOG_THRESHOLD) {
+              console.error(`SSE parse errors: ${sseParseErrors} for agent ${agentId}`, { sample: data.slice(0, 100) });
+            }
           }
         }
       }

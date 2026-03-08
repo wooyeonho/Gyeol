@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { generateImage } from "@/lib/artifacts/image-gen";
@@ -15,9 +16,7 @@ function parseDate(s: string | null | undefined): number {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
