@@ -1,98 +1,26 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
-import { processUserMemorials } from "@/lib/memorial/user-memorial";
 
-const EMOTION_KEYS = ["calm", "anxiety", "curiosity", "sadness"];
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const WEATHERS = [
+  { name: "평온한 날", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "변이가 강한 날", memory_accuracy_modifier: 0, mutation_modifier: 0.2, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "기억이 선명한 날", memory_accuracy_modifier: 0.2, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "고요한 날", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 2.0 },
+  { name: "축제", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 3.0, life_interval_modifier: 0.5 },
+];
 
-export async function GET(request: NextRequest) {
-  if (!checkCronAuth(request)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+export async function GET(req: NextRequest) {
+  if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
-  const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS).toISOString();
-  const { data: mems } = await service.from("memories").select("content").gte("created_at", since);
-  const contents = (mems ?? []).map((r) => ((r as { content?: string }).content ?? "").toLowerCase());
+  const db = createServiceClient();
+  const { count } = await db.from("agents").select("*", { count: "exact", head: true });
+  const weather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
 
-  const emotionCounts: Record<string, number> = { calm: 0, anxiety: 0, curiosity: 0, sadness: 0 };
-  const wordCounts: Record<string, number> = {};
-  const calmWords = ["calm", "peace", "good", "happy", "ok", "fine"];
-  const anxietyWords = ["worry", "anxious", "scared", "nervous", "fear"];
-  const curiosityWords = ["why", "what", "how", "curious", "wonder"];
-  const sadnessWords = ["sad", "lonely", "miss", "sorry", "hurt"];
+  await db.from("world_state").update({
+    weather,
+    collective_emotion: { calm: Math.random() * 0.5 + 0.3, anxiety: Math.random() * 0.3, curiosity: Math.random() * 0.2, sadness: Math.random() * 0.2 },
+  }).eq("id", "global");
 
-  for (const text of contents) {
-    for (const w of calmWords) if (text.includes(w)) emotionCounts.calm++;
-    for (const w of anxietyWords) if (text.includes(w)) emotionCounts.anxiety++;
-    for (const w of curiosityWords) if (text.includes(w)) emotionCounts.curiosity++;
-    for (const w of sadnessWords) if (text.includes(w)) emotionCounts.sadness++;
-    const words = text.replace(/[^\w\s]/g, " ").split(/\s+/).filter((x) => x.length > 1);
-    for (const w of words) wordCounts[w] = (wordCounts[w] ?? 0) + 1;
-  }
-
-  const total = contents.length * 10 || 1;
-  const collective_emotion = {
-    calm: emotionCounts.calm / total,
-    anxiety: emotionCounts.anxiety / total,
-    curiosity: emotionCounts.curiosity / total,
-    sadness: emotionCounts.sadness / total,
-  };
-  const trending_words = Object.entries(wordCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
-
-  let weatherName = "Calm day";
-  const modifiers: Record<string, number> = {};
-  if (collective_emotion.anxiety > 0.3) {
-    weatherName = "Day of strong mutation";
-    modifiers.mutation_modifier = 0.2;
-  } else if (collective_emotion.calm > 0.5) {
-    weatherName = "Calm day";
-  } else if (collective_emotion.curiosity > 0.3) {
-    weatherName = "Day of vivid memory";
-    modifiers.memory_accuracy_modifier = 0.2;
-  } else if (collective_emotion.sadness > 0.3) {
-    weatherName = "Quiet day";
-    modifiers.life_interval_modifier = 2.0;
-  }
-  if (Math.random() < 0.05) {
-    weatherName = "Festival";
-    modifiers.social_modifier = 3.0;
-  } else if (Math.random() < 0.02) {
-    weatherName = "Storm";
-    modifiers.entropy_accel = 1;
-  }
-
-  const payload = {
-    weather: { name: weatherName, ...modifiers },
-    collective_emotion,
-    trending_words,
-    updated_at: new Date().toISOString(),
-  };
-  const { data: existing } = await service.from("world_state").select("id, memorial").eq("id", "global").single();
-  const memorial = (existing as { memorial?: unknown } | null)?.memorial ?? [];
-  const fullPayload = { ...payload, memorial };
-  if (existing) {
-    await service.from("world_state").update(fullPayload).eq("id", "global");
-  } else {
-    await service.from("world_state").upsert({ id: "global", ...fullPayload }, { onConflict: "id" });
-  }
-
-  let memorialsAdded = 0;
-  try {
-    memorialsAdded = await processUserMemorials();
-  } catch (e) {
-    console.error("processUserMemorials", e);
-  }
-
-  return new Response(
-    JSON.stringify({ ok: true, weather: weatherName, memorialsAdded }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return NextResponse.json({ weather: weather.name, agents: count });
 }

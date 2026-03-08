@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
@@ -47,6 +48,8 @@ export async function POST(request: NextRequest) {
     if (!agentId || !message) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
+    const fence = checkElectricFence(message);
+    if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
 
     const service = createServiceClient();
     const { data: agentStateRow } = await service.from("agent_state").select("*").eq("agent_id", agentId).single();

@@ -1,32 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/health",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/heartbeat",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/dream",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/social",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/world",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/learner",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/redemption",
-      "schedule": "0 10 * * *"
-    }
-  ]
+  "crons": []
 }

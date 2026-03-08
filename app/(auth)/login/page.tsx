@@ -42,11 +42,11 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm flex flex-col gap-6 text-center">
-      <h1 className="text-2xl font-semibold">GYEOL</h1>
+      <h1 className="text-2xl font-semibold">결 GYEOL</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
-          placeholder="Email"
+          placeholder="이메일"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
@@ -54,7 +54,7 @@ export default function LoginPage() {
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
@@ -66,7 +66,7 @@ export default function LoginPage() {
           disabled={loading}
           className="bg-white/20 rounded-lg px-4 py-2 font-medium disabled:opacity-50"
         >
-          {loading ? "..." : "Log in"}
+          {loading ? "..." : "로그인"}
         </button>
       </form>
       <button
@@ -75,10 +75,10 @@ export default function LoginPage() {
         disabled={loading}
         className="text-white/60 text-sm hover:text-white/80 disabled:opacity-50"
       >
-        Continue as guest
+        게스트로 계속하기
       </button>
       <Link href="/signup" className="text-white/60 text-sm hover:text-white/80">
-        Sign up
+        회원가입
       </Link>
     </div>
   );

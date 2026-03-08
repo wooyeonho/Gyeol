@@ -1,27 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("App error", error);
-  }, [error]);
-
+export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
-      <p className="text-white/80 text-center mb-4">Something went wrong.</p>
-      <button
-        type="button"
-        onClick={reset}
-        className="rounded-full bg-white/10 px-4 py-2 text-sm hover:bg-white/20"
-      >
-        Try again
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+      <p className="text-lg">문제가 발생했어요</p>
+      <button onClick={reset} className="mt-4 px-6 py-2 rounded-lg bg-white/20">
+        재시도
       </button>
     </div>
   );

@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json().catch(() => ({}));
-    const userId = typeof body?.user_id === "string" ? body.user_id : null;
+    const userId = typeof body?.user_id === "string" ? body.user_id.trim() : null;
+    if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
 
     const service = createServiceClient();
     const { data: agent } = await service.from("agents").insert({ user_id: userId }).select("id").single();
