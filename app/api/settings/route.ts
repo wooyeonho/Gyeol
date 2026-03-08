@@ -1,0 +1,49 @@
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const service = createServiceClient();
+    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
+    const agentId = agents?.[0]?.id;
+    if (!agentId) return NextResponse.json({ state: null });
+
+    const { data: state } = await service.from("agent_state").select("*").eq("agent_id", agentId).single();
+    return NextResponse.json({ state: state ?? null });
+  } catch (e) {
+    console.error("GET /api/settings error", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const body = await request.json();
+    const service = createServiceClient();
+    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
+    const agentId = agents?.[0]?.id;
+    if (!agentId) return NextResponse.json({ error: "No agent" }, { status: 400 });
+
+    const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
+    const config = (state?.config as Record<string, unknown>) ?? {};
+    if (typeof body.autonomous_enabled === "boolean") config.autonomous_enabled = body.autonomous_enabled;
+    if (typeof body.dream_enabled === "boolean") config.dream_enabled = body.dream_enabled;
+    if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
+    if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
+
+    await service.from("agent_state").update({ config }).eq("agent_id", agentId);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("PATCH /api/settings error", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}

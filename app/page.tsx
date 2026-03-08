@@ -1,65 +1,112 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAgentStore } from "@/store/agent-store";
+import { useWorldStore } from "@/store/world-store";
+import VoidCanvas from "@/components/void-canvas";
+import WorldWeather from "@/components/world-weather";
+import ChatPanel from "@/components/chat-panel";
+import EvolutionCeremony from "@/components/evolution-ceremony";
+import Celebration from "@/components/celebration";
+import Soundscape from "@/components/soundscape";
+import { useChatStore } from "@/store/chat-store";
+
+type Visual = {
+  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent";
+  color?: string;
+  size?: number;
+  glow?: number;
+  animation?: "float" | "pulse-fast" | "breathe-slow";
+  particles?: number;
+  background?: string;
+};
 
 export default function Home() {
+  const { agentState, loading, fetchAgentState, evolutionEvent, clearEvolution, celebrationEvent, clearCelebration } = useAgentStore();
+  const { fetchWorldState } = useWorldStore();
+  const isStreaming = useChatStore((s) => s.isStreaming);
+  const [musicOn, setMusicOn] = useState(false);
+
+  useEffect(() => {
+    fetchAgentState();
+    fetchWorldState();
+  }, [fetchAgentState, fetchWorldState]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      </div>
+    );
+  }
+
+  const visual = (agentState?.visual as Visual | undefined) ?? {};
+  const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
+  const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "...";
+
+  const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
+  const showCelebration = celebrationEvent && (celebrationEvent.title ?? celebrationEvent.kind);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      {showCeremony && (
+        <EvolutionCeremony
+          level={evolutionEvent.level!}
+          mutation={evolutionEvent.mutation ?? null}
+          onComplete={clearEvolution}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      )}
+      {showCelebration && (
+        <Celebration
+          visible={true}
+          onEnd={clearCelebration}
+          title={celebrationEvent.title ?? celebrationEvent.kind ?? "Celebration"}
+          subtitle={celebrationEvent.subtitle}
+        />
+      )}
+      <div className="absolute inset-0 z-0">
+        <VoidCanvas
+          shape={visual.shape ?? "sphere"}
+          color={visual.color ?? "#a0a0ff"}
+          size={Math.min(50, Math.max(10, visual.size ?? 24))}
+          glow={Math.min(100, Math.max(0, visual.glow ?? 60))}
+          animation={visual.animation ?? "float"}
+          particles={visual.particles ?? 20}
+          background={visual.background ?? "#000000"}
+          vitality={vitality}
+          mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
+          isListening={isStreaming}
+        />
+      </div>
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <WorldWeather />
+
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+          <span
+            className={`w-3 h-3 rounded-full ${
+              vitality > 0.7 ? "bg-green-500" : vitality > 0.3 ? "bg-yellow-500" : "bg-red-500"
+            }`}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMusicOn((m) => !m)}
+            className={`rounded-full p-1.5 text-xs ${musicOn ? "bg-white/20 text-white" : "text-white/40"}`}
+            aria-label="Toggle music"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            ♫
+          </button>
+          <span className="text-white/80 text-sm">{selfName}</span>
         </div>
-      </main>
-    </div>
+
+        <div className="flex-1 flex flex-col justify-end pb-20">
+          <ChatPanel />
+        </div>
+      </div>
+      <Soundscape enabled={musicOn} soundProfile={(agentState?.sound_profile as { base_note?: string; tempo?: number } | undefined) ?? undefined} />
+    </>
   );
 }

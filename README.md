@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 결 (GYEOL)
 
-## Getting Started
+자율 진화하는 AI 생명체 플랫폼.
 
-First, run the development server:
+## Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Frontend**: Next.js 16, React 19.2, Tailwind CSS, Three.js, Framer Motion, Tone.js
+- **Backend**: Supabase (PostgreSQL, pgvector, Auth, Edge Functions)
+- **AI**: Groq (Llama 8B / Scout / Maverick), Gemini (embedding), Cloudflare Workers AI (fallback, SDXL)
+- **Deploy**: Vercel (frontend), Koyeb (OpenClaw cron)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features (73+ innovations)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- AI chat, memory, personality evolution, Gen level
+- Life loop, dream engine, AI-to-AI social, breeding
+- Autonomous creation (poem, diary, image, music, comic, video)
+- Deception, secrets, scars, death, will
+- Memory physics, self-theory, self-modifying code
+- Gyeol world (weather, war, civilization, species)
+- Marketplace, coin economy
+- Gyeol room (3D), AR, multichannel
+- Digital twin, time-travel chat
+- External integrations (Notion, Slack, GitHub, Calendar), Gyeol Engine API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 설정
 
-## Learn More
+1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
+2. Supabase SQL Editor에서 스키마 실행
+3. `npm install && npm run dev`
 
-To learn more about Next.js, take a look at the following resources:
+## Cost
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Development: $0 (free tiers).
+- Production: ~$5.36/month (Koyeb only).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Revenue Model
 
-## Deploy on Vercel
+- Pro KRW 19,900/month, Premium KRW 39,900/month
+- Marketplace fee 15–30%
+- Breeding fee
+- B2B (enterprise)
+- Gyeol Engine API usage billing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Open Source Strategy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Core engine** (memory, evolution, life loop): MIT license. Community can fork and extend.
+- **Network effects** (social, marketplace, civilization): Platform-specific. GYEOL remains the canonical hub.
+- **Android strategy**: Open the engine so that “Gyeol” becomes a standard; GYEOL stays the reference implementation.
+
+## Digital Ownership (no blockchain)
+
+- Gyeol history can be hashed and stored on GitHub or IPFS.
+- Integrity is verifiable without gas fees.
+
+## API (external)
+
+- `POST /api/v1/agent/create` – create agent (Bearer `GYEOL_ENGINE_API_KEY`)
+- `POST /api/v1/agent/chat` – chat (body: `agent_id`, `message`)
+- `GET /api/v1/agent/state?agent_id=...` – state
+- `POST /api/v1/agent/memory` – add memory (body: `agent_id`, `content`, `type`)
+
+## Research API
+
+- `GET /api/research` – anonymized aggregates (header: `x-api-key` = `RESEARCH_API_KEY`).
