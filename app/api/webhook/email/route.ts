@@ -4,8 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(req: NextRequest) {
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  }
   const auth = req.headers.get("authorization");
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
+  if (auth !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

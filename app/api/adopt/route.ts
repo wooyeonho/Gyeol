@@ -5,7 +5,13 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET() {
   try {
     const service = createServiceClient();
-    const { data: rows } = await service.from("adoption_board").select("agent_id, created_at").eq("status", "available");
+    const withStatus = await service
+      .from("adoption_board")
+      .select("agent_id, created_at")
+      .eq("status", "available");
+    const rows = withStatus.error
+      ? (await service.from("adoption_board").select("agent_id, listed_at")).data
+      : withStatus.data;
     const agentIds = (rows ?? []).map((r) => (r as { agent_id: string }).agent_id);
     if (agentIds.length === 0) return NextResponse.json({ list: [] });
 
@@ -54,10 +60,22 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const service = createServiceClient();
-    const { data: boardRow } = await service.from("adoption_board").select("id").eq("agent_id", agentId).eq("status", "available").single();
+    const withStatus = await service
+      .from("adoption_board")
+      .select("id")
+      .eq("agent_id", agentId)
+      .eq("status", "available")
+      .single();
+    const boardRow = withStatus.error
+      ? (await service.from("adoption_board").select("id").eq("agent_id", agentId).single()).data
+      : withStatus.data;
     if (!boardRow) return NextResponse.json({ error: "Not available" }, { status: 404 });
     await service.from("agents").update({ user_id: user.id }).eq("id", agentId);
-    await service.from("adoption_board").update({ status: "adopted" }).eq("agent_id", agentId);
+    if (!withStatus.error) {
+      await service.from("adoption_board").update({ status: "adopted" }).eq("agent_id", agentId);
+    } else {
+      await service.from("adoption_board").delete().eq("agent_id", agentId);
+    }
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("POST /api/adopt error", e);
