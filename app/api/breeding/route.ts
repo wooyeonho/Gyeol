@@ -13,9 +13,9 @@ function blendVisual(v1: Visual, v2: Visual): Visual {
   const hexMid = (x: string | undefined, y: string | undefined) => {
     if (!x || !y) return x ?? y ?? "#888888";
     const n = (s: string) => parseInt(s.slice(1), 16) || 0;
-    const r = Math.min(255, Math.max(0, Math.floor(((n(x) >> 16) & 0xff + ((n(y) >> 16) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
-    const g = Math.min(255, Math.max(0, Math.floor(((n(x) >> 8) & 0xff + ((n(y) >> 8) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
-    const bl = Math.min(255, Math.max(0, Math.floor((n(x) & 0xff + (n(y) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
+    const r = Math.min(255, Math.max(0, Math.floor((((n(x) >> 16) & 0xff) + ((n(y) >> 16) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
+    const g = Math.min(255, Math.max(0, Math.floor((((n(x) >> 8) & 0xff) + ((n(y) >> 8) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
+    const bl = Math.min(255, Math.max(0, Math.floor(((n(x) & 0xff) + (n(y) & 0xff)) / 2 + (Math.random() - 0.5) * 20)));
     return "#" + [r, g, bl].map((c) => c.toString(16).padStart(2, "0")).join("");
   };
   return {

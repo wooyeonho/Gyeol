@@ -48,11 +48,24 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
       .map((x) => x.id);
 
+    const allIds = [...new Set([...topArtifacts, ...topTools, ...topSocial, ...oldest])];
+    const { data: stateRows } = await service
+      .from("agent_state")
+      .select("agent_id, self_name, gen_level, species")
+      .in("agent_id", allIds.length > 0 ? allIds : ["00000000-0000-0000-0000-000000000000"]);
+    const nameMap: Record<string, { name: string; gen: number; species?: string }> = {};
+    for (const row of stateRows ?? []) {
+      const r = row as { agent_id: string; self_name?: string | null; gen_level?: number; species?: string | null };
+      nameMap[r.agent_id] = { name: r.self_name ?? "...", gen: r.gen_level ?? 1, species: r.species ?? undefined };
+    }
+    const toEntries = (ids: string[]) =>
+      ids.map((id) => ({ id, ...nameMap[id] ?? { name: "...", gen: 1 } }));
+
     return NextResponse.json({
-      top_artifacts: topArtifacts,
-      top_tools: topTools,
-      top_social: topSocial,
-      oldest: oldest,
+      top_artifacts: toEntries(topArtifacts),
+      top_tools: toEntries(topTools),
+      top_social: toEntries(topSocial),
+      oldest: toEntries(oldest),
       period,
     });
   } catch (e) {

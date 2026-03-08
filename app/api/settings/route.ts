@@ -13,8 +13,18 @@ export async function GET() {
     const agentId = agents?.[0]?.id;
     if (!agentId) return NextResponse.json({ state: null });
 
-    const { data: state } = await service.from("agent_state").select("*").eq("agent_id", agentId).single();
-    return NextResponse.json({ state: state ?? null });
+    const [{ data: state }, { data: connRows }] = await Promise.all([
+      service.from("agent_state").select("*").eq("agent_id", agentId).single(),
+      service.from("user_connections").select("service").eq("user_id", user.id),
+    ]);
+    const connections: Record<string, boolean> = {};
+    for (const row of connRows ?? []) {
+      const r = row as { service: string };
+      connections[r.service] = true;
+    }
+    const stateData = state as (Record<string, unknown> & { channels?: Record<string, unknown> }) | null;
+    if (stateData?.channels?.telegram) connections.telegram = true;
+    return NextResponse.json({ state: stateData ?? null, connections });
   } catch (e) {
     console.error("GET /api/settings error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
@@ -40,7 +50,14 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
 
-    await service.from("agent_state").update({ config }).eq("agent_id", agentId);
+    const updates: Record<string, unknown> = { config };
+    if (typeof body.telegram_chat_id === "string" && body.telegram_chat_id.trim()) {
+      const { data: stateRow } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
+      const channels = (stateRow?.channels as Record<string, unknown>) ?? {};
+      updates.channels = { ...channels, telegram: body.telegram_chat_id.trim() };
+    }
+
+    await service.from("agent_state").update(updates).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("PATCH /api/settings error", e);
