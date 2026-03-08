@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { decryptSecret, encryptSecret } from "@/lib/security/token-crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
       {
         user_id: user.id,
         service: "github",
-        token_encrypted: accessToken,
+        token_encrypted: encryptSecret(accessToken),
         metadata: {},
       },
       { onConflict: "user_id,service" }
@@ -46,7 +47,8 @@ export async function GET() {
       .single();
     if (!conn) return NextResponse.json({ error: "GitHub not connected" }, { status: 404 });
 
-    const token = (conn as { token_encrypted: string }).token_encrypted;
+    const token = decryptSecret((conn as { token_encrypted: string }).token_encrypted);
+    if (!token) return NextResponse.json({ error: "Invalid GitHub token configuration" }, { status: 500 });
 
     // Fetch authenticated user's recent events
     const eventsRes = await fetch("https://api.github.com/user/events?per_page=10", {

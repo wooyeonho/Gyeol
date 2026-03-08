@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { encryptSecret } from "@/lib/security/token-crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       {
         user_id: user.id,
         service: "calendar",
-        token_encrypted: accessToken,
+        token_encrypted: encryptSecret(accessToken),
         metadata: {},
       },
       { onConflict: "user_id,service" }
