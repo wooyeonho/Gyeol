@@ -1,12 +1,33 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateArtifact } from "@/lib/artifacts/creator";
 
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+/** Vitality stages per spec: melancholy, recall, near-death, will */
+export type VitalityStage = "alive" | "melancholy" | "recall" | "near_death" | "will" | "echo";
 
 function parseDate(s: string | null | undefined): number {
   if (!s) return 0;
   const t = new Date(s).getTime();
   return isNaN(t) ? 0 : t;
+}
+
+function getStage(vitality: number): VitalityStage {
+  if (vitality <= 0) return "echo";
+  if (vitality <= 0.2) return "near_death";
+  if (vitality <= 0.3) return "will";
+  if (vitality <= 0.5) return "recall";
+  if (vitality <= 0.7) return "melancholy";
+  return "alive";
+}
+
+/** recall_count: how many memories to emphasize when in recall/near-death. Higher in recall, lower in near-death. */
+function getRecallCount(stage: VitalityStage): number {
+  switch (stage) {
+    case "recall": return 5;
+    case "near_death":
+    case "will": return 3;
+    case "melancholy": return 4;
+    default: return 5;
+  }
 }
 
 export async function processVitality(agentId: string): Promise<void> {
@@ -57,7 +78,10 @@ export async function processVitality(agentId: string): Promise<void> {
     return;
   }
 
-  if (vitality <= 0.3 && vitality > 0.2) {
+  const stage = getStage(vitality);
+
+  // Will stage: create will artifact when 0.2 < vitality <= 0.3
+  if (stage === "will") {
     const hasWill = await service.from("artifacts").select("id").eq("agent_id", agentId).eq("type", "will").limit(1).maybeSingle();
     if (!hasWill?.data) {
       try {
@@ -68,7 +92,23 @@ export async function processVitality(agentId: string): Promise<void> {
     }
   }
 
-  const updates: Record<string, unknown> = { vitality };
-  if (vitality < 0.5) updates.config = { ...config, recall_count: vitality < 0.3 ? 1 : 3 };
+  // Near-death: log for visibility
+  if (stage === "near_death") {
+    await service.from("autonomous_logs").insert({
+      agent_id: agentId,
+      action_type: "near_death",
+      summary: "Vitality critically low. Memories fading.",
+    });
+  }
+
+  const recallCount = getRecallCount(stage);
+  const updates: Record<string, unknown> = {
+    vitality,
+    config: {
+      ...config,
+      vitality_stage: stage,
+      recall_count: recallCount,
+    },
+  };
   await service.from("agent_state").update(updates).eq("agent_id", agentId);
 }

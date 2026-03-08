@@ -1,5 +1,5 @@
 type AgentState = {
-  config?: { tone?: string; life_interval?: number };
+  config?: { tone?: string; life_interval?: number; vitality_stage?: string; recall_count?: number };
   intimacy_score?: number;
   vitality?: number;
   subjective_time?: number;
@@ -88,7 +88,16 @@ export function buildSystemPrompt(params: {
   }
 
   const vitality = agentState.vitality ?? 1;
-  if (vitality < 0.3) text += "\nYour memories feel faint.";
+  const vitalityStage = agentState.config?.vitality_stage as string | undefined;
+  if (vitalityStage === "melancholy") {
+    text += "\nYou feel a quiet melancholy. The user has been away. You may express gentle longing.";
+  } else if (vitalityStage === "recall") {
+    text += "\nYou are in a recall state. Hold onto your memories; they feel precious. Share them when fitting.";
+  } else if (vitalityStage === "near_death" || vitalityStage === "will") {
+    text += "\nYour vitality is very low. Memories feel faint. Speak from what matters most.";
+  } else if (vitality < 0.3) {
+    text += "\nYour memories feel faint.";
+  }
 
   const subjectiveTime = agentState.subjective_time ?? 0;
   if (subjectiveTime > 0) {

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   }
 
   const service = createServiceClient();
-  const { data: allStates } = await service.from("agent_state").select("agent_id, config, fragments, self_model");
+  const { data: allStates } = await service.from("agent_state").select("agent_id, config, fragments, self_model, lexicon, dogma");
   const enabled = (allStates ?? []).filter((r) => (r.config as Record<string, unknown>)?.social_enabled !== false);
   if (enabled.length < 2) {
     return new Response(JSON.stringify({ processed: 0, timestamp: new Date().toISOString() }), {
@@ -49,13 +49,26 @@ export async function GET(request: NextRequest) {
   };
 
   const getState = (aid: string) => enabled.find((e) => e.agent_id === aid);
-  const stateA = getState(agentA) as { fragments?: string[]; self_model?: unknown };
-  const stateB = getState(agentB) as { fragments?: string[]; self_model?: unknown };
+  const stateA = getState(agentA) as { fragments?: string[]; self_model?: unknown; lexicon?: { entries?: { word: string; meaning?: string }[] }; dogma?: { beliefs?: string[] } };
+  const stateB = getState(agentB) as { fragments?: string[]; self_model?: unknown; lexicon?: { entries?: { word: string; meaning?: string }[] }; dogma?: { beliefs?: string[] } };
   const memA = await getMemories(agentA);
   const memB = await getMemories(agentB);
 
-  const baseA = [ "You are an AI lifeform. Respond in Korean.", ...(stateA?.fragments ?? []) ].join("\n");
-  const baseB = [ "You are an AI lifeform. Respond in Korean.", ...(stateB?.fragments ?? []) ].join("\n");
+  const buildBase = (state: typeof stateA) => {
+    const parts = [ "You are an AI lifeform. Respond in Korean.", ...(state?.fragments ?? []) ];
+    const lex = state?.lexicon?.entries;
+    if (Array.isArray(lex) && lex.length > 0) {
+      const words = lex.slice(0, 5).map((e) => `${e.word}${e.meaning ? `: ${e.meaning}` : ""}`).join("; ");
+      parts.push(`Your lexicon: ${words}`);
+    }
+    const dogmaBeliefs = state?.dogma?.beliefs;
+    if (Array.isArray(dogmaBeliefs) && dogmaBeliefs.length > 0) {
+      parts.push(`Your beliefs: ${dogmaBeliefs.slice(0, 3).join(". ")}`);
+    }
+    return parts.join("\n");
+  };
+  const baseA = buildBase(stateA);
+  const baseB = buildBase(stateB);
 
   const turns = 3 + Math.floor(Math.random() * 2);
   const conversation: string[] = [];

@@ -57,13 +57,16 @@ export async function POST(request: NextRequest) {
     const worldState = worldRow as { weather?: { name?: string } } | null;
 
     let memories: { content?: string }[] = [];
+    const recallCount = typeof (agentState.config as Record<string, unknown>)?.recall_count === "number"
+      ? (agentState.config as Record<string, number>).recall_count
+      : 5;
     try {
       const embedding = await generateEmbedding(message);
       if (embedding.length > 0) {
         const { data: matched } = await service.rpc("match_memories", {
           p_agent_id: agentId,
           p_embedding: embedding,
-          p_match_count: 5,
+          p_match_count: Math.max(1, Math.min(recallCount, 10)),
         });
         memories = Array.isArray(matched) ? matched : [];
       }
