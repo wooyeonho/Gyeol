@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 
 const DEFAULT_FEED_URLS = [
   "https://hnrss.org/frontpage",
@@ -10,16 +11,45 @@ const DEFAULT_FEED_URLS = [
   "https://techcrunch.com/feed/",
 ];
 
+function isPrivateHost(host: string): boolean {
+  const lower = host.toLowerCase();
+  if (lower === "localhost" || lower === "::1" || lower.endsWith(".local")) return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(lower)) {
+    const [a, b] = lower.split(".").map(Number);
+    if (a === 10 || a === 127 || a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+  }
+  return false;
+}
+
+function sanitizeFeedUrls(urls: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of urls) {
+    try {
+      const u = new URL(raw);
+      if (!["http:", "https:"].includes(u.protocol)) continue;
+      if (isPrivateHost(u.hostname)) continue;
+      out.push(u.toString());
+    } catch {
+      // ignore invalid URL
+    }
+  }
+  return out;
+}
+
 function getFeedUrls(body: unknown): string[] {
   if (body && typeof body === "object" && "feed_urls" in body && Array.isArray((body as { feed_urls?: string[] }).feed_urls)) {
     const urls = (body as { feed_urls: string[] }).feed_urls.filter((u): u is string => typeof u === "string");
-    if (urls.length > 0) return urls;
+    const sanitized = sanitizeFeedUrls(urls);
+    if (sanitized.length > 0) return sanitized;
   }
   const env = process.env.FEED_URLS;
   if (env && typeof env === "string") {
-    return env.split(",").map((u) => u.trim()).filter(Boolean);
+    return sanitizeFeedUrls(env.split(",").map((u) => u.trim()).filter(Boolean));
   }
-  return DEFAULT_FEED_URLS;
+  return sanitizeFeedUrls(DEFAULT_FEED_URLS);
 }
 
 async function fetchRssItems(url: string): Promise<{ title: string; link?: string; description?: string }[]> {
@@ -89,7 +119,10 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
     summary = rawText.slice(0, 500);
   }
 
-  const content = `RSS 학습: ${summary}`;
+  const content = capText(`RSS 학습: ${summary}`, 900);
+  if (!isMeaningfulAutonomousOutput(content)) {
+    return { processed: 0, items_fetched: allItems.length };
+  }
   let embedding: number[] = [];
   try {
     embedding = await generateEmbedding(content);
@@ -103,6 +136,17 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
       const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
       const config = (state?.config as Record<string, unknown>) ?? {};
       if (config.learner_enabled === false) continue;
+      const { data: latestLearner } = await service
+        .from("memories")
+        .select("content")
+        .eq("agent_id", agentId)
+        .eq("type", "rss_learner")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (latestLearner?.content && isRepetitiveOutput(content, [latestLearner.content], 0.86)) {
+        continue;
+      }
 
       await service.from("memories").insert({
         agent_id: agentId,
