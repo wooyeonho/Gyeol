@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { generateArtifact } from "@/lib/artifacts/creator";
@@ -51,9 +52,7 @@ function parseDate(s: string | null | undefined): number {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -134,14 +133,12 @@ export async function GET(request: NextRequest) {
       }
 
       const emb = await generateEmbedding(livingText);
-      if (emb.length > 0) {
-        await service.from("memories").insert({
-          agent_id: agentId,
-          type: "autonomous_living",
-          content: livingText,
-          embedding: emb,
-        });
-      }
+      await service.from("memories").insert({
+        agent_id: agentId,
+        type: "autonomous_living",
+        content: livingText,
+        embedding: emb.length > 0 ? emb : null,
+      });
 
       if (hoursSince >= 6 && Math.random() < 0.3) {
         try {
@@ -152,14 +149,12 @@ export async function GET(request: NextRequest) {
           );
           if (imaginationText) {
             const imb = await generateEmbedding(imaginationText);
-            if (imb.length > 0) {
-              await service.from("memories").insert({
-                agent_id: agentId,
-                type: "imagination",
-                content: imaginationText,
-                embedding: imb,
-              });
-            }
+            await service.from("memories").insert({
+              agent_id: agentId,
+              type: "imagination",
+              content: imaginationText,
+              embedding: imb.length > 0 ? imb : null,
+            });
           }
         } catch (e) {
           console.error("heartbeat imagination", agentId, e);

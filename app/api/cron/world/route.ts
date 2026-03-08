@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { processUserMemorials } from "@/lib/memorial/user-memorial";
 
 const EMOTION_KEYS = ["calm", "anxiety", "curiosity", "sadness"];
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { addCoins } from "@/lib/economy/coins";
 
 const WAR_DURATION_MS = 48 * 60 * 60 * 1000;
 const REWARD_COINS = 20;
 
 export async function POST(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

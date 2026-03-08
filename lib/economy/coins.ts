@@ -10,24 +10,35 @@ export async function getBalance(agentId: string): Promise<number> {
 export async function addCoins(agentId: string, amount: number, reason: string): Promise<number> {
   if (amount <= 0) return await getBalance(agentId);
   const service = createServiceClient();
-  const current = await getBalance(agentId);
-  const next = current + amount;
-  await service.from("agent_state").update({ coins: next }).eq("agent_id", agentId);
+
+  // Atomic increment at DB level to prevent race conditions
+  const { data } = await service.rpc("add_coins_atomic", {
+    p_agent_id: agentId,
+    p_amount: amount,
+  });
+
+  const next = Number(data);
   await service.from("autonomous_logs").insert({
     agent_id: agentId,
     action_type: "coins_add",
     summary: `+${amount}: ${reason}`,
   });
-  return next;
+  return Number.isFinite(next) ? next : 0;
 }
 
 export async function spendCoins(agentId: string, amount: number, reason: string): Promise<boolean> {
   if (amount <= 0) return false;
   const service = createServiceClient();
-  const current = await getBalance(agentId);
-  if (current < amount) return false;
-  const next = current - amount;
-  await service.from("agent_state").update({ coins: next }).eq("agent_id", agentId);
+
+  // Atomic conditional decrement: only succeeds if coins >= amount
+  const { data } = await service.rpc("spend_coins_atomic", {
+    p_agent_id: agentId,
+    p_amount: amount,
+  });
+
+  // RPC returns null if the WHERE coins >= amount condition was not met
+  if (data === null || data === undefined) return false;
+
   await service.from("autonomous_logs").insert({
     agent_id: agentId,
     action_type: "coins_spend",

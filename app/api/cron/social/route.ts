@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { generateTextOnce, generateJSON } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { tryGratitudeRelay } from "@/lib/social/gratitude";
@@ -7,9 +8,7 @@ import { tryGratitudeRelay } from "@/lib/social/gratitude";
 const oneDay = 24 * 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -93,22 +92,20 @@ export async function GET(request: NextRequest) {
   const socialContent = `Social encounter: ${topic}. ${outcome}`;
   const [embedA, embedB] = await Promise.all([generateEmbedding(socialContent), generateEmbedding(socialContent)]);
 
-  if (embedA.length > 0) {
-    await service.from("memories").insert({
+  await service.from("memories").insert([
+    {
       agent_id: agentA,
       type: "social",
       content: `Social: ${topic}. ${outcome}`,
-      embedding: embedA,
-    });
-  }
-  if (embedB.length > 0) {
-    await service.from("memories").insert({
+      embedding: embedA.length > 0 ? embedA : null,
+    },
+    {
       agent_id: agentB,
       type: "social",
       content: `Social: ${topic}. ${outcome}`,
-      embedding: embedB,
-    });
-  }
+      embedding: embedB.length > 0 ? embedB : null,
+    },
+  ]);
 
   await service.from("autonomous_logs").insert([
     { agent_id: agentA, action_type: "social_encounter", summary: topic },
