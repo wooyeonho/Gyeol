@@ -5,6 +5,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { isMissingEnvError } from "@/lib/env/required";
 
 type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
 type PromptMemory = { id: string; content: string; referenceCount: number };
@@ -171,8 +172,16 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream.pipeThrough(transformStream), { headers });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
     console.error("[Chat]", e);
-    return new Response(JSON.stringify({ error: message }), { status: 500 });
+    if (isMissingEnvError(e)) {
+      return new Response(
+        JSON.stringify({ error: "Service unavailable: missing server configuration", code: "MISSING_ENV" }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
