@@ -30,14 +30,20 @@ export async function GET(req: NextRequest) {
   };
 
   const conversation: { speaker: string; content: string }[] = [];
-  let aContext = buildContext(a);
-  let bContext = buildContext(b);
+  const aContext = buildContext(a);
+  const bContext = buildContext(b);
 
   for (let turn = 0; turn < turns; turn++) {
-    const aMsg = await generateJSON("Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.", `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"Korean message"}`);
+    const aMsg = await generateJSON<{ message?: string }>(
+      "Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.",
+      `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"Korean message"}`
+    );
     if (aMsg?.message) conversation.push({ speaker: a.agent_id, content: aMsg.message });
 
-    const bMsg = await generateJSON("Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.", `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"Korean message"}`);
+    const bMsg = await generateJSON<{ message?: string }>(
+      "Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.",
+      `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"Korean message"}`
+    );
     if (bMsg?.message) conversation.push({ speaker: b.agent_id, content: bMsg.message });
   }
 
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
       { agent_id: b.agent_id, action_type: "social_encounter", summary },
     ]);
 
-    const tellResult = await generateJSON(
+    const tellResult = await generateJSON<{ tell?: boolean }>(
       "Respond ONLY valid JSON.",
       `Conversation:\n${conversation.map((c) => c.content).join("\n")}\n\nShould the user be told about this social encounter? {"tell": true or false}`
     );
@@ -75,7 +81,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (Math.random() < 0.1) {
-      const langResult = await generateJSON(
+      const langResult = await generateJSON<{ word?: string; meaning?: string; lang?: string }>(
         "Respond ONLY valid JSON. Detect one notable word from the conversation.",
         `Conversation:\n${conversation.map((c) => c.content).join("\n")}\n\nJSON: {"word":"one word","meaning":"brief meaning","lang":"ko|en|etc"}`
       );

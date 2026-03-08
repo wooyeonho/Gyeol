@@ -2,6 +2,16 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
 
 interface Msg { role: string; content: string }
+interface GroqCompletionResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+interface CloudflareCompletionResponse {
+  result?: { response?: string };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
 const MODELS = [
   { name: "llama-3.1-8b-instant", timeout: 10000 },
@@ -75,27 +85,31 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
-      const data = await res.json();
+      const data = (await res.json()) as GroqCompletionResponse;
       return data.choices?.[0]?.message?.content || "";
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
   try {
     const res = await callCF(systemPrompt, messages, false);
-    const data = await res.json();
+    const data = (await res.json()) as CloudflareCompletionResponse;
     return data.result?.response || "";
   } catch (e) { console.error("[AI] CF failed:", e); }
   return "";
 }
 
-export async function generateJSON(systemPrompt: string, userPrompt: string): Promise<any> {
+export async function generateJSON<T extends Record<string, unknown> = Record<string, unknown>>(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<T | null> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
-      const data = await res.json();
+      const data = (await res.json()) as GroqCompletionResponse;
       const text = data.choices?.[0]?.message?.content || "";
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      return JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned) as unknown;
+      if (isRecord(parsed)) return parsed as T;
     } catch (e) { console.error(`[JSON] ${m.name} failed:`, e); }
   }
   return null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type CelebrationProps = {
@@ -11,20 +11,28 @@ type CelebrationProps = {
   durationMs?: number;
 };
 
+const pseudo = (seed: number) => {
+  const x = Math.sin(seed * 12.9898) * 43758.5453123;
+  return x - Math.floor(x);
+};
+
 export default function Celebration({ visible, onEnd, title = "Celebration", subtitle, durationMs = 3500 }: CelebrationProps) {
-  const [particles, setParticles] = useState<{ id: number; x: number; y: number; delay: number; color: string }[]>([]);
+  const particles = useMemo(
+    () =>
+      visible
+        ? Array.from({ length: 80 }, (_, i) => ({
+            id: i,
+            x: (pseudo(i + 1) - 0.5) * 2,
+            y: (pseudo(i + 91) - 0.5) * 2,
+            delay: pseudo(i + 181) * 0.3,
+            color: ["#fbbf24", "#f59e0b", "#f97316", "#ec4899", "#8b5cf6", "#06b6d4"][i % 6],
+          }))
+        : [],
+    [visible]
+  );
 
   useEffect(() => {
     if (!visible) return;
-    setParticles(
-      Array.from({ length: 80 }, (_, i) => ({
-        id: i,
-        x: (Math.random() - 0.5) * 2,
-        y: (Math.random() - 0.5) * 2,
-        delay: Math.random() * 0.3,
-        color: ["#fbbf24", "#f59e0b", "#f97316", "#ec4899", "#8b5cf6", "#06b6d4"][i % 6],
-      }))
-    );
     const t = setTimeout(() => {
       onEnd?.();
     }, durationMs);

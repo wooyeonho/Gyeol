@@ -35,8 +35,8 @@ export default function ActivityPage() {
       const { data: logData } = await supabase.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
       const { data: artData } = await supabase.from("artifacts").select("id, type, content, title, is_preserved, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
 
-      setLogs((logData || []).map((l) => ({ ...l, kind: "log" as const })));
-      setArtifacts((artData || []).map((a) => ({ ...a, kind: "artifact" as const })));
+      setLogs(((logData as Log[] | null) || []).map((l: Log) => ({ ...l, kind: "log" as const })));
+      setArtifacts(((artData as Artifact[] | null) || []).map((a: Artifact) => ({ ...a, kind: "artifact" as const })));
       setLoading(false);
     }
     load();

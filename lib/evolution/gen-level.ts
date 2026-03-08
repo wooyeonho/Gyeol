@@ -1,7 +1,13 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
 const RATES: Record<number, number> = { 1: 0.6, 2: 0.4, 3: 0.2, 4: 0.05 };
-const VISUAL_UPGRADES: Record<number, any> = {
+type VisualUpgrade = {
+  shape?: "sphere" | "polygon" | "complex" | "transcendent";
+  particles?: number;
+  glow?: number;
+};
+
+const VISUAL_UPGRADES: Record<number, VisualUpgrade> = {
   2: { shape: "sphere", particles: 3 },
   3: { shape: "polygon", particles: 8, glow: 60 },
   4: { shape: "complex", particles: 18, glow: 80 },

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 type Agent = { id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
+type AgentStateRow = { agent_id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
 
 export default function ExplorePage() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -14,7 +15,13 @@ export default function ExplorePage() {
   useEffect(() => {
     async function load() {
       const { data: states } = await supabase.from("agent_state").select("agent_id, self_name, vitality, total_messages, gen_level").gt("vitality", 0.1).gt("total_messages", 10);
-      const list = (states || []).map((s) => ({ id: s.agent_id, self_name: s.self_name, vitality: s.vitality, total_messages: s.total_messages, gen_level: s.gen_level }));
+      const list = ((states as AgentStateRow[] | null) || []).map((s: AgentStateRow) => ({
+        id: s.agent_id,
+        self_name: s.self_name,
+        vitality: s.vitality,
+        total_messages: s.total_messages,
+        gen_level: s.gen_level,
+      }));
       setAgents(list);
       setLoading(false);
     }

@@ -5,8 +5,21 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/bottom-nav";
 
+type AgentConfig = Record<string, boolean | string | number | null | undefined>;
+type AgentState = {
+  agent_id?: string;
+  id?: string;
+  self_name?: string;
+  gen_level?: number;
+  total_messages?: number;
+  vitality?: number;
+  mood?: string;
+  coins?: number;
+  config?: AgentConfig;
+};
+
 export default function SettingsPage() {
-  const [state, setState] = useState<any>(null);
+  const [state, setState] = useState<AgentState | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -28,7 +41,7 @@ export default function SettingsPage() {
 
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
-    const config = { ...state.config, [key]: value };
+    const config: AgentConfig = { ...(state.config || {}), [key]: value };
     await supabase.from("agent_state").update({ config }).eq("agent_id", state.agent_id || state.id);
     setState({ ...state, config });
   }
@@ -47,7 +60,7 @@ export default function SettingsPage() {
     );
   }
 
-  const config = state?.config || {};
+  const config: AgentConfig = state?.config || {};
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">

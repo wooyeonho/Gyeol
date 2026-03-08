@@ -4,10 +4,17 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { NextRequest, NextResponse } from "next/server";
+import { isMissingEnvError } from "@/lib/env/required";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(req: NextRequest) {
+  if (!CRON_SECRET) {
+    return NextResponse.json(
+      { error: "Service unavailable: missing CRON_SECRET", code: "MISSING_ENV" },
+      { status: 503 }
+    );
+  }
   if (CRON_SECRET && req.headers.get("authorization") !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -125,6 +132,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply: fullText || "..." });
   } catch (e) {
     console.error("Chat internal error", e);
+    if (isMissingEnvError(e)) {
+      return NextResponse.json(
+        { error: "Service unavailable: missing server configuration", code: "MISSING_ENV" },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

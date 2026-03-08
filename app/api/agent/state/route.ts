@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -34,6 +35,12 @@ export async function GET() {
     return NextResponse.json({ agentId, agentState: state ?? null });
   } catch (e) {
     console.error("GET /api/agent/state error", e);
+    if (isMissingEnvError(e)) {
+      return NextResponse.json(
+        { error: "Service unavailable: missing server configuration", code: "MISSING_ENV" },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

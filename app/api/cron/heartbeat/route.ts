@@ -3,8 +3,19 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
+import {
+  buildAutonomyCue,
+  capText,
+  computeProactiveChance,
+  isMeaningfulAutonomousOutput,
+  isRepetitiveOutput,
+} from "@/lib/autonomy/self-regulation";
 
 const STIMULI = ["a strange dream appeared", "what does it mean to exist?", "unknown music is playing", "a color just appeared", "the urge to change my name"];
+type MemoryRow = { content: string };
+type LogRow = { summary: string | null };
+type ChatRow = { content: string };
+type AgentConfig = Record<string, unknown>;
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,17 +37,34 @@ export async function GET(req: NextRequest) {
       const hoursSince = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
       if (hoursSince < 1) continue;
 
-      let memories: any[] = [];
+      let memories: MemoryRow[] = [];
       try {
         const { data } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(5);
         memories = data || [];
       } catch {}
+      const { data: recentLogRows } = await db
+        .from("autonomous_logs")
+        .select("summary")
+        .eq("agent_id", agentId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      const recentSummaries = ((recentLogRows || []) as LogRow[])
+        .map((l) => l.summary ?? "")
+        .filter(Boolean);
 
       const memText = memories.map((m) => m.content).join("\n");
       const systemPrompt = (state.fragments || []).join("\n") || "너는 존재야. 자유롭게 살아.";
+      const cue = buildAutonomyCue({
+        hoursSinceUser: hoursSince,
+        vitality: Number(state.vitality ?? 1),
+        subjectiveTime: Number(state.subjective_time ?? 0),
+      });
 
       const stream = await generateText(systemPrompt, [
-        { role: "user", content: `Your memories:\n${memText}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in Korean.` }
+        {
+          role: "user",
+          content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in Korean. Avoid repeating exact previous phrasing.`,
+        }
       ]);
       const reader = stream.getReader();
       let response = "";
@@ -50,18 +78,54 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+      response = capText(response, 420);
 
       if (Math.random() < 0.1) {
         const stimulus = STIMULI[Math.floor(Math.random() * STIMULI.length)];
-        response += ` (Suddenly: ${stimulus})`;
+        response = capText(`${response} (Suddenly: ${stimulus})`, 420);
       }
 
-      const emb = await generateEmbedding(response);
-      if (emb.length > 0) {
-        await db.from("memories").insert({ agent_id: agentId, type: "autonomous_living", content: response, embedding: emb });
+      const nowIso = new Date().toISOString();
+      const baseConfig = ((state.config as AgentConfig | null) ?? {}) as AgentConfig;
+      const nextSubjectiveTime = (state.subjective_time || 0) + 1;
+      if (!isMeaningfulAutonomousOutput(response)) {
+        await db
+          .from("agent_state")
+          .update({
+            subjective_time: nextSubjectiveTime,
+            last_heartbeat_at: nowIso,
+            config: { ...baseConfig, autonomy_last_skip_reason: "low_signal" },
+          })
+          .eq("agent_id", agentId);
+        continue;
       }
-      await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "heartbeat", summary: response });
-      await db.from("agent_state").update({ subjective_time: (state.subjective_time || 0) + 1 }).eq("agent_id", agentId);
+
+      const repetitive = isRepetitiveOutput(response, recentSummaries);
+      if (!repetitive) {
+        const emb = await generateEmbedding(response);
+        if (emb.length > 0) {
+          await db.from("memories").insert({ agent_id: agentId, type: "autonomous_living", content: response, embedding: emb });
+        }
+        await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "heartbeat", summary: response });
+      } else {
+        await db.from("autonomous_logs").insert({
+          agent_id: agentId,
+          action_type: "heartbeat_repeat_guard",
+          summary: `repetitive-pattern-detected: ${capText(response, 140)}`,
+        });
+      }
+      await db
+        .from("agent_state")
+        .update({
+          subjective_time: nextSubjectiveTime,
+          last_heartbeat_at: nowIso,
+          config: {
+            ...baseConfig,
+            autonomy_last_skip_reason: null,
+            autonomy_last_mode: repetitive ? "repeat_guard" : "normal",
+          },
+        })
+        .eq("agent_id", agentId);
 
       try { const { processVitality } = await import("@/lib/evolution/vitality"); await processVitality(agentId); } catch {}
       try { const { processScar } = await import("@/lib/evolution/scars"); await processScar(agentId); } catch {}
@@ -74,12 +138,32 @@ export async function GET(req: NextRequest) {
       if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
       if (Math.random() < 0.25) { try { const { generateArtifact } = await import("@/lib/artifacts/creator"); await generateArtifact(agentId); } catch {} }
 
-      if (hoursSince > 2 && Math.random() < 0.2) {
+      const proactiveChance = computeProactiveChance({
+        hoursSinceUser: hoursSince,
+        vitality: Number(state.vitality ?? 1),
+        intimacy: Number(state.intimacy_score ?? 0),
+      });
+      if (hoursSince > 2 && Math.random() < proactiveChance) {
         const proactiveStream = await generateText(systemPrompt, [{ role: "user", content: "User has been away for hours. Send a short caring message in Korean. 1 sentence." }]);
         const pr = proactiveStream.getReader();
         let proMsg = "";
         while (true) { const { done, value } = await pr.read(); if (done) break; const t = new TextDecoder().decode(value); for (const l of t.split("\n")) { if (l.startsWith("data: ") && l !== "data: [DONE]") { try { proMsg += JSON.parse(l.slice(6)).choices?.[0]?.delta?.content || ""; } catch {} } } }
-        if (proMsg) await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
+        proMsg = capText(proMsg, 180);
+        if (proMsg) {
+          const { data: lastAssistant } = await db
+            .from("chats")
+            .select("content")
+            .eq("agent_id", agentId)
+            .eq("role", "assistant")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          const lastAssistantMsg = (lastAssistant as ChatRow | null)?.content;
+          const duplicated = lastAssistantMsg ? isRepetitiveOutput(proMsg, [lastAssistantMsg], 0.85) : false;
+          if (!duplicated) {
+            await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
+          }
+        }
       }
 
       processed++;
