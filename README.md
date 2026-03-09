@@ -21,6 +21,7 @@
 - Gyeol room (3D), AR, multichannel
 - Digital twin, time-travel chat
 - External integrations (Notion, Slack, GitHub, Calendar), Gyeol Engine API
+- Autonomy lifeline (24/7 self-healing cron watchdog)
 
 ## 설정
 
@@ -36,6 +37,12 @@
 - `TELEGRAM_WEBHOOK_SECRET`: 텔레그램 웹훅 검증
 - `CONNECTION_TOKEN_KEY`: 외부 연동 토큰 암호화 키
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
+
+### 24시간 자율활동 권장 설정
+
+- OpenClaw 스케줄러를 기본(primary)으로 운영하고 GitHub cron은 fallback으로 유지
+- `phase19_cron_lock.sql` 적용으로 중복 실행 방지
+- `/api/cron/lifeline` 활성화로 멈춘 잡 자동 복구
 
 ## Cost
 

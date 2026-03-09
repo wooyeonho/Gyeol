@@ -5,6 +5,7 @@ name: GYEOL Cron Jobs
 on:
   schedule:
     - cron: "*/30 * * * *"  # health: every 30 min
+    - cron: "15,45 * * * *" # lifeline: every 30 min (offset)
     - cron: "0 */2 * * *"   # heartbeat: every 2 hours
     - cron: "0 * * * *"     # time-capsule: every hour
     - cron: "0 4 * * *"     # dream: 04:00 UTC daily
@@ -25,6 +26,16 @@ jobs:
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/health" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --max-time 30
+
+  lifeline:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '15,45 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run lifeline cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/lifeline" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 120
 
   heartbeat:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */2 * * *'

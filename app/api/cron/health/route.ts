@@ -17,7 +17,12 @@ export async function GET(request: NextRequest) {
   try {
     const service = createServiceClient();
     const staleSince = new Date(Date.now() - 24 * 3600000).toISOString();
+    const staleSixHours = new Date(Date.now() - 6 * 3600000).toISOString();
     const { count: agentCount } = await service.from("agents").select("id", { count: "exact", head: true });
+    const { data: configRows } = await service.from("agent_state").select("config");
+    const autonomousEnabledCount = (configRows ?? []).filter(
+      (row) => (row.config as Record<string, unknown> | null)?.autonomous_enabled !== false,
+    ).length;
     const { data: echoAgents } = await service
       .from("agent_state")
       .select("agent_id")
@@ -31,20 +36,56 @@ export async function GET(request: NextRequest) {
       .from("agent_state")
       .select("agent_id, last_heartbeat_at")
       .or(`last_heartbeat_at.is.null,last_heartbeat_at.lt.${staleSince}`);
+    const { data: staleHeartbeatSixHours } = await service
+      .from("agent_state")
+      .select("agent_id, last_heartbeat_at")
+      .or(`last_heartbeat_at.is.null,last_heartbeat_at.lt.${staleSixHours}`);
     const { data: staleDreamAgents } = await service
       .from("agent_state")
       .select("agent_id, last_dream_at")
       .or(`last_dream_at.is.null,last_dream_at.lt.${staleSince}`);
+
+    let cronFreshness: Array<{ job_name: string; updated_at: string; stale: boolean }> = [];
+    try {
+      const { data: lockRows } = await service
+        .from("cron_job_locks")
+        .select("job_name, updated_at")
+        .in("job_name", [
+          "cron:heartbeat",
+          "cron:time-capsule",
+          "cron:social",
+          "cron:learner",
+          "cron:crawl",
+          "cron:dream",
+          "cron:world",
+          "cron:lifeline",
+        ]);
+      const now = Date.now();
+      cronFreshness = (lockRows ?? []).map((row) => {
+        const updated = new Date(String(row.updated_at)).getTime();
+        const stale = Number.isNaN(updated) ? true : now - updated > 24 * 3600000;
+        return {
+          job_name: String(row.job_name),
+          updated_at: String(row.updated_at),
+          stale,
+        };
+      });
+    } catch (e) {
+      console.error("health cron freshness lookup", e);
+    }
 
     return new Response(
       JSON.stringify({
         ok: true,
         timestamp: new Date().toISOString(),
         agents_total: agentCount ?? 0,
+        agents_autonomous_enabled: autonomousEnabledCount ?? 0,
         agents_echo: echoAgents?.length ?? 0,
         agents_low_vitality: lowVitality?.length ?? 0,
+        agents_stale_heartbeat_6h: staleHeartbeatSixHours?.length ?? 0,
         agents_stale_heartbeat_24h: staleHeartbeatAgents?.length ?? 0,
         agents_stale_dream_24h: staleDreamAgents?.length ?? 0,
+        cron_freshness: cronFreshness,
       }),
       { headers: { "Content-Type": "application/json" } }
     );

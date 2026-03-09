@@ -8,6 +8,11 @@ type DashboardData = {
   collective_emotion?: Record<string, number>;
   weather_name?: string;
   artifact_count?: number;
+  autonomy_enabled_count?: number;
+  stale_heartbeat_6h?: number;
+  stale_dream_24h?: number;
+  echo_count?: number;
+  cron_freshness?: Array<{ job_name: string; minutes_since_update: number }>;
 };
 
 export default function DashboardPage() {
@@ -67,6 +72,39 @@ export default function DashboardPage() {
             <div className="bg-white/5 rounded-xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">Artifacts</p>
               <p className="text-2xl font-semibold">{data.artifact_count}</p>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-white/50 text-xs uppercase tracking-wider">Autonomy Enabled</p>
+              <p className="text-2xl font-semibold">{data.autonomy_enabled_count ?? 0}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-white/50 text-xs uppercase tracking-wider">Echo Agents</p>
+              <p className="text-2xl font-semibold">{data.echo_count ?? 0}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-white/50 text-xs uppercase tracking-wider">Stale Heartbeat (6h)</p>
+              <p className="text-2xl font-semibold">{data.stale_heartbeat_6h ?? 0}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-white/50 text-xs uppercase tracking-wider">Stale Dream (24h)</p>
+              <p className="text-2xl font-semibold">{data.stale_dream_24h ?? 0}</p>
+            </div>
+          </div>
+          {Array.isArray(data.cron_freshness) && data.cron_freshness.length > 0 && (
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Cron Freshness</p>
+              <div className="space-y-2">
+                {data.cron_freshness.map((job) => (
+                  <div key={job.job_name} className="flex items-center justify-between text-sm">
+                    <span>{job.job_name.replace("cron:", "")}</span>
+                    <span className={job.minutes_since_update > 360 ? "text-red-300" : "text-white/70"}>
+                      {job.minutes_since_update}m ago
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

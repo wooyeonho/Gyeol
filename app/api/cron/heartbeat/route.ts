@@ -5,6 +5,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { readSseAssistantText } from "@/lib/ai/sse-parser";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { getCircadianProfile } from "@/lib/autonomy/circadian";
 import {
   buildAutonomyCue,
   capText,
@@ -29,6 +30,9 @@ export async function GET(req: NextRequest) {
     const db = createServiceClient();
     const { data: agents } = await db.from("agents").select("id");
     if (!agents) return NextResponse.json({ processed: 0 });
+    const { data: worldState } = await db.from("world_state").select("weather").eq("id", "global").single();
+    const weatherName = (worldState as { weather?: { name?: string } } | null)?.weather?.name ?? "알 수 없는 날씨";
+    const circadian = getCircadianProfile();
 
     let processed = 0;
 
@@ -69,7 +73,7 @@ export async function GET(req: NextRequest) {
         const stream = await generateText(systemPrompt, [
           {
             role: "user",
-            content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in Korean. Avoid repeating exact previous phrasing.`,
+            content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\nWorld weather: ${weatherName}\nCircadian phase: ${circadian.phase} (${circadian.labelKo}), tone hint: ${circadian.toneHint}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in Korean. Avoid repeating exact previous phrasing.`,
           }
         ]);
         let response = await readSseAssistantText(stream);
@@ -118,6 +122,8 @@ export async function GET(req: NextRequest) {
               ...baseConfig,
               autonomy_last_skip_reason: null,
               autonomy_last_mode: repetitive ? "repeat_guard" : "normal",
+              autonomy_circadian_phase: circadian.phase,
+              autonomy_weather_context: weatherName,
             },
           })
           .eq("agent_id", agentId);

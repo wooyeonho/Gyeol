@@ -11,6 +11,7 @@ type JobDef = {
 
 const JOBS: JobDef[] = [
   { name: "health",     schedule: "*/30 * * * *",  endpoint: "/api/cron/health",     timeoutMs: 30_000  },
+  { name: "lifeline",   schedule: "*/30 * * * *",  endpoint: "/api/cron/lifeline",   timeoutMs: 120_000 },
   { name: "heartbeat",  schedule: "0 */2 * * *",   endpoint: "/api/cron/heartbeat",  timeoutMs: 120_000 },
   { name: "timecapsule",schedule: "0 * * * *",     endpoint: "/api/cron/time-capsule",timeoutMs: 60_000  },
   { name: "social",     schedule: "0 */6 * * *",   endpoint: "/api/cron/social",     timeoutMs: 60_000  },
