@@ -115,6 +115,13 @@ function matchProfile(text: string, profiles: RelationshipProfile[]): Relationsh
   return profiles.find((profile) => normalized.includes(profile.name.toLowerCase()));
 }
 
+function findProfileByName(name: string | undefined, profiles: RelationshipProfile[]): RelationshipProfile | undefined {
+  if (!name) return undefined;
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return profiles.find((profile) => profile.name.trim().toLowerCase() === normalized);
+}
+
 function buildDraft(profile: RelationshipProfile | undefined, text: string): string {
   const normalized = text.toLowerCase();
   const opener = profile ? `${profile.name}님,` : "안녕하세요,";
@@ -175,9 +182,15 @@ function inferCurrentFocus(snapshot: RelationshipOSSnapshot): EvolutionFocus {
   const pendingApprovals = snapshot.approvals.filter((item) => item.status === "pending").length;
   const stalePeople = snapshot.profiles.filter((profile) => hoursSince(profile.lastContactAt) > 96).length;
   const relationshipLoops = openPromises.filter((item) => item.category === "relationship").length;
+  const freshAmbientSignals = snapshot.captures.filter(
+    (capture) =>
+      ["autonomous", "social", "dream"].includes(capture.source) &&
+      Date.now() - new Date(capture.createdAt).getTime() < 24 * 3600000,
+  ).length;
 
   if (highRisk > 0 || overdue > 0 || pendingApprovals >= 2) return "operator";
   if (relationshipLoops > 0 || stalePeople > 0) return "relationship";
+  if (freshAmbientSignals > 0) return "adventure";
   return "adventure";
 }
 
@@ -371,6 +384,9 @@ function buildDailyEpisode(snapshot: RelationshipOSSnapshot): StoryEpisode {
 
   const subject = profile?.name ?? "오늘의 관계";
   const followUp = topPromise?.title ?? "남은 후속조치";
+  const ambientSignal = snapshot.captures.find((capture) =>
+    ["autonomous", "social", "dream"].includes(capture.source),
+  );
 
   return {
     id: `daily-${new Date().toISOString().slice(0, 10)}`,
@@ -383,8 +399,11 @@ function buildDailyEpisode(snapshot: RelationshipOSSnapshot): StoryEpisode {
     beats: [
       `낮 동안 결은 "${followUp}"를 가장 중요한 약속으로 붙잡고 있었습니다.`,
       `${subject}과의 관계는 지금 ${profile ? `신뢰 ${profile.trustScore}점 / 온도 ${profile.warmthScore}점` : "정리 단계"}에 있습니다.`,
+      ambientSignal
+        ? `최근 자동 신호(${ambientSignal.source})가 포착되었습니다: ${ambientSignal.rawText.slice(0, 90)}`
+        : null,
       pending.length > 0 ? `아직 ${pending.length}개의 후속조치가 남아 있어, 내일 아침 첫 액션이 중요합니다.` : "열린 루프가 거의 정리되어 내일은 훨씬 가볍게 시작할 수 있습니다.",
-    ],
+    ].filter((beat): beat is string => Boolean(beat)),
     dialogue: [
       { speaker: "결", line: `${subject}과의 맥락을 잊지 않기 위해 오늘의 장면을 저장했어요.` },
       { speaker: "당신", line: "지금 가장 먼저 붙잡아야 할 건 뭐야?" },
@@ -642,6 +661,75 @@ export function ingestCapture(
   };
 
   return refreshDerived(nextSnapshot, snapshot.autonomousMode.cycleCount);
+}
+
+export function ingestAmbientSignal(
+  snapshot: RelationshipOSSnapshot,
+  rawText: string,
+  source: CaptureSource,
+  relatedName?: string,
+): RelationshipOSSnapshot {
+  const trimmed = rawText.trim();
+  if (!trimmed) return snapshot;
+
+  const latestDuplicate = snapshot.captures.find(
+    (capture) => capture.source === source && capture.rawText.trim() === trimmed,
+  );
+  if (latestDuplicate) {
+    return refreshDerived(snapshot, snapshot.autonomousMode.cycleCount);
+  }
+
+  const existingProfile = findProfileByName(relatedName, snapshot.profiles);
+  const createdProfile =
+    !existingProfile && relatedName
+      ? {
+          id: `profile-${crypto.randomUUID()}`,
+          name: relatedName,
+          role: source === "social" ? "새로 포착된 존재" : "자율 흔적",
+          relationshipType: "friend" as const,
+          cadence: "weekly" as const,
+          warmthScore: source === "social" ? 61 : 56,
+          trustScore: 54,
+          lastContactAt: new Date().toISOString(),
+          spark:
+            source === "social"
+              ? `${relatedName}와의 새로운 상호작용이 포착되었습니다. 다음 장면이 관계 성격을 결정할 수 있습니다.`
+              : `${relatedName}라는 이름이 자율 흐름 속에서 반복 포착되었습니다.`,
+          preferredStyle: "짧은 체크인으로 가볍게 흐름 열기",
+          notes: ["자동진화 루프에서 새로 생겨난 프로필입니다."],
+        }
+      : null;
+
+  const profiles = createdProfile ? [createdProfile, ...snapshot.profiles] : snapshot.profiles;
+  const linkedProfile = createdProfile ?? existingProfile;
+  const nextProfiles = profiles.map((profile) => {
+    if (!linkedProfile || profile.id !== linkedProfile.id) return profile;
+    return {
+      ...profile,
+      trustScore: clamp(profile.trustScore + (source === "social" ? 3 : 1), 0, 100),
+      warmthScore: clamp(profile.warmthScore + (source === "social" ? 4 : 1), 0, 100),
+      lastContactAt: new Date().toISOString(),
+      notes: [trimmed.slice(0, 120), ...profile.notes].slice(0, 6),
+    };
+  });
+
+  const capture: CaptureItem = {
+    id: `capture-${crypto.randomUUID()}`,
+    rawText: trimmed,
+    source,
+    createdAt: new Date().toISOString(),
+    extractedPromiseIds: [],
+    extractedApprovalIds: [],
+  };
+
+  return refreshDerived(
+    {
+      ...snapshot,
+      profiles: nextProfiles,
+      captures: [capture, ...snapshot.captures].slice(0, 40),
+    },
+    snapshot.autonomousMode.cycleCount + 1,
+  );
 }
 
 export function togglePromise(snapshot: RelationshipOSSnapshot, promiseId: string): RelationshipOSSnapshot {

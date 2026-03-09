@@ -13,6 +13,8 @@ import {
   isMeaningfulAutonomousOutput,
   isRepetitiveOutput,
 } from "@/lib/autonomy/self-regulation";
+import { ingestAmbientSignal, runAutonomousEvolutionCycle } from "@/lib/relationship-os/engine";
+import { loadRelationshipSnapshotForAgent, saveRelationshipSnapshotForAgent } from "@/lib/relationship-os/server-sync";
 
 const STIMULI = ["a strange dream appeared", "what does it mean to exist?", "unknown music is playing", "a color just appeared", "the urge to change my name"];
 type MemoryRow = { content: string };
@@ -139,6 +141,7 @@ export async function GET(req: NextRequest) {
         if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
         if (Math.random() < 0.25) { try { const { generateArtifact } = await import("@/lib/artifacts/creator"); await generateArtifact(agentId); } catch {} }
 
+        let proactiveSummary: string | null = null;
         const proactiveChance = computeProactiveChance({
           hoursSinceUser: hoursSince,
           vitality: Number(state.vitality ?? 1),
@@ -161,8 +164,33 @@ export async function GET(req: NextRequest) {
             const duplicated = lastAssistantMsg ? isRepetitiveOutput(proMsg, [lastAssistantMsg], 0.85) : false;
             if (!duplicated) {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
+              proactiveSummary = proMsg;
             }
           }
+        }
+
+        try {
+          const relationshipSnapshot = await loadRelationshipSnapshotForAgent(db, agentId);
+          if (relationshipSnapshot) {
+            let nextSnapshot = ingestAmbientSignal(
+              relationshipSnapshot,
+              `Heartbeat: ${response}`,
+              "autonomous",
+            );
+            if (proactiveSummary) {
+              nextSnapshot = ingestAmbientSignal(
+                nextSnapshot,
+                `Proactive care: ${proactiveSummary}`,
+                "autonomous",
+              );
+            }
+            nextSnapshot = runAutonomousEvolutionCycle(nextSnapshot);
+            await saveRelationshipSnapshotForAgent(db, agentId, nextSnapshot, {
+              relationship_os_last_event: "heartbeat",
+            });
+          }
+        } catch (relationshipError) {
+          console.error(`[Heartbeat][RelationshipOS] ${agentId}:`, relationshipError);
         }
 
         processed++;

@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { ingestAmbientSignal, runAutonomousEvolutionCycle } from "@/lib/relationship-os/engine";
+import { loadRelationshipSnapshotForAgent, saveRelationshipSnapshotForAgent } from "@/lib/relationship-os/server-sync";
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -72,6 +74,43 @@ export async function GET(req: NextRequest) {
         { agent_id: a.agent_id, action_type: "social_encounter", summary },
         { agent_id: b.agent_id, action_type: "social_encounter", summary },
       ]);
+
+      try {
+        const [aSnapshot, bSnapshot] = await Promise.all([
+          loadRelationshipSnapshotForAgent(db, a.agent_id),
+          loadRelationshipSnapshotForAgent(db, b.agent_id),
+        ]);
+
+        if (aSnapshot) {
+          const next = runAutonomousEvolutionCycle(
+            ingestAmbientSignal(
+              aSnapshot,
+              `${b.self_name || "다른 존재"}와의 자율 상호작용: ${outcome || conversation[0]?.content || ""}`,
+              "social",
+              b.self_name || "다른 존재",
+            ),
+          );
+          await saveRelationshipSnapshotForAgent(db, a.agent_id, next, {
+            relationship_os_last_event: "social",
+          });
+        }
+
+        if (bSnapshot) {
+          const next = runAutonomousEvolutionCycle(
+            ingestAmbientSignal(
+              bSnapshot,
+              `${a.self_name || "다른 존재"}와의 자율 상호작용: ${outcome || conversation[0]?.content || ""}`,
+              "social",
+              a.self_name || "다른 존재",
+            ),
+          );
+          await saveRelationshipSnapshotForAgent(db, b.agent_id, next, {
+            relationship_os_last_event: "social",
+          });
+        }
+      } catch (relationshipError) {
+        console.error("[Social][RelationshipOS]", relationshipError);
+      }
 
       const tellResult = await generateJSON<{ tell?: boolean }>(
         "Respond ONLY valid JSON.",

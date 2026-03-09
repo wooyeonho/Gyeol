@@ -3,43 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isMissingEnvError } from "@/lib/env/required";
 import { normalizeRelationshipSnapshot } from "@/lib/relationship-os/snapshot";
-
-type SandboxShape = {
-  relationship_os?: {
-    snapshot?: unknown;
-    updated_at?: string;
-    version?: number;
-  };
-  [key: string]: unknown;
-};
-
-async function getOrCreateAgentId(userId: string): Promise<string | null> {
-  const service = createServiceClient();
-  const { data: existing } = await service
-    .from("agents")
-    .select("id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-
-  if (existing?.id) return String(existing.id);
-
-  const { data: created } = await service
-    .from("agents")
-    .insert({ user_id: userId })
-    .select("id")
-    .single();
-
-  if (!created?.id) return null;
-
-  try {
-    await service.from("agent_state").insert({ agent_id: created.id });
-  } catch {
-    // ignore race conditions when agent_state was created elsewhere
-  }
-
-  return String(created.id);
-}
+import {
+  getOrCreateAgentIdForUser,
+  loadRelationshipSnapshotForAgent,
+  saveRelationshipSnapshotForAgent,
+} from "@/lib/relationship-os/server-sync";
 
 export async function GET() {
   try {
@@ -49,24 +17,15 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ snapshot: null }, { status: 401 });
 
-    const agentId = await getOrCreateAgentId(user.id);
+    const service = createServiceClient();
+    const agentId = await getOrCreateAgentIdForUser(service, user.id);
     if (!agentId) return NextResponse.json({ snapshot: null }, { status: 500 });
 
-    const service = createServiceClient();
-    const { data: state } = await service
-      .from("agent_state")
-      .select("sandbox")
-      .eq("agent_id", agentId)
-      .single();
-
-    const sandbox = ((state as { sandbox?: SandboxShape } | null)?.sandbox ?? {}) as SandboxShape;
-    const snapshot = sandbox.relationship_os?.snapshot
-      ? normalizeRelationshipSnapshot(sandbox.relationship_os.snapshot)
-      : null;
+    const snapshot = await loadRelationshipSnapshotForAgent(service, agentId);
 
     return NextResponse.json({
       snapshot,
-      updated_at: sandbox.relationship_os?.updated_at ?? null,
+      updated_at: snapshot?.autonomousMode?.lastRunAt ?? null,
       storage: snapshot ? "sandbox.relationship_os" : "none",
     });
   } catch (error) {
@@ -91,42 +50,11 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const snapshot = normalizeRelationshipSnapshot(body?.snapshot ?? body);
-    const agentId = await getOrCreateAgentId(user.id);
+    const service = createServiceClient();
+    const agentId = await getOrCreateAgentIdForUser(service, user.id);
     if (!agentId) return NextResponse.json({ error: "Could not initialize agent" }, { status: 500 });
 
-    const service = createServiceClient();
-    const { data: state } = await service
-      .from("agent_state")
-      .select("sandbox, config")
-      .eq("agent_id", agentId)
-      .single();
-
-    const sandbox = ((state as { sandbox?: SandboxShape } | null)?.sandbox ?? {}) as SandboxShape;
-    const config = ((state as { config?: Record<string, unknown> } | null)?.config ?? {}) as Record<string, unknown>;
-    const updatedAt = new Date().toISOString();
-
-    const nextSandbox: SandboxShape = {
-      ...sandbox,
-      relationship_os: {
-        snapshot,
-        updated_at: updatedAt,
-        version: 1,
-      },
-    };
-
-    await service
-      .from("agent_state")
-      .update({
-        sandbox: nextSandbox,
-        promises: snapshot.promises,
-        config: {
-          ...config,
-          relationship_os_focus: snapshot.autonomousMode.currentFocus,
-          relationship_os_last_sync_at: updatedAt,
-        },
-        updated_at: updatedAt,
-      })
-      .eq("agent_id", agentId);
+    const updatedAt = await saveRelationshipSnapshotForAgent(service, agentId, snapshot);
 
     return NextResponse.json({ ok: true, updated_at: updatedAt, storage: "sandbox.relationship_os" });
   } catch (error) {

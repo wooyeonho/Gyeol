@@ -5,6 +5,8 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { ingestAmbientSignal, runAutonomousEvolutionCycle } from "@/lib/relationship-os/engine";
+import { loadRelationshipSnapshotForAgent, saveRelationshipSnapshotForAgent } from "@/lib/relationship-os/server-sync";
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -86,6 +88,25 @@ export async function GET(req: NextRequest) {
         }
         await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "dream", summary: dreamContent });
         await db.from("agent_state").update({ last_dream_at: new Date().toISOString() }).eq("agent_id", agentId);
+
+        try {
+          const relationshipSnapshot = await loadRelationshipSnapshotForAgent(db, agentId);
+          if (relationshipSnapshot) {
+            const next = runAutonomousEvolutionCycle(
+              ingestAmbientSignal(
+                relationshipSnapshot,
+                `Dream reflection: ${reflection || dreamContent.slice(0, 160)}`,
+                "dream",
+              ),
+            );
+            await saveRelationshipSnapshotForAgent(db, agentId, next, {
+              relationship_os_last_event: "dream",
+            });
+          }
+        } catch (relationshipError) {
+          console.error(`[Dream][RelationshipOS] ${agentId}:`, relationshipError);
+        }
+
         processed++;
       } catch (e) {
         console.error(`[Dream] ${agent.id}:`, e);

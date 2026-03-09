@@ -4,6 +4,7 @@ import {
   createInitialSnapshot,
   decideApproval,
   describeProfileEmergence,
+  ingestAmbientSignal,
   ingestCapture,
   runAutonomousEvolutionCycle,
   snoozePromise,
@@ -70,5 +71,18 @@ describe("relationship-os engine", () => {
 
     expect(description.label.length).toBeGreaterThan(0);
     expect(description.summary.length).toBeGreaterThan(0);
+  });
+
+  it("can create an emergent profile from autonomous social signal", () => {
+    const snapshot = createInitialSnapshot();
+    const next = ingestAmbientSignal(
+      snapshot,
+      "새로운 존재 라온과의 자율 상호작용이 기록되었습니다.",
+      "social",
+      "라온",
+    );
+
+    expect(next.captures[0]?.source).toBe("social");
+    expect(next.profiles.some((profile) => profile.name === "라온")).toBe(true);
   });
 });
