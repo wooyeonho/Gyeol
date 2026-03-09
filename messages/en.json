@@ -1,0 +1,31 @@
+{
+  "common": {
+    "loading": "Loading",
+    "error": "An error occurred",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "activity": "Activity",
+    "social": "Social",
+    "market": "Market",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign up",
+    "logout": "Log out",
+    "email": "Email",
+    "password": "Password",
+    "guestContinue": "Continue as guest",
+    "signupLink": "Sign up",
+    "loginLink": "Back to login"
+  },
+  "chat": {
+    "placeholder": "Say anything...",
+    "vitality": "Vitality"
+  }
+}

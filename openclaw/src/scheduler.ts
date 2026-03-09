@@ -20,6 +20,7 @@ const JOBS: JobDef[] = [
   { name: "dream",      schedule: "0 4 * * *",     endpoint: "/api/cron/dream",      timeoutMs: 60_000  },
   { name: "world",      schedule: "0 0 * * *",     endpoint: "/api/cron/world",      timeoutMs: 60_000  },
   { name: "redemption", schedule: "0 10 * * *",    endpoint: "/api/cron/redemption", timeoutMs: 30_000  },
+  { name: "war",       schedule: "0 * * * *",     endpoint: "/api/cron/war",       timeoutMs: 30_000  },
 ];
 
 async function callEndpoint(config: EngineConfig, job: JobDef): Promise<void> {

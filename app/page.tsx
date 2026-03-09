@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
-import { VoidCanvas } from "@/components/void-canvas";
 import { WorldWeather } from "@/components/world-weather";
+
+const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-0 bg-black" aria-hidden="true" />,
+});
 import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";

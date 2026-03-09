@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-
-function checkCronAuth(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = req.headers.get("authorization")?.replace("Bearer ", "");
-  return auth === secret;
-}
+import { checkCronAuth } from "@/lib/cron-auth";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 export async function GET() {
   try {
@@ -25,8 +20,41 @@ export async function GET() {
   }
 }
 
+/**
+ * Cron: Resolve expired war events. Run periodically (e.g. hourly) to close events past ends_at.
+ */
 export async function POST(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  // Placeholder for scheduled war resolution/update job.
-  return NextResponse.json({ processed: 0 });
+  const lockKey = "cron:war";
+  const acquired = await acquireCronLock(lockKey, 120);
+  if (!acquired) return NextResponse.json({ processed: 0, skipped: "lock" });
+
+  try {
+    const db = createServiceClient();
+    const now = new Date().toISOString();
+
+    // 1. Resolve expired active events
+    const { data: expired } = await db
+      .from("war_events")
+      .select("id")
+      .eq("status", "active")
+      .lt("ends_at", now);
+
+    let resolved = 0;
+    for (const ev of expired ?? []) {
+      const { error } = await db
+        .from("war_events")
+        .update({ status: "resolved" })
+        .eq("id", ev.id);
+      if (!error) resolved++;
+      else console.error("war resolve", ev.id, error);
+    }
+
+    return NextResponse.json({ processed: resolved, resolved });
+  } catch (e) {
+    console.error("war POST", e);
+    return NextResponse.json({ error: "War processing failed" }, { status: 500 });
+  } finally {
+    await releaseCronLock(lockKey);
+  }
 }
