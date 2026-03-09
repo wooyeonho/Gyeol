@@ -172,6 +172,15 @@ export async function POST(req: NextRequest) {
           try { const { checkEvolution } = await import("@/lib/evolution/gen-level"); await checkEvolution(agentId); } catch (e) { console.error("[GenLevel]", e); }
           // Hidden emotions
           try { const { processHiddenEmotions } = await import("@/lib/personality/deception"); await processHiddenEmotions(agentId, message, fullResponse); } catch (e) { console.error("[Emotions]", e); }
+          // Secrets
+          try { const { processSecrets } = await import("@/lib/personality/secrets"); await processSecrets(agentId, fullResponse); } catch (e) { console.error("[Secrets]", e); }
+          // Periodic quote/pet extraction from conversation corpus
+          if (totalMessages % 15 === 0) {
+            try { const { updateBestQuotes } = await import("@/lib/intelligence/best-quotes"); await updateBestQuotes(agentId); } catch (e) { console.error("[BestQuotes]", e); }
+          }
+          if (totalMessages % 20 === 0) {
+            try { const { processPets } = await import("@/lib/personality/pets"); await processPets(agentId); } catch (e) { console.error("[Pets]", e); }
+          }
         } catch (e) { console.error("[PostStream]", e); }
       },
     });

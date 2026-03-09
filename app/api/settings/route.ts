@@ -48,6 +48,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.autonomous_enabled === "boolean") config.autonomous_enabled = body.autonomous_enabled;
     if (typeof body.dream_enabled === "boolean") config.dream_enabled = body.dream_enabled;
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
+    if (typeof body.sound_enabled === "boolean") config.sound_enabled = body.sound_enabled;
     if (typeof body.autonomy_proposals_enabled === "boolean") config.autonomy_proposals_enabled = body.autonomy_proposals_enabled;
     if (typeof body.autonomy_execute_enabled === "boolean") config.autonomy_execute_enabled = body.autonomy_execute_enabled;
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;

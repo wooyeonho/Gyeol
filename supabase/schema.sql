@@ -42,12 +42,23 @@ create table if not exists agent_state (
   best_quotes jsonb,
   scars jsonb,
   secrets jsonb,
+  hidden_emotions jsonb,
+  asked_relationship boolean default false,
   promises jsonb,
-  birthday text,
+  birthday jsonb,
+  last_birthday_year integer,
+  celebration_pending jsonb,
   pets jsonb,
   voice_params jsonb,
   role_declaration text,
+  lexicon jsonb,
+  dogma jsonb,
+  languages jsonb,
+  room jsonb,
+  user_model jsonb,
+  shared_language jsonb,
   shared_lang jsonb,
+  died_at timestamptz,
   last_heartbeat_at timestamptz,
   last_dream_at timestamptz,
   species text,
@@ -79,11 +90,13 @@ create table if not exists memories (
   content text not null,
   embedding vector(768),
   reference_count int not null default 0,
+  is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
 
 create index if not exists memories_agent_id_idx on memories(agent_id);
 create index if not exists memories_agent_id_type_idx on memories(agent_id, type);
+create index if not exists memories_agent_is_active_idx on memories(agent_id, is_active);
 
 -- Vector similarity search function
 create or replace function match_memories(
@@ -308,6 +321,12 @@ create table if not exists war_events (
   title text not null,
   description text,
   sides jsonb,
+  side_a uuid[],
+  side_b uuid[],
+  side_a_score integer default 0,
+  side_b_score integer default 0,
+  ends_at timestamptz,
+  status text default 'active',
   outcome text,
   started_at timestamptz not null default now(),
   ended_at timestamptz

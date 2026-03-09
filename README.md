@@ -28,7 +28,7 @@
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_safe_autonomy.sql`
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_safe_autonomy.sql` + `phase22_feature_gap_bridge.sql`
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 

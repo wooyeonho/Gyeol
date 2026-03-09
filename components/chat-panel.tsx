@@ -48,6 +48,14 @@ export function ChatPanel() {
     }
   };
 
+  const reportTyping = (typing: boolean) => {
+    fetch("/api/agent/typing-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ typing }),
+    }).catch(() => {});
+  };
+
   return (
     <div className="fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4">
       <div
@@ -121,6 +129,8 @@ export function ChatPanel() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onFocus={() => reportTyping(true)}
+          onBlur={() => reportTyping(false)}
           onKeyDown={handleKeyDown}
           placeholder="무엇이든 말해봐..."
           disabled={isStreaming}

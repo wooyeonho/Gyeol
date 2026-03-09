@@ -139,6 +139,15 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="flex justify-between items-center">
+            <span>사운드스케이프</span>
+            <button
+              onClick={() => toggleConfig("sound_enabled", config.sound_enabled !== true)}
+              className={`px-3 py-1 rounded ${config.sound_enabled === true ? "bg-green-500/30" : "bg-white/10"}`}
+            >
+              {config.sound_enabled === true ? "ON" : "OFF"}
+            </button>
+          </div>
+          <div className="flex justify-between items-center">
             <span>자율 진화 제안</span>
             <button
               onClick={() => toggleConfig("autonomy_proposals_enabled", config.autonomy_proposals_enabled === false)}

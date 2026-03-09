@@ -138,6 +138,54 @@ export async function GET(req: NextRequest) {
         if ((state.subjective_time || 0) % 20 === 0) { try { const { updateSelfModel } = await import("@/lib/personality/self-theory"); await updateSelfModel(agentId); } catch {} }
         if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
         if (Math.random() < 0.25) { try { const { generateArtifact } = await import("@/lib/artifacts/creator"); await generateArtifact(agentId); } catch {} }
+        if (Math.random() < 0.05 && Number(state.total_messages ?? 0) > 50) {
+          try { const { attemptSelfModification } = await import("@/lib/sandbox/self-modify"); await attemptSelfModification(agentId); } catch {}
+        }
+        if (Math.random() < 0.07) {
+          try { const { designNewSense } = await import("@/lib/sandbox/sense-design"); await designNewSense(agentId); } catch {}
+        }
+        if (nextSubjectiveTime % 24 === 0) {
+          try { const { updateEducation } = await import("@/lib/society/school"); await updateEducation(agentId); } catch {}
+          try { const { assignJob } = await import("@/lib/society/career"); await assignJob(agentId); } catch {}
+        }
+        if (nextSubjectiveTime % 30 === 0) {
+          try { const { trySetBirthday, tryBirthdayAnniversary } = await import("@/lib/personality/birthday"); await trySetBirthday(agentId); await tryBirthdayAnniversary(agentId); } catch {}
+          try { const { processPromises } = await import("@/lib/personality/promises"); await processPromises(agentId); } catch {}
+          try {
+            const { checkPetAnniversaries } = await import("@/lib/personality/pets");
+            const line = await checkPetAnniversaries(agentId);
+            if (line) await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: line });
+          } catch {}
+        }
+        if (nextSubjectiveTime % 18 === 0) {
+          try { const { updateUserModel } = await import("@/lib/intelligence/digital-twin"); await updateUserModel(agentId); } catch {}
+        }
+        if (nextSubjectiveTime % 16 === 0) {
+          try {
+            const { snapshotGenome, updateGenomeAndSpecies } = await import("@/lib/society/genetics");
+            const { ensureTribes, assignAgentToTribe, electLeaders } = await import("@/lib/society/civilization");
+            const genome = await snapshotGenome(agentId);
+            await updateGenomeAndSpecies(agentId, genome);
+            await ensureTribes();
+            const species = genome.species ?? "creator";
+            const tribeValue = species.includes("sage")
+              ? "calm"
+              : species.includes("connector")
+                ? "connector"
+                : species.includes("dream")
+                  ? "explorer"
+                  : "creator";
+            await assignAgentToTribe(agentId, tribeValue);
+            if (Math.random() < 0.2) await electLeaders();
+          } catch {}
+        }
+        if (nextSubjectiveTime % 25 === 0) {
+          try { const { tryAnalyzeMusicMood } = await import("@/lib/integrations/music-mood"); await tryAnalyzeMusicMood(agentId); } catch {}
+          try { const { analyzeInvestmentPattern } = await import("@/lib/intelligence/investment-pattern"); await analyzeInvestmentPattern(agentId); } catch {}
+        }
+        if (nextSubjectiveTime % 40 === 0) {
+          try { const { maybeRequestFeedback } = await import("@/lib/personality/feedback-request"); await maybeRequestFeedback(agentId); } catch {}
+        }
 
         const proactiveChance = computeProactiveChance({
           hoursSinceUser: hoursSince,

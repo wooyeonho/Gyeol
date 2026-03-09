@@ -12,8 +12,14 @@ export async function GET() {
     const { data: myAgents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
     const myAgentId = myAgents?.[0]?.id;
     if (!myAgentId) {
-      return NextResponse.json({ socialLogs: [], breedingRecords: [], otherAgents: [] });
+      return NextResponse.json({ myAgentId: null, myAgentProfile: null, socialLogs: [], breedingRecords: [], otherAgents: [] });
     }
+
+    const { data: myState } = await service
+      .from("agent_state")
+      .select("self_name, gen_level, visual")
+      .eq("agent_id", myAgentId)
+      .single();
 
     const [logsRes, breedingRes, agentsRes, giftRes] = await Promise.all([
       service.from("social_logs").select("id, agent_a_id, agent_b_id, topic, conversation, message, outcome, created_at").or(`agent_a_id.eq.${myAgentId},agent_b_id.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(30),
@@ -77,7 +83,20 @@ export async function GET() {
       summary: (r as { summary?: string }).summary,
       created_at: (r as { created_at?: string }).created_at,
     }));
-    return NextResponse.json({ socialLogs, breedingRecords, otherAgents, giftExchanges });
+    return NextResponse.json({
+      myAgentId,
+      myAgentProfile: myState
+        ? {
+            self_name: (myState as { self_name?: string | null }).self_name ?? null,
+            gen_level: (myState as { gen_level?: number }).gen_level ?? 1,
+            visual: (myState as { visual?: unknown }).visual,
+          }
+        : null,
+      socialLogs,
+      breedingRecords,
+      otherAgents,
+      giftExchanges,
+    });
   } catch (e) {
     console.error("GET /api/social error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

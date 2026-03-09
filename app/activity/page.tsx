@@ -33,29 +33,31 @@ const TYPE_STYLES: Record<string, string> = {
 
 export default function ActivityPage() {
   const [items, setItems] = useState<ActivityItem[]>([]);
+  const [tab, setTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/activity");
-        if (!res.ok) {
-          setError("활동 데이터를 불러오지 못했습니다.");
-          setItems([]);
-          return;
-        }
-        const json = await res.json().catch(() => ({ items: [] }));
-        setItems(Array.isArray(json.items) ? json.items : []);
-      } catch {
+  async function load(type = "all") {
+    try {
+      const res = await fetch(`/api/activity?type=${encodeURIComponent(type)}`);
+      if (!res.ok) {
         setError("활동 데이터를 불러오지 못했습니다.");
         setItems([]);
-      } finally {
-        setLoading(false);
+        return;
       }
+      const json = await res.json().catch(() => ({ items: [] }));
+      setItems(Array.isArray(json.items) ? json.items : []);
+    } catch {
+      setError("활동 데이터를 불러오지 못했습니다.");
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-    void load();
-  }, []);
+  }
+
+  useEffect(() => {
+    void load(tab);
+  }, [tab]);
 
   async function togglePreserved(id: string, current: boolean) {
     const next = !current;
@@ -84,6 +86,29 @@ export default function ActivityPage() {
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">활동</h1>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      <div className="mb-3 grid grid-cols-4 sm:grid-cols-7 gap-1 rounded-xl border border-white/10 p-1 text-xs">
+        {[
+          { key: "all", label: "전체" },
+          { key: "dream", label: "꿈" },
+          { key: "creation", label: "창작" },
+          { key: "image", label: "이미지" },
+          { key: "music", label: "음악" },
+          { key: "comic", label: "만화" },
+          { key: "video", label: "영상" },
+        ].map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setTab(t.key);
+            }}
+            className={`rounded-lg px-2 py-1.5 ${tab === t.key ? "bg-white/20 text-white" : "bg-transparent text-white/60"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
       <div className="space-y-3">
         {items.map((item, i) => {
           const styleKey = item.kind === "log" ? (item.action_type ?? "") : (item.type ?? "");

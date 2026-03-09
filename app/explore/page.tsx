@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 type Agent = { id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
+type RankingAgent = { agent_id: string; self_name: string; gen_level: number; score: number };
 type ExploreProfile = {
   id: string;
   self_name?: string | null;
@@ -14,6 +15,7 @@ type ExploreProfile = {
 
 export default function ExplorePage() {
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [rankings, setRankings] = useState<RankingAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +28,10 @@ export default function ExplorePage() {
           setAgents([]);
           return;
         }
-        const json = await res.json().catch(() => ({ profiles: [] }));
+        const [json, rankJson] = await Promise.all([
+          res.json().catch(() => ({ profiles: [] })),
+          fetch("/api/rankings").then((r) => (r.ok ? r.json() : { rankings: [] })).catch(() => ({ rankings: [] })),
+        ]);
         const profiles = (Array.isArray(json.profiles) ? json.profiles : []) as ExploreProfile[];
         const list = profiles.map((p) => ({
           id: p.id as string,
@@ -36,6 +41,8 @@ export default function ExplorePage() {
           gen_level: Number(p.gen_level ?? 1),
         }));
         setAgents(list);
+        const top = Array.isArray(rankJson.rankings) ? (rankJson.rankings as RankingAgent[]).slice(0, 5) : [];
+        setRankings(top);
       } catch {
         setError("탐색 데이터를 불러오지 못했습니다.");
         setAgents([]);
@@ -58,6 +65,19 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-black text-white pt-20 px-4">
       <h1 className="text-xl font-semibold mb-4">탐색</h1>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {rankings.length > 0 && (
+        <div className="mb-4 bg-white/5 rounded-xl p-4 border border-white/10">
+          <p className="text-sm text-white/60 mb-2">랭킹 TOP 5</p>
+          <div className="space-y-1.5">
+            {rankings.map((r, i) => (
+              <div key={r.agent_id} className="flex items-center justify-between text-sm">
+                <span>{i + 1}. {r.self_name}</span>
+                <span className="text-white/60">Gen {r.gen_level} · {r.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {agents.map((a) => (
           <div key={a.id} className="bg-white/5 rounded-xl p-4 border border-white/10">

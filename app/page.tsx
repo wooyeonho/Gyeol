@@ -10,6 +10,8 @@ import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
+import Soundscape from "@/components/soundscape";
+import WidgetMini from "@/components/widget-mini";
 
 type Visual = {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent";
@@ -71,6 +73,10 @@ export default function Home() {
 
       <WorldWeather />
       <WorldClassHub />
+      <Soundscape
+        enabled={Boolean((agentState?.config as { sound_enabled?: boolean } | undefined)?.sound_enabled)}
+        soundProfile={(agentState?.sound_profile as { base_note?: string; tempo?: number; instruments?: string[] } | undefined) ?? null}
+      />
 
       <div className="fixed top-4 left-4 z-10 flex items-center gap-2 text-xs text-white/70">
         <span
@@ -84,6 +90,14 @@ export default function Home() {
 
       <div className="fixed top-4 right-4 z-10 text-white/80 text-sm">
         {selfName}
+      </div>
+
+      <div className="fixed left-4 bottom-28 z-20 hidden sm:block">
+        <WidgetMini
+          color={visual.color ?? "#a0a0ff"}
+          size={Math.max(10, Math.min(24, (visual.size ?? 16) * 0.8))}
+          quote={`${selfName} is here.`}
+        />
       </div>
 
       <ChatPanel />
