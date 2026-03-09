@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { CommandConsole } from "@/components/command-console";
 import { describeFocus, describeProfileEmergence } from "@/lib/relationship-os/engine";
+import { UnifiedFeatureBoard } from "@/components/unified-feature-board";
 import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 const LAB_LINKS = [
@@ -247,6 +249,11 @@ export function RelationshipOsHome() {
               </div>
             </section>
           </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <CommandConsole />
+          <UnifiedFeatureBoard />
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">

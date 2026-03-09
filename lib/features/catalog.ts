@@ -52,6 +52,14 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     status: "ready",
   },
   {
+    id: "capture",
+    name: "빠른 캡처",
+    summary: "메모/회의/대화를 넣으면 약속과 승인 초안으로 구조화합니다.",
+    href: "/capture",
+    category: "core",
+    status: "ready",
+  },
+  {
     id: "core-chat",
     name: "AI 대화 코어",
     summary: "에이전트와 실시간 스트리밍 대화로 성장을 유도합니다.",
