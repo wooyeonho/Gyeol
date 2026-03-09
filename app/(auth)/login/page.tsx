@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,10 +20,7 @@ export default function LoginPage() {
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
+    if (err) { setError(err.message); return; }
     router.push("/");
     router.refresh();
   }
@@ -32,53 +30,95 @@ export default function LoginPage() {
     setLoading(true);
     const { error: err } = await supabase.auth.signInAnonymously();
     setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
+    if (err) { setError(err.message); return; }
     router.push("/");
     router.refresh();
   }
 
   return (
-    <div className="w-full max-w-sm flex flex-col gap-6 text-center">
-      <h1 className="text-2xl font-semibold">결 GYEOL</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
-          required
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
-          required
-        />
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+    <div className="flex flex-col gap-8 text-center">
+      <div>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/30 to-purple-500/20 mx-auto mb-5 flex items-center justify-center animate-glow-pulse"
+        >
+          <span className="text-2xl font-bold gradient-text">결</span>
+        </motion.div>
+        <h1 className="text-2xl font-bold tracking-tight">GYEOL</h1>
+        <p className="text-sm text-white/40 mt-1.5">자율 진화 AI 생명체</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="relative">
+          <input
+            type="email"
+            placeholder="이메일"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full glass rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-all duration-200"
+            required
+          />
+        </div>
+        <div className="relative">
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full glass rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-all duration-200"
+            required
+          />
+        </div>
+
+        {error && (
+          <motion.p
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-400 text-xs bg-red-500/10 rounded-lg px-3 py-2"
+          >
+            {error}
+          </motion.p>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className="bg-white/20 rounded-lg px-4 py-2 font-medium disabled:opacity-50"
+          className="w-full py-3 rounded-xl gradient-accent text-white text-sm font-medium transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-accent/20"
         >
-          {loading ? "..." : "로그인"}
+          {loading ? (
+            <span className="flex items-center justify-center gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="w-1 h-1 rounded-full bg-white" style={{ animation: "dot-pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </span>
+          ) : "로그인"}
         </button>
       </form>
-      <button
-        type="button"
-        onClick={handleGuest}
-        disabled={loading}
-        className="text-white/60 text-sm hover:text-white/80 disabled:opacity-50"
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-white/5" />
+          <span className="text-[10px] text-white/20 uppercase tracking-wider">또는</span>
+          <div className="flex-1 h-px bg-white/5" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGuest}
+          disabled={loading}
+          className="w-full py-3 rounded-xl glass text-white/60 text-sm font-medium transition-all duration-200 hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+        >
+          게스트로 시작하기
+        </button>
+      </div>
+
+      <Link
+        href="/signup"
+        className="text-xs text-white/30 hover:text-white/50 transition-colors"
       >
-        게스트로 계속하기
-      </button>
-      <Link href="/signup" className="text-white/60 text-sm hover:text-white/80">
-        회원가입
+        처음이신가요? <span className="text-accent-light/60 hover:text-accent-light/80">회원가입</span>
       </Link>
     </div>
   );

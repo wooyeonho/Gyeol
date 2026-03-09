@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { RoomObject } from "@/lib/room/types";
 import ARViewer from "@/components/ar-viewer";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
 
 export default function RoomPage() {
   const [objects, setObjects] = useState<RoomObject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [arColor, setArColor] = useState("#a0a0ff");
+  const [arColor, setArColor] = useState("#7c6ef0");
 
   useEffect(() => {
     fetch("/api/room")
@@ -32,24 +34,46 @@ export default function RoomPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="p-4 border-b border-white/10">
-        <h1 className="text-xl font-semibold">Room</h1>
-        <p className="text-white/50 text-sm mt-1">Each memory becomes an object in the space.</p>
-      </div>
+    <div className="min-h-dvh bg-black text-white flex flex-col">
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 pt-12 glass-strong border-b-0"
+      >
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Room</h1>
+            <p className="text-white/40 text-xs mt-0.5">기억이 공간이 되는 곳</p>
+          </div>
+          <Link href="/" className="glass rounded-full px-3 py-1.5 text-xs text-white/40 hover:text-white/60 transition-colors">
+            홈
+          </Link>
+        </div>
+      </motion.div>
+
       <div className="flex-1 relative min-h-[60vh]">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/60" style={{ animation: "dot-pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
           </div>
         ) : (
           <RoomScene objects={objects} />
         )}
       </div>
-      <section className="p-4 border-t border-white/10 pb-24">
-        <h2 className="text-sm font-medium text-white/70 mb-2">View in AR</h2>
+
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="p-4 glass-strong border-t-0 pb-8"
+      >
+        <h2 className="text-sm font-semibold text-white/50 mb-3">AR로 보기</h2>
         <ARViewer color={arColor} onPositionSave={saveARPosition} />
-      </section>
+      </motion.section>
     </div>
   );
 }
