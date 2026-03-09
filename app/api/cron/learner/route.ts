@@ -4,6 +4,7 @@ import { checkCronAuth } from "@/lib/cron-auth";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 const DEFAULT_FEED_URLS = [
   "https://hnrss.org/frontpage",
@@ -177,6 +178,13 @@ export async function GET(request: NextRequest) {
       headers: { "Content-Type": "application/json" },
     });
   }
+  const lockKey = "cron:learner";
+  const acquired = await acquireCronLock(lockKey, 600);
+  if (!acquired) {
+    return new Response(JSON.stringify({ processed: 0, skipped: "lock" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const result = await runLearner(feedUrls);
     return new Response(
@@ -189,6 +197,8 @@ export async function GET(request: NextRequest) {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  } finally {
+    await releaseCronLock(lockKey);
   }
 }
 
@@ -212,6 +222,13 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "application/json" },
     });
   }
+  const lockKey = "cron:learner";
+  const acquired = await acquireCronLock(lockKey, 600);
+  if (!acquired) {
+    return new Response(JSON.stringify({ processed: 0, skipped: "lock" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const result = await runLearner(feedUrls);
     return new Response(
@@ -224,5 +241,7 @@ export async function POST(request: NextRequest) {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  } finally {
+    await releaseCronLock(lockKey);
   }
 }

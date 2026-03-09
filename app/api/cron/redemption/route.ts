@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 /**
  * Redemption fulfillment (stub for PG).
@@ -28,7 +29,27 @@ export async function POST(request: NextRequest) {
 }
 
 async function runRedemption() {
+  const lockKey = "cron:redemption";
+  const acquired = await acquireCronLock(lockKey, 300);
+  if (!acquired) {
+    return new Response(
+      JSON.stringify({ processed: 0, skipped: "lock", timestamp: new Date().toISOString() }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   try {
+    if (process.env.REDEMPTION_AUTO_APPROVE !== "true") {
+      return new Response(
+        JSON.stringify({
+          processed: 0,
+          skipped: "auto_approve_disabled",
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const service = createServiceClient();
     const { data: pending } = await service
       .from("redemption_requests")
@@ -68,5 +89,7 @@ async function runRedemption() {
       JSON.stringify({ error: "Redemption processing failed" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
+  } finally {
+    await releaseCronLock(lockKey);
   }
 }

@@ -9,6 +9,7 @@ import {
   isMeaningfulAutonomousOutput,
   isRepetitiveOutput,
 } from "@/lib/autonomy/self-regulation";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 const DEFAULT_CRAWL_URLS = [
   "https://news.ycombinator.com",
@@ -112,6 +113,14 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  const lockKey = "cron:crawl";
+  const acquired = await acquireCronLock(lockKey, 900);
+  if (!acquired) {
+    return new Response(JSON.stringify({ processed: 0, skipped: "lock" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const urls = getCrawlUrls();
     if (urls.length === 0) {
@@ -151,6 +160,8 @@ export async function GET(request: NextRequest) {
       JSON.stringify({ error: "Crawl failed", processed: 0 }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
+  } finally {
+    await releaseCronLock(lockKey);
   }
 }
 
@@ -158,6 +169,14 @@ export async function POST(request: NextRequest) {
   if (!checkCronAuth(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const lockKey = "cron:crawl";
+  const acquired = await acquireCronLock(lockKey, 900);
+  if (!acquired) {
+    return new Response(JSON.stringify({ processed: 0, skipped: "lock" }), {
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -213,5 +232,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: "Crawl processing failed" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
+  } finally {
+    await releaseCronLock(lockKey);
   }
 }

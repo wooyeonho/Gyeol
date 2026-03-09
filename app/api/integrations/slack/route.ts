@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -7,6 +9,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const allowed = await checkRateLimit(`integration-slack-post:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const body = await request.json().catch(() => ({}));
 
@@ -15,14 +19,23 @@ export async function POST(request: NextRequest) {
       const service = createServiceClient();
       const { data: conn } = await service
         .from("user_connections")
-        .select("token_encrypted, metadata")
+        .select("id, token_encrypted, metadata")
         .eq("user_id", user.id)
         .eq("service", "slack")
         .single();
       if (!conn) return NextResponse.json({ error: "Slack not connected" }, { status: 404 });
 
-      const token = (conn as { token_encrypted: string; metadata?: { channel_id?: string } }).token_encrypted;
-      const channelId = (conn as { metadata?: { channel_id?: string } }).metadata?.channel_id;
+      const row = conn as { id?: string; token_encrypted: string; metadata?: { channel_id?: string } };
+      const decoded = decodeStoredSecret(row.token_encrypted);
+      const token = decoded.secret;
+      if (!token) return NextResponse.json({ error: "Failed to decrypt Slack token" }, { status: 503 });
+      if (decoded.legacyPlaintext && row.id) {
+        const rotated = encryptSecret(token);
+        if (rotated) {
+          service.from("user_connections").update({ token_encrypted: rotated }).eq("id", row.id).then(() => {});
+        }
+      }
+      const channelId = row.metadata?.channel_id;
       if (!channelId) return NextResponse.json({ error: "No channel configured" }, { status: 400 });
 
       const slackRes = await fetch("https://slack.com/api/chat.postMessage", {
@@ -41,13 +54,17 @@ export async function POST(request: NextRequest) {
     // Otherwise, save token
     const accessToken = typeof body?.access_token === "string" ? body.access_token : null;
     if (!accessToken) return NextResponse.json({ error: "access_token required" }, { status: 400 });
+    const encrypted = encryptSecret(accessToken);
+    if (!encrypted) {
+      return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
+    }
 
     const service = createServiceClient();
     await service.from("user_connections").upsert(
       {
         user_id: user.id,
         service: "slack",
-        token_encrypted: accessToken,
+        token_encrypted: encrypted,
         metadata: body?.channel_id ? { channel_id: body.channel_id } : {},
       },
       { onConflict: "user_id,service" }

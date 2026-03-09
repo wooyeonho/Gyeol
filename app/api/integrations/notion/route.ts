@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -8,17 +10,23 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const allowed = await checkRateLimit(`integration-notion-post:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const body = await request.json().catch(() => ({}));
     const accessToken = typeof body?.access_token === "string" ? body.access_token : null;
     if (!accessToken) return NextResponse.json({ error: "access_token required" }, { status: 400 });
+    const encrypted = encryptSecret(accessToken);
+    if (!encrypted) {
+      return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
+    }
 
     const service = createServiceClient();
     await service.from("user_connections").upsert(
       {
         user_id: user.id,
         service: "notion",
-        token_encrypted: accessToken,
+        token_encrypted: encrypted,
         metadata: {},
       },
       { onConflict: "user_id,service" }
@@ -36,17 +44,28 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const allowed = await checkRateLimit(`integration-notion-get:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const service = createServiceClient();
     const { data: conn } = await service
       .from("user_connections")
-      .select("token_encrypted")
+      .select("id, token_encrypted")
       .eq("user_id", user.id)
       .eq("service", "notion")
       .single();
     if (!conn) return NextResponse.json({ error: "Notion not connected" }, { status: 404 });
 
-    const token = (conn as { token_encrypted: string }).token_encrypted;
+    const row = conn as { id?: string; token_encrypted: string };
+    const decoded = decodeStoredSecret(row.token_encrypted);
+    const token = decoded.secret;
+    if (!token) return NextResponse.json({ error: "Failed to decrypt Notion token" }, { status: 503 });
+    if (decoded.legacyPlaintext && row.id) {
+      const rotated = encryptSecret(token);
+      if (rotated) {
+        service.from("user_connections").update({ token_encrypted: rotated }).eq("id", row.id).then(() => {});
+      }
+    }
 
     // Search recently edited pages
     const searchRes = await fetch("https://api.notion.com/v1/search", {
