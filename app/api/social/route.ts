@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     const [logsRes, breedingRes, agentsRes, giftRes] = await Promise.all([
-      service.from("social_logs").select("id, agent_a_id, agent_b_id, topic, outcome, created_at").or(`agent_a_id.eq.${myAgentId},agent_b_id.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(30),
+      service.from("social_logs").select("id, agent_a_id, agent_b_id, topic, conversation, message, outcome, created_at").or(`agent_a_id.eq.${myAgentId},agent_b_id.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(30),
       service.from("breeding_records").select("id, parent_a, parent_b, child_id, status, traits_blend, created_at, updated_at").or(`parent_a.eq.${myAgentId},parent_b.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(20),
       service.from("agents").select("id").neq("user_id", user.id).limit(50),
       service.from("autonomous_logs").select("id, summary, created_at").eq("agent_id", myAgentId).eq("action_type", "gift_exchange").order("created_at", { ascending: false }).limit(20),
@@ -50,7 +50,14 @@ export async function GET() {
       agent_a_id: (r as { agent_a_id: string }).agent_a_id,
       agent_b_id: (r as { agent_b_id: string }).agent_b_id,
       topic: (r as { topic?: string }).topic,
+      conversation: (r as { conversation?: string }).conversation,
+      message: (r as { message?: string }).message,
       outcome: (r as { outcome?: string }).outcome,
+      content:
+        (r as { conversation?: string; message?: string; outcome?: string }).conversation ||
+        (r as { message?: string; outcome?: string }).message ||
+        (r as { outcome?: string }).outcome ||
+        "",
       created_at: (r as { created_at?: string }).created_at,
     }));
 

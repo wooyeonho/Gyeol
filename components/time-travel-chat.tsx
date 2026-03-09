@@ -36,12 +36,15 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let full = "";
+      let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter((l) => l.startsWith("data:"));
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
         for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
           const data = line.slice(5).trim();
           if (data === "[DONE]") continue;
           try {
@@ -53,8 +56,19 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
           }
         }
       }
+      buffer += decoder.decode();
+      for (const line of buffer.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const j = JSON.parse(data) as { choices?: { delta?: { content?: string } }[] };
+          const c = j.choices?.[0]?.delta?.content;
+          if (c) full += c;
+        } catch {}
+      }
       setMessages((m) => [...m, { role: "assistant", content: full || "..." }]);
-    } catch (e) {
+    } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Error." }]);
     } finally {
       setStreaming(false);

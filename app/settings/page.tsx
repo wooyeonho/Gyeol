@@ -21,28 +21,45 @@ type AgentState = {
 export default function SettingsPage() {
   const [state, setState] = useState<AgentState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-
-      const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
-      if (!agent) { setLoading(false); return; }
-
-      const { data } = await supabase.from("agent_state").select("*").eq("agent_id", agent.id).single();
-      setState(data);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/settings");
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (!res.ok) {
+          setError("설정 정보를 불러오지 못했습니다.");
+          return;
+        }
+        const json = await res.json().catch(() => ({ state: null }));
+        setState(json.state ?? null);
+      } catch {
+        setError("설정 정보를 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
     }
-    load();
-  }, [supabase, router]);
+    void load();
+  }, [router]);
 
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: value }),
+    });
+    if (!res.ok) {
+      setError("설정 변경에 실패했습니다.");
+      return;
+    }
     const config: AgentConfig = { ...(state.config || {}), [key]: value };
-    await supabase.from("agent_state").update({ config }).eq("agent_id", state.agent_id || state.id);
     setState({ ...state, config });
   }
 
@@ -65,6 +82,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">설정</h1>
+      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-4">
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-sm text-white/60">이름</div>

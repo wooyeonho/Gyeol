@@ -1,11 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { BottomNav } from "@/components/bottom-nav";
 
-type Log = { action_type: string; summary?: string; created_at: string };
-type Artifact = { id: string; type: string; content?: string; title?: string; is_preserved?: boolean; created_at: string };
+type ActivityItem =
+  | {
+      id: string;
+      kind: "log";
+      action_type?: string;
+      summary?: string;
+      created_at: string;
+    }
+  | {
+      id: string;
+      kind: "artifact";
+      type?: string;
+      content?: string;
+      title?: string;
+      is_preserved?: boolean;
+      created_at: string;
+    };
 
 const TYPE_STYLES: Record<string, string> = {
   heartbeat: "bg-white/10",
@@ -18,39 +32,45 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function ActivityPage() {
-  const [logs, setLogs] = useState<(Log & { kind: "log" })[]>([]);
-  const [artifacts, setArtifacts] = useState<(Artifact & { kind: "artifact" })[]>([]);
+  const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      const { data: agents } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
-      if (!agents) { setLoading(false); return; }
-
-      const agentId = agents.id;
-      const { data: logData } = await supabase.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
-      const { data: artData } = await supabase.from("artifacts").select("id, type, content, title, is_preserved, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
-
-      setLogs(((logData as Log[] | null) || []).map((l: Log) => ({ ...l, kind: "log" as const })));
-      setArtifacts(((artData as Artifact[] | null) || []).map((a: Artifact) => ({ ...a, kind: "artifact" as const })));
-      setLoading(false);
+      try {
+        const res = await fetch("/api/activity");
+        if (!res.ok) {
+          setError("활동 데이터를 불러오지 못했습니다.");
+          setItems([]);
+          return;
+        }
+        const json = await res.json().catch(() => ({ items: [] }));
+        setItems(Array.isArray(json.items) ? json.items : []);
+      } catch {
+        setError("활동 데이터를 불러오지 못했습니다.");
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
     }
-    load();
-  }, [supabase]);
+    void load();
+  }, []);
 
   async function togglePreserved(id: string, current: boolean) {
-    await supabase.from("artifacts").update({ is_preserved: !current }).eq("id", id);
-    setArtifacts((prev) => prev.map((a) => (a.id === id ? { ...a, is_preserved: !current } : a)));
+    const next = !current;
+    const res = await fetch(`/api/artifacts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_preserved: next }),
+    });
+    if (!res.ok) return;
+    setItems((prev) =>
+      prev.map((item) =>
+        item.kind === "artifact" && item.id === id ? { ...item, is_preserved: next } : item,
+      ),
+    );
   }
-
-  const combined = [
-    ...logs.map((l) => ({ ...l, kind: "log" as const, created_at: l.created_at })),
-    ...artifacts.map((a) => ({ ...a, kind: "artifact" as const, created_at: a.created_at })),
-  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 50);
 
   if (loading) {
     return (
@@ -63,11 +83,14 @@ export default function ActivityPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">활동</h1>
+      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-3">
-        {combined.map((item, i) => (
+        {items.map((item, i) => {
+          const styleKey = item.kind === "log" ? (item.action_type ?? "") : (item.type ?? "");
+          return (
           <div
             key={item.kind + "-" + i}
-            className={`rounded-xl p-4 border ${TYPE_STYLES[item.kind === "log" ? (item as Log).action_type : (item as Artifact).type] || "bg-white/5 border-white/10"}`}
+            className={`rounded-xl p-4 border ${TYPE_STYLES[styleKey] || "bg-white/5 border-white/10"}`}
           >
             {item.kind === "log" ? (
               <>
@@ -78,20 +101,21 @@ export default function ActivityPage() {
               <>
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-xs text-white/50">{(item as Artifact).type}</div>
-                    <div className="text-sm mt-1">{(item as Artifact).title || (item as Artifact).content?.slice(0, 80)}</div>
+                    <div className="text-xs text-white/50">{item.type}</div>
+                    <div className="text-sm mt-1">{item.title || item.content?.slice(0, 80)}</div>
                   </div>
                   <button
-                    onClick={() => togglePreserved((item as Artifact).id, (item as Artifact).is_preserved || false)}
+                    onClick={() => void togglePreserved(item.id, item.is_preserved || false)}
                     className="text-xs px-2 py-1 rounded bg-white/10"
                   >
-                    {(item as Artifact).is_preserved ? "보관됨" : "보관"}
+                    {item.is_preserved ? "보관됨" : "보관"}
                   </button>
                 </div>
               </>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       <BottomNav />
     </div>

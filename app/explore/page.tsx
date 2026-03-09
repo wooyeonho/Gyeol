@@ -1,32 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 type Agent = { id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
-type AgentStateRow = { agent_id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
+type ExploreProfile = {
+  id: string;
+  self_name?: string | null;
+  vitality?: number;
+  total_messages?: number;
+  gen_level?: number;
+};
 
 export default function ExplorePage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { data: states } = await supabase.from("agent_state").select("agent_id, self_name, vitality, total_messages, gen_level").gt("vitality", 0.1).gt("total_messages", 10);
-      const list = ((states as AgentStateRow[] | null) || []).map((s: AgentStateRow) => ({
-        id: s.agent_id,
-        self_name: s.self_name,
-        vitality: s.vitality,
-        total_messages: s.total_messages,
-        gen_level: s.gen_level,
-      }));
-      setAgents(list);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/explore");
+        if (!res.ok) {
+          setError("탐색 데이터를 불러오지 못했습니다.");
+          setAgents([]);
+          return;
+        }
+        const json = await res.json().catch(() => ({ profiles: [] }));
+        const profiles = (Array.isArray(json.profiles) ? json.profiles : []) as ExploreProfile[];
+        const list = profiles.map((p) => ({
+          id: p.id as string,
+          self_name: p.self_name ?? undefined,
+          vitality: Number(p.vitality ?? 0),
+          total_messages: Number(p.total_messages ?? 0),
+          gen_level: Number(p.gen_level ?? 1),
+        }));
+        setAgents(list);
+      } catch {
+        setError("탐색 데이터를 불러오지 못했습니다.");
+        setAgents([]);
+      } finally {
+        setLoading(false);
+      }
     }
-    load();
-  }, [supabase]);
+    void load();
+  }, []);
 
   if (loading) {
     return (
@@ -39,6 +57,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 px-4">
       <h1 className="text-xl font-semibold mb-4">탐색</h1>
+      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-3">
         {agents.map((a) => (
           <div key={a.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
