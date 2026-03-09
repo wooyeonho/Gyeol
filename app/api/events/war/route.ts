@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
-// TODO: War event logic - tribe vs tribe, resolve outcomes
 function checkCronAuth(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
@@ -8,10 +8,25 @@ function checkCronAuth(req: NextRequest): boolean {
   return auth === secret;
 }
 
-export async function GET(req: NextRequest) {
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Service not configured" }, { status: 503 });
+export async function GET() {
+  try {
+    const db = createServiceClient();
+    const { data: event } = await db
+      .from("war_events")
+      .select("id, side_a, side_b, side_a_score, side_b_score, ends_at, status")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return NextResponse.json(event ?? null);
+  } catch (e) {
+    console.error("war GET", e);
+    return NextResponse.json(null);
   }
+}
+
+export async function POST(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Placeholder for scheduled war resolution/update job.
   return NextResponse.json({ processed: 0 });
 }

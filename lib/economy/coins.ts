@@ -23,3 +23,34 @@ export async function spendCoins(agentId: string, amount: number, reason: string
   await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "coins_spend", summary: `-${amount} coins: ${reason}` });
   return true;
 }
+
+export async function spendCoinsAtomic(agentId: string, amount: number, reason: string): Promise<boolean> {
+  const db = createServiceClient();
+  try {
+    const { data, error } = await db.rpc("spend_coins_atomic", {
+      p_agent_id: agentId,
+      p_amount: amount,
+      p_reason: reason,
+    });
+    if (!error && typeof data === "boolean") return data;
+  } catch {
+    // Fallback to non-RPC flow when function is unavailable.
+  }
+  return spendCoins(agentId, amount, reason);
+}
+
+export async function addCoinsAtomic(agentId: string, amount: number, reason: string): Promise<boolean> {
+  const db = createServiceClient();
+  try {
+    const { data, error } = await db.rpc("add_coins_atomic", {
+      p_agent_id: agentId,
+      p_amount: amount,
+      p_reason: reason,
+    });
+    if (!error && typeof data === "boolean") return data;
+  } catch {
+    // Fallback to non-RPC flow when function is unavailable.
+  }
+  await addCoins(agentId, amount, reason);
+  return true;
+}

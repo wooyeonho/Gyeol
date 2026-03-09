@@ -54,10 +54,20 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const service = createServiceClient();
-    const { data: boardRow } = await service.from("adoption_board").select("id").eq("agent_id", agentId).eq("status", "available").single();
-    if (!boardRow) return NextResponse.json({ error: "Not available" }, { status: 404 });
-    await service.from("agents").update({ user_id: user.id }).eq("id", agentId);
-    await service.from("adoption_board").update({ status: "adopted" }).eq("agent_id", agentId);
+    const { data: claimed, error: claimError } = await service
+      .from("adoption_board")
+      .update({ status: "adopted" })
+      .eq("agent_id", agentId)
+      .eq("status", "available")
+      .select("id")
+      .maybeSingle();
+    if (claimError || !claimed?.id) return NextResponse.json({ error: "Not available" }, { status: 409 });
+
+    const { error: adoptError } = await service.from("agents").update({ user_id: user.id }).eq("id", agentId);
+    if (adoptError) {
+      await service.from("adoption_board").update({ status: "available" }).eq("id", claimed.id);
+      return NextResponse.json({ error: "Adoption failed" }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("POST /api/adopt error", e);
