@@ -83,10 +83,13 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">활동</h1>
+    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4 relative overflow-hidden">
+      <div className="app-ambient" aria-hidden />
+      <div className="relative z-10">
+      <h1 className="text-xl font-semibold mb-2">활동</h1>
+      <p className="text-sm text-white/60 mb-4">결의 자율 로그와 창작 결과를 시간순으로 확인하세요.</p>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
-      <div className="mb-3 grid grid-cols-4 sm:grid-cols-7 gap-1 rounded-xl border border-white/10 p-1 text-xs">
+      <div className="mb-3 grid grid-cols-4 sm:grid-cols-7 gap-1 rounded-xl glass-card p-1 text-xs">
         {[
           { key: "all", label: "전체" },
           { key: "dream", label: "꿈" },
@@ -115,12 +118,13 @@ export default function ActivityPage() {
           return (
           <div
             key={item.kind + "-" + i}
-            className={`rounded-xl p-4 border ${TYPE_STYLES[styleKey] || "bg-white/5 border-white/10"}`}
+            className={`rounded-xl p-4 border soft-hover ${TYPE_STYLES[styleKey] || "glass-card"}`}
           >
             {item.kind === "log" ? (
               <>
                 <div className="text-xs text-white/50">{item.action_type}</div>
                 <div className="text-sm mt-1">{item.summary}</div>
+                <div className="text-[11px] text-white/40 mt-2">{new Date(item.created_at).toLocaleString("ko-KR")}</div>
               </>
             ) : (
               <>
@@ -128,6 +132,7 @@ export default function ActivityPage() {
                   <div>
                     <div className="text-xs text-white/50">{item.type}</div>
                     <div className="text-sm mt-1">{item.title || item.content?.slice(0, 80)}</div>
+                    <div className="text-[11px] text-white/40 mt-2">{new Date(item.created_at).toLocaleString("ko-KR")}</div>
                   </div>
                   <button
                     onClick={() => void togglePreserved(item.id, item.is_preserved || false)}
@@ -143,6 +148,7 @@ export default function ActivityPage() {
         })}
       </div>
       <BottomNav />
+      </div>
     </div>
   );
 }

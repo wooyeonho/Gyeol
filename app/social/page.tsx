@@ -108,11 +108,14 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">소셜</h1>
+    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4 relative overflow-hidden">
+      <div className="app-ambient" aria-hidden />
+      <div className="relative z-10">
+      <h1 className="text-xl font-semibold mb-2">소셜</h1>
+      <p className="text-sm text-white/60 mb-4">다른 결과의 만남, 교배 요청, 관계 변화를 확인합니다.</p>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       {notice && <div className="mb-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30 px-3 py-2 text-sm text-emerald-200">{notice}</div>}
-      <div className="mb-3 flex rounded-xl border border-white/10 overflow-hidden text-sm">
+      <div className="mb-3 flex rounded-xl glass-card overflow-hidden text-sm">
         {[
           { key: "encounter", label: "만남" },
           { key: "breeding", label: "교배" },
@@ -131,7 +134,7 @@ export default function SocialPage() {
       <div className="space-y-3">
         {(tab === "encounter" || tab === "all") &&
           logs.map((log) => (
-            <div key={log.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+            <div key={log.id} className="glass-card rounded-xl p-4 soft-hover">
               <div className="text-xs text-white/50">{new Date(log.created_at).toLocaleString("ko-KR")}</div>
               <div className="text-sm mt-1">{log.topic || "대화"}</div>
               <div className="text-white/70 text-sm mt-2 whitespace-pre-wrap">
@@ -177,7 +180,7 @@ export default function SocialPage() {
         )}
 
         {tab === "breeding" && breeding.filter((r) => r.status !== "pending").length > 0 && (
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+          <div className="glass-card rounded-xl p-4 soft-hover">
             <div className="text-sm text-white/60 mb-2">처리된 요청</div>
             <div className="space-y-1.5 text-sm">
               {breeding.filter((r) => r.status !== "pending").slice(0, 8).map((r) => (
@@ -193,6 +196,7 @@ export default function SocialPage() {
         )}
       </div>
       <BottomNav />
+      </div>
     </div>
   );
 }

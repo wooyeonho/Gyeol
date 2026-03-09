@@ -81,36 +81,41 @@ export default function SettingsPage() {
   const config: AgentConfig = state?.config || {};
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">설정</h1>
+    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4 relative overflow-hidden">
+      <div className="app-ambient" aria-hidden />
+      <div className="relative z-10">
+      <h1 className="text-xl font-semibold mb-2">설정</h1>
+      <p className="text-sm text-white/60 mb-4">자율 루프와 진화 실행을 안전하게 제어하세요.</p>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-4">
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">이름</div>
           <div>{state?.self_name || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">Gen 레벨</div>
           <div>{state?.gen_level ?? 1}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">총 메시지</div>
           <div>{state?.total_messages ?? 0}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">활력</div>
           <div>{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">기분</div>
           <div>{state?.mood || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
+        <div className="glass-card rounded-xl p-4 soft-hover">
           <div className="text-sm text-white/60">코인</div>
           <div>{state?.coins ?? 0}</div>
         </div>
+        </div>
 
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
+        <div className="glass-card-strong rounded-xl p-4 space-y-3">
           <div className="flex justify-between items-center">
             <span>자율 모드</span>
             <button
@@ -170,7 +175,7 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <Link href="/autonomy" className="block text-center w-full py-3 rounded-xl bg-indigo-500/20 text-indigo-300">
+        <Link href="/autonomy" className="block text-center w-full py-3 rounded-xl bg-indigo-500/20 text-indigo-300 soft-hover">
           자율 진화 콘솔 열기
         </Link>
 
@@ -179,6 +184,7 @@ export default function SettingsPage() {
         </button>
       </div>
       <BottomNav />
+      </div>
     </div>
   );
 }

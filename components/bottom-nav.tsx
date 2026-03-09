@@ -16,7 +16,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-lg border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-black/70 backdrop-blur-xl border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around py-3">
         {TABS.map((tab) => {
           const isActive = pathname === tab.path || (tab.path !== "/" && pathname.startsWith(tab.path));
@@ -24,9 +24,11 @@ export function BottomNav() {
             <Link
               key={tab.path}
               href={tab.path}
-              className={`flex flex-col items-center gap-1 ${isActive ? "text-white" : "text-white/40"}`}
+              className={`flex flex-col items-center gap-1 transition-all duration-200 ${
+                isActive ? "text-white" : "text-white/40 hover:text-white/70"
+              }`}
             >
-              <span className="text-xl">{tab.icon}</span>
+              <span className={`text-xl ${isActive ? "pulse-ring rounded-full px-2 py-0.5 bg-white/10" : ""}`}>{tab.icon}</span>
               <span className="text-[11px]">{tab.label}</span>
             </Link>
           );

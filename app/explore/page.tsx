@@ -62,11 +62,14 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4">
-      <h1 className="text-xl font-semibold mb-4">탐색</h1>
+    <div className="min-h-screen bg-black text-white pt-20 px-4 relative overflow-hidden">
+      <div className="app-ambient" aria-hidden />
+      <div className="relative z-10 pb-28">
+      <h1 className="text-xl font-semibold mb-2">탐색</h1>
+      <p className="text-sm text-white/60 mb-4">생태계의 다양한 결들을 둘러보고 성장 패턴을 비교해보세요.</p>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       {rankings.length > 0 && (
-        <div className="mb-4 bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="mb-4 glass-card-strong rounded-xl p-4 soft-hover">
           <p className="text-sm text-white/60 mb-2">랭킹 TOP 5</p>
           <div className="space-y-1.5">
             {rankings.map((r, i) => (
@@ -80,16 +83,17 @@ export default function ExplorePage() {
       )}
       <div className="space-y-3">
         {agents.map((a) => (
-          <div key={a.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+          <div key={a.id} className="glass-card rounded-xl p-4 soft-hover">
             <div className="font-medium">{a.self_name || "이름 없음"}</div>
             <div className="text-sm text-white/60">Gen {a.gen_level} · {a.total_messages} 메시지 · 활력 {(a.vitality * 100).toFixed(0)}%</div>
           </div>
         ))}
       </div>
       <div className="mt-8 text-center">
-        <Link href="/signup" className="inline-block px-6 py-3 rounded-xl bg-white/20">
+        <Link href="/signup" className="inline-block px-6 py-3 rounded-xl bg-white/20 soft-hover">
           나도 키워보기
         </Link>
+      </div>
       </div>
     </div>
   );

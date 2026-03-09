@@ -60,8 +60,9 @@ export default function OpsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white pt-16 pb-28 px-4">
-      <div className="max-w-3xl mx-auto space-y-4">
+    <div className="min-h-screen bg-black text-white pt-16 pb-28 px-4 relative overflow-hidden">
+      <div className="app-ambient" aria-hidden />
+      <div className="max-w-3xl mx-auto space-y-4 relative z-10">
         <header>
           <h1 className="text-2xl font-semibold">운영 센터</h1>
           <p className="text-sm text-white/60 mt-1">24시간 자율활동 상태와 운영 준비도를 확인합니다.</p>
@@ -72,7 +73,7 @@ export default function OpsPage() {
 
         {!loading && data && (
           <>
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="rounded-2xl glass-card-strong p-4 soft-hover">
               <p className="text-xs text-white/50 uppercase tracking-wider">Autonomy Health Score</p>
               <div className="mt-2 flex items-end justify-between">
                 <p className="text-4xl font-semibold">{data.autonomy_health.score}</p>
@@ -98,25 +99,25 @@ export default function OpsPage() {
             </section>
 
             <section className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="rounded-xl glass-card p-3 soft-hover">
                 <p className="text-xs text-white/50">Stale heartbeat (6h)</p>
                 <p className="text-2xl font-semibold">{data.stale_counts.stale_heartbeat_6h}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="rounded-xl glass-card p-3 soft-hover">
                 <p className="text-xs text-white/50">Stale dream (24h)</p>
                 <p className="text-2xl font-semibold">{data.stale_counts.stale_dream_24h}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="rounded-xl glass-card p-3 soft-hover">
                 <p className="text-xs text-white/50">Echo count</p>
                 <p className="text-2xl font-semibold">{data.stale_counts.echo_count}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="rounded-xl glass-card p-3 soft-hover">
                 <p className="text-xs text-white/50">Stale cron jobs</p>
                 <p className="text-2xl font-semibold">{data.stale_counts.stale_cron_jobs_24h}</p>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="rounded-2xl glass-card p-4 soft-hover">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-3">최근 24시간 경보 추이</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg border border-white/10 px-3 py-2">
@@ -138,7 +139,7 @@ export default function OpsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="rounded-2xl glass-card p-4 soft-hover">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-2">환경변수 준비 상태</p>
               <div className="space-y-2 text-sm">
                 {data.env_status.map((env) => (
@@ -152,7 +153,7 @@ export default function OpsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="rounded-2xl glass-card p-4 soft-hover">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-2">운영 권장 액션</p>
               {data.recommendations.length > 0 ? (
                 <ul className="list-disc pl-5 text-sm text-white/80 space-y-1">
@@ -165,7 +166,7 @@ export default function OpsPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="rounded-2xl glass-card p-4 soft-hover">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-white/50 uppercase tracking-wider">최근 시스템 경보</p>
                 <span className="text-xs text-white/40">{new Date(data.checked_at).toLocaleString("ko-KR")}</span>
