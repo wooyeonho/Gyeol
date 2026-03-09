@@ -25,8 +25,17 @@
 ## 설정
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
-2. Supabase SQL Editor에서 스키마 실행
-3. `npm install && npm run dev`
+2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql`
+3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
+4. 개발 서버 실행: `npm run dev`
+
+### 운영 필수 환경 변수
+
+- `CRON_SECRET`: cron/webhook 인증
+- `TELEGRAM_WEBHOOK_SECRET`: 텔레그램 웹훅 검증
+- `CONNECTION_TOKEN_KEY`: 외부 연동 토큰 암호화 키
+- `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
 
 ## Cost
 

@@ -20,6 +20,9 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
+    if (process.env.NODE_ENV === "production" && !pathname.startsWith("/api")) {
+      return new NextResponse("Service unavailable: auth middleware is not configured", { status: 503 });
+    }
     return NextResponse.next();
   }
 
