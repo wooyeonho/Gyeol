@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "결 GYEOL",
-  description: "Autonomous evolving AI lifeform",
+  description: "관계와 약속을 운영하고, 그 흐름을 이야기로 보여주는 AI Relationship OS",
   manifest: "/manifest.json",
 };
 

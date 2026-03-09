@@ -12,6 +12,46 @@ export type FeatureItem = {
 
 export const FEATURE_CATALOG: FeatureItem[] = [
   {
+    id: "relationship-os",
+    name: "Relationship OS 홈",
+    summary: "오늘의 관계 브리핑, 위험한 약속, 승인 대기 초안을 한 번에 확인합니다.",
+    href: "/",
+    category: "core",
+    status: "ready",
+  },
+  {
+    id: "people-board",
+    name: "사람별 관계 보드",
+    summary: "사람별 신뢰/온도/열린 루프/선호 스타일을 추적합니다.",
+    href: "/people",
+    category: "growth",
+    status: "ready",
+  },
+  {
+    id: "promise-engine",
+    name: "Promise Engine",
+    summary: "약속과 follow-up을 구조화하고 바로 실행 가능한 메시지를 제안합니다.",
+    href: "/promises",
+    category: "core",
+    status: "ready",
+  },
+  {
+    id: "night-story",
+    name: "Night Story",
+    summary: "낮 동안의 관계 흐름을 밤마다 장면과 대사로 압축해 보여줍니다.",
+    href: "/stories",
+    category: "creative",
+    status: "ready",
+  },
+  {
+    id: "approval-inbox",
+    name: "승인함",
+    summary: "결이 준비한 메시지/리마인드/실행안을 승인하거나 거절합니다.",
+    href: "/approvals",
+    category: "core",
+    status: "ready",
+  },
+  {
     id: "core-chat",
     name: "AI 대화 코어",
     summary: "에이전트와 실시간 스트리밍 대화로 성장을 유도합니다.",
