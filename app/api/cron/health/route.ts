@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
+import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 
 /**
  * Optional health check per HEARTBEAT.md: "Every 30 min: Check agent status"
@@ -74,6 +75,16 @@ export async function GET(request: NextRequest) {
       console.error("health cron freshness lookup", e);
     }
 
+    const staleCronJobs = cronFreshness.filter((j) => j.stale).length;
+    const autonomyHealth = computeAutonomyHealthScore({
+      totalAgents: agentCount ?? 0,
+      staleHeartbeat6h: staleHeartbeatSixHours?.length ?? 0,
+      staleDream24h: staleDreamAgents?.length ?? 0,
+      echoAgents: echoAgents?.length ?? 0,
+      staleCronJobs,
+      totalCronJobs: 8,
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -86,6 +97,7 @@ export async function GET(request: NextRequest) {
         agents_stale_heartbeat_24h: staleHeartbeatAgents?.length ?? 0,
         agents_stale_dream_24h: staleDreamAgents?.length ?? 0,
         cron_freshness: cronFreshness,
+        autonomy_health: autonomyHealth,
       }),
       { headers: { "Content-Type": "application/json" } }
     );

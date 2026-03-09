@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { createServiceClient } from "@/lib/supabase/service";
+import { writeSystemAlert } from "@/lib/ops/alerts";
 
 type JobTarget = {
   name: string;
@@ -92,6 +93,28 @@ export async function GET(req: NextRequest) {
         status: run.status,
         detail: run.body,
       });
+      if (!run.ok) {
+        await writeSystemAlert({
+          level: "critical",
+          source: "cron-lifeline",
+          code: "JOB_TRIGGER_FAILED",
+          message: `Lifeline failed to recover job: ${target.name}`,
+          details: {
+            status: run.status,
+            detail: run.body,
+          },
+        });
+      } else {
+        await writeSystemAlert({
+          level: "warning",
+          source: "cron-lifeline",
+          code: "JOB_RECOVERED",
+          message: `Lifeline re-triggered stale job: ${target.name}`,
+          details: {
+            status: run.status,
+          },
+        });
+      }
     }
 
     return NextResponse.json({

@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 
 export async function GET() {
   try {
@@ -61,6 +62,16 @@ export async function GET() {
       cronFreshness = [];
     }
 
+    const staleCronJobs24h = cronFreshness.filter((j) => j.minutes_since_update > 1440).length;
+    const autonomyHealth = computeAutonomyHealthScore({
+      totalAgents: states.length,
+      staleHeartbeat6h,
+      staleDream24h,
+      echoAgents: echoCount,
+      staleCronJobs: staleCronJobs24h,
+      totalCronJobs: 8,
+    });
+
     return NextResponse.json({
       agent_count: agentCount,
       social_count: socialCount,
@@ -72,6 +83,7 @@ export async function GET() {
       stale_dream_24h: staleDream24h,
       echo_count: echoCount,
       cron_freshness: cronFreshness,
+      autonomy_health: autonomyHealth,
     });
   } catch (e) {
     console.error("dashboard GET", e);

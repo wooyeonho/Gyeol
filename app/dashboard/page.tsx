@@ -13,6 +13,7 @@ type DashboardData = {
   stale_dream_24h?: number;
   echo_count?: number;
   cron_freshness?: Array<{ job_name: string; minutes_since_update: number }>;
+  autonomy_health?: { score: number; tier: "healthy" | "warning" | "critical"; reasons: string[] };
 };
 
 export default function DashboardPage() {
@@ -75,6 +76,30 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="bg-white/5 rounded-xl p-4 sm:col-span-2">
+              <p className="text-white/50 text-xs uppercase tracking-wider">Autonomy Health Score</p>
+              <div className="mt-2 flex items-center gap-3">
+                <p className="text-3xl font-semibold">{data.autonomy_health?.score ?? 0}</p>
+                <span
+                  className={`text-xs rounded-full px-2 py-1 border ${
+                    data.autonomy_health?.tier === "healthy"
+                      ? "border-emerald-300/40 text-emerald-200 bg-emerald-500/10"
+                      : data.autonomy_health?.tier === "warning"
+                        ? "border-amber-300/40 text-amber-200 bg-amber-500/10"
+                        : "border-red-300/40 text-red-200 bg-red-500/10"
+                  }`}
+                >
+                  {data.autonomy_health?.tier ?? "critical"}
+                </span>
+              </div>
+              {Array.isArray(data.autonomy_health?.reasons) && data.autonomy_health!.reasons.length > 0 && (
+                <ul className="mt-3 list-disc pl-5 text-sm text-white/70 space-y-1">
+                  {data.autonomy_health!.reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="bg-white/5 rounded-xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">Autonomy Enabled</p>
               <p className="text-2xl font-semibold">{data.autonomy_enabled_count ?? 0}</p>

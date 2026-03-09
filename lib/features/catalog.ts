@@ -68,6 +68,14 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     status: "ready",
   },
   {
+    id: "ops-center",
+    name: "운영 센터",
+    summary: "자율활동 건강 점수, 경보, 운영 준비도를 확인합니다.",
+    href: "/ops",
+    category: "world",
+    status: "ready",
+  },
+  {
     id: "album",
     name: "성장 앨범",
     summary: "에이전트의 주요 마일스톤을 추적합니다.",

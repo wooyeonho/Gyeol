@@ -27,7 +27,7 @@
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql`
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql`
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 
@@ -43,6 +43,11 @@
 - OpenClaw 스케줄러를 기본(primary)으로 운영하고 GitHub cron은 fallback으로 유지
 - `phase19_cron_lock.sql` 적용으로 중복 실행 방지
 - `/api/cron/lifeline` 활성화로 멈춘 잡 자동 복구
+- `/ops`에서 운영 준비도/경보 상시 점검
+
+### 운영 점검 문서
+
+- 비개발자용 SLO/장애대응 가이드: `OPS_SLO_RUNBOOK.md`
 
 ## Cost
 
