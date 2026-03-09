@@ -22,12 +22,13 @@
 - Digital twin, time-travel chat
 - External integrations (Notion, Slack, GitHub, Calendar), Gyeol Engine API
 - Autonomy lifeline (24/7 self-healing cron watchdog)
+- Safe autonomy console (proposal/approval/kill-switch execution)
 
 ## 설정
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql`
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_safe_autonomy.sql`
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 
@@ -46,6 +47,7 @@
 - `phase19_cron_lock.sql` 적용으로 중복 실행 방지
 - `/api/cron/lifeline` 활성화로 멈춘 잡 자동 복구
 - `/api/cron/health`에서 SLO 경고/위험 상태를 `system_alerts`에 자동 기록
+- `/autonomy`에서 AI 자율 진화 제안 승인/거절 및 킬 스위치 실행 제어
 - `/ops`에서 운영 준비도/경보 상시 점검
 
 ### 운영 점검 문서

@@ -2,6 +2,18 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 
+const CORE_CRON_JOBS = [
+  "cron:heartbeat",
+  "cron:time-capsule",
+  "cron:social",
+  "cron:learner",
+  "cron:crawl",
+  "cron:dream",
+  "cron:world",
+  "cron:lifeline",
+  "cron:autonomy",
+] as const;
+
 export async function GET() {
   try {
     const service = createServiceClient();
@@ -40,16 +52,7 @@ export async function GET() {
       const { data: locks } = await service
         .from("cron_job_locks")
         .select("job_name, updated_at")
-        .in("job_name", [
-          "cron:heartbeat",
-          "cron:time-capsule",
-          "cron:social",
-          "cron:learner",
-          "cron:crawl",
-          "cron:dream",
-          "cron:world",
-          "cron:lifeline",
-        ]);
+        .in("job_name", [...CORE_CRON_JOBS]);
       cronFreshness = (locks ?? []).map((lock) => {
         const updatedAt = new Date(String(lock.updated_at)).getTime();
         const minutes = Number.isNaN(updatedAt) ? 999999 : Math.floor((now - updatedAt) / 60000);
@@ -69,7 +72,7 @@ export async function GET() {
       staleDream24h,
       echoAgents: echoCount,
       staleCronJobs: staleCronJobs24h,
-      totalCronJobs: 8,
+      totalCronJobs: CORE_CRON_JOBS.length,
     });
 
     return NextResponse.json({

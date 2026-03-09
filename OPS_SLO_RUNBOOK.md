@@ -12,6 +12,7 @@
 
 - 공개 지표: `/dashboard`
 - 운영 상세(로그인 필요): `/ops`
+- 자율 진화 승인/실행 제어: `/autonomy`
 
 ## 3) 경보 등급
 
@@ -26,6 +27,7 @@
 - 자동 복구 성공 시 `JOB_RECOVERED` 이벤트가 기록됩니다.
 - `OPS_ALERT_SLACK_WEBHOOK_URL`가 설정되어 있으면 critical 경보를 Slack으로도 전송합니다.
 - `EMAIL_API_URL` + `OPS_ALERT_EMAIL_TO`가 설정되어 있으면 critical 경보를 이메일로도 전송합니다.
+- 안전 통제를 위해 자율 진화 실행은 설정 킬 스위치(`autonomy_execute_enabled`)가 OFF면 차단됩니다.
 
 ## 5) 수동 점검 체크리스트 (결제 제외 상용 점검)
 

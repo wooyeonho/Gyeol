@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/bottom-nav";
@@ -137,7 +138,32 @@ export default function SettingsPage() {
               {config.social_enabled !== false ? "ON" : "OFF"}
             </button>
           </div>
+          <div className="flex justify-between items-center">
+            <span>자율 진화 제안</span>
+            <button
+              onClick={() => toggleConfig("autonomy_proposals_enabled", config.autonomy_proposals_enabled === false)}
+              className={`px-3 py-1 rounded ${config.autonomy_proposals_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
+            >
+              {config.autonomy_proposals_enabled !== false ? "ON" : "OFF"}
+            </button>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>자율 진화 실행 (킬 스위치)</span>
+            <button
+              onClick={() => toggleConfig("autonomy_execute_enabled", config.autonomy_execute_enabled !== true)}
+              className={`px-3 py-1 rounded ${config.autonomy_execute_enabled === true ? "bg-red-500/30" : "bg-white/10"}`}
+            >
+              {config.autonomy_execute_enabled === true ? "ON" : "OFF"}
+            </button>
+          </div>
+          <p className="text-xs text-white/50">
+            안전을 위해 기본값은 OFF입니다. 승인된 제안만 실행되며, 언제든 OFF로 즉시 중지할 수 있습니다.
+          </p>
         </div>
+
+        <Link href="/autonomy" className="block text-center w-full py-3 rounded-xl bg-indigo-500/20 text-indigo-300">
+          자율 진화 콘솔 열기
+        </Link>
 
         <button onClick={logout} className="w-full py-3 rounded-xl bg-red-500/20 text-red-400">
           로그아웃

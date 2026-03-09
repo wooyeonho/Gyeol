@@ -76,6 +76,14 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     status: "ready",
   },
   {
+    id: "autonomy-console",
+    name: "자율 진화 콘솔",
+    summary: "AI 진화 제안을 승인/거절하고 킬 스위치로 실행을 통제합니다.",
+    href: "/autonomy",
+    category: "core",
+    status: "ready",
+  },
+  {
     id: "album",
     name: "성장 앨범",
     summary: "에이전트의 주요 마일스톤을 추적합니다.",

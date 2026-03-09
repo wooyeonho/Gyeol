@@ -4,6 +4,18 @@ import { checkCronAuth } from "@/lib/cron-auth";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 import { emitSystemAlert } from "@/lib/ops/alerts";
 
+const CORE_CRON_JOBS = [
+  "cron:heartbeat",
+  "cron:time-capsule",
+  "cron:social",
+  "cron:learner",
+  "cron:crawl",
+  "cron:dream",
+  "cron:world",
+  "cron:lifeline",
+  "cron:autonomy",
+] as const;
+
 /**
  * Optional health check per HEARTBEAT.md: "Every 30 min: Check agent status"
  * Returns agent counts and basic status for monitoring.
@@ -52,16 +64,7 @@ export async function GET(request: NextRequest) {
       const { data: lockRows } = await service
         .from("cron_job_locks")
         .select("job_name, updated_at")
-        .in("job_name", [
-          "cron:heartbeat",
-          "cron:time-capsule",
-          "cron:social",
-          "cron:learner",
-          "cron:crawl",
-          "cron:dream",
-          "cron:world",
-          "cron:lifeline",
-        ]);
+        .in("job_name", [...CORE_CRON_JOBS]);
       const now = Date.now();
       cronFreshness = (lockRows ?? []).map((row) => {
         const updated = new Date(String(row.updated_at)).getTime();
@@ -83,7 +86,7 @@ export async function GET(request: NextRequest) {
       staleDream24h: staleDreamAgents?.length ?? 0,
       echoAgents: echoAgents?.length ?? 0,
       staleCronJobs,
-      totalCronJobs: 8,
+      totalCronJobs: CORE_CRON_JOBS.length,
     });
 
     if (autonomyHealth.tier === "critical") {

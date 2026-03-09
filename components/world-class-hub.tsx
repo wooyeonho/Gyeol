@@ -24,6 +24,7 @@ const QUICK_PROMPTS = [
 const QUICK_LINKS = [
   { href: "/features", label: "기능 지도" },
   { href: "/ops", label: "운영 센터" },
+  { href: "/autonomy", label: "자율 진화" },
   { href: "/dashboard", label: "실시간 지표" },
   { href: "/explore", label: "탐험 모드" },
   { href: "/room", label: "3D 룸" },

@@ -416,6 +416,46 @@ create index if not exists system_alerts_level_created_idx on system_alerts(leve
 create index if not exists system_alerts_source_created_idx on system_alerts(source, created_at desc);
 
 -- ============================================================
+-- SAFE AUTONOMY CONTROL
+-- ============================================================
+
+create table if not exists autonomy_proposals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  agent_id uuid not null references agents(id) on delete cascade,
+  title text not null,
+  proposal_type text not null,
+  risk_level text not null default 'medium',
+  status text not null default 'pending',
+  created_by text not null default 'ai',
+  plan jsonb not null default '{}'::jsonb,
+  review_note text,
+  execution_result jsonb,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  executed_at timestamptz
+);
+
+create index if not exists autonomy_proposals_agent_status_created_idx
+  on autonomy_proposals(agent_id, status, created_at desc);
+create index if not exists autonomy_proposals_user_created_idx
+  on autonomy_proposals(user_id, created_at desc);
+
+create table if not exists autonomy_action_logs (
+  id uuid primary key default gen_random_uuid(),
+  proposal_id uuid references autonomy_proposals(id) on delete set null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  agent_id uuid not null references agents(id) on delete cascade,
+  action text not null,
+  detail text,
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists autonomy_action_logs_agent_created_idx
+  on autonomy_action_logs(agent_id, created_at desc);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 

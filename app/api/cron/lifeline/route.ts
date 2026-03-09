@@ -16,6 +16,7 @@ const JOB_TARGETS: JobTarget[] = [
   { name: "social", endpoint: "/api/cron/social", staleAfterMinutes: 720 },
   { name: "learner", endpoint: "/api/cron/learner", staleAfterMinutes: 720 },
   { name: "crawl", endpoint: "/api/cron/crawl", staleAfterMinutes: 960 },
+  { name: "autonomy", endpoint: "/api/cron/autonomy", staleAfterMinutes: 720 },
   { name: "dream", endpoint: "/api/cron/dream", staleAfterMinutes: 2160 },
   { name: "world", endpoint: "/api/cron/world", staleAfterMinutes: 1800 },
 ];

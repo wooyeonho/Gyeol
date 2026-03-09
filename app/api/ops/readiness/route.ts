@@ -3,6 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 
+const CORE_CRON_JOBS = [
+  "cron:heartbeat",
+  "cron:time-capsule",
+  "cron:social",
+  "cron:learner",
+  "cron:crawl",
+  "cron:dream",
+  "cron:world",
+  "cron:lifeline",
+  "cron:autonomy",
+] as const;
+
 const REQUIRED_ENV_KEYS = [
   "CRON_SECRET",
   "NEXT_PUBLIC_APP_URL",
@@ -27,16 +39,7 @@ export async function GET() {
       service
         .from("cron_job_locks")
         .select("job_name, updated_at")
-        .in("job_name", [
-          "cron:heartbeat",
-          "cron:time-capsule",
-          "cron:social",
-          "cron:learner",
-          "cron:crawl",
-          "cron:dream",
-          "cron:world",
-          "cron:lifeline",
-        ]),
+        .in("job_name", [...CORE_CRON_JOBS]),
     ]);
 
     let recentAlerts: Array<{
@@ -107,7 +110,7 @@ export async function GET() {
       staleDream24h,
       echoAgents: echoCount,
       staleCronJobs,
-      totalCronJobs: 8,
+      totalCronJobs: CORE_CRON_JOBS.length,
     });
 
     const envStatus: EnvStatus[] = REQUIRED_ENV_KEYS.map((key) => ({
