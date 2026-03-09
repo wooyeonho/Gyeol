@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackOps } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type OpsData = {
   checked_at: string;
@@ -34,14 +36,39 @@ export default function OpsPage() {
   const [data, setData] = useState<OpsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const hasHydrated = useRelationshipOsStore((state) => state.hasHydrated);
+  const profiles = useRelationshipOsStore((state) => state.profiles);
+  const promises = useRelationshipOsStore((state) => state.promises);
+  const approvals = useRelationshipOsStore((state) => state.approvals);
+  const captures = useRelationshipOsStore((state) => state.captures);
+  const stories = useRelationshipOsStore((state) => state.stories);
+  const quests = useRelationshipOsStore((state) => state.quests);
+  const autonomousMode = useRelationshipOsStore((state) => state.autonomousMode);
+  const fallback = useMemo(
+    () =>
+      buildFallbackOps({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/ops/readiness")
       .then(async (res) => {
         if (!res.ok) {
-          if (res.status === 401) throw new Error("로그인이 필요합니다.");
-          throw new Error("운영 상태를 불러오지 못했습니다.");
+          if (!cancelled) {
+            setDemoMode(true);
+            setData(fallback as OpsData);
+          }
+          return fallback;
         }
         return res.json();
       })
@@ -49,7 +76,11 @@ export default function OpsPage() {
         if (!cancelled) setData(json as OpsData);
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(e.message);
+        if (!cancelled) {
+          setDemoMode(true);
+          setData(fallback as OpsData);
+          setError(e.message);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -57,7 +88,7 @@ export default function OpsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fallback]);
 
   return (
     <div className="min-h-screen bg-black text-white pt-16 pb-28 px-4">
@@ -68,7 +99,12 @@ export default function OpsPage() {
         </header>
 
         {loading && <div className="text-sm text-white/60">불러오는 중...</div>}
-        {error && <div className="rounded-xl bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+        {error && !demoMode && <div className="rounded-xl bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+        {demoMode && hasHydrated && (
+          <div className="rounded-xl border border-cyan-300/15 bg-cyan-400/[0.06] px-3 py-2 text-sm text-white/80">
+            운영 API 연결 전이라 현재 자동진화 스냅샷을 기준으로 readiness를 계산해 보여주고 있습니다.
+          </div>
+        )}
 
         {!loading && data && (
           <>

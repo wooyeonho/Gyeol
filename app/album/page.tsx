@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackAlbum } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -9,23 +12,60 @@ export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
+  const hasHydrated = useRelationshipOsStore((state) => state.hasHydrated);
+  const profiles = useRelationshipOsStore((state) => state.profiles);
+  const promises = useRelationshipOsStore((state) => state.promises);
+  const approvals = useRelationshipOsStore((state) => state.approvals);
+  const captures = useRelationshipOsStore((state) => state.captures);
+  const stories = useRelationshipOsStore((state) => state.stories);
+  const quests = useRelationshipOsStore((state) => state.quests);
+  const autonomousMode = useRelationshipOsStore((state) => state.autonomousMode);
+  const fallback = useMemo(
+    () =>
+      buildFallbackAlbum({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     fetch("/api/album")
-      .then((r) => (r.ok ? r.json() : { milestones: [] }))
+      .then((r) => {
+        if (!r.ok) {
+          setDemoMode(true);
+          return fallback;
+        }
+        return r.json();
+      })
       .then((d) => {
         setMilestones(d.milestones ?? []);
         setVisual(d.visual ?? null);
       })
-      .catch(() => setMilestones([]))
+      .catch(() => {
+        setDemoMode(true);
+        setMilestones(fallback.milestones);
+        setVisual(fallback.visual);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [fallback]);
 
   return (
     <div className="min-h-screen bg-black text-white p-4 pb-24">
       <div className="max-w-lg mx-auto">
         <h1 className="text-xl font-semibold mb-2">Growth album</h1>
         <p className="text-white/50 text-sm mb-6">Major life events of your Gyeol.</p>
+        {demoMode && hasHydrated && (
+          <div className="mb-4 rounded-xl border border-cyan-300/15 bg-cyan-400/[0.06] px-4 py-3 text-sm text-white/80">
+            실마일스톤 대신 현재 약속/스토리/승인 흐름으로 성장 앨범을 구성했습니다.
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center py-12">
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
@@ -73,6 +113,7 @@ export default function AlbumPage() {
           </Link>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackActivity } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type ActivityItem =
   | {
@@ -34,28 +36,49 @@ const TYPE_STYLES: Record<string, string> = {
 export default function ActivityPage() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const hasHydrated = useRelationshipOsStore((state) => state.hasHydrated);
+  const profiles = useRelationshipOsStore((state) => state.profiles);
+  const promises = useRelationshipOsStore((state) => state.promises);
+  const approvals = useRelationshipOsStore((state) => state.approvals);
+  const captures = useRelationshipOsStore((state) => state.captures);
+  const stories = useRelationshipOsStore((state) => state.stories);
+  const quests = useRelationshipOsStore((state) => state.quests);
+  const autonomousMode = useRelationshipOsStore((state) => state.autonomousMode);
+  const fallbackItems = useMemo(
+    () =>
+      buildFallbackActivity({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/activity");
         if (!res.ok) {
-          setError("활동 데이터를 불러오지 못했습니다.");
-          setItems([]);
+          setDemoMode(true);
+          setItems(fallbackItems);
           return;
         }
         const json = await res.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
       } catch {
-        setError("활동 데이터를 불러오지 못했습니다.");
-        setItems([]);
+        setDemoMode(true);
+        setItems(fallbackItems);
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, []);
+  }, [fallbackItems]);
 
   async function togglePreserved(id: string, current: boolean) {
     const next = !current;
@@ -83,7 +106,11 @@ export default function ActivityPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">활동</h1>
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {demoMode && hasHydrated && (
+        <div className="mb-3 rounded-lg border border-cyan-300/15 bg-cyan-400/[0.06] px-3 py-2 text-sm text-white/80">
+          실데이터 대신 최근 캡처/스토리/승인 흐름으로 활동 타임라인을 구성했습니다.
+        </div>
+      )}
       <div className="space-y-3">
         {items.map((item, i) => {
           const styleKey = item.kind === "log" ? (item.action_type ?? "") : (item.type ?? "");

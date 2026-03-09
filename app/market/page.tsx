@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackMarket } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type Item = { id: string; title?: string; name?: string; description?: string; price: number; type: string };
 
@@ -10,26 +12,63 @@ export default function MarketPage() {
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const hasHydrated = useRelationshipOsStore((state) => state.hasHydrated);
+  const addCapture = useRelationshipOsStore((state) => state.addCapture);
+  const profiles = useRelationshipOsStore((state) => state.profiles);
+  const promises = useRelationshipOsStore((state) => state.promises);
+  const approvals = useRelationshipOsStore((state) => state.approvals);
+  const captures = useRelationshipOsStore((state) => state.captures);
+  const stories = useRelationshipOsStore((state) => state.stories);
+  const quests = useRelationshipOsStore((state) => state.quests);
+  const autonomousMode = useRelationshipOsStore((state) => state.autonomousMode);
+  const fallbackItems = useMemo(
+    () =>
+      buildFallbackMarket({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/market");
         const json = await res.json().catch(() => ({ items: [] }));
+        if (!res.ok) {
+          setDemoMode(true);
+          setItems(fallbackItems);
+          return;
+        }
         setItems(Array.isArray(json.items) ? json.items : []);
       } catch {
-        setItems([]);
+        setDemoMode(true);
+        setItems(fallbackItems);
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, []);
+  }, [fallbackItems]);
 
   async function purchase(itemId: string) {
     try {
       setBuyingId(itemId);
       setNotice(null);
+      if (demoMode) {
+        const item = items.find((entry) => entry.id === itemId);
+        if (item) {
+          addCapture(`${item.title ?? item.name ?? "아이템"}을(를) 확보해 다음 장면에서 활용하기`, "quick_note");
+          setNotice(`데모 구매 완료: ${item.title ?? item.name ?? "아이템"}이 다음 장면 후보로 저장되었습니다.`);
+        }
+        return;
+      }
       const res = await fetch("/api/market/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,6 +96,11 @@ export default function MarketPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">마켓</h1>
+      {demoMode && hasHydrated && (
+        <div className="mb-3 rounded-xl border border-cyan-300/15 bg-cyan-400/[0.06] px-3 py-2 text-sm text-white/80">
+          실마켓 연결 전이라 자동 퀘스트 기반 아이템 보드를 보여주고 있습니다.
+        </div>
+      )}
       {notice && (
         <div className="mb-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm">
           {notice}

@@ -17,6 +17,11 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  function fallbackPastSelfResponse(text: string): string {
+    const year = new Date(targetDate).getFullYear();
+    return `${year}년의 너는 아직 모든 답을 알지 못하지만, "${text}"에 너무 늦었다고 생각하지는 않았을 거야. 지금 할 수 있는 가장 작은 한 걸음을 먼저 해보자.`;
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || streaming) return;
@@ -30,7 +35,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
         body: JSON.stringify({ target_date: targetDate, message: text }),
       });
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, { role: "assistant", content: "Could not reach past self." }]);
+        setMessages((m) => [...m, { role: "assistant", content: fallbackPastSelfResponse(text) }]);
         return;
       }
       const reader = res.body.getReader();
@@ -69,7 +74,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
       }
       setMessages((m) => [...m, { role: "assistant", content: full || "..." }]);
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Error." }]);
+      setMessages((m) => [...m, { role: "assistant", content: fallbackPastSelfResponse(text) }]);
     } finally {
       setStreaming(false);
     }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackSocial } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type SocialLog = {
   id: string;
@@ -16,28 +18,49 @@ type SocialLog = {
 export default function SocialPage() {
   const [logs, setLogs] = useState<SocialLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const hasHydrated = useRelationshipOsStore((state) => state.hasHydrated);
+  const profiles = useRelationshipOsStore((state) => state.profiles);
+  const promises = useRelationshipOsStore((state) => state.promises);
+  const approvals = useRelationshipOsStore((state) => state.approvals);
+  const captures = useRelationshipOsStore((state) => state.captures);
+  const stories = useRelationshipOsStore((state) => state.stories);
+  const quests = useRelationshipOsStore((state) => state.quests);
+  const autonomousMode = useRelationshipOsStore((state) => state.autonomousMode);
+  const fallbackLogs = useMemo(
+    () =>
+      buildFallbackSocial({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/social");
         if (!res.ok) {
-          setError("소셜 로그를 불러오지 못했습니다.");
-          setLogs([]);
+          setDemoMode(true);
+          setLogs(fallbackLogs);
           return;
         }
         const json = await res.json().catch(() => ({ socialLogs: [] }));
         setLogs(Array.isArray(json.socialLogs) ? json.socialLogs : []);
       } catch {
-        setError("소셜 로그를 불러오지 못했습니다.");
-        setLogs([]);
+        setDemoMode(true);
+        setLogs(fallbackLogs);
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, []);
+  }, [fallbackLogs]);
 
   if (loading) {
     return (
@@ -50,7 +73,11 @@ export default function SocialPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">소셜</h1>
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {demoMode && hasHydrated && (
+        <div className="mb-3 rounded-lg border border-cyan-300/15 bg-cyan-400/[0.06] px-3 py-2 text-sm text-white/80">
+          실소셜 로그 대신 현재 관계 흐름을 기반으로 미리보기 장면을 보여주고 있습니다.
+        </div>
+      )}
       <div className="space-y-3">
         {logs.map((log) => (
           <div key={log.id} className="bg-white/5 rounded-xl p-4 border border-white/10">

@@ -14,6 +14,16 @@ const PUBLIC_PATHS = [
   "/capture",
   "/stories",
   "/approvals",
+  "/activity",
+  "/social",
+  "/market",
+  "/room",
+  "/constellation",
+  "/album",
+  "/ops",
+  "/time-travel",
+  "/settings",
+  "/events/war",
 ];
 
 function isPublicPath(pathname: string): boolean {

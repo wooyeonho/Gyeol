@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { BottomNav } from "@/components/bottom-nav";
+import { buildFallbackSettings } from "@/lib/relationship-os/fallback-data";
+import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
 type AgentState = {
@@ -22,34 +23,63 @@ export default function SettingsPage() {
   const [state, setState] = useState<AgentState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const [demoMode, setDemoMode] = useState(false);
   const supabase = createClient();
+  const hasHydrated = useRelationshipOsStore((store) => store.hasHydrated);
+  const profiles = useRelationshipOsStore((store) => store.profiles);
+  const promises = useRelationshipOsStore((store) => store.promises);
+  const approvals = useRelationshipOsStore((store) => store.approvals);
+  const captures = useRelationshipOsStore((store) => store.captures);
+  const stories = useRelationshipOsStore((store) => store.stories);
+  const quests = useRelationshipOsStore((store) => store.quests);
+  const autonomousMode = useRelationshipOsStore((store) => store.autonomousMode);
+  const fallbackState = useMemo(
+    () =>
+      buildFallbackSettings({
+        profiles,
+        promises,
+        approvals,
+        captures,
+        stories,
+        quests,
+        autonomousMode,
+      }),
+    [approvals, autonomousMode, captures, profiles, promises, quests, stories],
+  );
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/settings");
         if (res.status === 401) {
-          router.push("/login");
+          setDemoMode(true);
+          setState(fallbackState);
           return;
         }
         if (!res.ok) {
-          setError("설정 정보를 불러오지 못했습니다.");
+          setDemoMode(true);
+          setState(fallbackState);
           return;
         }
         const json = await res.json().catch(() => ({ state: null }));
         setState(json.state ?? null);
       } catch {
-        setError("설정 정보를 불러오지 못했습니다.");
+        setDemoMode(true);
+        setState(fallbackState);
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, [router]);
+  }, [fallbackState]);
 
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
+    if (demoMode) {
+      const config: AgentConfig = { ...(state.config || {}), [key]: value };
+      setState({ ...state, config });
+      return;
+    }
     const res = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -65,8 +95,7 @@ export default function SettingsPage() {
 
   async function logout() {
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   if (loading) {
@@ -82,7 +111,12 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
       <h1 className="text-xl font-semibold mb-4">설정</h1>
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {error && !demoMode && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {demoMode && hasHydrated && (
+        <div className="mb-3 rounded-lg border border-cyan-300/15 bg-cyan-400/[0.06] px-3 py-2 text-sm text-white/80">
+          로그인/Supabase 없이도 흐름을 볼 수 있게 데모 설정 모드로 열었습니다.
+        </div>
+      )}
       <div className="space-y-4">
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-sm text-white/60">이름</div>
