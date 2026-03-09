@@ -201,6 +201,7 @@ create table if not exists world_state (
   id text primary key,
   weather jsonb,
   collective_emotion jsonb,
+  memorial jsonb,
   active_event jsonb,
   updated_at timestamptz not null default now()
 );

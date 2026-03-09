@@ -21,11 +21,36 @@ export async function GET(req: NextRequest) {
     const db = createServiceClient();
     const { count } = await db.from("agents").select("*", { count: "exact", head: true });
     const weather = WEATHERS[Math.floor(Math.random() * WEATHERS.length)];
+    const nowIso = new Date().toISOString();
 
     await db.from("world_state").update({
       weather,
       collective_emotion: { calm: Math.random() * 0.5 + 0.3, anxiety: Math.random() * 0.3, curiosity: Math.random() * 0.2, sadness: Math.random() * 0.2 },
     }).eq("id", "global");
+
+    try {
+      const memorialSince = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
+      const { data: echoes } = await db
+        .from("agent_state")
+        .select("agent_id, self_name, died_at")
+        .eq("status", "echo")
+        .not("died_at", "is", null)
+        .lt("died_at", memorialSince)
+        .limit(20);
+      if (echoes && echoes.length > 0) {
+        const memorialEntries = echoes.map((e) => ({
+          agent_id: e.agent_id,
+          self_name: e.self_name ?? "...",
+          died_at: e.died_at,
+          remembered_at: nowIso,
+        }));
+        await db.from("world_state").update({
+          memorial: memorialEntries,
+        }).eq("id", "global");
+      }
+    } catch (e) {
+      console.error("world memorial update", e);
+    }
 
     return NextResponse.json({ weather: weather.name, agents: count });
   } finally {

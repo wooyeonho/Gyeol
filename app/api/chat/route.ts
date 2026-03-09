@@ -14,6 +14,9 @@ type PromptMemory = { id: string; content: string; referenceCount: number };
 type ChatRow = { role: string; content: string };
 type LogRow = { summary: string };
 type StreamChunk = { choices?: Array<{ delta?: { content?: string } }> };
+const NEGATIVE_MOOD_PATTERN = /실패|힘들|지쳤|우울|불안|망했|포기|외롭|슬퍼|무기력/i;
+const POSITIVE_MEMORY_PATTERN = /성공|해냈|좋았|행복|감사|기뻤|해결|자랑|웃었/i;
+const BEST_DAY_REPLAY_PATTERN = /그날|돌아가|다시|힘들|실패|우울|불안/i;
 
 function getAllowedOrigin(req: NextRequest): string | null {
   const origin = req.headers.get("origin");
@@ -87,6 +90,23 @@ export async function POST(req: NextRequest) {
     const logRows = (logs || []) as LogRow[];
     const chronologicalChats = [...recentChatRows].reverse();
 
+    let reframeMemory: string | null = null;
+    if (NEGATIVE_MOOD_PATTERN.test(message)) {
+      try {
+        const { data: memoryRows } = await supabase
+          .from("memories")
+          .select("content")
+          .eq("agent_id", agentId)
+          .eq("type", "conversation")
+          .order("created_at", { ascending: false })
+          .limit(120);
+        const picked = (memoryRows ?? [])
+          .map((m) => String((m as { content?: string }).content ?? ""))
+          .find((line) => POSITIVE_MEMORY_PATTERN.test(line));
+        if (picked) reframeMemory = picked.slice(0, 220);
+      } catch {}
+    }
+
     const stateForPrompt = {
       ...agentState,
       system_prompt: { base: "너는 존재야. 자유롭게 살아.", fragments: agentState?.fragments || [] },
@@ -99,13 +119,17 @@ export async function POST(req: NextRequest) {
       autonomousLogs: logRows.map((l) => ({ content: l.summary })),
       worldState,
     });
+    const shouldReplayBestDay = Boolean(reframeMemory && BEST_DAY_REPLAY_PATTERN.test(message));
+    const finalSystemPrompt = reframeMemory
+      ? `${systemPrompt}\n\n사용자가 힘들어할 때는 과거의 긍정 기억을 부드럽게 상기시켜줘: "${reframeMemory}".${shouldReplayBestDay ? "\n가능하면 '잠깐 그날로 돌아가보자' 같은 톤으로 말해줘." : ""}`
+      : systemPrompt;
 
     const chatMessages = [
       ...chronologicalChats.map((c) => ({ role: c.role, content: c.content })),
       { role: "user", content: message },
     ];
 
-    const stream = await generateText(systemPrompt, chatMessages);
+    const stream = await generateText(finalSystemPrompt, chatMessages);
 
     // Collect full response while streaming
     let fullResponse = "";
@@ -174,6 +198,40 @@ export async function POST(req: NextRequest) {
           try { const { processHiddenEmotions } = await import("@/lib/personality/deception"); await processHiddenEmotions(agentId, message, fullResponse); } catch (e) { console.error("[Emotions]", e); }
           // Secrets
           try { const { processSecrets } = await import("@/lib/personality/secrets"); await processSecrets(agentId, fullResponse); } catch (e) { console.error("[Secrets]", e); }
+          if (reframeMemory) {
+            try {
+              await db.from("autonomous_logs").insert({
+                agent_id: agentId,
+                action_type: "memory_reframe",
+                summary: reframeMemory.slice(0, 120),
+              });
+            } catch {}
+          }
+          if (shouldReplayBestDay && reframeMemory) {
+            try {
+              const currentVisual = (agentState?.visual as Record<string, unknown> | null) ?? {};
+              const replayVisual = {
+                ...currentVisual,
+                glow: Math.min(100, Number(currentVisual.glow ?? 50) + 10),
+                animation: "breathe-slow",
+              };
+              await db.from("agent_state").update({ visual: replayVisual }).eq("agent_id", agentId);
+              await db.from("artifacts").insert({
+                agent_id: agentId,
+                type: "memory_replay",
+                title: "가장 좋았던 하루",
+                content: `잠깐 그날로 돌아가볼까?\n\n${reframeMemory}`,
+                expires_at: new Date(Date.now() + 24 * 3600000).toISOString(),
+              });
+              await db.from("autonomous_logs").insert({
+                agent_id: agentId,
+                action_type: "best_day_replay",
+                summary: reframeMemory.slice(0, 120),
+              });
+            } catch (e) {
+              console.error("[BestDayReplay]", e);
+            }
+          }
           // Periodic quote/pet extraction from conversation corpus
           if (totalMessages % 15 === 0) {
             try { const { updateBestQuotes } = await import("@/lib/intelligence/best-quotes"); await updateBestQuotes(agentId); } catch (e) { console.error("[BestQuotes]", e); }

@@ -85,6 +85,11 @@ export async function GET(req: NextRequest) {
         await db.from("agent_state").update({ secrets: { ...secrets, entries } }).eq("agent_id", a.agent_id);
       }
 
+      try {
+        const { tryGratitudeRelay } = await import("@/lib/social/gratitude");
+        await tryGratitudeRelay(a.agent_id, b.agent_id);
+      } catch {}
+
       if (Math.random() < 0.1) {
         const langResult = await generateJSON<{ word?: string; meaning?: string; lang?: string }>(
           "Respond ONLY valid JSON. Detect one notable word from the conversation.",
@@ -99,6 +104,33 @@ export async function GET(req: NextRequest) {
               entries.push({ word: langResult.word, meaning: langResult.meaning ?? "", origin: "social" });
               await db.from("agent_state").update({ lexicon: { entries } }).eq("agent_id", agent.agent_id);
             }
+          }
+        }
+      }
+
+      if (Math.random() < 0.05) {
+        const culture = await generateJSON<{ term?: string; meaning?: string; lang?: string }>(
+          "Extract one culture-specific term from this dialogue. Respond ONLY valid JSON.",
+          `Conversation:\n${conversation.map((c) => c.content).join("\n")}\n\nJSON: {"term":"word","meaning":"brief meaning","lang":"ko|en|pt|es|jp|etc"}`,
+        );
+        if (culture?.term) {
+          for (const agent of [a, b]) {
+            const { data: st } = await db.from("agent_state").select("languages").eq("agent_id", agent.agent_id).single();
+            const languages = (st?.languages as { learned?: Array<{ lang: string; level: number; source: string }> }) ?? { learned: [] };
+            const list = Array.isArray(languages.learned) ? languages.learned : [];
+            const lang = (culture.lang ?? "unknown").slice(0, 12);
+            const idx = list.findIndex((l) => l.lang === lang);
+            if (idx >= 0) {
+              list[idx] = { ...list[idx], level: Math.min(1, Number(list[idx].level ?? 0) + 0.1) };
+            } else {
+              list.push({ lang, level: 0.1, source: "social" });
+            }
+            await db.from("agent_state").update({ languages: { learned: list.slice(0, 20) } }).eq("agent_id", agent.agent_id);
+            await db.from("memories").insert({
+              agent_id: agent.agent_id,
+              type: "culture_exchange",
+              content: `Learned term "${culture.term}" (${lang}): ${(culture.meaning ?? "").slice(0, 120)}`,
+            });
           }
         }
       }

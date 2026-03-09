@@ -11,6 +11,7 @@ ALTER TABLE agent_state ADD COLUMN IF NOT EXISTS languages JSONB DEFAULT '{"lear
 ALTER TABLE agent_state ADD COLUMN IF NOT EXISTS room JSONB DEFAULT '{"objects":[],"layout":"default","theme":"dark"}'::jsonb;
 ALTER TABLE agent_state ADD COLUMN IF NOT EXISTS user_model JSONB DEFAULT '{"speech_patterns":[],"values":[],"decision_patterns":[]}'::jsonb;
 ALTER TABLE agent_state ADD COLUMN IF NOT EXISTS shared_language JSONB DEFAULT '{"terms":[]}'::jsonb;
+ALTER TABLE world_state ADD COLUMN IF NOT EXISTS memorial JSONB DEFAULT NULL;
 
 -- Memory physics compatibility
 ALTER TABLE memories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;

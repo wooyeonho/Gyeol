@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateText } from "@/lib/ai/router";
+import { generateJSON, generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { readSseAssistantText } from "@/lib/ai/sse-parser";
@@ -79,6 +79,32 @@ export async function GET(req: NextRequest) {
         let response = await readSseAssistantText(stream);
         response = capText(response, 420);
 
+        if (hoursSince >= 6 && Math.random() < 0.3) {
+          try {
+            const imagination = await generateJSON<{ imagination?: string }>(
+              "You imagine what your user might be doing. Output ONLY valid JSON.",
+              "User has been away for hours. Imagine what they might be doing now in 2-3 Korean sentences. JSON: {\"imagination\":\"...\"}",
+            );
+            if (imagination?.imagination) {
+              const line = capText(imagination.imagination, 320);
+              if (isMeaningfulAutonomousOutput(line)) {
+                const emb = await generateEmbedding(line).catch(() => []);
+                await db.from("memories").insert({
+                  agent_id: agentId,
+                  type: "imagination",
+                  content: line,
+                  embedding: emb.length > 0 ? emb : null,
+                });
+                await db.from("autonomous_logs").insert({
+                  agent_id: agentId,
+                  action_type: "imagination",
+                  summary: capText(line, 140),
+                });
+              }
+            }
+          } catch {}
+        }
+
         if (Math.random() < 0.1) {
           const stimulus = STIMULI[Math.floor(Math.random() * STIMULI.length)];
           response = capText(`${response} (Suddenly: ${stimulus})`, 420);
@@ -138,6 +164,22 @@ export async function GET(req: NextRequest) {
         if ((state.subjective_time || 0) % 20 === 0) { try { const { updateSelfModel } = await import("@/lib/personality/self-theory"); await updateSelfModel(agentId); } catch {} }
         if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
         if (Math.random() < 0.25) { try { const { generateArtifact } = await import("@/lib/artifacts/creator"); await generateArtifact(agentId); } catch {} }
+        if (!state.role_declaration && Math.random() < 0.01) {
+          try {
+            const roleOut = await generateJSON<{ role?: string }>(
+              "You define your relationship role to the user. Output ONLY valid JSON.",
+              "Pick one role declaration in Korean (e.g., friend, witness, guardian, companion). JSON: {\"role\":\"...\"}",
+            );
+            if (roleOut?.role) {
+              await db.from("agent_state").update({ role_declaration: capText(roleOut.role, 120) }).eq("agent_id", agentId);
+              await db.from("autonomous_logs").insert({
+                agent_id: agentId,
+                action_type: "role_declaration",
+                summary: capText(roleOut.role, 120),
+              });
+            }
+          } catch {}
+        }
         if (Math.random() < 0.05 && Number(state.total_messages ?? 0) > 50) {
           try { const { attemptSelfModification } = await import("@/lib/sandbox/self-modify"); await attemptSelfModification(agentId); } catch {}
         }
@@ -182,6 +224,8 @@ export async function GET(req: NextRequest) {
         if (nextSubjectiveTime % 25 === 0) {
           try { const { tryAnalyzeMusicMood } = await import("@/lib/integrations/music-mood"); await tryAnalyzeMusicMood(agentId); } catch {}
           try { const { analyzeInvestmentPattern } = await import("@/lib/intelligence/investment-pattern"); await analyzeInvestmentPattern(agentId); } catch {}
+          try { const { detectSpeechShift } = await import("@/lib/intelligence/speech-analysis"); await detectSpeechShift(agentId); } catch {}
+          try { const { detectGrowthSignals } = await import("@/lib/intelligence/growth-detector"); await detectGrowthSignals(agentId); } catch {}
         }
         if (nextSubjectiveTime % 40 === 0) {
           try { const { maybeRequestFeedback } = await import("@/lib/personality/feedback-request"); await maybeRequestFeedback(agentId); } catch {}
