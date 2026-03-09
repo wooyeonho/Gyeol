@@ -4,6 +4,7 @@ import {
   buildBriefing,
   createInitialSnapshot,
   decideApproval,
+  ensureDerivedSnapshot,
   getOpenLoopCount,
   ingestCapture,
   listPriorityPromises,
@@ -16,6 +17,7 @@ import type { CaptureSource, RelationshipBriefing, RelationshipOSSnapshot } from
 type RelationshipOSState = RelationshipOSSnapshot & {
   hasHydrated: boolean;
   markHydrated: (value: boolean) => void;
+  replaceSnapshot: (snapshot: RelationshipOSSnapshot) => void;
   reset: () => void;
   addCapture: (rawText: string, source?: CaptureSource) => void;
   togglePromiseDone: (promiseId: string) => void;
@@ -36,6 +38,11 @@ export const useRelationshipOsStore = create<RelationshipOSState>()(
       ...initialSnapshot,
       hasHydrated: false,
       markHydrated: (value) => set({ hasHydrated: value }),
+      replaceSnapshot: (snapshot) =>
+        set((state) => ({
+          ...ensureDerivedSnapshot(snapshot),
+          hasHydrated: state.hasHydrated,
+        })),
       reset: () => set({ ...createInitialSnapshot() }),
       addCapture: (rawText, source) =>
         set((state) => ({

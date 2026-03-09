@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AutonomousEvolutionLoop } from "@/components/autonomous-evolution-loop";
+import { RelationshipOsSync } from "@/components/relationship-os-sync";
 
 export const metadata: Metadata = {
   title: "결 GYEOL",
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="bg-black text-white min-h-screen antialiased">
         <AutonomousEvolutionLoop />
+        <RelationshipOsSync />
         {children}
       </body>
     </html>

@@ -734,6 +734,14 @@ export function listPriorityPromises(snapshot: RelationshipOSSnapshot): PromiseP
   return buildBriefing(snapshot).priorities;
 }
 
+export function ensureDerivedSnapshot(snapshot: RelationshipOSSnapshot): RelationshipOSSnapshot {
+  return refreshDerived(
+    snapshot,
+    snapshot.autonomousMode?.cycleCount ?? 0,
+    snapshot.autonomousMode?.lastRunAt,
+  );
+}
+
 export function runAutonomousEvolutionCycle(snapshot: RelationshipOSSnapshot): RelationshipOSSnapshot {
   const now = new Date().toISOString();
   const openPromises = getOpenPromises(snapshot);
