@@ -54,36 +54,36 @@ export default function ActivityPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">활동</h1>
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] pt-20 pb-24 px-4">
+      <h1 className="font-display text-xl font-semibold mb-6 tracking-tight">활동</h1>
       <div className="space-y-3">
         {combined.map((item, i) => (
           <div
             key={item.kind + "-" + i}
-            className={`rounded-xl p-4 border ${TYPE_STYLES[item.kind === "log" ? (item as Log).action_type : (item as Artifact).type] || "bg-white/5 border-white/10"}`}
+            className={`rounded-xl p-4 border ${TYPE_STYLES[item.kind === "log" ? (item as Log).action_type : (item as Artifact).type] || "bg-[var(--surface)] border-[var(--border)]"}`}
           >
             {item.kind === "log" ? (
               <>
-                <div className="text-xs text-white/50">{item.action_type}</div>
-                <div className="text-sm mt-1">{item.summary}</div>
+                <div className="text-xs text-[var(--muted)]">{item.action_type}</div>
+                <div className="text-sm mt-1 text-[var(--foreground)]">{item.summary}</div>
               </>
             ) : (
               <>
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-xs text-white/50">{(item as Artifact).type}</div>
-                    <div className="text-sm mt-1">{(item as Artifact).title || (item as Artifact).content?.slice(0, 80)}</div>
+                    <div className="text-xs text-[var(--muted)]">{(item as Artifact).type}</div>
+                    <div className="text-sm mt-1 text-[var(--foreground)]">{(item as Artifact).title || (item as Artifact).content?.slice(0, 80)}</div>
                   </div>
                   <button
                     onClick={() => togglePreserved((item as Artifact).id, (item as Artifact).is_preserved || false)}
-                    className="text-xs px-2 py-1 rounded bg-white/10"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)]"
                   >
                     {(item as Artifact).is_preserved ? "보관됨" : "보관"}
                   </button>

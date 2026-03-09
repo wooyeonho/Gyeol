@@ -21,21 +21,30 @@ export function EvolutionCeremony({ level, mutation, onComplete }: EvolutionCere
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-30 bg-black flex items-center justify-center"
+        transition={{ duration: 0.4 }}
+        className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--background)]"
       >
+        <div className="gradient-void absolute inset-0" />
         <motion.div
-          initial={{ scale: 1, opacity: 0.8 }}
-          animate={{ scale: [1, 3, 1], opacity: [0.8, 1, 0.8] }}
-          transition={{ duration: 3.5, ease: "easeInOut" }}
-          className="text-center"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative text-center"
         >
-          <div className="text-5xl font-bold text-white">Gen {level}</div>
+          <motion.div
+            initial={{ scale: 1, opacity: 0.9 }}
+            animate={{ scale: [1, 1.05, 1], opacity: [0.9, 1, 0.9] }}
+            transition={{ duration: 3.5, ease: "easeInOut" }}
+            className="font-display text-5xl font-bold tracking-tight text-[var(--foreground)]"
+          >
+            Gen {level}
+          </motion.div>
           {mutation && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="mt-4 text-white/80 text-lg"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="mt-4 text-[var(--muted-strong)] text-lg font-medium"
             >
               {mutation}
             </motion.div>

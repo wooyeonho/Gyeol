@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/store/chat-store";
 
 export function ChatPanel() {
@@ -32,49 +33,64 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4">
-      <div className="flex-1 overflow-y-auto space-y-4 py-4">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {m.role === "user" ? (
-              <div className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%]">
-                {m.content}
-              </div>
-            ) : (
-              <div className="max-w-[80%]">
-                {m.content}
-                {isStreaming && i === messages.length - 1 && (
-                  <span className="animate-pulse">|</span>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+    <div className="fixed inset-0 z-10 flex flex-col justify-end pb-28 px-4 pt-20">
+      <div className="flex-1 overflow-y-auto space-y-5 py-4">
+        <AnimatePresence initial={false}>
+          {messages.map((m, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {m.role === "user" ? (
+                <div className="max-w-[85%] rounded-2xl bg-[var(--surface)] border border-[var(--border)] px-4 py-2.5 shadow-lg">
+                  <p className="text-[15px] leading-relaxed text-[var(--foreground)]">{m.content}</p>
+                </div>
+              ) : (
+                <div className="max-w-[85%] rounded-2xl px-1">
+                  <p className="text-[15px] leading-relaxed text-[var(--muted-strong)]">
+                    {m.content}
+                    {isStreaming && i === messages.length - 1 && (
+                      <span className="inline-block w-2 h-4 ml-0.5 align-middle bg-[var(--accent)]/60 animate-pulse" />
+                    )}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="무엇이든 말해봐..."
-          disabled={isStreaming}
-          className="flex-1 bg-white/5 rounded-full px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 disabled:opacity-50"
-        />
-        <button
+      <motion.form
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        onSubmit={handleSubmit}
+        className="flex gap-3 items-end"
+      >
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="무엇이든 말해봐..."
+            disabled={isStreaming}
+            className="w-full rounded-2xl bg-[var(--surface)] border border-[var(--border)] px-5 py-3.5 text-[15px] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] focus:outline-none disabled:opacity-50 transition-colors duration-200"
+          />
+        </div>
+        <motion.button
           type="submit"
           disabled={isStreaming || !input.trim()}
-          className="px-4 py-3 rounded-full bg-white/10 text-white disabled:opacity-50"
+          whileTap={{ scale: 0.96 }}
+          className="rounded-2xl bg-[var(--accent)] px-5 py-3.5 text-[15px] font-medium text-[var(--background)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity duration-200"
         >
           전송
-        </button>
-      </form>
+        </motion.button>
+      </motion.form>
     </div>
   );
 }
-

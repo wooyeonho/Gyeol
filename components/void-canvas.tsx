@@ -35,8 +35,11 @@ export function VoidCanvas({
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
   const particleCount = isMobile ? Math.floor(particles / 2) : particles;
 
+  const bgColor =
+    background === "#000000" || background === "#050508" ? "var(--background)" : background;
+
   return (
-    <div className="fixed inset-0 z-0" style={{ backgroundColor: background }}>
+    <div className="fixed inset-0 z-0" style={{ backgroundColor: bgColor }}>
       <VoidCanvasInner
         shape={shape}
         color={color}

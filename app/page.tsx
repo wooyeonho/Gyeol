@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion } from "framer-motion";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
@@ -32,8 +33,20 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--background)]">
+        <div className="gradient-void absolute inset-0" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="relative flex flex-col items-center gap-6"
+        >
+          <div className="relative">
+            <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-pulse" />
+            <div className="absolute inset-0 h-3 w-3 rounded-full bg-[var(--accent)] animate-ping opacity-30" />
+          </div>
+          <span className="text-sm text-[var(--muted)] font-medium">결을 불러오는 중</span>
+        </motion.div>
       </div>
     );
   }
@@ -43,6 +56,9 @@ export default function Home() {
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "...";
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
+
+  const vitalityColor =
+    vitality > 0.7 ? "var(--vitality-high)" : vitality > 0.3 ? "var(--vitality-mid)" : "var(--vitality-low)";
 
   return (
     <>
@@ -56,31 +72,45 @@ export default function Home() {
       <div className="fixed inset-0 z-0">
         <VoidCanvas
           shape={visual.shape ?? "sphere"}
-          color={visual.color ?? "#a0a0ff"}
+          color={visual.color ?? "#e8b86d"}
           size={Math.min(50, Math.max(10, visual.size ?? 24))}
           glow={Math.min(100, Math.max(0, visual.glow ?? 60))}
           animation={visual.animation ?? "float"}
           particles={visual.particles ?? 20}
-          background={visual.background ?? "#000000"}
+          background={visual.background ?? "#050508"}
           vitality={vitality}
           mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
           isListening={isStreaming}
         />
+        <div className="gradient-void pointer-events-none absolute inset-0" />
       </div>
 
       <WorldWeather />
 
-      <div className="fixed top-4 left-4 z-10">
-        <span
-          className={`inline-block w-3 h-3 rounded-full ${
-            vitality > 0.7 ? "bg-green-500" : vitality > 0.3 ? "bg-yellow-500" : "bg-red-500"
-          }`}
-        />
-      </div>
-
-      <div className="fixed top-4 right-4 z-10 text-white/80 text-sm">
-        {selfName}
-      </div>
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-4 pb-2"
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="relative h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: vitalityColor }}
+          >
+            <span
+              className="absolute inset-0 rounded-full animate-ping opacity-40"
+              style={{ backgroundColor: vitalityColor }}
+            />
+          </div>
+          <span className="text-xs font-medium text-[var(--muted)]">
+            {vitality > 0.7 ? "활력" : vitality > 0.3 ? "보통" : "저하"}
+          </span>
+        </div>
+        <span className="font-display text-sm font-medium text-[var(--foreground)] tracking-tight">
+          {selfName}
+        </span>
+      </motion.header>
 
       <ChatPanel />
       <BottomNav />

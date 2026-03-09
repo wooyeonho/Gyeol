@@ -54,8 +54,8 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
     );
   }
@@ -63,65 +63,68 @@ export default function SettingsPage() {
   const config: AgentConfig = state?.config || {};
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">설정</h1>
-      <div className="space-y-4">
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">이름</div>
-          <div>{state?.self_name || "—"}</div>
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] pt-20 pb-24 px-4">
+      <h1 className="font-display text-xl font-semibold mb-6 tracking-tight">설정</h1>
+      <div className="space-y-3">
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">이름</div>
+          <div className="mt-0.5">{state?.self_name || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">Gen 레벨</div>
-          <div>{state?.gen_level ?? 1}</div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">Gen 레벨</div>
+          <div className="mt-0.5">{state?.gen_level ?? 1}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">총 메시지</div>
-          <div>{state?.total_messages ?? 0}</div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">총 메시지</div>
+          <div className="mt-0.5">{state?.total_messages ?? 0}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">활력</div>
-          <div>{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">활력</div>
+          <div className="mt-0.5">{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">기분</div>
-          <div>{state?.mood || "—"}</div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">기분</div>
+          <div className="mt-0.5">{state?.mood || "—"}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">코인</div>
-          <div>{state?.coins ?? 0}</div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+          <div className="text-sm text-[var(--muted)]">코인</div>
+          <div className="mt-0.5">{state?.coins ?? 0}</div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] space-y-3">
           <div className="flex justify-between items-center">
-            <span>자율 모드</span>
+            <span className="text-[var(--foreground)]">자율 모드</span>
             <button
               onClick={() => toggleConfig("autonomous_enabled", !config.autonomous_enabled)}
-              className={`px-3 py-1 rounded ${config.autonomous_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${config.autonomous_enabled !== false ? "bg-[var(--vitality-high)]/20 text-[var(--vitality-high)]" : "bg-[var(--surface-hover)] text-[var(--muted)]"}`}
             >
               {config.autonomous_enabled !== false ? "ON" : "OFF"}
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span>드림 엔진</span>
+            <span className="text-[var(--foreground)]">드림 엔진</span>
             <button
               onClick={() => toggleConfig("dream_enabled", !config.dream_enabled)}
-              className={`px-3 py-1 rounded ${config.dream_enabled ? "bg-green-500/30" : "bg-white/10"}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${config.dream_enabled ? "bg-[var(--vitality-high)]/20 text-[var(--vitality-high)]" : "bg-[var(--surface-hover)] text-[var(--muted)]"}`}
             >
               {config.dream_enabled ? "ON" : "OFF"}
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span>소셜</span>
+            <span className="text-[var(--foreground)]">소셜</span>
             <button
               onClick={() => toggleConfig("social_enabled", !config.social_enabled)}
-              className={`px-3 py-1 rounded ${config.social_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${config.social_enabled !== false ? "bg-[var(--vitality-high)]/20 text-[var(--vitality-high)]" : "bg-[var(--surface-hover)] text-[var(--muted)]"}`}
             >
               {config.social_enabled !== false ? "ON" : "OFF"}
             </button>
           </div>
         </div>
 
-        <button onClick={logout} className="w-full py-3 rounded-xl bg-red-500/20 text-red-400">
+        <button
+          onClick={logout}
+          className="w-full py-3.5 rounded-xl bg-[var(--vitality-low)]/15 text-[var(--vitality-low)] font-medium"
+        >
           로그아웃
         </button>
       </div>

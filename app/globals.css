@@ -1,8 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #050508;
+  --foreground: #faf9f6;
+  --surface: rgba(250, 249, 246, 0.04);
+  --surface-hover: rgba(250, 249, 246, 0.08);
+  --border: rgba(250, 249, 246, 0.08);
+  --border-strong: rgba(250, 249, 246, 0.12);
+  --muted: rgba(250, 249, 246, 0.5);
+  --muted-strong: rgba(250, 249, 246, 0.7);
+  --accent: #e8b86d;
+  --accent-dim: rgba(232, 184, 109, 0.6);
+  --vitality-high: #7dd3c0;
+  --vitality-mid: #e8b86d;
+  --vitality-low: #e07a7a;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
@@ -10,8 +28,62 @@
   --color-foreground: var(--foreground);
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: #000;
-  color: #fff;
-  font-family: system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-noto), var(--font-outfit), system-ui, sans-serif;
+  font-feature-settings: "ss01", "ss02", "cv01";
+}
+
+.font-display {
+  font-family: var(--font-outfit), var(--font-noto), system-ui, sans-serif;
+}
+
+/* Subtle gradient overlay for depth */
+.gradient-void {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 0%,
+    rgba(232, 184, 109, 0.03) 0%,
+    transparent 50%
+  );
+}
+
+/* Refined focus states */
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 2px;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Selection */
+::selection {
+  background: rgba(232, 184, 109, 0.2);
+  color: var(--foreground);
 }
