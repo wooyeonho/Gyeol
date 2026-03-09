@@ -50,7 +50,13 @@ export function ChatPanel() {
 
   return (
     <div className="fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4">
-      <div className="flex-1 overflow-y-auto space-y-4 py-4">
+      <div
+        className="flex-1 overflow-y-auto space-y-4 py-4"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-label="채팅 메시지"
+      >
         {messages.length === 0 && (
           <div className="max-w-2xl mx-auto pt-20 space-y-3">
             <p className="text-center text-sm text-white/55">바로 시작해볼까요?</p>
@@ -107,7 +113,11 @@ export function ChatPanel() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2">
+        <label htmlFor="chat-input" className="sr-only">
+          채팅 입력
+        </label>
         <input
+          id="chat-input"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -124,6 +134,9 @@ export function ChatPanel() {
           전송
         </button>
       </form>
+      <p className="sr-only" aria-live="polite">
+        {isStreaming ? "응답 생성 중입니다." : "응답 대기 중입니다."}
+      </p>
     </div>
   );
 }

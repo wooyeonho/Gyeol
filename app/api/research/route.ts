@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
 function checkResearchAuth(req: NextRequest): boolean {
+  const expected = process.env.RESEARCH_API_KEY;
+  if (!expected) return false;
   const key = req.headers.get("x-api-key") || req.headers.get("authorization")?.replace("Bearer ", "");
-  return key === process.env.RESEARCH_API_KEY;
+  return key === expected;
 }
 
 export async function GET(req: NextRequest) {
+  if (!process.env.RESEARCH_API_KEY) {
+    return NextResponse.json({ error: "Service not configured" }, { status: 503 });
+  }
   if (!checkResearchAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = createServiceClient();

@@ -72,12 +72,14 @@ export default function Home() {
       <WorldWeather />
       <WorldClassHub />
 
-      <div className="fixed top-4 left-4 z-10">
+      <div className="fixed top-4 left-4 z-10 flex items-center gap-2 text-xs text-white/70">
         <span
           className={`inline-block w-3 h-3 rounded-full ${
             vitality > 0.7 ? "bg-green-500" : vitality > 0.3 ? "bg-yellow-500" : "bg-red-500"
           }`}
+          aria-hidden="true"
         />
+        <span>활력 {Math.round(vitality * 100)}%</span>
       </div>
 
       <div className="fixed top-4 right-4 z-10 text-white/80 text-sm">

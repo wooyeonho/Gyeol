@@ -2,11 +2,24 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const CRON_SECRET = process.env.CRON_SECRET;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
 export async function POST(req: NextRequest) {
   try {
+    if (!TELEGRAM_BOT_TOKEN) {
+      return NextResponse.json({ ok: true });
+    }
+
+    if (!TELEGRAM_WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Service not configured" }, { status: 503 });
+    }
+    const providedSecret = req.headers.get("x-telegram-bot-api-secret-token");
+    if (providedSecret !== TELEGRAM_WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const message = body.message ?? body.edited_message;
     if (!message?.chat?.id || !message.from?.id) {
@@ -14,10 +27,6 @@ export async function POST(req: NextRequest) {
     }
     const chatId = message.chat.id;
     const text = (message.text ?? "").trim();
-
-    if (!TELEGRAM_BOT_TOKEN) {
-      return NextResponse.json({ ok: true });
-    }
 
     const service = createServiceClient();
     const { data: states } = await service

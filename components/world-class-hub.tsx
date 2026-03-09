@@ -173,7 +173,11 @@ export function WorldClassHub() {
 
           <div className="rounded-xl border border-white/10 bg-black/35 p-3">
             <div className="flex gap-2">
+              <label htmlFor="mission-input" className="sr-only">
+                오늘의 미션 입력
+              </label>
               <input
+                id="mission-input"
                 value={draftMission}
                 onChange={(event) => setDraftMission(event.target.value)}
                 onKeyDown={(event) => {

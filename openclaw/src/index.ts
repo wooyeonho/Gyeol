@@ -24,6 +24,12 @@ const server = http.createServer((_req, res) => {
   }
 
   if (path === "/crawl" && _req.method === "POST") {
+    const auth = _req.headers.authorization?.replace("Bearer ", "");
+    if (auth !== config.cronSecret) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
     runCrawlCycle(config).catch((err) => console.error("[Manual crawl]", err));
     res.writeHead(202, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "crawl_started" }));

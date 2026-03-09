@@ -4,7 +4,7 @@ name: GYEOL Cron Jobs
 
 on:
   schedule:
-    - cron: "0 */30 * * *"  # health: every 30 min
+    - cron: "*/30 * * * *"  # health: every 30 min
     - cron: "0 */2 * * *"   # heartbeat: every 2 hours
     - cron: "0 4 * * *"     # dream: 04:00 UTC daily
     - cron: "0 */6 * * *"   # social: every 6 hours
@@ -16,7 +16,7 @@ on:
 
 jobs:
   health:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 */30 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Run health cron
