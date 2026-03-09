@@ -1,15 +1,15 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-function checkApiKey(request: NextRequest): boolean {
-  const key = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || request.headers.get("x-api-key");
-  return key === process.env.GYEOL_ENGINE_API_KEY && Boolean(process.env.GYEOL_ENGINE_API_KEY);
-}
-
 export async function GET(request: NextRequest) {
-  if (!checkApiKey(request)) {
+  if (!(await verifyV1ApiKey(request, "v1:agent:state"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const allowed = await checkRateLimit(`v1-state:${getApiKeyIdentifier(request)}`);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   const agentId = request.nextUrl.searchParams.get("agent_id");
   if (!agentId) return NextResponse.json({ error: "agent_id required" }, { status: 400 });
 

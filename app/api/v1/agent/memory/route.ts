@@ -1,20 +1,21 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
+import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-function checkApiKey(request: NextRequest): boolean {
-  const key = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || request.headers.get("x-api-key");
-  return key === process.env.GYEOL_ENGINE_API_KEY && Boolean(process.env.GYEOL_ENGINE_API_KEY);
-}
-
 export async function POST(request: NextRequest) {
-  if (!checkApiKey(request)) {
+  if (!(await verifyV1ApiKey(request, "v1:agent:memory"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    const allowed = await checkRateLimit(`v1-memory:${getApiKeyIdentifier(request)}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
     const body = await request.json().catch(() => ({}));
     const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const content = typeof body?.content === "string" ? body.content.trim() : "";
+    const content = typeof body?.content === "string" ? sanitizeUserInput(body.content) : "";
     const type = typeof body?.type === "string" ? body.type : "conversation";
     if (!agentId || !content) {
       return NextResponse.json({ error: "agent_id and content required" }, { status: 400 });

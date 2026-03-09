@@ -3,48 +3,23 @@ import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
+import { readSseAssistantText } from "@/lib/ai/sse-parser";
+import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-
-async function checkApiKey(request: NextRequest): Promise<boolean> {
-  const raw =
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-    request.headers.get("x-api-key");
-  if (!raw) return false;
-
-  const keyHash = crypto.createHash("sha256").update(raw).digest("hex");
-  const service = createServiceClient();
-  const { data } = await service
-    .from("api_keys")
-    .select("id, is_active")
-    .eq("key_hash", keyHash)
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-
-  if (data?.id) {
-    // Update last_used_at without blocking the response
-    service
-      .from("api_keys")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("id", data.id)
-      .then(() => {});
-    return true;
-  }
-
-  // Fallback: accept legacy env-var key during transition
-  const envKey = process.env.GYEOL_ENGINE_API_KEY;
-  return Boolean(envKey) && raw === envKey;
-}
 
 export async function POST(request: NextRequest) {
-  if (!(await checkApiKey(request))) {
+  if (!(await verifyV1ApiKey(request, "v1:agent:chat"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    const allowed = await checkRateLimit(`v1-chat:${getApiKeyIdentifier(request)}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
     const body = await request.json().catch(() => ({}));
     const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const message = typeof body?.message === "string" ? body.message.trim() : "";
+    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
     if (!agentId || !message) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
@@ -107,26 +82,7 @@ export async function POST(request: NextRequest) {
     ];
 
     const stream = await generateText(systemPrompt, messages);
-    let fullText = "";
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const s = decoder.decode(value);
-      const lines = s.split("\n");
-      for (const line of lines) {
-        if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
-          try {
-            const j = JSON.parse(line.slice(6).trim()) as { choices?: { delta?: { content?: string } }[] };
-            const content = j.choices?.[0]?.delta?.content;
-            if (typeof content === "string") fullText += content;
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
+    const fullText = await readSseAssistantText(stream);
 
     await service.from("chats").insert([
       { agent_id: agentId, role: "user", content: message },

@@ -6,6 +6,8 @@ import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { isMissingEnvError } from "@/lib/env/required";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
 
 type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
 type PromptMemory = { id: string; content: string; referenceCount: number };
@@ -33,7 +35,7 @@ function getAllowedOrigin(req: NextRequest): string | null {
 export async function POST(req: NextRequest) {
   try {
     const payload = (await req.json()) as { message?: unknown };
-    const message = typeof payload.message === "string" ? payload.message.trim() : "";
+    const message = typeof payload.message === "string" ? sanitizeUserInput(payload.message) : "";
     if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
     const fence = checkElectricFence(message);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
@@ -41,6 +43,8 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const allowed = await checkRateLimit(`chat:${user.id}`);
+    if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
 
     const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
     if (!agent) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
@@ -106,11 +110,13 @@ export async function POST(req: NextRequest) {
     // Collect full response while streaming
     let fullResponse = "";
     const decoder = new TextDecoder();
+    let sseBuffer = "";
 
     const transformStream = new TransformStream({
       transform(chunk, controller) {
-        const text = decoder.decode(chunk, { stream: true });
-        const lines = text.split("\n");
+        sseBuffer += decoder.decode(chunk, { stream: true });
+        const lines = sseBuffer.split("\n");
+        sseBuffer = lines.pop() ?? "";
         for (const line of lines) {
           if (line.startsWith("data: ") && line !== "data: [DONE]") {
             try {
@@ -125,6 +131,17 @@ export async function POST(req: NextRequest) {
       async flush() {
         // Post-stream processing
         try {
+          sseBuffer += decoder.decode();
+          for (const line of sseBuffer.split("\n")) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const json = JSON.parse(line.slice(6)) as StreamChunk;
+                const content = json.choices?.[0]?.delta?.content || "";
+                fullResponse += content;
+              } catch {}
+            }
+          }
+
           const db = createServiceClient();
 
           await db.from("chats").insert([

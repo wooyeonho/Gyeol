@@ -3,6 +3,9 @@ import { generateText } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeUserInput } from "@/lib/sanitize";
+import { readSseAssistantText } from "@/lib/ai/sse-parser";
 import { NextRequest, NextResponse } from "next/server";
 import { isMissingEnvError } from "@/lib/env/required";
 
@@ -21,10 +24,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const agentId = body.agent_id as string | undefined;
-    const message = typeof body.message === "string" ? body.message.trim() : "";
+    const message = typeof body.message === "string" ? sanitizeUserInput(body.message) : "";
     if (!agentId || !message) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
+    const allowed = await checkRateLimit(`internal-chat:${agentId}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
     const fence = checkElectricFence(message);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
 
@@ -88,26 +94,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const stream = await generateText(systemPrompt, messages);
-    let fullText = "";
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const s = decoder.decode(value);
-      const lines = s.split("\n");
-      for (const line of lines) {
-        if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
-          try {
-            const j = JSON.parse(line.slice(6).trim()) as { choices?: { delta?: { content?: string } }[] };
-            const content = j.choices?.[0]?.delta?.content;
-            if (typeof content === "string") fullText += content;
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
+    const fullText = await readSseAssistantText(stream);
 
     await service.from("chats").insert([
       { agent_id: agentId, role: "user", content: message },
