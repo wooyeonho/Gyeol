@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { createServiceClient } from "@/lib/supabase/service";
-import { writeSystemAlert } from "@/lib/ops/alerts";
+import { emitSystemAlert } from "@/lib/ops/alerts";
 
 type JobTarget = {
   name: string;
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
         detail: run.body,
       });
       if (!run.ok) {
-        await writeSystemAlert({
+        await emitSystemAlert({
           level: "critical",
           source: "cron-lifeline",
           code: "JOB_TRIGGER_FAILED",
@@ -103,9 +103,9 @@ export async function GET(req: NextRequest) {
             status: run.status,
             detail: run.body,
           },
-        });
+        }, { cooldownMinutes: 60, notifySlack: true });
       } else {
-        await writeSystemAlert({
+        await emitSystemAlert({
           level: "warning",
           source: "cron-lifeline",
           code: "JOB_RECOVERED",
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
           details: {
             status: run.status,
           },
-        });
+        }, { cooldownMinutes: 30 });
       }
     }
 

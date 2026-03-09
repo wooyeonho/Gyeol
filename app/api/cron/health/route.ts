@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
+import { emitSystemAlert } from "@/lib/ops/alerts";
 
 /**
  * Optional health check per HEARTBEAT.md: "Every 30 min: Check agent status"
@@ -84,6 +85,40 @@ export async function GET(request: NextRequest) {
       staleCronJobs,
       totalCronJobs: 8,
     });
+
+    if (autonomyHealth.tier === "critical") {
+      await emitSystemAlert(
+        {
+          level: "critical",
+          source: "cron-health",
+          code: "AUTONOMY_HEALTH_CRITICAL",
+          message: `Autonomy health score is critical (${autonomyHealth.score})`,
+          details: {
+            stale_heartbeat_6h: staleHeartbeatSixHours?.length ?? 0,
+            stale_dream_24h: staleDreamAgents?.length ?? 0,
+            stale_cron_jobs_24h: staleCronJobs,
+            echo_count: echoAgents?.length ?? 0,
+          },
+        },
+        { cooldownMinutes: 120, notifySlack: true },
+      );
+    } else if (autonomyHealth.tier === "warning") {
+      await emitSystemAlert(
+        {
+          level: "warning",
+          source: "cron-health",
+          code: "AUTONOMY_HEALTH_WARNING",
+          message: `Autonomy health score is warning (${autonomyHealth.score})`,
+          details: {
+            stale_heartbeat_6h: staleHeartbeatSixHours?.length ?? 0,
+            stale_dream_24h: staleDreamAgents?.length ?? 0,
+            stale_cron_jobs_24h: staleCronJobs,
+            echo_count: echoAgents?.length ?? 0,
+          },
+        },
+        { cooldownMinutes: 240, notifySlack: false },
+      );
+    }
 
     return new Response(
       JSON.stringify({

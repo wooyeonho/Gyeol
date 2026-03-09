@@ -24,6 +24,7 @@
 - `lifeline` 크론이 오래 멈춘 잡을 자동으로 재트리거합니다.
 - 자동 복구 실패 시 `system_alerts`에 `JOB_TRIGGER_FAILED` 경보가 남습니다.
 - 자동 복구 성공 시 `JOB_RECOVERED` 이벤트가 기록됩니다.
+- `OPS_ALERT_SLACK_WEBHOOK_URL`가 설정되어 있으면 critical 경보를 Slack으로도 전송합니다.
 
 ## 5) 수동 점검 체크리스트 (결제 제외 상용 점검)
 

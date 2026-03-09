@@ -37,12 +37,14 @@
 - `TELEGRAM_WEBHOOK_SECRET`: 텔레그램 웹훅 검증
 - `CONNECTION_TOKEN_KEY`: 외부 연동 토큰 암호화 키
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
+- `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
 
 ### 24시간 자율활동 권장 설정
 
 - OpenClaw 스케줄러를 기본(primary)으로 운영하고 GitHub cron은 fallback으로 유지
 - `phase19_cron_lock.sql` 적용으로 중복 실행 방지
 - `/api/cron/lifeline` 활성화로 멈춘 잡 자동 복구
+- `/api/cron/health`에서 SLO 경고/위험 상태를 `system_alerts`에 자동 기록
 - `/ops`에서 운영 준비도/경보 상시 점검
 
 ### 운영 점검 문서
