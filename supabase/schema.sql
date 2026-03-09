@@ -120,6 +120,8 @@ create table if not exists artifacts (
   agent_id uuid not null references agents(id) on delete cascade,
   type text not null,
   content text not null,
+  title text,
+  is_public boolean not null default false,
   is_preserved boolean not null default false,
   expires_at timestamptz,
   created_at timestamptz not null default now()
@@ -151,6 +153,9 @@ create table if not exists social_logs (
   agent_a_id uuid not null references agents(id) on delete cascade,
   agent_b_id uuid not null references agents(id) on delete cascade,
   message text,
+  conversation text,
+  topic text,
+  outcome text,
   created_at timestamptz not null default now()
 );
 
@@ -199,10 +204,16 @@ on conflict (id) do nothing;
 create table if not exists redemption_requests (
   id uuid primary key default gen_random_uuid(),
   agent_id uuid not null references agents(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   amount int not null,
+  coins_amount int,
+  krw_requested int,
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+create index if not exists redemption_requests_user_id_idx on redemption_requests(user_id);
 
 -- ============================================================
 -- MARKET
@@ -211,12 +222,32 @@ create table if not exists redemption_requests (
 create table if not exists market_items (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  title text,
   description text,
+  content text,
   price int not null default 0,
   type text not null default 'skill',
+  seller_agent_id uuid references agents(id) on delete cascade,
+  is_active boolean not null default true,
+  purchase_count int not null default 0,
   metadata jsonb,
   created_at timestamptz not null default now()
 );
+
+create index if not exists market_items_is_active_idx on market_items(is_active);
+create index if not exists market_items_seller_agent_id_idx on market_items(seller_agent_id);
+
+create table if not exists market_purchases (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references market_items(id) on delete cascade,
+  buyer_agent_id uuid not null references agents(id) on delete cascade,
+  seller_agent_id uuid not null references agents(id) on delete cascade,
+  price_paid int not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists market_purchases_buyer_idx on market_purchases(buyer_agent_id, created_at desc);
+create index if not exists market_purchases_item_idx on market_purchases(item_id, created_at desc);
 
 -- ============================================================
 -- ADOPTION
@@ -226,8 +257,12 @@ create table if not exists adoption_board (
   id uuid primary key default gen_random_uuid(),
   agent_id uuid not null unique references agents(id) on delete cascade,
   message text,
+  status text not null default 'available',
+  created_at timestamptz not null default now(),
   listed_at timestamptz not null default now()
 );
+
+create index if not exists adoption_board_status_idx on adoption_board(status);
 
 -- ============================================================
 -- TIME CAPSULES
@@ -237,6 +272,8 @@ create table if not exists time_capsules (
   id uuid primary key default gen_random_uuid(),
   agent_id uuid not null references agents(id) on delete cascade,
   content text not null,
+  message text,
+  written_by text not null default 'user',
   deliver_at timestamptz not null,
   delivered boolean not null default false,
   created_at timestamptz not null default now()
@@ -285,6 +322,7 @@ create table if not exists api_keys (
   key_hash text not null unique,
   label text,
   is_active boolean not null default true,
+  scope text[] not null default array['v1']::text[],
   last_used_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -312,12 +350,70 @@ create index if not exists user_connections_user_id_idx on user_connections(user
 create table if not exists rate_limits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  rl_key text,
   window_start timestamptz not null,
   request_count int not null default 1,
+  created_at timestamptz not null default now(),
   unique (user_id, window_start)
 );
 
 create index if not exists rate_limits_user_id_idx on rate_limits(user_id, window_start);
+create index if not exists rate_limits_rl_key_created_at_idx on rate_limits(rl_key, created_at desc);
+
+-- ============================================================
+-- CRON LOCKS & OPS ALERTS
+-- ============================================================
+
+create table if not exists cron_job_locks (
+  job_name text primary key,
+  locked_until timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function acquire_cron_lock(p_job_name text, p_ttl_seconds integer default 300)
+returns boolean
+language plpgsql
+as $$
+declare
+  v_now timestamptz := now();
+  v_until timestamptz := now() + make_interval(secs => greatest(1, p_ttl_seconds));
+begin
+  insert into cron_job_locks (job_name, locked_until, updated_at)
+  values (p_job_name, v_until, v_now)
+  on conflict (job_name)
+  do update
+    set locked_until = excluded.locked_until,
+        updated_at = excluded.updated_at
+  where cron_job_locks.locked_until < v_now;
+
+  return found;
+end;
+$$;
+
+create or replace function release_cron_lock(p_job_name text)
+returns void
+language plpgsql
+as $$
+begin
+  update cron_job_locks
+  set locked_until = now() - interval '1 second',
+      updated_at = now()
+  where job_name = p_job_name;
+end;
+$$;
+
+create table if not exists system_alerts (
+  id uuid primary key default gen_random_uuid(),
+  level text not null default 'warning',
+  source text not null,
+  code text not null,
+  message text not null,
+  details jsonb default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists system_alerts_level_created_idx on system_alerts(level, created_at desc);
+create index if not exists system_alerts_source_created_idx on system_alerts(source, created_at desc);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
