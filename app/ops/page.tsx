@@ -14,6 +14,12 @@ type OpsData = {
     echo_count: number;
     stale_cron_jobs_24h: number;
   };
+  alert_summary_24h: {
+    total: number;
+    info: number;
+    warning: number;
+    critical: number;
+  };
   recent_alerts: Array<{
     level: string;
     source: string;
@@ -107,6 +113,28 @@ export default function OpsPage() {
               <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                 <p className="text-xs text-white/50">Stale cron jobs</p>
                 <p className="text-2xl font-semibold">{data.stale_counts.stale_cron_jobs_24h}</p>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/50 uppercase tracking-wider mb-3">최근 24시간 경보 추이</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-lg border border-white/10 px-3 py-2">
+                  <p className="text-xs text-white/50">Total</p>
+                  <p className="text-xl font-semibold">{data.alert_summary_24h.total}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 px-3 py-2">
+                  <p className="text-xs text-white/50">Info</p>
+                  <p className="text-xl font-semibold text-blue-300">{data.alert_summary_24h.info}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 px-3 py-2">
+                  <p className="text-xs text-white/50">Warning</p>
+                  <p className="text-xl font-semibold text-amber-300">{data.alert_summary_24h.warning}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 px-3 py-2">
+                  <p className="text-xs text-white/50">Critical</p>
+                  <p className="text-xl font-semibold text-red-300">{data.alert_summary_24h.critical}</p>
+                </div>
               </div>
             </section>
 

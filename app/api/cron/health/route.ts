@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
             echo_count: echoAgents?.length ?? 0,
           },
         },
-        { cooldownMinutes: 120, notifySlack: true },
+        { cooldownMinutes: 120, notifySlack: true, notifyEmail: true },
       );
     } else if (autonomyHealth.tier === "warning") {
       await emitSystemAlert(

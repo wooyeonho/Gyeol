@@ -38,6 +38,7 @@
 - `CONNECTION_TOKEN_KEY`: 외부 연동 토큰 암호화 키
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
 - `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
+- `OPS_ALERT_EMAIL_TO`: 운영 경보 이메일 수신자 (선택, `EMAIL_API_URL` 필요)
 
 ### 24시간 자율활동 권장 설정
 

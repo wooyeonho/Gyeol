@@ -30,6 +30,34 @@ async function sendSlackAlert(args: WriteAlertArgs): Promise<void> {
   }
 }
 
+async function sendEmailAlert(args: WriteAlertArgs): Promise<void> {
+  const emailApiUrl = process.env.EMAIL_API_URL;
+  const to = process.env.OPS_ALERT_EMAIL_TO;
+  if (!emailApiUrl || !to) return;
+  try {
+    const subject = `[GYEOL][${args.level.toUpperCase()}] ${args.code}`;
+    const text = [
+      `source: ${args.source}`,
+      `code: ${args.code}`,
+      `message: ${args.message}`,
+      `details: ${JSON.stringify(args.details ?? {})}`,
+    ].join("\n");
+    await fetch(emailApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "ops_alert",
+        to,
+        subject,
+        text,
+        payload: args,
+      }),
+    });
+  } catch (e) {
+    console.error("[SystemAlert] email notify failed", e);
+  }
+}
+
 export async function writeSystemAlert(args: WriteAlertArgs): Promise<void> {
   try {
     const db = createServiceClient();
@@ -47,7 +75,7 @@ export async function writeSystemAlert(args: WriteAlertArgs): Promise<void> {
 
 export async function emitSystemAlert(
   args: WriteAlertArgs,
-  options?: { cooldownMinutes?: number; notifySlack?: boolean },
+  options?: { cooldownMinutes?: number; notifySlack?: boolean; notifyEmail?: boolean },
 ): Promise<boolean> {
   const cooldownMinutes = options?.cooldownMinutes ?? 60;
   try {
@@ -75,6 +103,9 @@ export async function emitSystemAlert(
   await writeSystemAlert(args);
   if (options?.notifySlack) {
     await sendSlackAlert(args);
+  }
+  if (options?.notifyEmail) {
+    await sendEmailAlert(args);
   }
   return true;
 }

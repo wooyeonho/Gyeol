@@ -22,7 +22,7 @@ export async function GET() {
 
   try {
     const service = createServiceClient();
-    const [statesRes, locksRes, alertsRes] = await Promise.all([
+    const [statesRes, locksRes] = await Promise.all([
       service.from("agent_state").select("config, last_heartbeat_at, last_dream_at, status"),
       service
         .from("cron_job_locks")
@@ -37,12 +37,52 @@ export async function GET() {
           "cron:world",
           "cron:lifeline",
         ]),
-      service
-        .from("system_alerts")
-        .select("level, source, code, message, created_at")
-        .order("created_at", { ascending: false })
-        .limit(20),
     ]);
+
+    let recentAlerts: Array<{
+      level: string;
+      source: string;
+      code: string;
+      message: string;
+      created_at: string;
+    }> = [];
+    const alertSummary24h = {
+      total: 0,
+      info: 0,
+      warning: 0,
+      critical: 0,
+    };
+    try {
+      const [alertsRes, alerts24hRes] = await Promise.all([
+        service
+          .from("system_alerts")
+          .select("level, source, code, message, created_at")
+          .order("created_at", { ascending: false })
+          .limit(20),
+        service
+          .from("system_alerts")
+          .select("level, created_at")
+          .gte("created_at", new Date(Date.now() - 24 * 3600000).toISOString()),
+      ]);
+
+      recentAlerts = (alertsRes.data ?? []) as Array<{
+        level: string;
+        source: string;
+        code: string;
+        message: string;
+        created_at: string;
+      }>;
+      const alerts24h = (alerts24hRes.data ?? []) as Array<{ level?: string }>;
+      for (const row of alerts24h) {
+        const level = String(row.level ?? "warning");
+        alertSummary24h.total += 1;
+        if (level === "critical") alertSummary24h.critical += 1;
+        else if (level === "info") alertSummary24h.info += 1;
+        else alertSummary24h.warning += 1;
+      }
+    } catch (e) {
+      console.error("ops/readiness alert lookup", e);
+    }
 
     const states = (statesRes.data ?? []) as Array<{
       config?: Record<string, unknown> | null;
@@ -76,14 +116,6 @@ export async function GET() {
     }));
     const missingEnv = envStatus.filter((e) => !e.configured).map((e) => e.key);
 
-    const recentAlerts = (alertsRes.data ?? []) as Array<{
-      level: string;
-      source: string;
-      code: string;
-      message: string;
-      created_at: string;
-    }>;
-
     const recommendations: string[] = [];
     if (missingEnv.length > 0) {
       recommendations.push(`필수 환경변수 누락: ${missingEnv.join(", ")}`);
@@ -105,6 +137,7 @@ export async function GET() {
         echo_count: echoCount,
         stale_cron_jobs_24h: staleCronJobs,
       },
+      alert_summary_24h: alertSummary24h,
       recent_alerts: recentAlerts,
       recommendations,
     });

@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
             status: run.status,
             detail: run.body,
           },
-        }, { cooldownMinutes: 60, notifySlack: true });
+        }, { cooldownMinutes: 60, notifySlack: true, notifyEmail: true });
       } else {
         await emitSystemAlert({
           level: "warning",
