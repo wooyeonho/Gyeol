@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "@/components/i18n-provider";
 
 const TABS = [
-  { path: "/", label: "홈", icon: "🏠" },
-  { path: "/features", label: "기능", icon: "✨" },
-  { path: "/activity", label: "활동", icon: "📋" },
-  { path: "/social", label: "소셜", icon: "👥" },
-  { path: "/market", label: "마켓", icon: "🛒" },
-  { path: "/settings", label: "설정", icon: "⚙️" },
+  { path: "/", labelKey: "nav.home", icon: "🏠" },
+  { path: "/features", labelKey: "nav.features", icon: "✨" },
+  { path: "/activity", labelKey: "nav.activity", icon: "📋" },
+  { path: "/social", labelKey: "nav.social", icon: "👥" },
+  { path: "/market", labelKey: "nav.market", icon: "🛒" },
+  { path: "/settings", labelKey: "nav.settings", icon: "⚙️" },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useTranslations();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-lg border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
@@ -27,7 +29,7 @@ export function BottomNav() {
               className={`flex flex-col items-center gap-1 ${isActive ? "text-white" : "text-white/40"}`}
             >
               <span className="text-xl">{tab.icon}</span>
-              <span className="text-[11px]">{tab.label}</span>
+              <span className="text-[11px]">{t(tab.labelKey)}</span>
             </Link>
           );
         })}

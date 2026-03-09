@@ -109,6 +109,6 @@
 - [x] 운영: GitHub cron 식 오기 수정
 
 다음 배치 목표:
-- [ ] 인증 가드 일원화
-- [ ] 3D 초기 렌더 경량화
-- [ ] i18n 기반 뼈대 도입
+- [x] 인증 가드 일원화 (AuthGuard + /api/auth/me)
+- [x] 3D 초기 렌더 경량화 (VoidCanvas dynamic import)
+- [x] i18n 기반 뼈대 도입 (lib/i18n, I18nProvider, messages/ko|en.json)
