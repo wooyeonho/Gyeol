@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const TABS = [
   { path: "/", label: "홈", icon: "🏠" },
+  { path: "/features", label: "기능", icon: "✨" },
   { path: "/activity", label: "활동", icon: "📋" },
   { path: "/social", label: "소셜", icon: "👥" },
   { path: "/market", label: "마켓", icon: "🛒" },
@@ -26,7 +27,7 @@ export function BottomNav() {
               className={`flex flex-col items-center gap-1 ${isActive ? "text-white" : "text-white/40"}`}
             >
               <span className="text-xl">{tab.icon}</span>
-              <span className="text-xs">{tab.label}</span>
+              <span className="text-[11px]">{tab.label}</span>
             </Link>
           );
         })}
