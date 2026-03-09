@@ -9,6 +9,7 @@ import { WorldWeather } from "@/components/world-weather";
 import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";
+import { WorldClassHub } from "@/components/world-class-hub";
 
 type Visual = {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent";
@@ -69,6 +70,7 @@ export default function Home() {
       </div>
 
       <WorldWeather />
+      <WorldClassHub />
 
       <div className="fixed top-4 left-4 z-10">
         <span

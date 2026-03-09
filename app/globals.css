@@ -15,3 +15,24 @@ body {
   color: #fff;
   font-family: system-ui, sans-serif;
 }
+
+@keyframes auroraShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.aurora-flow {
+  background:
+    radial-gradient(circle at 10% 20%, rgba(90, 155, 255, 0.26), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(169, 113, 255, 0.22), transparent 40%),
+    radial-gradient(circle at 50% 95%, rgba(60, 255, 220, 0.2), transparent 35%);
+  background-size: 180% 180%;
+  animation: auroraShift 14s ease-in-out infinite;
+}
