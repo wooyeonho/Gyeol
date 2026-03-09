@@ -6,6 +6,7 @@ on:
   schedule:
     - cron: "*/30 * * * *"  # health: every 30 min
     - cron: "0 */2 * * *"   # heartbeat: every 2 hours
+    - cron: "0 * * * *"     # time-capsule: every hour
     - cron: "0 4 * * *"     # dream: 04:00 UTC daily
     - cron: "0 */6 * * *"   # social: every 6 hours
     - cron: "0 */6 * * *"   # learner: every 6 hours
@@ -32,6 +33,16 @@ jobs:
       - name: Run heartbeat cron
         run: |
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/heartbeat" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
+
+  time_capsule:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run time-capsule cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/time-capsule" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --max-time 60
 
