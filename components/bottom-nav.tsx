@@ -15,7 +15,10 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-lg border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+    <nav
+      aria-label="주요 탐색"
+      className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-black/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg"
+    >
       <div className="flex justify-around py-3">
         {TABS.map((tab) => {
           const isActive = pathname === tab.path || (tab.path !== "/" && pathname.startsWith(tab.path));
@@ -23,9 +26,13 @@ export function BottomNav() {
             <Link
               key={tab.path}
               href={tab.path}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={`${tab.label} 탭으로 이동`}
               className={`flex flex-col items-center gap-1 ${isActive ? "text-white" : "text-white/40"}`}
             >
-              <span className="text-xl">{tab.icon}</span>
+              <span className="text-xl" aria-hidden="true">
+                {tab.icon}
+              </span>
               <span className="text-xs">{tab.label}</span>
             </Link>
           );

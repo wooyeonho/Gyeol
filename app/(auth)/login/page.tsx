@@ -43,24 +43,49 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-sm flex flex-col gap-6 text-center">
       <h1 className="text-2xl font-semibold">결 GYEOL</h1>
+      <p className="text-sm leading-6 text-white/60">
+        진화하는 존재와의 대화를 이어가려면 로그인하세요.
+      </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
-          required
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/50 border border-white/10"
-          required
-        />
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div className="text-left">
+          <label htmlFor="login-email" className="mb-2 block text-sm text-white/70">
+            이메일
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-white placeholder:text-white/50"
+            autoComplete="email"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
+            required
+          />
+        </div>
+        <div className="text-left">
+          <label htmlFor="login-password" className="mb-2 block text-sm text-white/70">
+            비밀번호
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-white placeholder:text-white/50"
+            autoComplete="current-password"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
+            required
+          />
+        </div>
+        {error && (
+          <p id="login-error" className="text-red-400 text-sm">
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={loading}

@@ -86,7 +86,11 @@ function Scene({ shape, color, size, glow, animation, particles, vitality, isLis
 
 export function VoidCanvasInner(props: InnerProps) {
   return (
-    <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+    <Canvas
+      camera={{ position: [0, 0, 5], fov: 50 }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
+    >
       <Scene {...props} />
     </Canvas>
   );
