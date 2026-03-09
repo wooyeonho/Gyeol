@@ -9,7 +9,6 @@ export type VideoFrame = { image: string; text: string; duration: number };
  * Dream video: sequence of images + text overlay (stored as frame list; client plays as slideshow).
  */
 export async function generateDreamVideo(agentId: string, dreamText: string): Promise<{ frames: VideoFrame[] } | null> {
-  const service = createServiceClient();
   const parts = dreamText.split(/[.!?]\s+/).filter(Boolean).slice(0, 5);
   const frames: VideoFrame[] = [];
   for (let i = 0; i < parts.length; i++) {

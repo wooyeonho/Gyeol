@@ -9,7 +9,6 @@ export type Education = {
   thesis?: string | null;
 };
 
-const LEVELS = ["kindergarten", "elementary", "middle", "high", "university"] as const;
 const LEVEL_INDEX: Record<string, number> = { kindergarten: 0, elementary: 1, middle: 2, high: 3, university: 4 };
 
 export function nextLevel(edu: Education, genLevel: number, totalMessages: number): Education | null {

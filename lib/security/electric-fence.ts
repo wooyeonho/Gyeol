@@ -14,7 +14,6 @@ const BLOCK_PATTERNS = [
 
 export function checkElectricFence(input: string): { blocked: boolean; reason?: string } {
   if (!input || typeof input !== "string") return { blocked: false };
-  const lower = input.toLowerCase();
   for (const p of BLOCK_PATTERNS) {
     if (p.test(input)) {
       return { blocked: true, reason: "Blocked by safety rules" };

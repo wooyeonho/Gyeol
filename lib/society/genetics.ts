@@ -24,7 +24,6 @@ export async function snapshotGenome(agentId: string): Promise<Genome> {
     traits[t] = Math.min(1, Math.max(0, base + (i * 0.05) + (Math.random() - 0.5) * 0.2));
   });
   traits.empathy = Math.min(1, (intimacy / 100) * 0.5 + (traits.empathy ?? 0.5));
-  const fragments = (s.fragments as string[]) ?? [];
   const mutations = (s.genome as Genome)?.mutations ?? [];
   return {
     traits,

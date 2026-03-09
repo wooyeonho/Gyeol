@@ -32,6 +32,7 @@ export function VoidCanvas({
   mood = "",
   isListening = false,
 }: VoidCanvasProps) {
+  void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
   const particleCount = isMobile ? Math.floor(particles / 2) : particles;
 

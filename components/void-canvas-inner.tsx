@@ -69,7 +69,8 @@ function ParticleRing({ count, color, size }: { count: number; color: string; si
 
 function Scene({ shape, color, size, glow, animation, particles, vitality, isListening, opacity: propOpacity }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
-  const pulseScale = isListening ? 1.1 : 1;
+  const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
+  const pulseScale = (isListening ? 1.1 : 1) * animScale;
 
   return (
     <>

@@ -18,7 +18,6 @@ export async function updateVoiceParams(agentId: string): Promise<void> {
   if (!stateRow) return;
 
   const state = stateRow as { mood?: string; hidden_emotions?: { surface?: string; real?: string } | null; voice_params?: { pitch?: number; speed?: number; tremor?: number } };
-  const base = state.voice_params ?? { pitch: 1.0, speed: 1.0, tremor: 0.0 };
   const moodKey = (state.mood ?? "neutral").toLowerCase();
   const moodParams = MOOD_PARAMS[moodKey] ?? MOOD_PARAMS.neutral;
   let tremor = moodParams.tremor;

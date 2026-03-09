@@ -48,7 +48,7 @@ export default function Soundscape({ enabled, soundProfile }: { enabled: boolean
       disposeRef.current = null;
       setPlaying(false);
     };
-  }, [enabled, soundProfile?.tempo, soundProfile?.base_note]);
+  }, [enabled, soundProfile]);
 
   if (!enabled) return null;
   return (

@@ -33,7 +33,7 @@ export async function tryBirthdayAnniversary(agentId: string): Promise<void> {
   const state = stateRow as { birthday?: { date?: string }; self_name?: string; fragments?: string[]; last_birthday_year?: number };
   const bd = state.birthday?.date;
   if (!bd) return;
-  const [y, m, d] = bd.split("-").map(Number);
+  const [, m, d] = bd.split("-").map(Number);
   if (!m || !d) return;
   const now = new Date();
   if (now.getUTCMonth() + 1 !== m || now.getUTCDate() !== d) return;

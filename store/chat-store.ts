@@ -7,7 +7,7 @@ interface ChatStore {
   sendMessage: (message: string) => Promise<void>;
 }
 
-export const useChatStore = create<ChatStore>((set, get) => ({
+export const useChatStore = create<ChatStore>((set) => ({
   messages: [], isStreaming: false,
   sendMessage: async (message: string) => {
     set((s) => ({ messages: [...s.messages, { role: "user", content: message }], isStreaming: true }));
