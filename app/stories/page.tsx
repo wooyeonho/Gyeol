@@ -1,6 +1,7 @@
 "use client";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { describeFocus } from "@/lib/relationship-os/engine";
 import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 export default function StoriesPage() {
@@ -38,7 +39,7 @@ export default function StoriesPage() {
                   <p className="mt-2 text-sm text-white/65">{story.subtitle}</p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/72">
-                  {story.mood}
+                  {describeFocus(story.focus)} · {story.mood}
                 </span>
               </div>
 

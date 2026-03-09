@@ -7,6 +7,9 @@ export type ApprovalKind = "message" | "plan" | "nudge";
 export type ApprovalStatus = "pending" | "approved" | "dismissed";
 export type CaptureSource = "quick_note" | "meeting" | "chat" | "email";
 export type StoryMood = "repair" | "momentum" | "warmth" | "tension";
+export type EvolutionFocus = "relationship" | "operator" | "adventure";
+export type QuestDifficulty = "routine" | "elite" | "boss";
+export type QuestStatus = "active" | "completed";
 
 export type RelationshipProfile = {
   id: string;
@@ -65,6 +68,7 @@ export type StoryEpisode = {
   id: string;
   createdAt: string;
   mood: StoryMood;
+  focus: EvolutionFocus;
   title: string;
   subtitle: string;
   relationshipIds: string[];
@@ -72,6 +76,27 @@ export type StoryEpisode = {
   dialogue: StoryDialogueLine[];
   quote: string;
   nextAction: string;
+};
+
+export type EvolutionQuest = {
+  id: string;
+  title: string;
+  description: string;
+  reward: string;
+  difficulty: QuestDifficulty;
+  status: QuestStatus;
+  focus: EvolutionFocus;
+  linkedPromiseId?: string;
+  linkedProfileId?: string;
+};
+
+export type AutonomousModeState = {
+  enabled: boolean;
+  currentFocus: EvolutionFocus;
+  autopilotSummary: string;
+  cycleCount: number;
+  lastRunAt: string;
+  nextRunAt: string;
 };
 
 export type RelationshipAlert = {
@@ -95,8 +120,11 @@ export type RelationshipBriefing = {
   summary: string;
   urgentCount: number;
   readyDraftCount: number;
+  currentFocus: EvolutionFocus;
+  autopilotSummary: string;
   relationshipAlerts: RelationshipAlert[];
   priorities: PromisePriority[];
+  questPreview: EvolutionQuest[];
   storyPreview?: StoryEpisode;
 };
 
@@ -106,4 +134,6 @@ export type RelationshipOSSnapshot = {
   approvals: ApprovalItem[];
   captures: CaptureItem[];
   stories: StoryEpisode[];
+  quests: EvolutionQuest[];
+  autonomousMode: AutonomousModeState;
 };

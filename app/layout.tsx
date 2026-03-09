@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AutonomousEvolutionLoop } from "@/components/autonomous-evolution-loop";
 
 export const metadata: Metadata = {
   title: "결 GYEOL",
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="bg-black text-white min-h-screen antialiased">
+        <AutonomousEvolutionLoop />
         {children}
       </body>
     </html>

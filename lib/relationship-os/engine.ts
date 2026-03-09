@@ -1,7 +1,10 @@
 import type {
   ApprovalItem,
+  AutonomousModeState,
   CaptureItem,
   CaptureSource,
+  EvolutionFocus,
+  EvolutionQuest,
   PromiseItem,
   PromisePriority,
   PromiseRisk,
@@ -33,6 +36,16 @@ function dueLabel(iso: string): string {
   if (diffHours <= 24) return `${diffHours}시간 내`;
   const diffDays = Math.ceil(diffHours / 24);
   return `${diffDays}일 내`;
+}
+
+function hoursSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+}
+
+function nextRunIso(minutes: number): string {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() + minutes);
+  return date.toISOString();
 }
 
 function riskScore(risk: PromiseRisk): number {
@@ -151,7 +164,194 @@ function buildAlerts(profiles: RelationshipProfile[], promises: PromiseItem[]): 
     .slice(0, 3);
 }
 
+function getOpenPromises(snapshot: RelationshipOSSnapshot): PromiseItem[] {
+  return snapshot.promises.filter((item) => item.status !== "done");
+}
+
+function inferCurrentFocus(snapshot: RelationshipOSSnapshot): EvolutionFocus {
+  const openPromises = getOpenPromises(snapshot);
+  const highRisk = openPromises.filter((item) => item.risk === "high").length;
+  const overdue = openPromises.filter((item) => new Date(item.dueAt).getTime() <= Date.now()).length;
+  const pendingApprovals = snapshot.approvals.filter((item) => item.status === "pending").length;
+  const stalePeople = snapshot.profiles.filter((profile) => hoursSince(profile.lastContactAt) > 96).length;
+  const relationshipLoops = openPromises.filter((item) => item.category === "relationship").length;
+
+  if (highRisk > 0 || overdue > 0 || pendingApprovals >= 2) return "operator";
+  if (relationshipLoops > 0 || stalePeople > 0) return "relationship";
+  return "adventure";
+}
+
+function buildAutopilotSummary(snapshot: RelationshipOSSnapshot, focus: EvolutionFocus): string {
+  const openPromises = getOpenPromises(snapshot);
+  const topPromise = [...openPromises].sort(
+    (a, b) => riskScore(b.risk) - riskScore(a.risk) || new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime(),
+  )[0];
+  const staleProfile = [...snapshot.profiles].sort((a, b) => hoursSince(b.lastContactAt) - hoursSince(a.lastContactAt))[0];
+
+  if (focus === "operator" && topPromise) {
+    return `자동진화 모드가 지금은 실행 압력을 감지해 "${topPromise.title}"를 최우선 루프로 잡고 있습니다.`;
+  }
+  if (focus === "relationship" && staleProfile) {
+    return `자동진화 모드가 지금은 ${staleProfile.name}과의 흐름을 다시 잇는 쪽으로 관계 감도를 높이고 있습니다.`;
+  }
+  return "자동진화 모드는 지금 열린 루프가 비교적 안정적이라, 탐험형 장면과 새로운 연결 기회를 만들 준비를 하고 있습니다.";
+}
+
+function buildQuests(snapshot: RelationshipOSSnapshot, focus: EvolutionFocus): EvolutionQuest[] {
+  const openPromises = getOpenPromises(snapshot);
+  const sortedPromises = [...openPromises].sort(
+    (a, b) => riskScore(b.risk) - riskScore(a.risk) || new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime(),
+  );
+  const staleProfile = [...snapshot.profiles].sort((a, b) => hoursSince(b.lastContactAt) - hoursSince(a.lastContactAt))[0];
+  const pendingApproval = snapshot.approvals.find((item) => item.status === "pending");
+  const quests: EvolutionQuest[] = [];
+
+  if (focus === "operator") {
+    for (const promise of sortedPromises.slice(0, 2)) {
+      const profile = snapshot.profiles.find((item) => item.id === promise.personId);
+      quests.push({
+        id: `quest-${promise.id}`,
+        title: promise.risk === "high" ? "보스 루프 정리" : "핵심 후속조치 처리",
+        description: profile
+          ? `${profile.name}과 연결된 "${promise.title}"를 오늘 안에 닫아 신뢰 리듬을 복구합니다.`
+          : `"${promise.title}"를 처리해 열린 루프를 줄입니다.`,
+        reward: promise.risk === "high" ? "신뢰 손실 방지 + 장면 회복" : "열린 루프 -1",
+        difficulty: promise.risk === "high" ? "boss" : "elite",
+        status: "active",
+        focus,
+        linkedPromiseId: promise.id,
+        linkedProfileId: promise.personId,
+      });
+    }
+  } else if (focus === "relationship" && staleProfile) {
+    quests.push({
+      id: `quest-reconnect-${staleProfile.id}`,
+      title: "흐름 다시 잇기",
+      description: `${staleProfile.name}과의 공백이 길어지고 있습니다. 짧은 안부나 체크인으로 리듬을 다시 여세요.`,
+      reward: "관계 온도 회복 + 다음 장면 생성",
+      difficulty: "elite",
+      status: "active",
+      focus,
+      linkedProfileId: staleProfile.id,
+    });
+    const relationshipPromise = sortedPromises.find((item) => item.category === "relationship");
+    if (relationshipPromise) {
+      quests.push({
+        id: `quest-${relationshipPromise.id}`,
+        title: "관계 퀘스트",
+        description: `"${relationshipPromise.title}"를 실행하면 끊긴 장면이 다시 이어집니다.`,
+        reward: "따뜻한 장면 개방",
+        difficulty: relationshipPromise.risk === "high" ? "boss" : "routine",
+        status: "active",
+        focus,
+        linkedPromiseId: relationshipPromise.id,
+        linkedProfileId: relationshipPromise.personId,
+      });
+    }
+  } else {
+    quests.push({
+      id: "quest-adventure-story",
+      title: "새 장면 열기",
+      description: "새로운 대화 한 줄이나 아이디어 한 줄을 캡처해 결이 다음 장면을 만들어내게 하세요.",
+      reward: "새 Night Story 장면",
+      difficulty: "routine",
+      status: "active",
+      focus,
+    });
+    if (staleProfile) {
+      quests.push({
+        id: `quest-side-${staleProfile.id}`,
+        title: "사이드 퀘스트: 가벼운 연결",
+        description: `${staleProfile.name}에게 가벼운 체크인을 보내 탐험형 흐름을 사람 사이 장면으로 전환합니다.`,
+        reward: "숨은 스토리 해금",
+        difficulty: "routine",
+        status: "active",
+        focus,
+        linkedProfileId: staleProfile.id,
+      });
+    }
+  }
+
+  if (pendingApproval) {
+    quests.push({
+      id: `quest-approval-${pendingApproval.id}`,
+      title: "승인함 비우기",
+      description: `${pendingApproval.targetName} 관련 초안을 승인하거나 수정해 자동진화 루프를 막힘 없이 이어가세요.`,
+      reward: "자동진화 속도 상승",
+      difficulty: "routine",
+      status: "active",
+      focus: "operator",
+      linkedPromiseId: pendingApproval.relatedPromiseId,
+    });
+  }
+
+  return quests.slice(0, 3);
+}
+
+function buildAutonomousMode(snapshot: RelationshipOSSnapshot, focus: EvolutionFocus, cycleCount: number, lastRunAt?: string): AutonomousModeState {
+  return {
+    enabled: true,
+    currentFocus: focus,
+    autopilotSummary: buildAutopilotSummary(snapshot, focus),
+    cycleCount,
+    lastRunAt: lastRunAt ?? new Date().toISOString(),
+    nextRunAt: nextRunIso(45),
+  };
+}
+
+function refreshDerived(snapshot: RelationshipOSSnapshot, cycleCount = snapshot.autonomousMode?.cycleCount ?? 0, lastRunAt?: string): RelationshipOSSnapshot {
+  const focus = inferCurrentFocus(snapshot);
+  const autonomousMode = buildAutonomousMode(snapshot, focus, cycleCount, lastRunAt);
+  const quests = buildQuests(snapshot, focus);
+  const episode = buildDailyEpisode({
+    ...snapshot,
+    autonomousMode,
+    quests,
+  });
+  return {
+    ...snapshot,
+    autonomousMode,
+    quests,
+    stories: [episode, ...snapshot.stories.filter((item) => item.id !== episode.id)],
+  };
+}
+
+export function describeFocus(focus: EvolutionFocus): string {
+  if (focus === "operator") return "실행 압력";
+  if (focus === "relationship") return "관계 감도";
+  return "탐험 드리프트";
+}
+
+export function describeProfileEmergence(snapshot: RelationshipOSSnapshot, profile: RelationshipProfile): { label: string; summary: string } {
+  const openLoops = snapshot.promises.filter((item) => item.personId === profile.id && item.status !== "done").length;
+  const contactGap = hoursSince(profile.lastContactAt);
+
+  if (openLoops >= 2 || profile.trustScore < 68) {
+    return {
+      label: "복구 구간",
+      summary: "실행과 확인이 늦어지면 리듬이 무너지는 단계입니다.",
+    };
+  }
+  if (profile.warmthScore >= 85 && contactGap < 96) {
+    return {
+      label: "자연 확장",
+      summary: "억지로 관리하지 않아도 장면이 잘 이어지는 안정 구간입니다.",
+    };
+  }
+  if (contactGap >= 96) {
+    return {
+      label: "재점화 필요",
+      summary: "공백이 길어져 작은 체크인만으로도 흐름이 크게 바뀔 수 있습니다.",
+    };
+  }
+  return {
+    label: "탐색 중",
+    summary: "아직 패턴이 굳지 않아 작은 액션이 관계의 방향을 정합니다.",
+  };
+}
+
 function buildDailyEpisode(snapshot: RelationshipOSSnapshot): StoryEpisode {
+  const focus = inferCurrentFocus(snapshot);
   const pending = snapshot.promises.filter((item) => item.status !== "done");
   const topPromise = [...pending].sort(
     (a, b) => riskScore(b.risk) - riskScore(a.risk) || new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime(),
@@ -176,6 +376,7 @@ function buildDailyEpisode(snapshot: RelationshipOSSnapshot): StoryEpisode {
     id: `daily-${new Date().toISOString().slice(0, 10)}`,
     createdAt: new Date().toISOString(),
     mood,
+    focus,
     title: titleMap[mood],
     subtitle: `${subject}과의 흐름을 결이 오늘 밤 한 편의 장면으로 정리했습니다.`,
     relationshipIds: profile ? [profile.id] : [],
@@ -345,12 +546,18 @@ export function createInitialSnapshot(): RelationshipOSSnapshot {
     approvals,
     captures,
     stories: [],
+    quests: [],
+    autonomousMode: {
+      enabled: true,
+      currentFocus: "operator",
+      autopilotSummary: "",
+      cycleCount: 0,
+      lastRunAt: new Date().toISOString(),
+      nextRunAt: nextRunIso(45),
+    },
   };
 
-  return {
-    ...snapshot,
-    stories: [buildDailyEpisode(snapshot)],
-  };
+  return refreshDerived(snapshot);
 }
 
 export function buildBriefing(snapshot: RelationshipOSSnapshot): RelationshipBriefing {
@@ -371,8 +578,11 @@ export function buildBriefing(snapshot: RelationshipOSSnapshot): RelationshipBri
         : `열린 루프를 천천히 닫으며 관계 리듬을 유지하면 됩니다.`,
     urgentCount: highRiskCount,
     readyDraftCount,
+    currentFocus: snapshot.autonomousMode.currentFocus,
+    autopilotSummary: snapshot.autonomousMode.autopilotSummary,
     relationshipAlerts: alerts,
     priorities,
+    questPreview: snapshot.quests.slice(0, 3),
     storyPreview: snapshot.stories[0],
   };
 }
@@ -431,11 +641,7 @@ export function ingestCapture(
     captures: [capture, ...snapshot.captures],
   };
 
-  const episode = buildDailyEpisode(nextSnapshot);
-  return {
-    ...nextSnapshot,
-    stories: [episode, ...nextSnapshot.stories.filter((item) => item.id !== episode.id)],
-  };
+  return refreshDerived(nextSnapshot, snapshot.autonomousMode.cycleCount);
 }
 
 export function togglePromise(snapshot: RelationshipOSSnapshot, promiseId: string): RelationshipOSSnapshot {
@@ -461,11 +667,7 @@ export function togglePromise(snapshot: RelationshipOSSnapshot, promiseId: strin
     profiles: nextProfiles,
     promises: nextPromises,
   };
-  const episode = buildDailyEpisode(nextSnapshot);
-  return {
-    ...nextSnapshot,
-    stories: [episode, ...nextSnapshot.stories.filter((item) => item.id !== episode.id)],
-  };
+  return refreshDerived(nextSnapshot, snapshot.autonomousMode.cycleCount);
 }
 
 export function snoozePromise(snapshot: RelationshipOSSnapshot, promiseId: string): RelationshipOSSnapshot {
@@ -481,11 +683,7 @@ export function snoozePromise(snapshot: RelationshipOSSnapshot, promiseId: strin
     };
   });
   const nextSnapshot: RelationshipOSSnapshot = { ...snapshot, promises: nextPromises };
-  const episode = buildDailyEpisode(nextSnapshot);
-  return {
-    ...nextSnapshot,
-    stories: [episode, ...nextSnapshot.stories.filter((item) => item.id !== episode.id)],
-  };
+  return refreshDerived(nextSnapshot, snapshot.autonomousMode.cycleCount);
 }
 
 export function decideApproval(
@@ -525,11 +723,7 @@ export function decideApproval(
     promises: nextPromises,
     profiles: nextProfiles,
   };
-  const episode = buildDailyEpisode(nextSnapshot);
-  return {
-    ...nextSnapshot,
-    stories: [episode, ...nextSnapshot.stories.filter((item) => item.id !== episode.id)],
-  };
+  return refreshDerived(nextSnapshot, snapshot.autonomousMode.cycleCount);
 }
 
 export function getOpenLoopCount(snapshot: RelationshipOSSnapshot, profileId: string): number {
@@ -538,4 +732,64 @@ export function getOpenLoopCount(snapshot: RelationshipOSSnapshot, profileId: st
 
 export function listPriorityPromises(snapshot: RelationshipOSSnapshot): PromisePriority[] {
   return buildBriefing(snapshot).priorities;
+}
+
+export function runAutonomousEvolutionCycle(snapshot: RelationshipOSSnapshot): RelationshipOSSnapshot {
+  const now = new Date().toISOString();
+  const openPromises = getOpenPromises(snapshot);
+  const nextPromises: PromiseItem[] = snapshot.promises.map((item) => {
+    if (item.status === "done") return item;
+    if (new Date(item.dueAt).getTime() <= Date.now() && item.risk !== "high") {
+      return { ...item, risk: "high" as const };
+    }
+    if (item.status === "snoozed" && new Date(item.dueAt).getTime() - Date.now() < 12 * 3600000) {
+      return { ...item, status: "open" as const };
+    }
+    return item;
+  });
+
+  const nextProfiles = snapshot.profiles.map((profile) => {
+    const gapHours = hoursSince(profile.lastContactAt);
+    const penalty = gapHours > 120 ? 2 : gapHours > 72 ? 1 : 0;
+    const openLoops = openPromises.filter((item) => item.personId === profile.id).length;
+    return {
+      ...profile,
+      trustScore: clamp(profile.trustScore - penalty - (openLoops >= 2 ? 1 : 0), 0, 100),
+      warmthScore: clamp(profile.warmthScore - (gapHours > 144 ? 1 : 0), 0, 100),
+    };
+  });
+
+  let nextApprovals = [...snapshot.approvals];
+  const overdueTarget = nextPromises.find((item) => item.status !== "done" && item.risk === "high");
+  if (overdueTarget) {
+    const existing = nextApprovals.some(
+      (item) => item.relatedPromiseId === overdueTarget.id && item.status === "pending",
+    );
+    if (!existing) {
+      const profile = nextProfiles.find((item) => item.id === overdueTarget.personId);
+      nextApprovals = [
+        {
+          id: `approval-${crypto.randomUUID()}`,
+          kind: "nudge",
+          title: profile ? `${profile.name}에게 흐름 다시 열기` : "열린 루프 다시 열기",
+          targetName: profile?.name ?? "대상 미확정",
+          preview: overdueTarget.suggestedMessage ?? `${overdueTarget.title} 관련해 짧게라도 먼저 확인 메시지를 보내 흐름을 살리세요.`,
+          rationale: "자동진화 모드가 지연된 고위험 루프를 감지해 재점화 초안을 만들었습니다.",
+          relatedPromiseId: overdueTarget.id,
+          status: "pending",
+          createdAt: now,
+        },
+        ...nextApprovals,
+      ];
+    }
+  }
+
+  const nextSnapshot: RelationshipOSSnapshot = {
+    ...snapshot,
+    profiles: nextProfiles,
+    promises: nextPromises,
+    approvals: nextApprovals,
+  };
+
+  return refreshDerived(nextSnapshot, (snapshot.autonomousMode?.cycleCount ?? 0) + 1, now);
 }

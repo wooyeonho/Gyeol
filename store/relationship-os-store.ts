@@ -7,6 +7,7 @@ import {
   getOpenLoopCount,
   ingestCapture,
   listPriorityPromises,
+  runAutonomousEvolutionCycle,
   snoozePromise,
   togglePromise,
 } from "@/lib/relationship-os/engine";
@@ -21,6 +22,7 @@ type RelationshipOSState = RelationshipOSSnapshot & {
   snoozePromiseById: (promiseId: string) => void;
   approveItem: (approvalId: string) => void;
   dismissItem: (approvalId: string) => void;
+  runAutonomousCycle: () => void;
   briefing: () => RelationshipBriefing;
   openLoopCount: (profileId: string) => number;
   priorityTitles: () => string[];
@@ -55,12 +57,16 @@ export const useRelationshipOsStore = create<RelationshipOSState>()(
         set((state) => ({
           ...decideApproval(state, approvalId, "dismissed"),
         })),
+      runAutonomousCycle: () =>
+        set((state) => ({
+          ...runAutonomousEvolutionCycle(state),
+        })),
       briefing: () => buildBriefing(get()),
       openLoopCount: (profileId) => getOpenLoopCount(get(), profileId),
       priorityTitles: () => listPriorityPromises(get()).map((item) => item.title),
     }),
     {
-      name: "gyeol-relationship-os-v1",
+      name: "gyeol-relationship-os-v2",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         profiles: state.profiles,
@@ -68,6 +74,8 @@ export const useRelationshipOsStore = create<RelationshipOSState>()(
         approvals: state.approvals,
         captures: state.captures,
         stories: state.stories,
+        quests: state.quests,
+        autonomousMode: state.autonomousMode,
       }),
       onRehydrateStorage: () => (state) => {
         state?.markHydrated(true);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { describeFocus, describeProfileEmergence } from "@/lib/relationship-os/engine";
 import { useRelationshipOsStore } from "@/store/relationship-os-store";
 
 const LAB_LINKS = [
@@ -58,13 +59,13 @@ export function RelationshipOsHome() {
             <div className="max-w-2xl">
               <p className="text-xs uppercase tracking-[0.28em] text-cyan-200/70">Relationship OS + Night Story</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                약속을 놓치지 않게 하고,
+                사용하다 보면 스스로 성격이 드러나고,
                 <br />
-                관계의 흐름은 이야기로 보여줍니다.
+                결은 그 흐름에 맞춰 진화합니다.
               </h1>
               <p className="mt-3 text-sm leading-6 text-white/66 sm:text-base">
-                결은 낮에는 follow-up과 답장을 챙기고, 밤에는 관계의 움직임을 한 장면으로 압축합니다.
-                기록 앱이 아니라 관계 운영체제처럼 쓰도록 홈 자체를 다시 구성했습니다.
+                관계형/게임형/운영형을 고르는 대신, 결이 현재 맥락을 읽어 실행 압력, 관계 감도, 탐험 드리프트 중 어디에
+                몰입할지 자동으로 바꿉니다.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -94,6 +95,12 @@ export function RelationshipOsHome() {
                   <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">오늘의 브리핑</p>
                   <h2 className="mt-2 text-xl font-medium">{briefing.headline}</h2>
                   <p className="mt-2 text-sm text-white/65">{briefing.summary}</p>
+                  <div className="mt-3 rounded-2xl border border-cyan-300/15 bg-cyan-400/[0.05] px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/68">
+                      자동진화 포커스 · {describeFocus(briefing.currentFocus)}
+                    </p>
+                    <p className="mt-1 text-sm text-white/82">{briefing.autopilotSummary}</p>
+                  </div>
                 </div>
                 <Link
                   href="/promises"
@@ -179,6 +186,26 @@ export function RelationshipOsHome() {
                   );
                 })}
               </div>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">오늘의 자동 퀘스트</p>
+                  <Link href="/stories" className="text-xs text-cyan-200/75">
+                    장면 전체 보기
+                  </Link>
+                </div>
+                <div className="mt-3 grid gap-2 md:grid-cols-3">
+                  {briefing.questPreview.map((quest) => (
+                    <article key={quest.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/42">
+                        {describeFocus(quest.focus)} · {quest.difficulty}
+                      </p>
+                      <h3 className="mt-1 text-sm font-medium">{quest.title}</h3>
+                      <p className="mt-2 text-xs leading-5 text-white/64">{quest.description}</p>
+                      <p className="mt-2 text-[11px] text-cyan-100/72">보상: {quest.reward}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </section>
 
             <section className="rounded-3xl border border-white/10 bg-[#0c0d13] p-4">
@@ -236,21 +263,46 @@ export function RelationshipOsHome() {
             <div className="mt-4 space-y-3">
               {profiles.map((profile) => (
                 <article key={profile.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  {(() => {
+                    const emergence = describeProfileEmergence(
+                      {
+                        profiles,
+                        promises,
+                        approvals,
+                        captures: [],
+                        stories: [],
+                        quests: [],
+                        autonomousMode: {
+                          enabled: true,
+                          currentFocus: briefing.currentFocus,
+                          autopilotSummary: briefing.autopilotSummary,
+                          cycleCount: 0,
+                          lastRunAt: new Date().toISOString(),
+                          nextRunAt: new Date().toISOString(),
+                        },
+                      },
+                      profile,
+                    );
+                    return (
+                      <>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium">{profile.name}</p>
-                      <p className="mt-0.5 text-xs text-white/48">{profile.role}</p>
+                      <p className="mt-0.5 text-xs text-white/48">{emergence.label}</p>
                     </div>
                     <div className="text-right text-xs text-white/55">
                       <p>신뢰 {profile.trustScore}</p>
                       <p>온도 {profile.warmthScore}</p>
                     </div>
                   </div>
-                  <p className="mt-3 text-sm text-white/72">{profile.spark}</p>
+                  <p className="mt-3 text-sm text-white/72">{emergence.summary}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-white/55">
                     <span>열린 루프 {openLoopCount(profile.id)}개</span>
                     <span>{profile.preferredStyle}</span>
                   </div>
+                      </>
+                    );
+                  })()}
                 </article>
               ))}
             </div>
