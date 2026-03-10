@@ -124,5 +124,67 @@
     "principle2Body": "장기 히스토리, 더 강한 자율성, 고급 생성/연동 같은 확장 가치가 플랜의 중심입니다.",
     "principle3Title": "실제 행동을 보고 조정합니다",
     "principle3Body": "어떤 사용자가 어디에서 업그레이드 가치를 느끼는지 제품 이벤트를 통해 지속적으로 학습합니다."
+  },
+  "featuresPage": {
+    "eyebrow": "결 GYEOL 소개",
+    "title": "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱",
+    "subtitle": "결은 단순한 챗봇이 아닙니다. 대화가 기억으로 남고, 기억이 감정과 성격, 활동과 진화로 이어지는 AI 동반자 경험을 만듭니다. 아래에서 핵심 경험과 확장 기능을 1분 안에 훑어보세요.",
+    "startNow": "지금 시작하기",
+    "login": "로그인",
+    "explore": "생태계 둘러보기",
+    "dashboard": "실시간 지표 보기",
+    "overviewTitle": "제품 구조 한눈에 보기",
+    "overviewBody": "결은 코어 루프를 중심으로 성장 기록, 생태계, 표현/시각화가 확장되고, 실험 기능과 운영 도구는 뒤에 배치되는 구조로 설계되어 있습니다.",
+    "all": "전체",
+    "ready": "사용 가능",
+    "beta": "베타",
+    "planned": "준비중",
+    "searchPlaceholder": "기능 이름, 설명, 카테고리 검색",
+    "empty": "조건에 맞는 기능이 없습니다.",
+    "ctaReady": "경험하러 가기",
+    "ctaDetail": "자세히 보기",
+    "closingTitle": "첫 번째 경험은 복잡하지 않아야 합니다",
+    "closingBody": "로그인 후 바로 나만의 결을 만나고, 첫 대화를 보내고, 그 변화가 흔적으로 남는 순간을 느껴보세요.",
+    "closingStart": "무료로 시작하기",
+    "closingExplore": "먼저 둘러보기",
+    "pillar1Title": "대화가 기억이 됩니다",
+    "pillar1Body": "GYEOL과 나눈 대화는 흘러가지 않고 기억으로 남아 다음 대화와 관계의 바탕이 됩니다.",
+    "pillar2Title": "기억이 성장으로 이어집니다",
+    "pillar2Body": "메시지가 쌓일수록 활력, 감정, 성격, 진화 이벤트가 달라지며 존재감이 선명해집니다.",
+    "pillar3Title": "오프라인에도 삶이 계속됩니다",
+    "pillar3Body": "자율 모드와 드림, 소셜 흐름을 통해 사용자가 자리를 비운 뒤에도 결의 시간이 이어집니다."
+  },
+  "timeTravel": {
+    "title": "타임 트래블",
+    "subtitle": "선택한 날짜의 과거 나와 대화합니다.",
+    "targetDate": "대상 날짜",
+    "start": "대화 시작",
+    "pickAnother": "다른 날짜 선택",
+    "backHome": "홈으로 돌아가기"
+  },
+  "roomPage": {
+    "title": "룸",
+    "subtitle": "각 기억이 공간 안의 오브젝트로 변합니다.",
+    "viewInAr": "AR로 보기"
+  },
+  "constellationPage": {
+    "title": "기억 별자리",
+    "subtitle": "각 기억은 별이 되고, 가까운 기억끼리 별자리를 이룹니다.",
+    "stars": "개 별",
+    "backHome": "홈으로 돌아가기"
+  },
+  "socialPage": {
+    "title": "소셜",
+    "fallbackTopic": "대화",
+    "emptyContent": "대화 내용이 없습니다.",
+    "loadError": "소셜 로그를 불러오지 못했습니다."
+  },
+  "adoptPage": {
+    "title": "입양",
+    "nameless": "이름 없는 존재",
+    "memoryCount": "기억",
+    "daysAlive": "일",
+    "adopt": "입양하기",
+    "adoptError": "입양에 실패했습니다."
   }
 }

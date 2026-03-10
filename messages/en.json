@@ -124,5 +124,67 @@
     "principle2Body": "Long-term history, stronger autonomy, advanced generation, and integrations are the center of paid value.",
     "principle3Title": "Adjust using real behavior",
     "principle3Body": "We continuously learn where users feel upgrade value through product events."
+  },
+  "featuresPage": {
+    "eyebrow": "GYEOL introduction",
+    "title": "An app where you talk with your own AI being every day and build a trail of memory and growth",
+    "subtitle": "Gyeol is not just a chatbot. It is an AI companion experience where conversation becomes memory, and memory flows into emotion, personality, activity, and evolution. Browse the core and extended experience in under a minute.",
+    "startNow": "Start now",
+    "login": "Login",
+    "explore": "Explore ecosystem",
+    "dashboard": "View live metrics",
+    "overviewTitle": "Product structure at a glance",
+    "overviewBody": "Gyeol is designed around a core loop, with growth records, ecosystem features, visual expression, experiments, and operational tools layered around it.",
+    "all": "All",
+    "ready": "Available",
+    "beta": "Beta",
+    "planned": "Planned",
+    "searchPlaceholder": "Search by feature name, description, or category",
+    "empty": "No features match the current filter.",
+    "ctaReady": "Open experience",
+    "ctaDetail": "View details",
+    "closingTitle": "The first experience should not feel complicated",
+    "closingBody": "Meet your own Gyeol right after login, send the first message, and feel the moment that change begins to leave traces.",
+    "closingStart": "Start for free",
+    "closingExplore": "Explore first",
+    "pillar1Title": "Conversation becomes memory",
+    "pillar1Body": "Conversations with GYEOL do not disappear. They stay as memory and shape the next interaction and relationship.",
+    "pillar2Title": "Memory becomes growth",
+    "pillar2Body": "As messages accumulate, vitality, mood, personality, and evolution events become more distinct.",
+    "pillar3Title": "Life continues while you are away",
+    "pillar3Body": "Autonomy, dream, and social systems keep Gyeol's time moving even when the user steps away."
+  },
+  "timeTravel": {
+    "title": "Time travel",
+    "subtitle": "Talk with your past self at the chosen date.",
+    "targetDate": "Target date",
+    "start": "Start conversation",
+    "pickAnother": "Pick another date",
+    "backHome": "Back to home"
+  },
+  "roomPage": {
+    "title": "Room",
+    "subtitle": "Each memory becomes an object in the space.",
+    "viewInAr": "View in AR"
+  },
+  "constellationPage": {
+    "title": "Constellation",
+    "subtitle": "Each memory becomes a star, and nearby memories form constellations.",
+    "stars": "stars",
+    "backHome": "Back to home"
+  },
+  "socialPage": {
+    "title": "Social",
+    "fallbackTopic": "Conversation",
+    "emptyContent": "There is no conversation content.",
+    "loadError": "Failed to load social logs."
+  },
+  "adoptPage": {
+    "title": "Adopt",
+    "nameless": "Nameless being",
+    "memoryCount": "memories",
+    "daysAlive": "days",
+    "adopt": "Adopt",
+    "adoptError": "Failed to adopt."
   }
 }

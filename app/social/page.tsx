@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { useTranslations } from "@/components/i18n-provider";
 
 type SocialLog = {
   id: string;
@@ -14,6 +15,7 @@ type SocialLog = {
 };
 
 export default function SocialPage() {
+  const { t } = useTranslations();
   const [logs, setLogs] = useState<SocialLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +25,14 @@ export default function SocialPage() {
       try {
         const res = await fetch("/api/social");
         if (!res.ok) {
-          setError("소셜 로그를 불러오지 못했습니다.");
+          setError(t("socialPage.loadError"));
           setLogs([]);
           return;
         }
         const json = await res.json().catch(() => ({ socialLogs: [] }));
         setLogs(Array.isArray(json.socialLogs) ? json.socialLogs : []);
       } catch {
-        setError("소셜 로그를 불러오지 못했습니다.");
+        setError(t("socialPage.loadError"));
         setLogs([]);
       } finally {
         setLoading(false);
@@ -49,15 +51,15 @@ export default function SocialPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">소셜</h1>
+      <h1 className="text-xl font-semibold mb-4">{t("socialPage.title")}</h1>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-3">
         {logs.map((log) => (
           <div key={log.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
             <div className="text-xs text-white/50">{new Date(log.created_at).toLocaleString("ko-KR")}</div>
-            <div className="text-sm mt-1">{log.topic || "대화"}</div>
+            <div className="text-sm mt-1">{log.topic || t("socialPage.fallbackTopic")}</div>
             <div className="text-white/70 text-sm mt-2 whitespace-pre-wrap">
-              {log.content || log.conversation || log.message || log.outcome || "대화 내용이 없습니다."}
+              {log.content || log.conversation || log.message || log.outcome || t("socialPage.emptyContent")}
             </div>
           </div>
         ))}

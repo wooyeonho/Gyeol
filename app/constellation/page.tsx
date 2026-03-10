@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useTranslations } from "@/components/i18n-provider";
 
 const ConstellationScene = dynamic(() => import("@/components/constellation-scene"), { ssr: false });
 
@@ -10,6 +11,7 @@ type Star = { id: string; content: string; type: string; created_at?: string; x:
 type Constellation = { name: string; starIds: string[] };
 
 export default function ConstellationPage() {
+  const { t } = useTranslations();
   const [stars, setStars] = useState<Star[]>([]);
   const [constellations, setConstellations] = useState<Constellation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +30,8 @@ export default function ConstellationPage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <div className="p-4 border-b border-white/10">
-        <h1 className="text-xl font-semibold">Constellation</h1>
-        <p className="text-white/50 text-sm mt-1">Each memory is a star. Clusters form constellations.</p>
+        <h1 className="text-xl font-semibold">{t("constellationPage.title")}</h1>
+        <p className="text-white/50 text-sm mt-1">{t("constellationPage.subtitle")}</p>
       </div>
       <div className="flex-1 min-h-[50vh] relative">
         {loading ? (
@@ -44,12 +46,12 @@ export default function ConstellationPage() {
         {constellations.map((c) => (
           <div key={c.name} className="text-sm text-white/70">
             <span className="font-medium text-white/90">{c.name}</span>
-            <span className="ml-2">{c.starIds.length} stars</span>
+            <span className="ml-2">{c.starIds.length} {t("constellationPage.stars")}</span>
           </div>
         ))}
       </div>
       <div className="p-4 pb-24">
-        <Link href="/" className="text-white/50 text-sm hover:text-white/80">Back to home</Link>
+        <Link href="/" className="text-white/50 text-sm hover:text-white/80">{t("constellationPage.backHome")}</Link>
       </div>
     </div>
   );

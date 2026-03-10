@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { RoomObject } from "@/lib/room/types";
 import ARViewer from "@/components/ar-viewer";
+import { useTranslations } from "@/components/i18n-provider";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
 
 export default function RoomPage() {
+  const { t } = useTranslations();
   const [objects, setObjects] = useState<RoomObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [arColor, setArColor] = useState("#a0a0ff");
@@ -34,8 +36,8 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <div className="p-4 border-b border-white/10">
-        <h1 className="text-xl font-semibold">Room</h1>
-        <p className="text-white/50 text-sm mt-1">Each memory becomes an object in the space.</p>
+        <h1 className="text-xl font-semibold">{t("roomPage.title")}</h1>
+        <p className="text-white/50 text-sm mt-1">{t("roomPage.subtitle")}</p>
       </div>
       <div className="flex-1 relative min-h-[60vh]">
         {loading ? (
@@ -47,7 +49,7 @@ export default function RoomPage() {
         )}
       </div>
       <section className="p-4 border-t border-white/10 pb-24">
-        <h2 className="text-sm font-medium text-white/70 mb-2">View in AR</h2>
+        <h2 className="text-sm font-medium text-white/70 mb-2">{t("roomPage.viewInAr")}</h2>
         <ARViewer color={arColor} onPositionSave={saveARPosition} />
       </section>
     </div>

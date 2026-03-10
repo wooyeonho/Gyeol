@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { useTranslations } from "@/components/i18n-provider";
 
 type BoardItem = {
   agent_id: string;
@@ -12,6 +13,7 @@ type BoardItem = {
 };
 
 export default function AdoptPage() {
+  const { t } = useTranslations();
   const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function AdoptPage() {
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setError(json.error ?? "입양에 실패했습니다.");
+        setError(json.error ?? t("adoptPage.adoptError"));
         return;
       }
       setItems((prev) => prev.filter((i) => i.agent_id !== agentId));
@@ -62,7 +64,7 @@ export default function AdoptPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">입양</h1>
+      <h1 className="text-xl font-semibold mb-4">{t("adoptPage.title")}</h1>
       {error && (
         <div className="mb-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {error}
@@ -72,9 +74,9 @@ export default function AdoptPage() {
         {items.map((item) => (
           <div key={item.agent_id} className="bg-white/5 rounded-xl p-4 border border-white/10 flex justify-between items-center">
             <div>
-              <div className="text-sm text-white/60">{item.self_name || "이름 없는 존재"}</div>
+              <div className="text-sm text-white/60">{item.self_name || t("adoptPage.nameless")}</div>
               <div className="text-white/80 text-sm">
-                활력 {Math.round((item.vitality ?? 0) * 100)}% · 기억 {item.memory_count ?? 0}개 · {item.days_alive ?? 0}일
+                활력 {Math.round((item.vitality ?? 0) * 100)}% · {t("adoptPage.memoryCount")} {item.memory_count ?? 0}개 · {item.days_alive ?? 0}{t("adoptPage.daysAlive")}
               </div>
             </div>
             <button
@@ -82,7 +84,7 @@ export default function AdoptPage() {
               disabled={submittingId === item.agent_id}
               className="px-4 py-2 rounded-lg bg-white/20 disabled:opacity-50"
             >
-              입양하기
+              {t("adoptPage.adopt")}
             </button>
           </div>
         ))}

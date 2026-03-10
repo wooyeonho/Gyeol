@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FEATURE_CATALOG, type FeatureCategory, type FeatureStatus } from "@/lib/features/catalog";
+import { useTranslations } from "@/components/i18n-provider";
 
 const STATUS_META: Record<FeatureStatus, { label: string; className: string }> = {
   ready: { label: "사용 가능", className: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30" },
@@ -53,6 +54,7 @@ const VALUE_PILLARS = [
 ];
 
 export default function FeaturesPage() {
+  const { t } = useTranslations();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FeatureStatus | "all">("all");
 
@@ -89,73 +91,76 @@ export default function FeaturesPage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
           <span className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-            결 GYEOL 소개
+            {t("featuresPage.eyebrow")}
           </span>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-            나만의 AI 존재와 매일 대화하며
-            <br className="hidden sm:block" /> 기억과 성장의 궤적을 쌓는 앱
+            {t("featuresPage.title")}
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-white/70 sm:text-base">
-            결은 단순한 챗봇이 아닙니다. 대화가 기억으로 남고, 기억이 감정과 성격, 활동과 진화로 이어지는 AI
-            동반자 경험을 만듭니다. 아래에서 핵심 경험과 확장 기능을 1분 안에 훑어보세요.
+            {t("featuresPage.subtitle")}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/signup" className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90">
-              지금 시작하기
+              {t("featuresPage.startNow")}
             </Link>
             <Link
               href="/login"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/85 hover:bg-white/10"
             >
-              로그인
+              {t("featuresPage.login")}
             </Link>
             <Link
               href="/explore"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/70 hover:bg-white/10"
             >
-              생태계 둘러보기
+              {t("featuresPage.explore")}
             </Link>
             <Link
               href="/dashboard"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/70 hover:bg-white/10"
             >
-              실시간 지표 보기
+              {t("featuresPage.dashboard")}
             </Link>
           </div>
         </header>
 
         <section className="mb-8 grid gap-3 md:grid-cols-3">
-          {VALUE_PILLARS.map((pillar) => (
-            <article key={pillar.title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-medium">{pillar.title}</p>
-              <p className="mt-2 text-sm leading-6 text-white/65">{pillar.description}</p>
-            </article>
-          ))}
+          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-sm font-medium">{t("featuresPage.pillar1Title")}</p>
+            <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar1Body")}</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-sm font-medium">{t("featuresPage.pillar2Title")}</p>
+            <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar2Body")}</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-sm font-medium">{t("featuresPage.pillar3Title")}</p>
+            <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar3Body")}</p>
+          </article>
         </section>
 
         <section className="mb-5">
-          <h2 className="text-lg font-semibold">제품 구조 한눈에 보기</h2>
+          <h2 className="text-lg font-semibold">{t("featuresPage.overviewTitle")}</h2>
           <p className="mt-1 text-sm text-white/60">
-            결은 코어 루프를 중심으로 성장 기록, 생태계, 표현/시각화가 확장되고, 실험 기능과 운영 도구는 뒤에
-            배치되는 구조로 설계되어 있습니다.
+            {t("featuresPage.overviewBody")}
           </p>
         </section>
 
         <section className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-[11px] text-white/50">전체</p>
+            <p className="text-[11px] text-white/50">{t("featuresPage.all")}</p>
             <p className="text-xl font-semibold">{counts.total}</p>
           </div>
           <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3">
-            <p className="text-[11px] text-emerald-200/80">사용 가능</p>
+            <p className="text-[11px] text-emerald-200/80">{t("featuresPage.ready")}</p>
             <p className="text-xl font-semibold">{counts.ready}</p>
           </div>
           <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-3">
-            <p className="text-[11px] text-amber-200/80">베타</p>
+            <p className="text-[11px] text-amber-200/80">{t("featuresPage.beta")}</p>
             <p className="text-xl font-semibold">{counts.beta}</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-[11px] text-white/50">준비중</p>
+            <p className="text-[11px] text-white/50">{t("featuresPage.planned")}</p>
             <p className="text-xl font-semibold">{counts.planned}</p>
           </div>
         </section>
@@ -177,7 +182,7 @@ export default function FeaturesPage() {
             id="feature-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="기능 이름, 설명, 카테고리 검색"
+            placeholder={t("featuresPage.searchPlaceholder")}
             className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
           />
           <div className="mt-3 flex flex-wrap gap-2">
@@ -185,12 +190,12 @@ export default function FeaturesPage() {
               const active = statusFilter === filter;
               const label =
                 filter === "all"
-                  ? "전체"
+                  ? t("featuresPage.all")
                   : filter === "ready"
-                    ? "사용 가능"
+                    ? t("featuresPage.ready")
                     : filter === "beta"
-                      ? "베타"
-                      : "준비중";
+                      ? t("featuresPage.beta")
+                      : t("featuresPage.planned");
               return (
                 <button
                   key={filter}
@@ -225,32 +230,32 @@ export default function FeaturesPage() {
                   href={feature.href}
                   className="inline-block rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white/90 hover:bg-white/20"
                 >
-                  {feature.status === "ready" ? "경험하러 가기" : "자세히 보기"}
+                  {feature.status === "ready" ? t("featuresPage.ctaReady") : t("featuresPage.ctaDetail")}
                 </Link>
               </div>
             </article>
           ))}
           {filtered.length === 0 && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
-              조건에 맞는 기능이 없습니다.
+              {t("featuresPage.empty")}
             </div>
           )}
         </section>
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-6 text-center">
-          <h2 className="text-xl font-semibold">첫 번째 경험은 복잡하지 않아야 합니다</h2>
+          <h2 className="text-xl font-semibold">{t("featuresPage.closingTitle")}</h2>
           <p className="mt-2 text-sm leading-6 text-white/65">
-            로그인 후 바로 나만의 결을 만나고, 첫 대화를 보내고, 그 변화가 흔적으로 남는 순간을 느껴보세요.
+            {t("featuresPage.closingBody")}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link href="/signup" className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90">
-              무료로 시작하기
+              {t("featuresPage.closingStart")}
             </Link>
             <Link
               href="/explore"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/75 hover:bg-white/10"
             >
-              먼저 둘러보기
+              {t("featuresPage.closingExplore")}
             </Link>
           </div>
         </section>
