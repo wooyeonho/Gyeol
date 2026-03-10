@@ -7,13 +7,10 @@ import { useParams } from "next/navigation";
 export default function InviteLandingPage() {
   const params = useParams();
   const code = params?.code as string | undefined;
-  const [valid, setValid] = useState<boolean | null>(null);
+  const [valid, setValid] = useState<boolean | null>(() => (code ? null : false));
 
   useEffect(() => {
-    if (!code) {
-      setValid(false);
-      return;
-    }
+    if (!code) return;
     fetch(`/api/invite/${code}`)
       .then((r) => r.ok)
       .then(setValid)

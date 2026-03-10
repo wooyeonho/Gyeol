@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: GYEOL Engine API
+  version: 1.0.0
+  description: |
+    Public v1 API for creating agents, chatting with them, reading state, and storing memory.
+servers:
+  - url: https://your-app.vercel.app
+paths:
+  /api/v1/agent/create:
+    post:
+      summary: Create an agent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+      responses:
+        "200":
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+  /api/v1/agent/chat:
+    post:
+      summary: Send a synchronous chat turn
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id, message]
+              properties:
+                agent_id:
+                  type: string
+                message:
+                  type: string
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply:
+                    type: string
+  /api/v1/agent/state:
+    get:
+      summary: Read current agent state
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: agent_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentState:
+                    type: object
+                    additionalProperties: true
+  /api/v1/agent/memory:
+    post:
+      summary: Add memory to an agent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id, content]
+              properties:
+                agent_id:
+                  type: string
+                content:
+                  type: string
+                type:
+                  type: string
+                  default: conversation
+      responses:
+        "200":
+          description: Memory inserted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

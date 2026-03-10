@@ -57,6 +57,7 @@
 - `RATE_LIMIT_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
 - `CRON_LOCK_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
 - `PRODUCT_EVENTS_RETENTION_DAYS`: product_events 보존 일수 (`90` 기본값)
+- `REFERRAL_REWARD_COINS`: 초대 성공 시 지급할 코인 (`10` 기본값)
 
 프로덕션에서 더 엄격한 운영을 원하면 위 두 값을 `closed`로 설정해 저장소/RPC 오류 시 요청 또는 중복 크론 실행을 보수적으로 막을 수 있습니다.
 
