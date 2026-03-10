@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { PLAN_DEFINITIONS, type EntitlementKey, type PlanDefinition, type PlanTier } from "@/lib/billing/catalog";
+import { useTranslations } from "@/components/i18n-provider";
 
 type BillingData = {
   entitlements: Record<EntitlementKey, boolean>;
@@ -22,6 +23,7 @@ const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 export default function PlansPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { t } = useTranslations();
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.plansOpened);
@@ -47,30 +49,29 @@ export default function PlansPage() {
       plan: plan.tier,
       source: "plans_page",
     });
-    setNotice(`${plan.tier.toUpperCase()} 플랜 관심이 기록되었습니다. 실제 결제 연동 전까지는 제품 내 관심 신호로만 저장됩니다.`);
+    setNotice(`${plan.tier.toUpperCase()} ${t("plans.noticeSuffix")}`);
   }
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:py-16">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">PLANS</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">{t("plans.eyebrow")}</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            결의 가치는 관계가 깊어질수록 더 커집니다
+            {t("plans.title")}
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-white/68 sm:text-base">
-            무료 플랜은 코어 경험에 집중하고, 유료 플랜은 더 깊은 회고, 자율성, 생성, 멀티채널 흐름을 열어주는 방향으로
-            설계됩니다. 핵심 대화를 잠그기보다 가치가 커질수록 자연스럽게 업그레이드하도록 하는 것이 원칙입니다.
+            {t("plans.subtitle")}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/" className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90">
-              홈으로 돌아가기
+              {t("plans.goHome")}
             </Link>
             <Link
               href="/features"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
             >
-              제품 구조 보기
+              {t("plans.viewStructure")}
             </Link>
           </div>
         </header>
@@ -104,7 +105,7 @@ export default function PlansPage() {
                 <div className="flex flex-col items-end gap-1">
                   {isCurrentPlan && (
                     <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2 py-1 text-[11px] text-emerald-100">
-                      현재 사용 중
+                      {t("plans.currentPlan")}
                     </span>
                   )}
                   {plan.badge && !isCurrentPlan && (
@@ -131,7 +132,7 @@ export default function PlansPage() {
                 </Link>
               ) : isCurrentPlan ? (
                 <div className="mt-5 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center text-sm text-white/75">
-                  현재 이 플랜을 사용 중입니다
+                  {t("plans.currentPlanBody")}
                 </div>
               ) : (
                 <button
@@ -148,24 +149,24 @@ export default function PlansPage() {
         </section>
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-          <h2 className="text-xl font-semibold">수익화 원칙</h2>
+          <h2 className="text-xl font-semibold">{t("plans.principlesTitle")}</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl bg-black/25 p-4">
-              <p className="text-sm font-medium">코어 대화는 막지 않습니다</p>
+              <p className="text-sm font-medium">{t("plans.principle1Title")}</p>
               <p className="mt-2 text-sm leading-6 text-white/65">
-                사용자가 결과 관계를 시작하고 유지하는 가장 중요한 순간은 무료로 열어둡니다.
+                {t("plans.principle1Body")}
               </p>
             </div>
             <div className="rounded-2xl bg-black/25 p-4">
-              <p className="text-sm font-medium">더 깊은 가치에 과금합니다</p>
+              <p className="text-sm font-medium">{t("plans.principle2Title")}</p>
               <p className="mt-2 text-sm leading-6 text-white/65">
-                장기 히스토리, 더 강한 자율성, 고급 생성/연동 같은 확장 가치가 플랜의 중심입니다.
+                {t("plans.principle2Body")}
               </p>
             </div>
             <div className="rounded-2xl bg-black/25 p-4">
-              <p className="text-sm font-medium">실제 행동을 보고 조정합니다</p>
+              <p className="text-sm font-medium">{t("plans.principle3Title")}</p>
               <p className="mt-2 text-sm leading-6 text-white/65">
-                어떤 사용자가 어디에서 업그레이드 가치를 느끼는지 제품 이벤트를 통해 지속적으로 학습합니다.
+                {t("plans.principle3Body")}
               </p>
             </div>
           </div>

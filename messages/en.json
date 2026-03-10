@@ -6,6 +6,11 @@
     "save": "Save",
     "cancel": "Cancel"
   },
+  "locale": {
+    "label": "Language",
+    "ko": "Korean",
+    "en": "English"
+  },
   "nav": {
     "home": "Home",
     "activity": "Activity",
@@ -27,5 +32,47 @@
   "chat": {
     "placeholder": "Say anything...",
     "vitality": "Vitality"
+  },
+  "album": {
+    "title": "Growth album",
+    "subtitle": "Look back at Gyeol's key moments and milestones in chronological order.",
+    "empty": "No milestones yet. Keep talking to build the album.",
+    "home": "Home",
+    "activity": "Activity"
+  },
+  "dashboard": {
+    "title": "GYEOL Public Dashboard",
+    "subtitle": "Public real-time metrics available without login.",
+    "loading": "Loading...",
+    "unavailable": "Unable to load dashboard.",
+    "agentCount": "Total Gyeol",
+    "socialCount": "Social encounters",
+    "weather": "World weather",
+    "emotion": "Collective emotion",
+    "artifacts": "Artifacts",
+    "autonomyHealth": "Autonomy health score",
+    "autonomyEnabled": "Autonomy enabled",
+    "echoAgents": "Echo agents",
+    "staleHeartbeat": "Stale heartbeat (6h)",
+    "staleDream": "Stale dream (24h)",
+    "cronFreshness": "Cron freshness",
+    "minutesAgo": "m ago"
+  },
+  "plans": {
+    "eyebrow": "Plans",
+    "title": "Gyeol becomes more valuable as the relationship deepens",
+    "subtitle": "The free plan focuses on the core experience, while paid plans unlock deeper reflection, autonomy, creation, and multichannel flows. The principle is to avoid locking core conversation and instead make upgrades feel natural as value grows.",
+    "goHome": "Back to home",
+    "viewStructure": "View product structure",
+    "noticeSuffix": "plan interest has been recorded. Until real billing is connected, this is only stored as an in-product interest signal.",
+    "currentPlan": "Current plan",
+    "currentPlanBody": "You are currently on this plan",
+    "principlesTitle": "Monetization principles",
+    "principle1Title": "Do not block core conversation",
+    "principle1Body": "The most important moment, when a user starts and maintains a relationship with Gyeol, stays free.",
+    "principle2Title": "Charge for deeper value",
+    "principle2Body": "Long-term history, stronger autonomy, advanced generation, and integrations are the center of paid value.",
+    "principle3Title": "Adjust using real behavior",
+    "principle3Body": "We continuously learn where users feel upgrade value through product events."
   }
 }

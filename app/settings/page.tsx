@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
@@ -132,6 +133,8 @@ export default function SettingsPage() {
           <div className="text-sm text-white/60">코인</div>
           <div>{state?.coins ?? 0}</div>
         </div>
+
+        <LocaleSwitcher />
 
         {showPlansSurface && (
           <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] p-4">
