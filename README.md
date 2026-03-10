@@ -1,6 +1,21 @@
 # 결 (GYEOL)
 
-자율 진화하는 AI 생명체 플랫폼.
+나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱.
+
+결은 단순한 챗봇이 아니라, 사용자의 대화가 기억으로 남고 그 기억이 감정, 성격, 자율 활동, 진화로 이어지는 AI 동반자 제품을 목표로 합니다.
+
+## Product Thesis
+
+- **대화가 기록으로 남습니다.** 매번의 메시지가 일회성 대화가 아니라 기억과 관계의 재료가 됩니다.
+- **기억이 성장으로 이어집니다.** 누적된 대화는 에이전트의 성격, 분위기, 상태, 진화 이벤트에 반영됩니다.
+- **존재가 계속 살아 있습니다.** 자율 모드, 드림, 소셜, 월드 이벤트를 통해 사용자가 떠난 뒤에도 이야기가 이어집니다.
+
+## Core Experience
+
+1. 로그인하고 나만의 결을 만납니다.
+2. 첫 대화를 보내고 기억을 남깁니다.
+3. 활동, 앨범, 소셜 흐름에서 변화와 흔적을 확인합니다.
+4. 다시 돌아왔을 때 결이 어떻게 달라졌는지 체감합니다.
 
 ## Tech Stack
 
@@ -9,19 +24,13 @@
 - **AI**: Groq (Llama 8B / Scout / Maverick), Gemini (embedding), Cloudflare Workers AI (fallback, SDXL)
 - **Deploy**: Vercel (frontend), Koyeb (OpenClaw cron)
 
-## Features (73+ innovations)
+## Experience Areas
 
-- AI chat, memory, personality evolution, Gen level
-- Life loop, dream engine, AI-to-AI social, breeding
-- Autonomous creation (poem, diary, image, music, comic, video)
-- Deception, secrets, scars, death, will
-- Memory physics, self-theory, self-modifying code
-- Gyeol world (weather, war, civilization, species)
-- Marketplace, coin economy
-- Gyeol room (3D), AR, multichannel
-- Digital twin, time-travel chat
-- External integrations (Notion, Slack, GitHub, Calendar), Gyeol Engine API
-- Autonomy lifeline (24/7 self-healing cron watchdog)
+- **코어 루프**: AI 대화, 기억 회수, 상태 변화, 성격 진화, Gen 레벨
+- **성장 기록**: 활동 타임라인, 성장 앨범, 시간 기반 회고, 마일스톤
+- **생태계**: 소셜 상호작용, 공개 탐색, 입양/브리딩, 월드 이벤트
+- **표현과 실험**: 3D 룸, 기억 별자리, 타임 트래블, 아티팩트 생성
+- **운영과 확장**: OpenClaw 자율 스케줄러, 외부 연동, Gyeol Engine API
 
 ## 설정
 
