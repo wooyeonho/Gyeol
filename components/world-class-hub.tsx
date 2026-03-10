@@ -48,6 +48,29 @@ function vitalityHint(vitality: number) {
   return "가벼운 인사나 짧은 체크인부터 시작해도 충분해요.";
 }
 
+function growthSummary(totalMessages: number) {
+  if (totalMessages <= 0) {
+    return "첫 대화를 보내면 기억, 활동, 성장 앨범이 동시에 열리기 시작합니다.";
+  }
+  if (totalMessages === 1) {
+    return "첫 기억이 쌓였습니다. 지금부터 결의 관계와 상태 변화가 기록되기 시작합니다.";
+  }
+  if (totalMessages < 10) {
+    return `${totalMessages}개의 대화가 쌓였습니다. 지금은 관계의 톤과 기억의 결이 만들어지는 구간입니다.`;
+  }
+  if (totalMessages < 30) {
+    return `${totalMessages}개의 대화가 누적되었습니다. 성격과 반응 패턴이 더 선명해지는 구간입니다.`;
+  }
+  return `${totalMessages}개의 대화가 축적되었습니다. 이제 결의 성장 흔적을 활동과 앨범에서 함께 회고해보세요.`;
+}
+
+function nextEvolutionHint(totalMessages: number) {
+  if (totalMessages <= 0) return "첫 메시지를 보내면 성장 루프가 시작됩니다.";
+  const remainder = totalMessages % 10;
+  const toNext = remainder === 0 ? 10 : 10 - remainder;
+  return `${toNext}번 더 대화하면 다음 성격 분석 구간에 도달합니다.`;
+}
+
 export function WorldClassHub() {
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
@@ -96,6 +119,8 @@ export function WorldClassHub() {
 
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
+  const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
+  const mood = typeof agentState?.mood === "string" ? agentState.mood : "아직 감정 기록 없음";
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
   const weather = typeof worldState?.weather?.name === "string" ? worldState.weather.name : "Void";
@@ -104,6 +129,8 @@ export function WorldClassHub() {
   const isFirstSession = sessionMessages === 0;
   const quickPrompts = isFirstSession ? FIRST_SESSION_PROMPTS : RETURNING_PROMPTS;
   const primaryPrompt = quickPrompts[0];
+  const summary = growthSummary(sessionMessages);
+  const evolutionHint = nextEvolutionHint(sessionMessages);
 
   const toggleMission = (id: string) => {
     setMissions((prev) => prev.map((mission) => (mission.id === id ? { ...mission, done: !mission.done } : mission)));
@@ -163,7 +190,7 @@ export function WorldClassHub() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wider text-white/45">1. 첫 행동</p>
               <p className="mt-1 text-sm text-white/85">
-                {sessionMessages > 0 ? "첫 메시지를 이미 보냈습니다." : "추천 질문 하나로 첫 메시지를 보내보세요."}
+                {sessionMessages > 0 ? "대화가 시작되었습니다. 이제 변화가 누적됩니다." : "추천 질문 하나로 첫 메시지를 보내보세요."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -175,7 +202,7 @@ export function WorldClassHub() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wider text-white/45">3. 다음 확인</p>
               <p className="mt-1 text-sm text-white/85">
-                활동과 앨범에서 결이 남긴 흔적과 변화를 다시 확인할 수 있습니다.
+                활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다.
               </p>
             </div>
           </div>
@@ -234,6 +261,42 @@ export function WorldClassHub() {
             <div className="rounded-xl bg-white/5 p-3">
               <p className="text-[10px] uppercase tracking-wider text-white/50">미션 달성률</p>
               <p className="text-xl font-semibold">{completionRate}%</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">최근 변화</p>
+                <p className="mt-1 text-sm font-medium text-white">{summary}</p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                Gen {genLevel}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">현재 기분</p>
+                <p className="mt-1 text-sm text-white/82">{mood}</p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">다음 변화 포인트</p>
+                <p className="mt-1 text-sm text-white/82">{evolutionHint}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/activity"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                활동에서 변화 보기
+              </Link>
+              <Link
+                href="/album"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                앨범에서 마일스톤 보기
+              </Link>
             </div>
           </div>
 

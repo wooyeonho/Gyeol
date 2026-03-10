@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useAgentStore } from "@/store/agent-store";
 
 interface Message { role: "user" | "assistant"; content: string }
 interface ChatStore {
@@ -18,7 +19,7 @@ export const useChatStore = create<ChatStore>((set) => ({
       if (!res.ok) throw new Error(`${res.status}`);
 
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) throw new Error("Missing response stream");
       const decoder = new TextDecoder();
 
       while (true) {
@@ -47,7 +48,13 @@ export const useChatStore = create<ChatStore>((set) => ({
         msgs[msgs.length - 1] = { role: "assistant", content: "지금은 잠시 쉬고 있어요..." };
         return { messages: msgs };
       });
+    } finally {
+      try {
+        await useAgentStore.getState().fetchAgentState({ silent: true });
+      } catch (e) {
+        console.error("[Chat] agent refresh failed", e);
+      }
+      set({ isStreaming: false });
     }
-    set({ isStreaming: false });
   },
 }));

@@ -6,16 +6,16 @@ interface AgentStore {
   agentState: Record<string, unknown> | null;
   loading: boolean;
   evolutionEvent: { level: number; mutation?: string } | null;
-  fetchAgentState: () => Promise<void>;
+  fetchAgentState: (options?: { silent?: boolean }) => Promise<void>;
   triggerEvolution: (event: { level: number; mutation?: string }) => void;
   clearEvolution: () => void;
 }
 
 export const useAgentStore = create<AgentStore>((set) => ({
   agentId: null, agentState: null, loading: true, evolutionEvent: null,
-  fetchAgentState: async () => {
+  fetchAgentState: async (options) => {
     try {
-      set({ loading: true });
+      if (!options?.silent) set({ loading: true });
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { set({ loading: false, agentId: null, agentState: null }); return; }
