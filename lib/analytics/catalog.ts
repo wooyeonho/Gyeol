@@ -2,6 +2,7 @@ export const CLIENT_EVENT = {
   activityOpened: "activity_opened",
   albumOpened: "album_opened",
   authFailed: "auth_failed",
+  experimentAssigned: "experiment_assigned",
   exploreOpened: "explore_opened",
   firstMessageSent: "first_message_sent",
   guestCompleted: "guest_completed",
