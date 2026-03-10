@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:migrate": "node scripts/run-migrations.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "node scripts/run-migrations.mjs",
-    "verify:stripe": "node scripts/verify-stripe-setup.mjs"
+    "verify:stripe": "node scripts/verify-stripe-setup.mjs",
+    "verify:deploy": "node scripts/verify-deploy.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

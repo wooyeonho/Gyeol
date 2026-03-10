@@ -71,18 +71,23 @@ export default function PlansPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_tier: plan.tier }),
       });
-      const checkoutJson = (await checkoutRes.json().catch(() => null)) as { url?: string } | null;
-      if (checkoutRes.ok && checkoutJson?.url) {
-        window.location.href = checkoutJson.url;
+      const checkoutJson = await checkoutRes.json().catch(() => null);
+      if (checkoutRes.ok && typeof checkoutJson?.checkout_url === "string") {
+        window.location.href = checkoutJson.checkout_url;
         return;
       }
-      const res = await fetch("/api/billing/me", {
+      if (checkoutRes.status !== 503) {
+        setNotice("플랜 변경에 실패했습니다.");
+        return;
+      }
+
+      const mockRes = await fetch("/api/billing/me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_tier: plan.tier }),
       });
-      const json = await res.json().catch(() => null);
-      if (!res.ok) {
+      const json = await mockRes.json().catch(() => null);
+      if (!mockRes.ok) {
         setNotice("플랜 변경에 실패했습니다.");
         return;
       }

@@ -1,116 +1,71 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/service";
-import {
-  getStripeClient,
-  getStripeWebhookSecret,
-  mapStripeStatus,
-  inferPlanTierFromPriceId,
-} from "@/lib/billing/stripe";
+import { getPlanTierFromStripePriceId, getStripe, getStripeWebhookSecret, isStripeConfigured, mapStripeStatus } from "@/lib/billing/stripe";
 import { upsertSubscriptionFromStripe } from "@/lib/billing/service";
-import type { PlanTier } from "@/lib/billing/catalog";
 
-function isPlanTier(value: string): value is PlanTier {
-  return value === "free" || value === "pro" || value === "premium";
+function extractPlanTier(subscription: Stripe.Subscription) {
+  const metadataPlanTier = subscription.metadata?.plan_tier;
+  if (metadataPlanTier === "pro" || metadataPlanTier === "premium") return metadataPlanTier;
+  const priceId = subscription.items.data[0]?.price?.id ?? null;
+  if (!priceId) return "free";
+  return getPlanTierFromStripePriceId(priceId) ?? "free";
 }
 
-async function handleSubscriptionEvent(sub: Stripe.Subscription) {
-  const userId = (sub.metadata?.user_id as string) ?? null;
-  if (!userId) {
-    console.warn("[Stripe webhook] subscription missing user_id metadata", sub.id);
-    return;
-  }
-
-  const firstItem = sub.items?.data?.[0];
-  const priceId = (firstItem?.price?.id as string) ?? null;
-  const planTier = isPlanTier(sub.metadata?.plan_tier as string)
-    ? (sub.metadata.plan_tier as PlanTier)
-    : inferPlanTierFromPriceId(priceId);
-
-  const status = mapStripeStatus(sub.status);
-  const periodEndTs = firstItem?.current_period_end ?? sub.billing_cycle_anchor;
-  const periodEnd = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
-  const cancelAtPeriodEnd = Boolean(sub.cancel_at_period_end);
-  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? "";
-
-  const service = createServiceClient();
-  await upsertSubscriptionFromStripe(service, {
-    user_id: userId,
-    plan_tier: planTier,
-    status,
-    provider: "stripe",
-    provider_subscription_id: sub.id,
-    provider_customer_id: customerId,
-    current_period_end: periodEnd,
-    cancel_at_period_end: cancelAtPeriodEnd,
-    metadata: {
-      stripe_status: sub.status,
-      price_id: priceId,
-      event_at: new Date().toISOString(),
-    },
-  });
-}
-
-export async function POST(req: NextRequest) {
-  const secret = getStripeWebhookSecret();
-  if (!secret) {
-    return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
-  }
-
-  const stripe = getStripeClient();
-  if (!stripe) {
-    return NextResponse.json({ error: "Stripe unavailable" }, { status: 503 });
-  }
-
-  let event: Stripe.Event;
-  const body = await req.text();
-  const sig = req.headers.get("stripe-signature");
-
-  if (!sig) {
-    return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+export async function POST(request: Request) {
+  if (!isStripeConfigured()) {
+    return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
   }
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig, secret);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[Stripe webhook] signature verification failed", msg);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
-  }
+    const signature = request.headers.get("stripe-signature");
+    if (!signature) return NextResponse.json({ error: "Missing signature" }, { status: 400 });
 
-  try {
-    switch (event.type) {
-      case "customer.subscription.created":
-      case "customer.subscription.updated":
-        await handleSubscriptionEvent(event.data.object as Stripe.Subscription);
-        break;
-      case "customer.subscription.deleted": {
-        const sub = event.data.object as Stripe.Subscription;
-        const userId = (sub.metadata?.user_id as string) ?? null;
-        if (!userId) break;
-        const service = createServiceClient();
-        const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? "";
+    const payload = await request.text();
+    const stripe = getStripe();
+    const event = stripe.webhooks.constructEvent(payload, signature, getStripeWebhookSecret());
+
+    const service = createServiceClient();
+    await service.from("stripe_webhook_events").upsert(
+      {
+        event_id: event.id,
+        event_type: event.type,
+        payload: event,
+      },
+      { onConflict: "event_id" }
+    );
+
+    if (
+      event.type === "customer.subscription.created" ||
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted"
+    ) {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.user_id ?? "";
+      if (userId) {
+        const currentPeriodEnd = subscription.items.data[0]?.current_period_end
+          ? new Date(subscription.items.data[0].current_period_end * 1000).toISOString()
+          : null;
         await upsertSubscriptionFromStripe(service, {
           user_id: userId,
-          plan_tier: "free",
-          status: "cancelled",
+          plan_tier: event.type === "customer.subscription.deleted" ? "free" : extractPlanTier(subscription),
+          status: event.type === "customer.subscription.deleted" ? "cancelled" : mapStripeStatus(subscription.status),
           provider: "stripe",
-          provider_subscription_id: sub.id,
-          provider_customer_id: customerId,
-          current_period_end: null,
-          cancel_at_period_end: false,
-          metadata: { deleted_at: new Date().toISOString() },
+          provider_subscription_id: subscription.id,
+          provider_customer_id: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id ?? "",
+          current_period_end: currentPeriodEnd,
+          cancel_at_period_end: event.type === "customer.subscription.deleted" ? false : subscription.cancel_at_period_end,
+          metadata: {
+            event_type: event.type,
+            livemode: subscription.livemode,
+          },
         });
-        break;
       }
-      default:
-        // Ignore unhandled events
-        break;
     }
 
     return NextResponse.json({ received: true });
-  } catch (e) {
-    console.error("[Stripe webhook] handler error", e);
-    return NextResponse.json({ error: "Handler failed" }, { status: 500 });
+  } catch (error) {
+    console.error("POST /api/webhook/stripe error", error);
+    return NextResponse.json({ error: "Invalid webhook" }, { status: 400 });
   }
 }

@@ -85,6 +85,7 @@ type BillingData = {
   subscription: {
     cancel_at_period_end: boolean;
     current_period_end: string | null;
+    provider_customer_id?: string | null;
     provider: string | null;
     status: string;
   };
@@ -166,6 +167,16 @@ export default function SettingsPage() {
     router.refresh();
   }
 
+  async function openBillingPortal() {
+    const res = await fetch("/api/billing/portal", { method: "POST" });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || typeof json?.portal_url !== "string") {
+      setError("결제 관리 페이지를 열지 못했습니다.");
+      return;
+    }
+    window.location.href = json.portal_url;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -234,6 +245,15 @@ export default function SettingsPage() {
                 플랜 관리
               </Link>
             </div>
+            {billing?.subscription.provider === "stripe" && billing.subscription.provider_customer_id && (
+              <button
+                type="button"
+                onClick={() => void openBillingPortal()}
+                className="mt-4 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+              >
+                결제 관리 열기
+              </button>
+            )}
           </div>
         )}
 

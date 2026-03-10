@@ -19,6 +19,7 @@ const JOBS: JobDef[] = [
   { name: "crawl",      schedule: "0 */8 * * *",   endpoint: "/api/cron/crawl",      timeoutMs: 180_000 },
   { name: "dream",      schedule: "0 4 * * *",     endpoint: "/api/cron/dream",      timeoutMs: 60_000  },
   { name: "world",      schedule: "0 0 * * *",     endpoint: "/api/cron/world",      timeoutMs: 60_000  },
+  { name: "retention",  schedule: "0 3 * * *",     endpoint: "/api/cron/retention",  timeoutMs: 60_000  },
   { name: "redemption", schedule: "0 10 * * *",    endpoint: "/api/cron/redemption", timeoutMs: 30_000  },
   { name: "war",       schedule: "0 * * * *",     endpoint: "/api/cron/war",       timeoutMs: 30_000  },
   { name: "recap",     schedule: "0 9 * * 0",     endpoint: "/api/cron/recap",     timeoutMs: 120_000 },

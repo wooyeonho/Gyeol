@@ -13,6 +13,7 @@ type JobTarget = {
 const JOB_TARGETS: JobTarget[] = [
   { name: "heartbeat", endpoint: "/api/cron/heartbeat", staleAfterMinutes: 180 },
   { name: "time-capsule", endpoint: "/api/cron/time-capsule", staleAfterMinutes: 120 },
+  { name: "retention", endpoint: "/api/cron/retention", staleAfterMinutes: 1800 },
   { name: "social", endpoint: "/api/cron/social", staleAfterMinutes: 720 },
   { name: "learner", endpoint: "/api/cron/learner", staleAfterMinutes: 720 },
   { name: "crawl", endpoint: "/api/cron/crawl", staleAfterMinutes: 960 },

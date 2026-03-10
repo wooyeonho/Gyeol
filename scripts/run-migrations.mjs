@@ -1,40 +1,41 @@
 #!/usr/bin/env node
-/**
- * Run phase23+24 migrations.
- * Usage: DATABASE_URL="postgresql://..." node scripts/run-migrations.mjs
- * Or: SUPABASE_DB_URL="..." node scripts/run-migrations.mjs
- *
- * Get connection string from Supabase Dashboard → Settings → Database → Connection string (URI)
- */
 
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-import pg from "pg";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const sqlPath = join(__dirname, "apply-phase23-24.sql");
-const sql = readFileSync(sqlPath, "utf8");
+const migrationsDir = path.resolve("supabase/migrations");
+const migrationFiles = fs
+  .readdirSync(migrationsDir)
+  .filter((file) => /^phase\d+.*\.sql$/.test(file))
+  .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 
-const url = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
-if (!url) {
-  console.error("Set DATABASE_URL or SUPABASE_DB_URL");
-  console.error("Example: DATABASE_URL='postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres' node scripts/run-migrations.mjs");
-  process.exit(1);
+if (migrationFiles.length === 0) {
+  console.log("[db:migrate] no migration files found");
+  process.exit(0);
 }
 
-async function main() {
-  const client = new pg.Client({ connectionString: url });
-  try {
-    await client.connect();
-    await client.query(sql);
-    console.log("✓ Migrations applied (phase23, phase24)");
-  } catch (e) {
-    console.error("Migration failed:", e.message);
-    process.exit(1);
-  } finally {
-    await client.end();
-  }
+const combinedSql = migrationFiles
+  .map((file) => `-- ${file}\n${fs.readFileSync(path.join(migrationsDir, file), "utf8")}`)
+  .join("\n\n");
+
+const outputPath = path.resolve("scripts/apply-all-migrations.generated.sql");
+fs.writeFileSync(outputPath, combinedSql);
+console.log(`[db:migrate] combined SQL written to ${outputPath}`);
+
+if (!process.env.DATABASE_URL) {
+  console.log("[db:migrate] DATABASE_URL is not set. Generated SQL only.");
+  process.exit(0);
 }
 
-main();
+const tempFile = path.join(os.tmpdir(), `gyeol-migrations-${Date.now()}.sql`);
+fs.writeFileSync(tempFile, combinedSql);
+try {
+  execFileSync("psql", [process.env.DATABASE_URL, "-v", "ON_ERROR_STOP=1", "-f", tempFile], {
+    stdio: "inherit",
+  });
+  console.log("[db:migrate] migration apply complete");
+} finally {
+  fs.unlinkSync(tempFile);
+}

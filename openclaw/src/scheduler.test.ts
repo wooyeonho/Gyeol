@@ -64,4 +64,11 @@ describe("runOnce", () => {
       })
     );
   });
+
+  it("calls all registered jobs when no job name is passed", async () => {
+    const { runOnce } = await import("./scheduler");
+    await runOnce(config);
+
+    expect(fetch).toHaveBeenCalledTimes(13);
+  });
 });

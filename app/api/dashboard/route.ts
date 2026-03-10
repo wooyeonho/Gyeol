@@ -43,6 +43,7 @@ export async function GET() {
         .in("job_name", [
           "cron:heartbeat",
           "cron:time-capsule",
+          "cron:retention",
           "cron:social",
           "cron:learner",
           "cron:crawl",
@@ -70,7 +71,7 @@ export async function GET() {
       staleDream24h,
       echoAgents: echoCount,
       staleCronJobs: staleCronJobs24h,
-      totalCronJobs: 8,
+      totalCronJobs: 9,
     });
 
     return NextResponse.json({

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
@@ -15,10 +15,15 @@ type EnvStatus = {
   configured: boolean;
 };
 
-export async function GET() {
+export async function GET(request?: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const cronSecret = process.env.CRON_SECRET;
+  const auth = request?.headers.get("authorization")?.replace("Bearer ", "");
+  const cronAuthorized = Boolean(cronSecret && auth === cronSecret);
+  if (!user && !cronAuthorized) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const service = createServiceClient();
@@ -30,6 +35,7 @@ export async function GET() {
         .in("job_name", [
           "cron:heartbeat",
           "cron:time-capsule",
+          "cron:retention",
           "cron:social",
           "cron:learner",
           "cron:crawl",
@@ -108,7 +114,7 @@ export async function GET() {
       staleDream24h,
       echoAgents: echoCount,
       staleCronJobs,
-      totalCronJobs: 8,
+      totalCronJobs: 9,
     });
 
     const envStatus: EnvStatus[] = REQUIRED_ENV_KEYS.map((key) => ({
@@ -121,6 +127,15 @@ export async function GET() {
     if (missingEnv.length > 0) {
       recommendations.push(`필수 환경변수 누락: ${missingEnv.join(", ")}`);
     }
+    const stripeConfigured = Boolean(
+      process.env.STRIPE_SECRET_KEY &&
+      process.env.STRIPE_WEBHOOK_SECRET &&
+      process.env.STRIPE_PRICE_PRO_MONTHLY &&
+      process.env.STRIPE_PRICE_PREMIUM_MONTHLY
+    );
+    if (!stripeConfigured) {
+      recommendations.push("Stripe 실결제가 아직 구성되지 않았습니다.");
+    }
     if (autonomy.tier !== "healthy") {
       recommendations.push(...autonomy.reasons);
     }
@@ -131,6 +146,7 @@ export async function GET() {
     return NextResponse.json({
       checked_at: new Date().toISOString(),
       env_status: envStatus,
+      stripe_configured: stripeConfigured,
       autonomy_health: autonomy,
       stale_counts: {
         stale_heartbeat_6h: staleHeartbeat6h,

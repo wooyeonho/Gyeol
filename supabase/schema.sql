@@ -375,6 +375,8 @@ create table if not exists user_subscriptions (
   plan_tier text not null check (plan_tier in ('free', 'pro', 'premium')),
   status text not null default 'active' check (status in ('active', 'trialing', 'past_due', 'cancelled')),
   provider text,
+  provider_customer_id text,
+  provider_checkout_session_id text,
   provider_subscription_id text,
   current_period_end timestamptz,
   cancel_at_period_end boolean not null default false,
@@ -385,6 +387,17 @@ create table if not exists user_subscriptions (
 
 create index if not exists user_subscriptions_user_id_created_idx on user_subscriptions(user_id, created_at desc);
 create index if not exists user_subscriptions_status_idx on user_subscriptions(status, created_at desc);
+create unique index if not exists user_subscriptions_provider_subscription_unique on user_subscriptions(provider_subscription_id) where provider_subscription_id is not null;
+
+create table if not exists stripe_webhook_events (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null unique,
+  event_type text not null,
+  payload jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists stripe_webhook_events_created_at_idx on stripe_webhook_events(created_at desc);
 
 -- ============================================================
 -- RATE LIMITS
@@ -402,6 +415,7 @@ create table if not exists rate_limits (
 
 create index if not exists rate_limits_user_id_idx on rate_limits(user_id, window_start);
 create index if not exists rate_limits_rl_key_created_at_idx on rate_limits(rl_key, created_at desc);
+create index if not exists product_events_created_at_idx on product_events(created_at desc);
 
 -- ============================================================
 -- CRON LOCKS & OPS ALERTS

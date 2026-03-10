@@ -1,30 +1,51 @@
 import Stripe from "stripe";
-import type { PlanTier } from "./catalog";
+import { type PlanTier } from "@/lib/billing/catalog";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+type StripePlanTier = Exclude<PlanTier, "free">;
 
-export function isStripeConfigured(): boolean {
-  return Boolean(STRIPE_SECRET_KEY);
+let stripeClient: Stripe | null = null;
+
+function getRequiredEnv(key: string) {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required Stripe env: ${key}`);
+  return value;
 }
 
-export function getStripeWebhookSecret(): string | undefined {
-  return STRIPE_WEBHOOK_SECRET;
+export function isStripeConfigured() {
+  return Boolean(
+    process.env.STRIPE_SECRET_KEY &&
+    process.env.STRIPE_WEBHOOK_SECRET &&
+    process.env.STRIPE_PRICE_PRO &&
+    process.env.STRIPE_PRICE_PREMIUM &&
+    process.env.NEXT_PUBLIC_APP_URL
+  );
 }
 
-export function getStripeClient(): Stripe | null {
-  if (!STRIPE_SECRET_KEY) return null;
-  return new Stripe(STRIPE_SECRET_KEY);
+export function getStripe() {
+  if (stripeClient) return stripeClient;
+  stripeClient = new Stripe(getRequiredEnv("STRIPE_SECRET_KEY"));
+  return stripeClient;
 }
 
-/** Stripe Price ID per plan tier. Set via env: STRIPE_PRICE_PRO, STRIPE_PRICE_PREMIUM */
-export function getPriceIdForPlan(tier: PlanTier): string | null {
-  if (tier === "free") return null;
-  const key = tier === "pro" ? "STRIPE_PRICE_PRO" : "STRIPE_PRICE_PREMIUM";
-  return process.env[key] ?? null;
+export function getStripeWebhookSecret() {
+  return getRequiredEnv("STRIPE_WEBHOOK_SECRET");
 }
 
-/** Map Stripe subscription status to our SubscriptionStatus */
+export function getStripePriceId(planTier: StripePlanTier) {
+  if (planTier === "pro") return getRequiredEnv("STRIPE_PRICE_PRO");
+  return getRequiredEnv("STRIPE_PRICE_PREMIUM");
+}
+
+export function getPlanTierFromStripePriceId(priceId: string): StripePlanTier | null {
+  if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
+  if (priceId === process.env.STRIPE_PRICE_PREMIUM) return "premium";
+  return null;
+}
+
+export function getStripeAppUrl() {
+  return getRequiredEnv("NEXT_PUBLIC_APP_URL").replace(/\/$/, "");
+}
+
 export function mapStripeStatus(
   status: Stripe.Subscription.Status
 ): "active" | "trialing" | "past_due" | "cancelled" {
@@ -33,11 +54,8 @@ export function mapStripeStatus(
   return "cancelled";
 }
 
-/** Map Stripe price ID to plan tier (fallback when metadata missing) */
 export function inferPlanTierFromPriceId(priceId: string | null): PlanTier {
-  const proPrice = process.env.STRIPE_PRICE_PRO;
-  const premiumPrice = process.env.STRIPE_PRICE_PREMIUM;
-  if (priceId === premiumPrice) return "premium";
-  if (priceId === proPrice) return "pro";
+  if (priceId === process.env.STRIPE_PRICE_PREMIUM) return "premium";
+  if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
   return "free";
 }

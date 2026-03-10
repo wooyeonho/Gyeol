@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
         .in("job_name", [
           "cron:heartbeat",
           "cron:time-capsule",
+          "cron:retention",
           "cron:social",
           "cron:learner",
           "cron:crawl",
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
       staleDream24h: staleDreamAgents?.length ?? 0,
       echoAgents: echoAgents?.length ?? 0,
       staleCronJobs,
-      totalCronJobs: 8,
+      totalCronJobs: 9,
     });
 
     if (autonomyHealth.tier === "critical") {

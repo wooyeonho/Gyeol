@@ -16,18 +16,3 @@ create table if not exists stripe_webhook_events (
 
 create index if not exists stripe_webhook_events_created_at_idx
   on stripe_webhook_events(created_at desc);
-
--- phase24_share_cards.sql
-create table if not exists share_cards (
-  slug text primary key,
-  agent_id uuid not null references agents(id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists share_cards_agent_id_idx on share_cards(agent_id);
-
-alter table share_cards enable row level security;
-
--- phase24_retention_ops.sql
-create index if not exists product_events_created_at_idx
-  on product_events(created_at desc);

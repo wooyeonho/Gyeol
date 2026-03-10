@@ -9,6 +9,7 @@ on:
     - cron: "0 */2 * * *"   # heartbeat: every 2 hours
     - cron: "0 * * * *"     # time-capsule: every hour
     - cron: "0 4 * * *"     # dream: 04:00 UTC daily
+    - cron: "0 3 * * *"     # retention: 03:00 UTC daily
     - cron: "0 */6 * * *"   # social: every 6 hours
     - cron: "0 */6 * * *"   # learner: every 6 hours
     - cron: "0 */8 * * *"   # crawl: every 8 hours
@@ -64,6 +65,16 @@ jobs:
       - name: Run dream cron
         run: |
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/dream" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 60
+
+  retention:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run retention cleanup cron
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/retention" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --max-time 60
 

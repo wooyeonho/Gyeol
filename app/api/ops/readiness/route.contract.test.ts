@@ -107,6 +107,7 @@ describe("/api/ops/readiness contract", () => {
     expect(Array.isArray(body.env_status)).toBe(true);
     expect(Array.isArray(body.recommendations)).toBe(true);
     expect(Array.isArray(body.recent_alerts)).toBe(true);
+    expect(typeof body.stripe_configured).toBe("boolean");
 
     const summary = body.alert_summary_24h as Record<string, unknown>;
     expect(typeof summary.total).toBe("number");

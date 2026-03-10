@@ -82,6 +82,7 @@ export async function getResolvedBillingState(db: DbClient, userId: string) {
       cancel_at_period_end: Boolean(subscription?.cancel_at_period_end),
       current_period_end: subscription?.current_period_end ?? null,
       id: subscription?.id ?? null,
+      provider_customer_id: subscription?.provider_customer_id ?? null,
       provider: subscription?.provider ?? null,
       status,
     },
