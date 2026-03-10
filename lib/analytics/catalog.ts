@@ -11,8 +11,10 @@ export const CLIENT_EVENT = {
   messageSent: "message_sent",
   missionCreated: "mission_created",
   pageView: "page_view",
+  plansOpened: "plans_opened",
   signupCompleted: "signup_completed",
   signupStarted: "signup_started",
+  upgradeCtaClicked: "upgrade_cta_clicked",
 } as const;
 
 export type ClientEventName = (typeof CLIENT_EVENT)[keyof typeof CLIENT_EVENT];

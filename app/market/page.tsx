@@ -78,6 +78,22 @@ export default function MarketPage() {
           {notice}
         </div>
       )}
+      <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">더 깊은 회고와 생성은 플랜에서 확장됩니다</p>
+            <p className="mt-1 text-sm text-white/60">
+              마켓은 확장 경험의 일부입니다. 장기 히스토리, 고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.
+            </p>
+          </div>
+          <Link
+            href="/plans"
+            className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+          >
+            플랜 보기
+          </Link>
+        </div>
+      </div>
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item.id} className="bg-white/5 rounded-xl p-4 border border-white/10">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
@@ -107,6 +108,24 @@ export default function SettingsPage() {
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-sm text-white/60">코인</div>
           <div>{state?.coins ?? 0}</div>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-sm text-cyan-100/80">현재 플랜</div>
+              <div className="mt-1 text-lg font-semibold">Free</div>
+              <p className="mt-2 text-sm leading-6 text-white/70">
+                코어 대화와 활동, 앨범은 무료로 열어두고 더 깊은 회고, 자율성, 생성/연동 가치는 플랜에서 확장됩니다.
+              </p>
+            </div>
+            <Link
+              href="/plans"
+              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+            >
+              플랜 보기
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white/5 rounded-xl p-4 space-y-3">
