@@ -4,70 +4,50 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { PLAN_DEFINITIONS, type EntitlementKey, type PlanDefinition, type PlanTier } from "@/lib/billing/catalog";
 
-type Plan = {
-  name: string;
-  price: string;
-  badge?: string;
-  description: string;
-  features: string[];
-  cta: string;
-  tier: "free" | "pro" | "premium";
+type BillingData = {
+  entitlements: Record<EntitlementKey, boolean>;
+  plan: PlanDefinition;
+  subscription: {
+    cancel_at_period_end: boolean;
+    current_period_end: string | null;
+    provider: string | null;
+    status: string;
+  };
 };
 
-const PLANS: Plan[] = [
-  {
-    name: "Free",
-    price: "0원",
-    description: "결의 코어 경험을 시작하고 관계를 쌓기 위한 기본 플랜입니다.",
-    features: [
-      "기본 대화와 기억 축적",
-      "활동 타임라인과 성장 앨범",
-      "기본 소셜/탐험 흐름",
-    ],
-    cta: "지금 시작하기",
-    tier: "free",
-  },
-  {
-    name: "Pro",
-    price: "월 19,900원",
-    badge: "추천",
-    description: "더 깊은 회고와 자율성, 리텐션을 강화하는 개인용 성장 플랜입니다.",
-    features: [
-      "더 깊은 기억 회고와 장기 히스토리",
-      "주간 리캡과 확장된 자율 모드",
-      "우선 기능 베타 접근",
-    ],
-    cta: "업그레이드 관심 남기기",
-    tier: "pro",
-  },
-  {
-    name: "Premium",
-    price: "월 39,900원",
-    description: "멀티채널, 고급 생성, 통합 워크플로우까지 확장하는 파워 플랜입니다.",
-    features: [
-      "고급 생성물과 시각화",
-      "외부 연동/멀티채널 경험 강화",
-      "가장 빠른 신기능 접근",
-    ],
-    cta: "프리미엄 관심 남기기",
-    tier: "premium",
-  },
-];
+const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 
 export default function PlansPage() {
+  const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.plansOpened);
   }, []);
 
-  function handleUpgradeClick(plan: Plan) {
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/billing/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled) setBilling((json as BillingData | null) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setBilling(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleUpgradeClick(plan: PlanDefinition) {
     trackClientEvent(CLIENT_EVENT.upgradeCtaClicked, {
       plan: plan.tier,
       source: "plans_page",
     });
-    setNotice(`${plan.name} 플랜 관심이 기록되었습니다. 실제 결제 연동 전까지는 제품 내 관심 신호로만 저장됩니다.`);
+    setNotice(`${plan.tier.toUpperCase()} 플랜 관심이 기록되었습니다. 실제 결제 연동 전까지는 제품 내 관심 신호로만 저장됩니다.`);
   }
 
   return (
@@ -102,25 +82,37 @@ export default function PlansPage() {
         )}
 
         <section className="grid gap-4 lg:grid-cols-3">
-          {PLANS.map((plan) => (
+          {PLAN_ORDER.map((tier) => {
+            const plan = PLAN_DEFINITIONS[tier];
+            const isCurrentPlan = billing?.plan?.tier === plan.tier;
+            return (
             <article
-              key={plan.name}
+              key={plan.tier}
               className={`rounded-3xl border p-5 ${
-                plan.badge
+                isCurrentPlan
+                  ? "border-emerald-300/35 bg-emerald-400/[0.08] shadow-[0_0_60px_rgba(80,255,180,0.08)]"
+                  : plan.badge
                   ? "border-cyan-300/35 bg-cyan-400/[0.08] shadow-[0_0_60px_rgba(80,200,255,0.08)]"
                   : "border-white/10 bg-white/[0.04]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-white/55">{plan.name}</p>
-                  <h2 className="mt-2 text-2xl font-semibold">{plan.price}</h2>
+                  <p className="text-sm text-white/55">{plan.tier.toUpperCase()}</p>
+                  <h2 className="mt-2 text-2xl font-semibold">{plan.priceLabel}</h2>
                 </div>
-                {plan.badge && (
-                  <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-2 py-1 text-[11px] text-cyan-100">
-                    {plan.badge}
-                  </span>
-                )}
+                <div className="flex flex-col items-end gap-1">
+                  {isCurrentPlan && (
+                    <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2 py-1 text-[11px] text-emerald-100">
+                      현재 사용 중
+                    </span>
+                  )}
+                  {plan.badge && !isCurrentPlan && (
+                    <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-2 py-1 text-[11px] text-cyan-100">
+                      {plan.badge}
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-white/70">{plan.description}</p>
               <ul className="mt-4 space-y-2 text-sm text-white/82">
@@ -137,6 +129,10 @@ export default function PlansPage() {
                 >
                   {plan.cta}
                 </Link>
+              ) : isCurrentPlan ? (
+                <div className="mt-5 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center text-sm text-white/75">
+                  현재 이 플랜을 사용 중입니다
+                </div>
               ) : (
                 <button
                   type="button"
@@ -147,7 +143,8 @@ export default function PlansPage() {
                 </button>
               )}
             </article>
-          ))}
+            );
+          })}
         </section>
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6">

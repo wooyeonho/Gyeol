@@ -366,6 +366,27 @@ create index if not exists product_events_user_id_created_idx on product_events(
 create index if not exists product_events_anonymous_id_created_idx on product_events(anonymous_id, created_at desc);
 
 -- ============================================================
+-- BILLING / SUBSCRIPTIONS
+-- ============================================================
+
+create table if not exists user_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  plan_tier text not null check (plan_tier in ('free', 'pro', 'premium')),
+  status text not null default 'active' check (status in ('active', 'trialing', 'past_due', 'cancelled')),
+  provider text,
+  provider_subscription_id text,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists user_subscriptions_user_id_created_idx on user_subscriptions(user_id, created_at desc);
+create index if not exists user_subscriptions_status_idx on user_subscriptions(status, created_at desc);
+
+-- ============================================================
 -- RATE LIMITS
 -- ============================================================
 
@@ -449,6 +470,7 @@ alter table memories enable row level security;
 alter table artifacts enable row level security;
 alter table autonomous_logs enable row level security;
 alter table product_events enable row level security;
+alter table user_subscriptions enable row level security;
 alter table user_connections enable row level security;
 alter table breeding_records enable row level security;
 alter table adoption_board enable row level security;
@@ -485,6 +507,9 @@ create policy "artifacts: owner access" on artifacts
 
 -- User connections: owner only
 create policy "user_connections: owner access" on user_connections
+  for all using (auth.uid() = user_id);
+
+create policy "user_subscriptions: owner access" on user_subscriptions
   for all using (auth.uid() = user_id);
 
 -- Public tables (no RLS needed): world_state, tribes, market_items, war_events

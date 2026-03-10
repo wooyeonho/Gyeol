@@ -5,11 +5,23 @@ import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
+import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 
 type Item = { id: string; title?: string; name?: string; description?: string; price: number; type: string };
+type BillingData = {
+  entitlements: Record<EntitlementKey, boolean>;
+  plan: PlanDefinition;
+  subscription: {
+    cancel_at_period_end: boolean;
+    current_period_end: string | null;
+    provider: string | null;
+    status: string;
+  };
+};
 
 export default function MarketPage() {
   const [items, setItems] = useState<Item[]>([]);
+  const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -18,9 +30,16 @@ export default function MarketPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/market");
-        const json = await res.json().catch(() => ({ items: [] }));
+        const [marketRes, billingRes] = await Promise.all([
+          fetch("/api/market"),
+          fetch("/api/billing/me"),
+        ]);
+        const json = await marketRes.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
+        if (billingRes.ok) {
+          const billingJson = await billingRes.json().catch(() => null);
+          setBilling((billingJson as BillingData | null) ?? null);
+        }
       } catch {
         setItems([]);
       } finally {
@@ -87,7 +106,8 @@ export default function MarketPage() {
             <div>
               <p className="text-sm font-medium">더 깊은 회고와 생성은 플랜에서 확장됩니다</p>
               <p className="mt-1 text-sm text-white/60">
-                마켓은 확장 경험의 일부입니다. 장기 히스토리, 고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.
+                마켓은 확장 경험의 일부입니다. 현재 {billing?.plan.tier.toUpperCase() ?? "FREE"} 플랜 기준으로 장기 히스토리,
+                고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.
               </p>
             </div>
             <Link
