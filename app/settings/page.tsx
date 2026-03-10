@@ -9,7 +9,6 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTranslations } from "@/components/i18n-provider";
 
 function InviteSection() {
-  const { t } = useTranslations();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
