@@ -8,10 +8,10 @@
   },
   "nav": {
     "home": "Home",
-    "features": "Features",
     "activity": "Activity",
+    "album": "Album",
     "social": "Social",
-    "market": "Market",
+    "explore": "Explore",
     "settings": "Settings"
   },
   "auth": {

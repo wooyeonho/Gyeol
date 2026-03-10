@@ -6,10 +6,10 @@ import { useTranslations } from "@/components/i18n-provider";
 
 const TABS = [
   { path: "/", labelKey: "nav.home", icon: "🏠" },
-  { path: "/features", labelKey: "nav.features", icon: "✨" },
   { path: "/activity", labelKey: "nav.activity", icon: "📋" },
+  { path: "/album", labelKey: "nav.album", icon: "🪞" },
   { path: "/social", labelKey: "nav.social", icon: "👥" },
-  { path: "/market", labelKey: "nav.market", icon: "🛒" },
+  { path: "/explore", labelKey: "nav.explore", icon: "🧭" },
   { path: "/settings", labelKey: "nav.settings", icon: "⚙️" },
 ];
 

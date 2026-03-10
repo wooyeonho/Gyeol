@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 
 type Item = { id: string; title?: string; name?: string; description?: string; price: number; type: string };
@@ -56,7 +57,22 @@ export default function MarketPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">마켓</h1>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">BETA EXPANSION</p>
+          <h1 className="mt-2 text-xl font-semibold">마켓</h1>
+          <p className="mt-1 text-sm text-white/60">
+            마켓은 결의 코어 대화 루프 바깥에 있는 베타 확장 공간입니다. 먼저 홈, 활동, 앨범 경험을 충분히 쌓은 뒤
+            둘러보는 흐름을 권장합니다.
+          </p>
+        </div>
+        <Link
+          href="/features"
+          className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+        >
+          전체 구조 보기
+        </Link>
+      </div>
       {notice && (
         <div className="mb-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm">
           {notice}

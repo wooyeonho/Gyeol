@@ -63,8 +63,12 @@ export default function OpsPage() {
     <div className="min-h-screen bg-black text-white pt-16 pb-28 px-4">
       <div className="max-w-3xl mx-auto space-y-4">
         <header>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/70">OPERATIONS</p>
           <h1 className="text-2xl font-semibold">운영 센터</h1>
-          <p className="text-sm text-white/60 mt-1">24시간 자율활동 상태와 운영 준비도를 확인합니다.</p>
+          <p className="text-sm text-white/60 mt-1">
+            이 화면은 일반 사용 흐름보다 뒤에 놓이는 운영 판단용 화면입니다. 24시간 자율활동 상태와 운영 준비도를
+            확인합니다.
+          </p>
         </header>
 
         {loading && <div className="text-sm text-white/60">불러오는 중...</div>}

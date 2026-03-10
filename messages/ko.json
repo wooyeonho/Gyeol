@@ -8,10 +8,10 @@
   },
   "nav": {
     "home": "홈",
-    "features": "기능",
     "activity": "활동",
+    "album": "앨범",
     "social": "소셜",
-    "market": "마켓",
+    "explore": "탐험",
     "settings": "설정"
   },
   "auth": {
