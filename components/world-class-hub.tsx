@@ -14,7 +14,15 @@ type Mission = {
   done: boolean;
 };
 
+type HomeSummaryItem = {
+  id: string;
+  kind: "activity" | "milestone";
+  title: string;
+  created_at: string;
+};
+
 const STORAGE_KEY = "gyeol-worldclass-missions-v1";
+const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 
 const FIRST_SESSION_PROMPTS = [
   "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
@@ -95,6 +103,8 @@ export function WorldClassHub() {
     }
   });
   const [draftMission, setDraftMission] = useState("");
+  const [recentItems, setRecentItems] = useState<HomeSummaryItem[]>([]);
+  const [newItemsSinceLastVisit, setNewItemsSinceLastVisit] = useState<HomeSummaryItem[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -108,6 +118,41 @@ export function WorldClassHub() {
       // Ignore storage write errors in restricted environments.
     }
   }, [missions]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSummary() {
+      try {
+        const res = await fetch("/api/home/summary", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = await res.json().catch(() => ({ recent_items: [] }));
+        const items = (Array.isArray(json.recent_items) ? json.recent_items : []) as HomeSummaryItem[];
+        if (cancelled) return;
+        setRecentItems(items);
+
+        if (typeof window === "undefined") return;
+        const lastSeenAt = window.localStorage.getItem(HOME_LAST_SEEN_KEY);
+        if (lastSeenAt) {
+          const unseen = items.filter((item) => new Date(item.created_at).getTime() > new Date(lastSeenAt).getTime());
+          setNewItemsSinceLastVisit(unseen.slice(0, 3));
+        } else {
+          setNewItemsSinceLastVisit(items.slice(0, 2));
+        }
+        window.localStorage.setItem(HOME_LAST_SEEN_KEY, new Date().toISOString());
+      } catch {
+        if (!cancelled) {
+          setRecentItems([]);
+          setNewItemsSinceLastVisit([]);
+        }
+      }
+    }
+
+    void loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const userMessages = useMemo(
     () => messages.filter((message) => message.role === "user").length,
@@ -303,6 +348,54 @@ export function WorldClassHub() {
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
                 앨범에서 마일스톤 보기
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">당신이 없는 동안</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {newItemsSinceLastVisit.length > 0
+                    ? `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
+                    : "최근 활동과 마일스톤을 한 번에 확인할 수 있습니다."}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                {recentItems.length} recent
+              </span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
+                <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-white/55">{item.kind === "milestone" ? "마일스톤" : "활동"}</p>
+                    <p className="text-[11px] text-white/40">
+                      {new Date(item.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-sm text-white/82">{item.title}</p>
+                </div>
+              ))}
+              {recentItems.length === 0 && (
+                <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
+                  첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다.
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/activity"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                최근 활동 열기
+              </Link>
+              <Link
+                href="/album"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                앨범 다시 보기
               </Link>
             </div>
           </div>
