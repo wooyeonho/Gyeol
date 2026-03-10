@@ -3,12 +3,31 @@
 import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
+import { EXPERIMENT } from "@/lib/experiments/catalog";
+import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 
-const FIRST_SESSION_PROMPTS = [
-  "안녕, 오늘의 나를 어떻게 기억하면 좋을지 물어봐줘.",
-  "지금의 나를 설명하는 첫 문장을 같이 만들자.",
-  "우리가 서로를 알아가기 위한 첫 질문을 해줘.",
-];
+const FIRST_SESSION_VARIANTS = {
+  identity: {
+    heading: "첫 대화는 짧아도 충분합니다",
+    helper: "자기소개를 길게 할 필요는 없습니다. 지금의 기분, 오늘의 목표, 혹은 한 줄의 인사만 보내도 결은 그 순간을 첫 기억으로 남깁니다.",
+    placeholder: "첫 인사나 지금의 기분을 한 줄로 남겨보세요",
+    prompts: [
+      "안녕, 오늘의 나를 어떻게 기억하면 좋을지 물어봐줘.",
+      "지금의 나를 설명하는 첫 문장을 같이 만들자.",
+      "우리가 서로를 알아가기 위한 첫 질문을 해줘.",
+    ],
+  },
+  productivity: {
+    heading: "오늘의 문제를 바로 정리해도 좋습니다",
+    helper: "긴 설명 없이 지금 가장 막히는 일 하나만 적어도 됩니다. 결은 바로 실행 가능한 첫 정리를 도와줄 수 있습니다.",
+    placeholder: "지금 가장 먼저 정리해야 할 문제를 적어보세요",
+    prompts: [
+      "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
+      "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
+      "지금 우선순위 3개를 빠르게 정해줘.",
+    ],
+  },
+} as const;
 
 const RETURNING_PROMPTS = [
   "오늘 내가 집중해야 할 1가지만 알려줘.",
@@ -19,14 +38,16 @@ const RETURNING_PROMPTS = [
 export function ChatPanel() {
   const { messages, isStreaming, sendMessage } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
+  const onboardingVariant = useFirstMessageOnboardingVariant();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const isFirstSession = totalMessages === 0 && messages.length === 0;
-  const starterPrompts = isFirstSession ? FIRST_SESSION_PROMPTS : RETURNING_PROMPTS;
-  const placeholder = isFirstSession ? "첫 인사나 지금의 기분을 한 줄로 남겨보세요" : "오늘의 생각이나 감정을 이어서 말해보세요";
+  const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
+  const starterPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
+  const placeholder = isFirstSession ? firstSessionConfig.placeholder : "오늘의 생각이나 감정을 이어서 말해보세요";
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,11 +98,11 @@ export function ChatPanel() {
                 {isFirstSession ? "FIRST MESSAGE" : "TODAY'S CHECK-IN"}
               </p>
               <h2 className="mt-3 text-xl font-semibold">
-                {isFirstSession ? "첫 대화는 짧아도 충분합니다" : "오늘은 어떤 이야기로 시작할까요?"}
+                {isFirstSession ? firstSessionConfig.heading : "오늘은 어떤 이야기로 시작할까요?"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
                 {isFirstSession
-                  ? "자기소개를 길게 할 필요는 없습니다. 지금의 기분, 오늘의 목표, 혹은 한 줄의 인사만 보내도 결은 그 순간을 첫 기억으로 남깁니다."
+                  ? firstSessionConfig.helper
                   : "지금 상태, 오늘의 목표, 또는 어제와 달라진 점 하나만 꺼내도 오늘의 대화가 자연스럽게 이어집니다."}
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -90,7 +111,13 @@ export function ChatPanel() {
                     key={prompt}
                     type="button"
                     onClick={() => {
-                      if (!isStreaming) void sendMessage(prompt, { source: "prompt" });
+                      if (!isStreaming) {
+                        void sendMessage(prompt, {
+                          experiment_key: EXPERIMENT.firstMessageOnboarding,
+                          experiment_variant: onboardingVariant,
+                          source: "prompt",
+                        });
+                      }
                     }}
                     className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
                     disabled={isStreaming}

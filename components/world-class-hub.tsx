@@ -7,6 +7,8 @@ import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { EXPERIMENT } from "@/lib/experiments/catalog";
+import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 
 type Mission = {
   id: string;
@@ -24,11 +26,28 @@ type HomeSummaryItem = {
 const STORAGE_KEY = "gyeol-worldclass-missions-v1";
 const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 
-const FIRST_SESSION_PROMPTS = [
-  "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
-  "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
-  "우리 관계를 시작하는 첫 질문 3개를 해줘.",
-];
+const FIRST_SESSION_VARIANTS = {
+  identity: {
+    cta: "첫 인사 시작하기",
+    description: "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요.",
+    heading: "첫 대화로 결의 첫 기억을 만들어보세요",
+    prompts: [
+      "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
+      "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
+      "우리 관계를 시작하는 첫 질문 3개를 해줘.",
+    ],
+  },
+  productivity: {
+    cta: "오늘의 문제 정리하기",
+    description: "지금 가장 신경 쓰이는 문제 하나만 던져보세요. 결이 바로 오늘의 초점과 실행 흐름을 정리해줄 수 있습니다.",
+    heading: "결에게 오늘의 문제를 먼저 맡겨보세요",
+    prompts: [
+      "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
+      "지금 해야 할 일의 우선순위를 3개만 잡아줘.",
+      "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
+    ],
+  },
+} as const;
 
 const RETURNING_PROMPTS = [
   "오늘 내 성장 포인트 3개만 뽑아줘.",
@@ -105,6 +124,7 @@ export function WorldClassHub() {
   const [draftMission, setDraftMission] = useState("");
   const [recentItems, setRecentItems] = useState<HomeSummaryItem[]>([]);
   const [newItemsSinceLastVisit, setNewItemsSinceLastVisit] = useState<HomeSummaryItem[]>([]);
+  const onboardingVariant = useFirstMessageOnboardingVariant();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -174,7 +194,8 @@ export function WorldClassHub() {
   const hour = now.getHours();
   const sessionMessages = Math.max(totalMessages, userMessages);
   const isFirstSession = sessionMessages === 0;
-  const quickPrompts = isFirstSession ? FIRST_SESSION_PROMPTS : RETURNING_PROMPTS;
+  const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
+  const quickPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
   const primaryPrompt = quickPrompts[0];
   const summary = growthSummary(sessionMessages);
   const evolutionHint = nextEvolutionHint(sessionMessages);
@@ -210,11 +231,11 @@ export function WorldClassHub() {
                 {isFirstSession ? "FIRST MINUTE" : "TODAY'S START"}
               </p>
               <h2 className="mt-2 text-lg font-semibold">
-                {isFirstSession ? "첫 대화로 결의 첫 기억을 만들어보세요" : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
+                {isFirstSession ? firstSessionConfig.heading : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/68">
                 {isFirstSession
-                  ? "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요."
+                  ? firstSessionConfig.description
                   : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`}
               </p>
             </div>
@@ -222,12 +243,18 @@ export function WorldClassHub() {
               <button
                 type="button"
                 onClick={() => {
-                  if (!isStreaming) void sendMessage(primaryPrompt, { source: "cta" });
+                  if (!isStreaming) {
+                    void sendMessage(primaryPrompt, {
+                      experiment_key: EXPERIMENT.firstMessageOnboarding,
+                      experiment_variant: onboardingVariant,
+                      source: "cta",
+                    });
+                  }
                 }}
                 disabled={isStreaming}
                 className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
               >
-                {isFirstSession ? "첫 인사 시작하기" : "오늘 대화 이어가기"}
+                {isFirstSession ? firstSessionConfig.cta : "오늘 대화 이어가기"}
               </button>
               <Link
                 href={isFirstSession ? "/features" : "/activity"}
@@ -293,7 +320,13 @@ export function WorldClassHub() {
                 key={prompt}
                 type="button"
                 onClick={() => {
-                  if (!isStreaming) void sendMessage(prompt, { source: "prompt" });
+                  if (!isStreaming) {
+                    void sendMessage(prompt, {
+                      experiment_key: isFirstSession ? EXPERIMENT.firstMessageOnboarding : undefined,
+                      experiment_variant: isFirstSession ? onboardingVariant : undefined,
+                      source: "prompt",
+                    });
+                  }
                 }}
                 disabled={isStreaming}
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85 hover:bg-white/10 disabled:opacity-50"

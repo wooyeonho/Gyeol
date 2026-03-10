@@ -4,10 +4,15 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 
 interface Message { role: "user" | "assistant"; content: string }
+type MessageMeta = {
+  experiment_key?: string;
+  experiment_variant?: string;
+  source?: "input" | "prompt" | "cta";
+};
 interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
-  sendMessage: (message: string, meta?: { source?: "input" | "prompt" | "cta" }) => Promise<void>;
+  sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -22,11 +27,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const isFirstMessage = persistedMessages === 0 && currentUserMessages === 0;
 
     trackClientEvent(CLIENT_EVENT.messageSent, {
+      experiment_key: meta?.experiment_key ?? null,
+      experiment_variant: meta?.experiment_variant ?? null,
       is_first_message: isFirstMessage,
       source,
     });
     if (isFirstMessage) {
-      trackClientEvent(CLIENT_EVENT.firstMessageSent, { source });
+      trackClientEvent(CLIENT_EVENT.firstMessageSent, {
+        experiment_key: meta?.experiment_key ?? null,
+        experiment_variant: meta?.experiment_variant ?? null,
+        source,
+      });
     }
 
     set((s) => ({ messages: [...s.messages, { role: "user", content: message }], isStreaming: true }));

@@ -59,6 +59,12 @@ type ProductOpsData = {
     plans_opened: number;
     upgrade_clicks: number;
   };
+  onboarding_experiment_7d: Array<{
+    variant: string;
+    assigned: number;
+    first_messages: number;
+    conversion_rate: number;
+  }>;
   top_paths_7d: Array<{ path: string; count: number }>;
   recent_events: Array<{ created_at: string; event_name: string; path: string | null }>;
   upgrade_interest_7d: {
@@ -311,6 +317,20 @@ export default function OpsPage() {
                       <div className="flex items-center justify-between"><span>업그레이드 CTA 클릭</span><span>{productData.upgrade_interest_7d.upgrade_clicks}</span></div>
                       <div className="flex items-center justify-between"><span>클릭 비율</span><span>{Math.round(productData.upgrade_interest_7d.click_rate * 100)}%</span></div>
                     </div>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs text-white/50 uppercase tracking-wider mb-3">온보딩 실험 (7일)</p>
+                  <div className="space-y-2">
+                    {productData.onboarding_experiment_7d.map((item) => (
+                      <div key={item.variant} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] gap-2 rounded-xl bg-black/25 p-3 text-sm">
+                        <span>{item.variant}</span>
+                        <span className="text-white/70">배정 {item.assigned}</span>
+                        <span className="text-white/70">첫 메시지 {item.first_messages}</span>
+                        <span className="text-cyan-200">{Math.round(item.conversion_rate * 100)}%</span>
+                      </div>
+                    ))}
                   </div>
                 </section>
 

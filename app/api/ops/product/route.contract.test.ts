@@ -34,15 +34,26 @@ function createProductOpsService() {
             order: () => ({
               limit: async () => ({
                 data: [
-                  { event_name: "signup_completed", path: "/signup", created_at: new Date().toISOString() },
-                  { event_name: "guest_completed", path: "/login", created_at: new Date().toISOString() },
-                  { event_name: "first_message_sent", path: "/", created_at: new Date().toISOString() },
-                  { event_name: "message_sent", path: "/", created_at: new Date().toISOString() },
-                  { event_name: "activity_opened", path: "/activity", created_at: new Date().toISOString() },
-                  { event_name: "plans_opened", path: "/plans", created_at: new Date().toISOString() },
-                  { event_name: "upgrade_cta_clicked", path: "/plans", created_at: new Date().toISOString() },
-                  { event_name: "page_view", path: "/plans", created_at: new Date().toISOString() },
-                  { event_name: "page_view", path: "/plans", created_at: new Date().toISOString() },
+                  { event_name: "signup_completed", path: "/signup", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "guest_completed", path: "/login", created_at: new Date().toISOString(), properties: {} },
+                  {
+                    event_name: "experiment_assigned",
+                    path: "/",
+                    created_at: new Date().toISOString(),
+                    properties: { experiment_key: "first_message_onboarding", variant: "identity" },
+                  },
+                  {
+                    event_name: "first_message_sent",
+                    path: "/",
+                    created_at: new Date().toISOString(),
+                    properties: { experiment_key: "first_message_onboarding", experiment_variant: "identity" },
+                  },
+                  { event_name: "message_sent", path: "/", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "activity_opened", path: "/activity", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "plans_opened", path: "/plans", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "upgrade_cta_clicked", path: "/plans", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "page_view", path: "/plans", created_at: new Date().toISOString(), properties: {} },
+                  { event_name: "page_view", path: "/plans", created_at: new Date().toISOString(), properties: {} },
                 ],
               }),
             }),
@@ -50,8 +61,8 @@ function createProductOpsService() {
           order: () => ({
             limit: async () => ({
               data: [
-                { event_name: "upgrade_cta_clicked", path: "/plans", created_at: new Date().toISOString() },
-                { event_name: "plans_opened", path: "/plans", created_at: new Date().toISOString() },
+                { event_name: "upgrade_cta_clicked", path: "/plans", created_at: new Date().toISOString(), properties: {} },
+                { event_name: "plans_opened", path: "/plans", created_at: new Date().toISOString(), properties: {} },
               ],
             }),
           }),
@@ -91,6 +102,7 @@ describe("/api/ops/product contract", () => {
     expect(typeof upgrade.upgrade_clicks).toBe("number");
     expect(typeof upgrade.click_rate).toBe("number");
 
+    expect(Array.isArray(body.onboarding_experiment_7d)).toBe(true);
     expect(Array.isArray(body.top_paths_7d)).toBe(true);
     expect(Array.isArray(body.recent_events)).toBe(true);
   });

@@ -6,6 +6,7 @@ type ProductEventRow = {
   created_at?: string | null;
   event_name?: string | null;
   path?: string | null;
+  properties?: Record<string, unknown> | null;
 };
 
 function countByEvent(rows: ProductEventRow[], eventName: string) {
@@ -27,13 +28,13 @@ export async function GET() {
     const [eventsRes, recentRes] = await Promise.all([
       service
         .from("product_events")
-        .select("event_name, path, created_at")
+        .select("event_name, path, created_at, properties")
         .gte("created_at", since7d)
         .order("created_at", { ascending: false })
         .limit(2000),
       service
         .from("product_events")
-        .select("event_name, path, created_at")
+        .select("event_name, path, created_at, properties")
         .order("created_at", { ascending: false })
         .limit(15),
     ]);
@@ -63,6 +64,25 @@ export async function GET() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([path, count]) => ({ path, count }));
+
+    const experimentAssignments = rows.filter((row) => row.event_name === "experiment_assigned");
+    const firstMessageByVariant = rows.filter((row) => row.event_name === "first_message_sent");
+    const onboardingVariants = ["identity", "productivity"].map((variant) => {
+      const assigned = experimentAssignments.filter(
+        (row) => row.properties?.experiment_key === "first_message_onboarding" && row.properties?.variant === variant
+      ).length;
+      const firstMessagesForVariant = firstMessageByVariant.filter(
+        (row) =>
+          row.properties?.experiment_key === "first_message_onboarding" &&
+          row.properties?.experiment_variant === variant
+      ).length;
+      return {
+        variant,
+        assigned,
+        first_messages: firstMessagesForVariant,
+        conversion_rate: assigned > 0 ? Number((firstMessagesForVariant / assigned).toFixed(2)) : 0,
+      };
+    });
 
     return NextResponse.json({
       checked_at: new Date().toISOString(),
@@ -94,6 +114,7 @@ export async function GET() {
         upgrade_clicks: countByEvent(last24hRows, "upgrade_cta_clicked"),
       },
       top_paths_7d: topPaths,
+      onboarding_experiment_7d: onboardingVariants,
       recent_events: recentRows.map((row) => ({
         created_at: row.created_at ?? new Date().toISOString(),
         event_name: row.event_name ?? "unknown",
