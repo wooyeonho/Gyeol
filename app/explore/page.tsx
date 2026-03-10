@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 
@@ -15,6 +16,7 @@ type ExploreProfile = {
 };
 
 export default function ExplorePage() {
+  const { t } = useTranslations();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function ExplorePage() {
       try {
         const res = await fetch("/api/explore");
         if (!res.ok) {
-          setError("탐색 데이터를 불러오지 못했습니다.");
+          setError(t("explore.loadError"));
           setAgents([]);
           return;
         }
@@ -50,7 +52,7 @@ export default function ExplorePage() {
       }
     }
     void load();
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (

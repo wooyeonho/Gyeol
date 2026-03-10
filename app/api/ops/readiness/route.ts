@@ -36,6 +36,7 @@ export async function GET() {
           "cron:dream",
           "cron:world",
           "cron:lifeline",
+          "cron:recap",
         ]),
     ]);
 

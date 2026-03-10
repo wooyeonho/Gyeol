@@ -58,6 +58,56 @@
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
   },
+  "home": {
+    "firstMinute": "FIRST MINUTE",
+    "todaysStart": "TODAY'S START",
+    "continueChat": "Continue today's chat",
+    "viewFlow": "View flow",
+    "recentTraces": "Recent traces",
+    "firstAction": "First action",
+    "todaysFocus": "Today's focus",
+    "nextCheck": "Next check",
+    "currentVitality": "Current vitality",
+    "retentionLoop": "Retention loop",
+    "today": "Today",
+    "thisWeek": "This week",
+    "weeklyHighlight": "Weekly highlight",
+    "quickLinks": {
+      "activity": "Activity",
+      "album": "Growth album",
+      "explore": "Explore ecosystem",
+      "settings": "Settings"
+    },
+    "greeting": {
+      "night": "Deep night focus mode",
+      "morning": "Good morning, evolution starts today",
+      "noon": "Midday acceleration",
+      "evening": "Evening rebuild time",
+      "late": "Golden hour to wrap up"
+    },
+    "vitalityHint": {
+      "high": "Good state for deep conversation.",
+      "mid": "Short emotional check-in to boost condition.",
+      "low": "A light greeting or short check-in is enough."
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "loadError": "Failed to load activity.",
+    "empty": "No activity yet.",
+    "preserved": "Preserved"
+  },
+  "settings": {
+    "title": "Settings",
+    "loadError": "Failed to load settings.",
+    "configError": "Failed to update settings.",
+    "recapEmail": "Weekly recap email"
+  },
+  "explore": {
+    "title": "Explore",
+    "loadError": "Failed to load explore data.",
+    "empty": "No other Gyeol yet."
+  },
   "plans": {
     "eyebrow": "Plans",
     "title": "Gyeol becomes more valuable as the relationship deepens",

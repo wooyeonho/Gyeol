@@ -49,4 +49,19 @@ describe("runOnce", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalled();
   });
+
+  it("calls recap cron endpoint when runOnce recap", async () => {
+    const { runOnce } = await import("./scheduler");
+    await runOnce(config, "recap");
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://example.com/api/cron/recap",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({
+          Authorization: "Bearer cron-secret",
+        }),
+      })
+    );
+  });
 });

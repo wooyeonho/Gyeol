@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
+import { getResolvedBillingState } from "@/lib/billing/service";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -9,6 +10,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const service = createServiceClient();
+    const billing = await getResolvedBillingState(service, user.id);
+    if (!billing.entitlements.multichannel) {
+      return NextResponse.json({ error: "Multichannel integrations require Premium plan", code: "ENTITLEMENT_REQUIRED" }, { status: 403 });
+    }
     const allowed = await checkRateLimit(`integration-slack-post:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
@@ -16,7 +22,6 @@ export async function POST(request: NextRequest) {
 
     // If message is provided, send to Slack channel
     if (typeof body?.message === "string" && body.message.trim()) {
-      const service = createServiceClient();
       const { data: conn } = await service
         .from("user_connections")
         .select("id, token_encrypted, metadata")
@@ -58,8 +63,6 @@ export async function POST(request: NextRequest) {
     if (!encrypted) {
       return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
     }
-
-    const service = createServiceClient();
     await service.from("user_connections").upsert(
       {
         user_id: user.id,

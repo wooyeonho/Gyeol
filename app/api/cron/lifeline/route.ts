@@ -18,6 +18,7 @@ const JOB_TARGETS: JobTarget[] = [
   { name: "crawl", endpoint: "/api/cron/crawl", staleAfterMinutes: 960 },
   { name: "dream", endpoint: "/api/cron/dream", staleAfterMinutes: 2160 },
   { name: "world", endpoint: "/api/cron/world", staleAfterMinutes: 1800 },
+  { name: "recap", endpoint: "/api/cron/recap", staleAfterMinutes: 1440 },
 ];
 
 function getBaseUrl(req: NextRequest): string {

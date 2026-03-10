@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,13 +21,20 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    trackClientEvent(CLIENT_EVENT.signupStarted, { method: "password" });
-    const { error: err } = await supabase.auth.signUp({ email, password });
+    trackClientEvent(CLIENT_EVENT.signupStarted, { method: "password", ref: refCode ?? undefined });
+    const { data, error: err } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (err) {
       trackClientEvent(CLIENT_EVENT.authFailed, { method: "password", stage: "signup" });
       setError(err.message);
       return;
+    }
+    if (refCode && data?.user) {
+      await fetch("/api/invite/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: refCode }),
+      }).catch(() => {});
     }
     trackClientEvent(CLIENT_EVENT.signupCompleted, { method: "password" });
     router.push("/login");

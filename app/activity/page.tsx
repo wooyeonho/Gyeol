@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 
@@ -34,6 +35,7 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function ActivityPage() {
+  const { t } = useTranslations();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,21 +49,21 @@ export default function ActivityPage() {
       try {
         const res = await fetch("/api/activity");
         if (!res.ok) {
-          setError("활동 데이터를 불러오지 못했습니다.");
+          setError(t("activity.loadError"));
           setItems([]);
           return;
         }
         const json = await res.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
       } catch {
-        setError("활동 데이터를 불러오지 못했습니다.");
+        setError(t("activity.loadError"));
         setItems([]);
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, []);
+  }, [t]);
 
   async function togglePreserved(id: string, current: boolean) {
     const next = !current;
@@ -88,7 +90,7 @@ export default function ActivityPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">활동</h1>
+      <h1 className="text-xl font-semibold mb-4">{t("activity.title")}</h1>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-3">
         {items.map((item, i) => {

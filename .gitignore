@@ -44,3 +44,6 @@ next-env.d.ts
 # openclaw engine build artifacts
 openclaw/dist/
 openclaw/node_modules/
+
+# supabase
+supabase/.temp/

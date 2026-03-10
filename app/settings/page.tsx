@@ -6,6 +6,61 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { useTranslations } from "@/components/i18n-provider";
+
+function InviteSection() {
+  const { t } = useTranslations();
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  async function loadInvite() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/invite");
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.url) {
+        setUrl(json.url);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function copyUrl() {
+    if (!url) return;
+    await navigator.clipboard?.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <div className="mt-2">
+      {!url ? (
+        <button
+          type="button"
+          onClick={() => void loadInvite()}
+          disabled={loading}
+          className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+        >
+          {loading ? "..." : "초대 링크 만들기"}
+        </button>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={url}
+            className="flex-1 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white/80"
+          />
+          <button
+            type="button"
+            onClick={() => void copyUrl()}
+            className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+          >
+            {copied ? "복사됨" : "복사"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
@@ -21,6 +76,7 @@ type AgentState = {
   mood?: string;
   coins?: number;
   config?: AgentConfig;
+  channels?: { telegram?: string; email?: boolean };
 };
 
 type BillingData = {
@@ -35,6 +91,7 @@ type BillingData = {
 };
 
 export default function SettingsPage() {
+  const { t } = useTranslations();
   const [state, setState] = useState<AgentState | null>(null);
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +112,7 @@ export default function SettingsPage() {
           return;
         }
         if (!settingsRes.ok) {
-          setError("설정 정보를 불러오지 못했습니다.");
+          setError(t("settings.loadError"));
           return;
         }
         const json = await settingsRes.json().catch(() => ({ state: null }));
@@ -71,7 +128,7 @@ export default function SettingsPage() {
       }
     }
     void load();
-  }, [router]);
+  }, [router, t]);
 
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
@@ -81,11 +138,26 @@ export default function SettingsPage() {
       body: JSON.stringify({ [key]: value }),
     });
     if (!res.ok) {
-      setError("설정 변경에 실패했습니다.");
+      setError(t("settings.configError"));
       return;
     }
     const config: AgentConfig = { ...(state.config || {}), [key]: value };
     setState({ ...state, config });
+  }
+
+  async function toggleRecapEmail(enabled: boolean) {
+    if (!state) return;
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recap_email: enabled }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+    const channels = { ...(state.channels || {}), email: enabled };
+    setState({ ...state, channels });
   }
 
   async function logout() {
@@ -106,7 +178,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">설정</h1>
+      <h1 className="text-xl font-semibold mb-4">{t("settings.title")}</h1>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-4">
         <div className="bg-white/5 rounded-xl p-4">
@@ -217,6 +289,20 @@ export default function SettingsPage() {
               {config.social_enabled !== false ? "ON" : "OFF"}
             </button>
           </div>
+          <div className="flex justify-between items-center">
+            <span>{t("settings.recapEmail")}</span>
+            <button
+              onClick={() => toggleRecapEmail(!state?.channels?.email)}
+              className={`px-3 py-1 rounded ${state?.channels?.email ? "bg-green-500/30" : "bg-white/10"}`}
+            >
+              {state?.channels?.email ? "ON" : "OFF"}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm text-white/60">친구 초대</p>
+          <InviteSection />
         </div>
 
         <button onClick={logout} className="w-full py-3 rounded-xl bg-red-500/20 text-red-400">

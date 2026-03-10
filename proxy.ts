@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/features", "/plans", "/explore", "/dashboard", "/adopt"];
+const PUBLIC_PATHS = ["/login", "/signup", "/features", "/plans", "/explore", "/dashboard", "/adopt", "/share", "/invite", "/community"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -12,7 +12,12 @@ export async function proxy(request: NextRequest) {
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
-  if (pathname.startsWith("/api/cron") || pathname.startsWith("/api/v1") || pathname.startsWith("/api/research")) {
+  if (
+    pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/api/v1") ||
+    pathname.startsWith("/api/research") ||
+    pathname.startsWith("/api/email/send")
+  ) {
     return NextResponse.next();
   }
 

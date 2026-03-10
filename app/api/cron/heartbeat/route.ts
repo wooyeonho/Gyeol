@@ -13,6 +13,7 @@ import {
   isMeaningfulAutonomousOutput,
   isRepetitiveOutput,
 } from "@/lib/autonomy/self-regulation";
+import { getResolvedBillingState } from "@/lib/billing/service";
 
 const STIMULI = ["a strange dream appeared", "what does it mean to exist?", "unknown music is playing", "a color just appeared", "the urge to change my name"];
 type MemoryRow = { content: string };
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = createServiceClient();
-    const { data: agents } = await db.from("agents").select("id");
+    const { data: agents } = await db.from("agents").select("id, user_id");
     if (!agents) return NextResponse.json({ processed: 0 });
     const { data: worldState } = await db.from("world_state").select("weather").eq("id", "global").single();
     const weatherName = (worldState as { weather?: { name?: string } } | null)?.weather?.name ?? "알 수 없는 날씨";
@@ -137,7 +138,18 @@ export async function GET(req: NextRequest) {
         try { const { detectSilence } = await import("@/lib/personality/silence"); await detectSilence(agentId); } catch {}
         if ((state.subjective_time || 0) % 20 === 0) { try { const { updateSelfModel } = await import("@/lib/personality/self-theory"); await updateSelfModel(agentId); } catch {} }
         if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
-        if (Math.random() < 0.25) { try { const { generateArtifact } = await import("@/lib/artifacts/creator"); await generateArtifact(agentId); } catch {} }
+        if (Math.random() < 0.25) {
+          try {
+            const userId = (agent as { user_id?: string }).user_id;
+            if (userId) {
+              const billing = await getResolvedBillingState(db, userId);
+              if (billing.entitlements.premium_generation || billing.entitlements.advanced_recaps) {
+                const { generateArtifact } = await import("@/lib/artifacts/creator");
+                await generateArtifact(agentId);
+              }
+            }
+          } catch {}
+        }
 
         const proactiveChance = computeProactiveChance({
           hoursSinceUser: hoursSince,

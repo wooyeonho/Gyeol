@@ -58,6 +58,56 @@
     "cronFreshness": "크론 최신성",
     "minutesAgo": "분 전"
   },
+  "home": {
+    "firstMinute": "FIRST MINUTE",
+    "todaysStart": "TODAY'S START",
+    "continueChat": "오늘 대화 이어가기",
+    "viewFlow": "사용 흐름 보기",
+    "recentTraces": "최근 흔적 보기",
+    "firstAction": "첫 행동",
+    "todaysFocus": "오늘의 초점",
+    "nextCheck": "다음 확인",
+    "currentVitality": "현재 활력",
+    "retentionLoop": "리텐션 루프",
+    "today": "오늘",
+    "thisWeek": "이번 주",
+    "weeklyHighlight": "주간 하이라이트",
+    "quickLinks": {
+      "activity": "활동 흔적",
+      "album": "성장 앨범",
+      "explore": "생태계 둘러보기",
+      "settings": "설정"
+    },
+    "greeting": {
+      "night": "깊은 밤의 집중 모드",
+      "morning": "좋은 아침, 오늘도 진화 시작",
+      "noon": "한낮의 가속 구간",
+      "evening": "저녁 리빌드 타임",
+      "late": "하루를 정리하는 황금 시간"
+    },
+    "vitalityHint": {
+      "high": "지금은 깊게 대화하기 좋은 상태예요.",
+      "mid": "짧게 감정을 정리하며 컨디션을 올려보세요.",
+      "low": "가벼운 인사나 짧은 체크인부터 시작해도 충분해요."
+    }
+  },
+  "activity": {
+    "title": "활동 흔적",
+    "loadError": "활동 데이터를 불러오지 못했습니다.",
+    "empty": "아직 활동이 없습니다.",
+    "preserved": "보존됨"
+  },
+  "settings": {
+    "title": "설정",
+    "loadError": "설정 정보를 불러오지 못했습니다.",
+    "configError": "설정 변경에 실패했습니다.",
+    "recapEmail": "주간 리캡 이메일"
+  },
+  "explore": {
+    "title": "생태계 탐험",
+    "loadError": "탐색 데이터를 불러오지 못했습니다.",
+    "empty": "아직 다른 결이 없습니다."
+  },
   "plans": {
     "eyebrow": "플랜",
     "title": "결의 가치는 관계가 깊어질수록 더 커집니다",

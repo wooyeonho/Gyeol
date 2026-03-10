@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getResolvedBillingState } from "@/lib/billing/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
@@ -50,11 +51,19 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
 
     const updates: Record<string, unknown> = { config };
+    const { data: stateRow } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
+    let channels = (stateRow?.channels as Record<string, unknown>) ?? {};
     if (typeof body.telegram_chat_id === "string" && body.telegram_chat_id.trim()) {
-      const { data: stateRow } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
-      const channels = (stateRow?.channels as Record<string, unknown>) ?? {};
-      updates.channels = { ...channels, telegram: body.telegram_chat_id.trim() };
+      const billing = await getResolvedBillingState(service, user.id);
+      if (!billing.entitlements.multichannel) {
+        return NextResponse.json({ error: "Telegram channel requires Premium plan", code: "ENTITLEMENT_REQUIRED" }, { status: 403 });
+      }
+      channels = { ...channels, telegram: body.telegram_chat_id.trim() };
     }
+    if (typeof body.recap_email === "boolean") {
+      channels = { ...channels, email: body.recap_email };
+    }
+    if (Object.keys(channels).length > 0) updates.channels = channels;
 
     await service.from("agent_state").update(updates).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });

@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
+import { getResolvedBillingState } from "@/lib/billing/service";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -10,6 +11,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const service = createServiceClient();
+    const billing = await getResolvedBillingState(service, user.id);
+    if (!billing.entitlements.multichannel) {
+      return NextResponse.json({ error: "Multichannel integrations require Premium plan", code: "ENTITLEMENT_REQUIRED" }, { status: 403 });
+    }
     const allowed = await checkRateLimit(`integration-github-post:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
@@ -21,7 +27,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
     }
 
-    const service = createServiceClient();
     await service.from("user_connections").upsert(
       {
         user_id: user.id,
@@ -44,10 +49,13 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const service = createServiceClient();
+    const billing = await getResolvedBillingState(service, user.id);
+    if (!billing.entitlements.multichannel) {
+      return NextResponse.json({ error: "Multichannel integrations require Premium plan", code: "ENTITLEMENT_REQUIRED" }, { status: 403 });
+    }
     const allowed = await checkRateLimit(`integration-github-get:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-
-    const service = createServiceClient();
     const { data: conn } = await service
       .from("user_connections")
       .select("id, token_encrypted")

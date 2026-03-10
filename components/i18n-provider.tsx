@@ -11,7 +11,7 @@ import {
 import { DEFAULT_LOCALE, isValidLocale, type Locale } from "@/lib/i18n/config";
 import { loadMessages, getNested } from "@/lib/i18n/messages";
 
-type Messages = Record<string, Record<string, string>>;
+type Messages = Record<string, unknown>;
 
 type I18nContextValue = {
   locale: Locale;

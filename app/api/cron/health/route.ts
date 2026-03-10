@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
           "cron:dream",
           "cron:world",
           "cron:lifeline",
+          "cron:recap",
         ]);
       const now = Date.now();
       cronFreshness = (lockRows ?? []).map((row) => {

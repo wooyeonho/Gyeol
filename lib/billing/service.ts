@@ -15,6 +15,8 @@ type SubscriptionRow = {
   id?: string | null;
   plan_tier?: string | null;
   provider?: string | null;
+  provider_customer_id?: string | null;
+  provider_subscription_id?: string | null;
   status?: string | null;
 };
 
@@ -29,13 +31,43 @@ function isSubscriptionStatus(value: string | null | undefined): value is Subscr
 export async function getLatestSubscription(db: DbClient, userId: string) {
   const { data } = await db
     .from("user_subscriptions")
-    .select("id, plan_tier, status, provider, current_period_end, cancel_at_period_end, created_at")
+    .select(
+      "id, plan_tier, status, provider, provider_customer_id, provider_subscription_id, current_period_end, cancel_at_period_end, created_at"
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   return (data ?? null) as SubscriptionRow | null;
+}
+
+export async function upsertSubscriptionFromStripe(
+  db: DbClient,
+  params: {
+    user_id: string;
+    plan_tier: "free" | "pro" | "premium";
+    status: "active" | "trialing" | "past_due" | "cancelled";
+    provider: "stripe";
+    provider_subscription_id: string;
+    provider_customer_id: string;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  await db.from("user_subscriptions").insert({
+    user_id: params.user_id,
+    plan_tier: params.plan_tier,
+    status: params.status,
+    provider: params.provider,
+    provider_subscription_id: params.provider_subscription_id,
+    provider_customer_id: params.provider_customer_id,
+    current_period_end: params.current_period_end,
+    cancel_at_period_end: params.cancel_at_period_end,
+    metadata: params.metadata ?? {},
+    updated_at: new Date().toISOString(),
+  });
 }
 
 export async function getResolvedBillingState(db: DbClient, userId: string) {

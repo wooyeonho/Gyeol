@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { PLAN_DEFINITIONS, type EntitlementKey, type PlanDefinition, type PlanTier } from "@/lib/billing/catalog";
@@ -21,6 +22,7 @@ type BillingData = {
 const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 
 export default function PlansPage() {
+  const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
@@ -29,6 +31,18 @@ export default function PlansPage() {
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.plansOpened);
   }, []);
+
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const canceled = searchParams.get("canceled");
+    if (success === "1") {
+      setNotice("결제가 완료되었습니다. 플랜이 곧 반영됩니다.");
+      window.history.replaceState({}, "", "/plans");
+    } else if (canceled === "1") {
+      setNotice("결제가 취소되었습니다.");
+      window.history.replaceState({}, "", "/plans");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +66,16 @@ export default function PlansPage() {
     });
     try {
       setSubmittingTier(plan.tier);
+      const checkoutRes = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_tier: plan.tier }),
+      });
+      const checkoutJson = (await checkoutRes.json().catch(() => null)) as { url?: string } | null;
+      if (checkoutRes.ok && checkoutJson?.url) {
+        window.location.href = checkoutJson.url;
+        return;
+      }
       const res = await fetch("/api/billing/me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,6 +90,20 @@ export default function PlansPage() {
       setNotice(`${plan.tier.toUpperCase()} ${t("plans.noticeSuffix")}`);
     } finally {
       setSubmittingTier(null);
+    }
+  }
+
+  async function handleManageBilling() {
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const json = (await res.json().catch(() => null)) as { url?: string } | null;
+      if (res.ok && json?.url) {
+        window.location.href = json.url;
+      } else {
+        setNotice("결제 관리 페이지를 열 수 없습니다.");
+      }
+    } catch {
+      setNotice("결제 관리 페이지를 열 수 없습니다.");
     }
   }
 
@@ -129,14 +167,27 @@ export default function PlansPage() {
                   </p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => void handleDowngrade()}
-                disabled={submittingTier === "free"}
-                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
-              >
-                무료 플랜으로 전환
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {billing.subscription.provider === "stripe" && (
+                  <button
+                    type="button"
+                    onClick={() => void handleManageBilling()}
+                    className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10"
+                  >
+                    결제 관리
+                  </button>
+                )}
+                {billing.subscription.provider === "mock" && (
+                  <button
+                    type="button"
+                    onClick={() => void handleDowngrade()}
+                    disabled={submittingTier === "free"}
+                    className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+                  >
+                    무료 플랜으로 전환
+                  </button>
+                )}
+              </div>
             </div>
           </section>
         )}
@@ -198,7 +249,11 @@ export default function PlansPage() {
                   type="button"
                   onClick={() => void handleUpgradeClick(plan)}
                   disabled={submittingTier === plan.tier}
-                  className="mt-5 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
+                  className={`mt-5 w-full rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50 ${
+                    plan.badge
+                      ? "border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30"
+                      : "border border-white/20 bg-white/5 hover:bg-white/10"
+                  }`}
                 >
                   {submittingTier === plan.tier ? "처리 중..." : plan.cta}
                 </button>

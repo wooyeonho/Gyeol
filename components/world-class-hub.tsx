@@ -9,6 +9,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
+import { useTranslations } from "@/components/i18n-provider";
 
 type Mission = {
   id: string;
@@ -76,24 +77,24 @@ const RETURNING_PROMPTS = [
 ];
 
 const QUICK_LINKS = [
-  { href: "/activity", label: "활동 흔적" },
-  { href: "/album", label: "성장 앨범" },
-  { href: "/explore", label: "생태계 둘러보기" },
-  { href: "/settings", label: "설정" },
+  { href: "/activity", labelKey: "home.quickLinks.activity" },
+  { href: "/album", labelKey: "home.quickLinks.album" },
+  { href: "/explore", labelKey: "home.quickLinks.explore" },
+  { href: "/settings", labelKey: "home.quickLinks.settings" },
 ];
 
-function greetingByHour(hour: number) {
-  if (hour < 5) return "깊은 밤의 집중 모드";
-  if (hour < 11) return "좋은 아침, 오늘도 진화 시작";
-  if (hour < 17) return "한낮의 가속 구간";
-  if (hour < 22) return "저녁 리빌드 타임";
-  return "하루를 정리하는 황금 시간";
+function greetingKeyByHour(hour: number): "night" | "morning" | "noon" | "evening" | "late" {
+  if (hour < 5) return "night";
+  if (hour < 11) return "morning";
+  if (hour < 17) return "noon";
+  if (hour < 22) return "evening";
+  return "late";
 }
 
-function vitalityHint(vitality: number) {
-  if (vitality >= 0.75) return "지금은 깊게 대화하기 좋은 상태예요.";
-  if (vitality >= 0.45) return "짧게 감정을 정리하며 컨디션을 올려보세요.";
-  return "가벼운 인사나 짧은 체크인부터 시작해도 충분해요.";
+function vitalityHintKey(vitality: number): "high" | "mid" | "low" {
+  if (vitality >= 0.75) return "high";
+  if (vitality >= 0.45) return "mid";
+  return "low";
 }
 
 function growthSummary(totalMessages: number) {
@@ -120,6 +121,7 @@ function nextEvolutionHint(totalMessages: number) {
 }
 
 export function WorldClassHub() {
+  const { t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
   const { messages, isStreaming, sendMessage } = useChatStore();
@@ -250,7 +252,7 @@ export function WorldClassHub() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-                {isFirstSession ? "FIRST MINUTE" : "TODAY'S START"}
+                {isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
               </p>
               <h2 className="mt-2 text-lg font-semibold">
                 {isFirstSession ? firstSessionConfig.heading : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
@@ -276,32 +278,32 @@ export function WorldClassHub() {
                 disabled={isStreaming}
                 className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
               >
-                {isFirstSession ? firstSessionConfig.cta : "오늘 대화 이어가기"}
+                {isFirstSession ? firstSessionConfig.cta : t("home.continueChat")}
               </button>
               <Link
                 href={isFirstSession ? "/features" : "/activity"}
                 className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
               >
-                {isFirstSession ? "사용 흐름 보기" : "최근 흔적 보기"}
+                {isFirstSession ? t("home.viewFlow") : t("home.recentTraces")}
               </Link>
             </div>
           </div>
 
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">1. 첫 행동</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/45">1. {t("home.firstAction")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {sessionMessages > 0 ? "대화가 시작되었습니다. 이제 변화가 누적됩니다." : "추천 질문 하나로 첫 메시지를 보내보세요."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">2. 오늘의 초점</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/45">2. {t("home.todaysFocus")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {missions.length > 0 ? "미션이 준비되었습니다. 오늘의 흐름을 이어가세요." : "미션 1개만 적어도 하루가 훨씬 선명해집니다."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">3. 다음 확인</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/45">3. {t("home.nextCheck")}</p>
               <p className="mt-1 text-sm text-white/85">
                 활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다.
               </p>
@@ -319,13 +321,13 @@ export function WorldClassHub() {
             </span>
           </div>
           <div className="space-y-1">
-            <p className="text-sm text-white/75">{greetingByHour(hour)}</p>
-            <p className="text-xs text-white/55">{vitalityHint(vitality)}</p>
+            <p className="text-sm text-white/75">{t(`home.greeting.${greetingKeyByHour(hour)}`)}</p>
+            <p className="text-xs text-white/55">{t(`home.vitalityHint.${vitalityHintKey(vitality)}`)}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-white/60">
-              <span>현재 활력</span>
+              <span>{t("home.currentVitality")}</span>
               <span>{Math.round(vitality * 100)}%</span>
             </div>
             <div className="h-2 w-full rounded-full bg-white/10">
@@ -458,7 +460,7 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">리텐션 루프</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.retentionLoop")}</p>
                 <p className="mt-1 text-sm font-medium text-white">
                   {recap?.next_action ?? "오늘의 짧은 체크인으로 다시 루프를 시작할 수 있습니다."}
                 </p>
@@ -483,7 +485,7 @@ export function WorldClassHub() {
             )}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">오늘</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.today")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   메시지 {recap?.today.user_messages ?? 0} · 활동 {recap?.today.activities ?? 0}
                 </p>
@@ -492,14 +494,14 @@ export function WorldClassHub() {
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">이번 주</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.thisWeek")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   대화 {recap?.weekly.user_messages ?? 0} · 마일스톤 {recap?.weekly.milestones ?? 0}
                 </p>
                 <p className="mt-1 text-xs text-white/50">아티팩트 {recap?.weekly.artifacts ?? 0}개</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">주간 하이라이트</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.weekly.highlight ?? "이번 주의 흐름이 쌓이면 여기서 다시 요약됩니다."}
                 </p>
@@ -514,7 +516,7 @@ export function WorldClassHub() {
                 href={link.href}
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </div>

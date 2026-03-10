@@ -42,7 +42,19 @@
 2. `/api/cron/lifeline` 수동 호출 응답 확인
 3. `/ops`에서 권장 액션(recommendations) 항목이 줄었는지 확인
 
-## 6) 환경변수는 나중에 입력해도 됩니다
+## 6) Fail-Open / Fail-Closed 정책
+
+| 컴포넌트 | 기본값 | 환경변수 | closed 시 동작 |
+|----------|--------|----------|----------------|
+| Cron Lock | open | `CRON_LOCK_FAIL_MODE=closed` | DB/RPC 오류 시 잡 실행 차단 |
+| Rate Limit | open | `RATE_LIMIT_FAIL_MODE=closed` | DB 오류 시 요청 거부 |
+
+- **open**: 장애 시 서비스 연속성 우선 (락/레이트제한 실패 시 허용)
+- **closed**: 장애 시 보수적 차단 (락/레이트제한 실패 시 거부)
+
+프로덕션에서 더 엄격한 운영을 원하면 `closed`로 설정하세요.
+
+## 7) 환경변수는 나중에 입력해도 됩니다
 
 현재 코드는 환경변수 누락을 운영 화면에서 `미설정`으로 보여주고,
 설정 전에는 해당 기능을 안전하게 제한(fail-closed)합니다.

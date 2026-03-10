@@ -49,6 +49,7 @@ export async function GET() {
           "cron:dream",
           "cron:world",
           "cron:lifeline",
+          "cron:recap",
         ]);
       cronFreshness = (locks ?? []).map((lock) => {
         const updatedAt = new Date(String(lock.updated_at)).getTime();

@@ -34,7 +34,10 @@ export function VoidCanvas({
 }: VoidCanvasProps) {
   void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-  const particleCount = isMobile ? Math.floor(particles / 2) : particles;
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const particleCount = prefersReducedMotion ? 0 : isMobile ? Math.floor(particles / 2) : particles;
 
   return (
     <div className="fixed inset-0 z-0" style={{ backgroundColor: background }}>

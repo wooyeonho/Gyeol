@@ -2,7 +2,7 @@ import type { Locale } from "./config";
 import ko from "../../messages/ko.json";
 import en from "../../messages/en.json";
 
-type Messages = Record<string, Record<string, string>>;
+type Messages = Record<string, unknown>;
 
 const BUNDLED: Record<Locale, Messages> = {
   ko: ko as Messages,

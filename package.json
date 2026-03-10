@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "node scripts/run-migrations.mjs",
+    "verify:stripe": "node scripts/verify-stripe-setup.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -21,6 +23,7 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "stripe": "^20.4.1",
     "three": "^0.183.2",
     "tone": "^15.1.22",
     "zustand": "^5.0.11"
@@ -35,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "node-cron": "^4.2.1",
+    "pg": "^8.20.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.18"

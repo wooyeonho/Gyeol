@@ -13,11 +13,29 @@ export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
   const { t } = useTranslations();
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.albumOpened);
   }, []);
+
+  async function handleShare() {
+    setShareLoading(true);
+    try {
+      const res = await fetch("/api/share", { method: "POST" });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.url) {
+        setShareUrl(json.url);
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(json.url);
+        }
+      }
+    } finally {
+      setShareLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/album")
@@ -67,7 +85,15 @@ export default function AlbumPage() {
             ))}
           </ul>
         )}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void handleShare()}
+            disabled={shareLoading}
+            className="rounded-full bg-cyan-500/20 border border-cyan-400/30 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-50"
+          >
+            {shareLoading ? "..." : shareUrl ? "링크 복사됨" : "성장 카드 공유"}
+          </button>
           <Link
             href="/"
             className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"

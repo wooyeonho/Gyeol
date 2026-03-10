@@ -36,7 +36,8 @@
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql`
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql` + `phase23_stripe_customer_id.sql` + `phase24_share_cards.sql`
+   - 한 번에 적용: `scripts/apply-phase23-24.sql` (phase23+24만)
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 
@@ -48,6 +49,8 @@
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
 - `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
 - `OPS_ALERT_EMAIL_TO`: 운영 경보 이메일 수신자 (선택, `EMAIL_API_URL` 필요)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM`: Stripe 결제 (선택)
+- `EMAIL_API_URL`: 주간 리캡 이메일 발송 (선택, POST `{ to, subject, body }` 지원)
 
 ### 운영 안전 정책 환경 변수
 
