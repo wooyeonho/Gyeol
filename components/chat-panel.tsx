@@ -36,7 +36,7 @@ export function ChatPanel() {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    sendMessage(trimmed);
+    sendMessage(trimmed, { source: "input" });
     setInput("");
   };
 
@@ -45,7 +45,7 @@ export function ChatPanel() {
       e.preventDefault();
       const trimmed = input.trim();
       if (trimmed && !isStreaming) {
-        sendMessage(trimmed);
+        sendMessage(trimmed, { source: "input" });
         setInput("");
       }
     }
@@ -90,7 +90,7 @@ export function ChatPanel() {
                     key={prompt}
                     type="button"
                     onClick={() => {
-                      if (!isStreaming) void sendMessage(prompt);
+                      if (!isStreaming) void sendMessage(prompt, { source: "prompt" });
                     }}
                     className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
                     disabled={isStreaming}

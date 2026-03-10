@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 type Mission = {
   id: string;
@@ -143,6 +145,11 @@ export function WorldClassHub() {
   const addMission = () => {
     const title = draftMission.trim();
     if (!title) return;
+    trackClientEvent(CLIENT_EVENT.missionCreated, {
+      has_existing_messages: sessionMessages > 0,
+      source: "world_class_hub",
+      title_length: title.length,
+    });
     setMissions((prev) => [{ id: crypto.randomUUID(), title, done: false }, ...prev].slice(0, 6));
     setDraftMission("");
   };
@@ -170,7 +177,7 @@ export function WorldClassHub() {
               <button
                 type="button"
                 onClick={() => {
-                  if (!isStreaming) void sendMessage(primaryPrompt);
+                  if (!isStreaming) void sendMessage(primaryPrompt, { source: "cta" });
                 }}
                 disabled={isStreaming}
                 className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
@@ -241,7 +248,7 @@ export function WorldClassHub() {
                 key={prompt}
                 type="button"
                 onClick={() => {
-                  if (!isStreaming) void sendMessage(prompt);
+                  if (!isStreaming) void sendMessage(prompt, { source: "prompt" });
                 }}
                 disabled={isStreaming}
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85 hover:bg-white/10 disabled:opacity-50"

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -9,6 +11,10 @@ export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    trackClientEvent(CLIENT_EVENT.albumOpened);
+  }, []);
 
   useEffect(() => {
     fetch("/api/album")

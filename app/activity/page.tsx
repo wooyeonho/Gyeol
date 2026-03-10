@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 type ActivityItem =
   | {
@@ -35,6 +37,10 @@ export default function ActivityPage() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    trackClientEvent(CLIENT_EVENT.activityOpened);
+  }, []);
 
   useEffect(() => {
     async function load() {

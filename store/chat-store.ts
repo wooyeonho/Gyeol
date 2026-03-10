@@ -1,16 +1,34 @@
 import { create } from "zustand";
 import { useAgentStore } from "@/store/agent-store";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 interface Message { role: "user" | "assistant"; content: string }
 interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (message: string, meta?: { source?: "input" | "prompt" | "cta" }) => Promise<void>;
 }
 
-export const useChatStore = create<ChatStore>((set) => ({
+export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [], isStreaming: false,
-  sendMessage: async (message: string) => {
+  sendMessage: async (message: string, meta) => {
+    const source = meta?.source ?? "input";
+    const currentUserMessages = get().messages.filter((item) => item.role === "user").length;
+    const persistedMessages =
+      typeof useAgentStore.getState().agentState?.total_messages === "number"
+        ? useAgentStore.getState().agentState!.total_messages as number
+        : 0;
+    const isFirstMessage = persistedMessages === 0 && currentUserMessages === 0;
+
+    trackClientEvent(CLIENT_EVENT.messageSent, {
+      is_first_message: isFirstMessage,
+      source,
+    });
+    if (isFirstMessage) {
+      trackClientEvent(CLIENT_EVENT.firstMessageSent, { source });
+    }
+
     set((s) => ({ messages: [...s.messages, { role: "user", content: message }], isStreaming: true }));
     set((s) => ({ messages: [...s.messages, { role: "assistant", content: "" }] }));
 
