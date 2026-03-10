@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,12 +19,15 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    trackClientEvent(CLIENT_EVENT.loginStarted, { method: "password" });
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (err) {
+      trackClientEvent(CLIENT_EVENT.authFailed, { method: "password", stage: "login" });
       setError(err.message);
       return;
     }
+    trackClientEvent(CLIENT_EVENT.loginCompleted, { method: "password" });
     router.push("/");
     router.refresh();
   }
@@ -30,12 +35,15 @@ export default function LoginPage() {
   async function handleGuest() {
     setError(null);
     setLoading(true);
+    trackClientEvent(CLIENT_EVENT.guestStarted, { entry: "login" });
     const { error: err } = await supabase.auth.signInAnonymously();
     setLoading(false);
     if (err) {
+      trackClientEvent(CLIENT_EVENT.authFailed, { method: "guest", stage: "login" });
       setError(err.message);
       return;
     }
+    trackClientEvent(CLIENT_EVENT.guestCompleted, { entry: "login" });
     router.push("/");
     router.refresh();
   }

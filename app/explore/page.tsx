@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 type Agent = { id: string; self_name?: string; vitality: number; total_messages: number; gen_level: number };
 type ExploreProfile = {
@@ -16,6 +18,10 @@ export default function ExplorePage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    trackClientEvent(CLIENT_EVENT.exploreOpened);
+  }, []);
 
   useEffect(() => {
     async function load() {

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 export async function GET() {
   try {
@@ -9,8 +10,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
-    const agentId = agents?.[0]?.id;
+    const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ state: null });
 
     const [{ data: state }, { data: connRows }] = await Promise.all([
@@ -39,8 +39,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
-    const agentId = agents?.[0]?.id;
+    const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ error: "No agent" }, { status: 400 });
 
     const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();

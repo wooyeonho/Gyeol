@@ -1,5 +1,5 @@
 export type FeatureStatus = "ready" | "beta" | "planned";
-export type FeatureCategory = "core" | "growth" | "world" | "creative" | "experimental";
+export type FeatureCategory = "core" | "growth" | "world" | "creative" | "experimental" | "operations";
 
 export type FeatureItem = {
   id: string;
@@ -40,7 +40,7 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     name: "마켓 탐색",
     summary: "결의 성장과 생태계에 연결되는 아이템과 자원을 탐색합니다.",
     href: "/market",
-    category: "core",
+    category: "experimental",
     status: "beta",
   },
   {
@@ -64,7 +64,7 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     name: "공개 대시보드",
     summary: "플랫폼 전체의 활동량과 자율성 건강 상태를 공개 지표로 확인합니다.",
     href: "/dashboard",
-    category: "world",
+    category: "operations",
     status: "ready",
   },
   {
@@ -72,7 +72,7 @@ export const FEATURE_CATALOG: FeatureItem[] = [
     name: "운영 센터",
     summary: "운영자 관점에서 자율활동 건강 점수, 경보, 운영 준비도를 확인합니다.",
     href: "/ops",
-    category: "world",
+    category: "operations",
     status: "ready",
   },
   {

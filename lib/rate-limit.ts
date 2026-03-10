@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
+const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "closed" ? "closed" : "open";
 
 export async function checkRateLimit(key: string): Promise<boolean> {
   try {
@@ -23,8 +24,11 @@ export async function checkRateLimit(key: string): Promise<boolean> {
     await service.from("rate_limits").insert({ rl_key: key });
     return true;
   } catch (e) {
+    if (FAIL_MODE === "closed") {
+      console.error("[RateLimit] fallback deny due to error", e);
+      return false;
+    }
     console.error("[RateLimit] fallback allow due to error", e);
-    // Fail-open to avoid accidental outage when DB schema differs across environments.
     return true;
   }
 }

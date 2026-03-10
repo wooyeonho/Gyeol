@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { FEATURE_FLAG } from "@/lib/experiments/catalog";
+import { useFeatureFlag } from "@/lib/experiments/client";
+import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
 type AgentState = {
@@ -18,27 +23,47 @@ type AgentState = {
   config?: AgentConfig;
 };
 
+type BillingData = {
+  entitlements: Record<EntitlementKey, boolean>;
+  plan: PlanDefinition;
+  subscription: {
+    cancel_at_period_end: boolean;
+    current_period_end: string | null;
+    provider: string | null;
+    status: string;
+  };
+};
+
 export default function SettingsPage() {
   const [state, setState] = useState<AgentState | null>(null);
+  const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const showPlansSurface = useFeatureFlag(FEATURE_FLAG.plansSurface);
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/settings");
-        if (res.status === 401) {
+        const [settingsRes, billingRes] = await Promise.all([
+          fetch("/api/settings"),
+          fetch("/api/billing/me"),
+        ]);
+        if (settingsRes.status === 401) {
           router.push("/login");
           return;
         }
-        if (!res.ok) {
+        if (!settingsRes.ok) {
           setError("설정 정보를 불러오지 못했습니다.");
           return;
         }
-        const json = await res.json().catch(() => ({ state: null }));
+        const json = await settingsRes.json().catch(() => ({ state: null }));
         setState(json.state ?? null);
+        if (billingRes.ok) {
+          const billingJson = await billingRes.json().catch(() => null);
+          setBilling((billingJson as BillingData | null) ?? null);
+        }
       } catch {
         setError("설정 정보를 불러오지 못했습니다.");
       } finally {
@@ -108,6 +133,61 @@ export default function SettingsPage() {
           <div className="text-sm text-white/60">코인</div>
           <div>{state?.coins ?? 0}</div>
         </div>
+
+        <LocaleSwitcher />
+
+        {showPlansSurface && (
+          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm text-cyan-100/80">현재 플랜</div>
+                <div className="mt-1 text-lg font-semibold">{billing?.plan.tier.toUpperCase() ?? "FREE"}</div>
+                <p className="mt-2 text-sm leading-6 text-white/70">
+                  {billing?.plan.description ??
+                    "코어 대화와 활동, 앨범은 무료로 열어두고 더 깊은 회고, 자율성, 생성/연동 가치는 플랜에서 확장됩니다."}
+                </p>
+                {billing?.subscription.current_period_end && (
+                  <p className="mt-2 text-xs text-white/50">
+                    다음 갱신 기준: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
+                  </p>
+                )}
+                {billing?.subscription.status && (
+                  <p className="mt-1 text-xs text-white/45">상태: {billing.subscription.status}</p>
+                )}
+              </div>
+              <Link
+                href="/plans"
+                className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+              >
+                플랜 관리
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {billing && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="text-sm text-white/60">활성 권한</div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-xl bg-black/25 p-3">
+                <p className="text-xs text-white/45">고급 리캡</p>
+                <p className="mt-1 text-sm">{billing.entitlements.advanced_recaps ? "사용 가능" : "잠김"}</p>
+              </div>
+              <div className="rounded-xl bg-black/25 p-3">
+                <p className="text-xs text-white/45">장기 히스토리</p>
+                <p className="mt-1 text-sm">{billing.entitlements.long_term_history ? "사용 가능" : "잠김"}</p>
+              </div>
+              <div className="rounded-xl bg-black/25 p-3">
+                <p className="text-xs text-white/45">멀티채널</p>
+                <p className="mt-1 text-sm">{billing.entitlements.multichannel ? "사용 가능" : "잠김"}</p>
+              </div>
+              <div className="rounded-xl bg-black/25 p-3">
+                <p className="text-xs text-white/45">고급 생성</p>
+                <p className="mt-1 text-sm">{billing.entitlements.premium_generation ? "사용 가능" : "잠김"}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white/5 rounded-xl p-4 space-y-3">
           <div className="flex justify-between items-center">

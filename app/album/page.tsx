@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BottomNav } from "@/components/bottom-nav";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
+import { useTranslations } from "@/components/i18n-provider";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -9,6 +13,11 @@ export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslations();
+
+  useEffect(() => {
+    trackClientEvent(CLIENT_EVENT.albumOpened);
+  }, []);
 
   useEffect(() => {
     fetch("/api/album")
@@ -22,17 +31,17 @@ export default function AlbumPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 pb-24">
+    <div className="min-h-screen bg-black p-4 pb-24 text-white">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-xl font-semibold mb-2">Growth album</h1>
-        <p className="text-white/50 text-sm mb-6">Major life events of your Gyeol.</p>
+        <h1 className="mb-2 text-xl font-semibold">{t("album.title")}</h1>
+        <p className="mb-6 text-sm text-white/50">{t("album.subtitle")}</p>
         {loading ? (
           <div className="flex justify-center py-12">
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
           </div>
         ) : milestones.length === 0 ? (
           <div className="rounded-xl bg-white/5 p-6 text-center text-white/50 text-sm">
-            No milestones yet. Keep talking to build the album.
+            {t("album.empty")}
           </div>
         ) : (
           <ul className="space-y-4">
@@ -63,16 +72,17 @@ export default function AlbumPage() {
             href="/"
             className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"
           >
-            Home
+            {t("album.home")}
           </Link>
           <Link
             href="/activity"
             className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"
           >
-            Activity
+            {t("album.activity")}
           </Link>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

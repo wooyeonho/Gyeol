@@ -36,7 +36,7 @@
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql`
+   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql`
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 
@@ -48,6 +48,13 @@
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
 - `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
 - `OPS_ALERT_EMAIL_TO`: 운영 경보 이메일 수신자 (선택, `EMAIL_API_URL` 필요)
+
+### 운영 안전 정책 환경 변수
+
+- `RATE_LIMIT_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
+- `CRON_LOCK_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
+
+프로덕션에서 더 엄격한 운영을 원하면 위 두 값을 `closed`로 설정해 저장소/RPC 오류 시 요청 또는 중복 크론 실행을 보수적으로 막을 수 있습니다.
 
 ### 24시간 자율활동 권장 설정
 

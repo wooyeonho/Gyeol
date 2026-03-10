@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
+import { EXPERIMENT } from "@/lib/experiments/catalog";
+import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 
 type Mission = {
   id: string;
@@ -12,9 +16,59 @@ type Mission = {
   done: boolean;
 };
 
-const STORAGE_KEY = "gyeol-worldclass-missions-v1";
+type HomeSummaryItem = {
+  id: string;
+  kind: "activity" | "milestone";
+  title: string;
+  created_at: string;
+};
 
-const QUICK_PROMPTS = [
+type HomeRecap = {
+  next_action: string;
+  premium_locked?: boolean;
+  streak: {
+    days: number;
+    today_active: boolean;
+  };
+  today: {
+    activities: number;
+    user_messages: number;
+  };
+  weekly: {
+    artifacts: number;
+    highlight: string;
+    milestones: number;
+    user_messages: number;
+  };
+};
+
+const STORAGE_KEY = "gyeol-worldclass-missions-v1";
+const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
+
+const FIRST_SESSION_VARIANTS = {
+  identity: {
+    cta: "첫 인사 시작하기",
+    description: "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요.",
+    heading: "첫 대화로 결의 첫 기억을 만들어보세요",
+    prompts: [
+      "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
+      "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
+      "우리 관계를 시작하는 첫 질문 3개를 해줘.",
+    ],
+  },
+  productivity: {
+    cta: "오늘의 문제 정리하기",
+    description: "지금 가장 신경 쓰이는 문제 하나만 던져보세요. 결이 바로 오늘의 초점과 실행 흐름을 정리해줄 수 있습니다.",
+    heading: "결에게 오늘의 문제를 먼저 맡겨보세요",
+    prompts: [
+      "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
+      "지금 해야 할 일의 우선순위를 3개만 잡아줘.",
+      "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
+    ],
+  },
+} as const;
+
+const RETURNING_PROMPTS = [
   "오늘 내 성장 포인트 3개만 뽑아줘.",
   "집중력을 높이는 20분 루틴을 짜줘.",
   "지금 기분에 맞는 음악/활동을 추천해줘.",
@@ -22,12 +76,10 @@ const QUICK_PROMPTS = [
 ];
 
 const QUICK_LINKS = [
-  { href: "/features", label: "기능 지도" },
-  { href: "/ops", label: "운영 센터" },
-  { href: "/dashboard", label: "실시간 지표" },
-  { href: "/explore", label: "탐험 모드" },
-  { href: "/room", label: "3D 룸" },
-  { href: "/time-travel", label: "타임 트래블" },
+  { href: "/activity", label: "활동 흔적" },
+  { href: "/album", label: "성장 앨범" },
+  { href: "/explore", label: "생태계 둘러보기" },
+  { href: "/settings", label: "설정" },
 ];
 
 function greetingByHour(hour: number) {
@@ -36,6 +88,35 @@ function greetingByHour(hour: number) {
   if (hour < 17) return "한낮의 가속 구간";
   if (hour < 22) return "저녁 리빌드 타임";
   return "하루를 정리하는 황금 시간";
+}
+
+function vitalityHint(vitality: number) {
+  if (vitality >= 0.75) return "지금은 깊게 대화하기 좋은 상태예요.";
+  if (vitality >= 0.45) return "짧게 감정을 정리하며 컨디션을 올려보세요.";
+  return "가벼운 인사나 짧은 체크인부터 시작해도 충분해요.";
+}
+
+function growthSummary(totalMessages: number) {
+  if (totalMessages <= 0) {
+    return "첫 대화를 보내면 기억, 활동, 성장 앨범이 동시에 열리기 시작합니다.";
+  }
+  if (totalMessages === 1) {
+    return "첫 기억이 쌓였습니다. 지금부터 결의 관계와 상태 변화가 기록되기 시작합니다.";
+  }
+  if (totalMessages < 10) {
+    return `${totalMessages}개의 대화가 쌓였습니다. 지금은 관계의 톤과 기억의 결이 만들어지는 구간입니다.`;
+  }
+  if (totalMessages < 30) {
+    return `${totalMessages}개의 대화가 누적되었습니다. 성격과 반응 패턴이 더 선명해지는 구간입니다.`;
+  }
+  return `${totalMessages}개의 대화가 축적되었습니다. 이제 결의 성장 흔적을 활동과 앨범에서 함께 회고해보세요.`;
+}
+
+function nextEvolutionHint(totalMessages: number) {
+  if (totalMessages <= 0) return "첫 메시지를 보내면 성장 루프가 시작됩니다.";
+  const remainder = totalMessages % 10;
+  const toNext = remainder === 0 ? 10 : 10 - remainder;
+  return `${toNext}번 더 대화하면 다음 성격 분석 구간에 도달합니다.`;
 }
 
 export function WorldClassHub() {
@@ -60,6 +141,10 @@ export function WorldClassHub() {
     }
   });
   const [draftMission, setDraftMission] = useState("");
+  const [recentItems, setRecentItems] = useState<HomeSummaryItem[]>([]);
+  const [newItemsSinceLastVisit, setNewItemsSinceLastVisit] = useState<HomeSummaryItem[]>([]);
+  const [recap, setRecap] = useState<HomeRecap | null>(null);
+  const onboardingVariant = useFirstMessageOnboardingVariant();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -74,6 +159,43 @@ export function WorldClassHub() {
     }
   }, [missions]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSummary() {
+      try {
+        const res = await fetch("/api/home/summary", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = await res.json().catch(() => ({ recent_items: [], recap: null }));
+        const items = (Array.isArray(json.recent_items) ? json.recent_items : []) as HomeSummaryItem[];
+        if (cancelled) return;
+        setRecentItems(items);
+        setRecap((json.recap as HomeRecap | null) ?? null);
+
+        if (typeof window === "undefined") return;
+        const lastSeenAt = window.localStorage.getItem(HOME_LAST_SEEN_KEY);
+        if (lastSeenAt) {
+          const unseen = items.filter((item) => new Date(item.created_at).getTime() > new Date(lastSeenAt).getTime());
+          setNewItemsSinceLastVisit(unseen.slice(0, 3));
+        } else {
+          setNewItemsSinceLastVisit(items.slice(0, 2));
+        }
+        window.localStorage.setItem(HOME_LAST_SEEN_KEY, new Date().toISOString());
+      } catch {
+        if (!cancelled) {
+          setRecentItems([]);
+          setNewItemsSinceLastVisit([]);
+          setRecap(null);
+        }
+      }
+    }
+
+    void loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const userMessages = useMemo(
     () => messages.filter((message) => message.role === "user").length,
     [messages],
@@ -85,10 +207,20 @@ export function WorldClassHub() {
   const completionRate = missions.length === 0 ? 0 : Math.round((completed / missions.length) * 100);
 
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
+  const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
+  const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
+  const mood = typeof agentState?.mood === "string" ? agentState.mood : "아직 감정 기록 없음";
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
   const weather = typeof worldState?.weather?.name === "string" ? worldState.weather.name : "Void";
   const hour = now.getHours();
+  const sessionMessages = Math.max(totalMessages, userMessages);
+  const isFirstSession = sessionMessages === 0;
+  const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
+  const quickPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
+  const primaryPrompt = quickPrompts[0];
+  const summary = growthSummary(sessionMessages);
+  const evolutionHint = nextEvolutionHint(sessionMessages);
 
   const toggleMission = (id: string) => {
     setMissions((prev) => prev.map((mission) => (mission.id === id ? { ...mission, done: !mission.done } : mission)));
@@ -101,6 +233,11 @@ export function WorldClassHub() {
   const addMission = () => {
     const title = draftMission.trim();
     if (!title) return;
+    trackClientEvent(CLIENT_EVENT.missionCreated, {
+      has_existing_messages: sessionMessages > 0,
+      source: "world_class_hub",
+      title_length: title.length,
+    });
     setMissions((prev) => [{ id: crypto.randomUUID(), title, done: false }, ...prev].slice(0, 6));
     setDraftMission("");
   };
@@ -108,7 +245,71 @@ export function WorldClassHub() {
   return (
     <section className="fixed top-14 left-1/2 -translate-x-1/2 z-20 w-[min(920px,calc(100%-1.5rem))] rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl shadow-[0_0_80px_rgba(80,128,255,0.18)]">
       <div className="absolute inset-0 pointer-events-none rounded-2xl aurora-flow opacity-55" />
-      <div className="relative grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="relative space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+                {isFirstSession ? "FIRST MINUTE" : "TODAY'S START"}
+              </p>
+              <h2 className="mt-2 text-lg font-semibold">
+                {isFirstSession ? firstSessionConfig.heading : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/68">
+                {isFirstSession
+                  ? firstSessionConfig.description
+                  : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isStreaming) {
+                    void sendMessage(primaryPrompt, {
+                      experiment_key: EXPERIMENT.firstMessageOnboarding,
+                      experiment_variant: onboardingVariant,
+                      source: "cta",
+                    });
+                  }
+                }}
+                disabled={isStreaming}
+                className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+              >
+                {isFirstSession ? firstSessionConfig.cta : "오늘 대화 이어가기"}
+              </button>
+              <Link
+                href={isFirstSession ? "/features" : "/activity"}
+                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+              >
+                {isFirstSession ? "사용 흐름 보기" : "최근 흔적 보기"}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-white/45">1. 첫 행동</p>
+              <p className="mt-1 text-sm text-white/85">
+                {sessionMessages > 0 ? "대화가 시작되었습니다. 이제 변화가 누적됩니다." : "추천 질문 하나로 첫 메시지를 보내보세요."}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-white/45">2. 오늘의 초점</p>
+              <p className="mt-1 text-sm text-white/85">
+                {missions.length > 0 ? "미션이 준비되었습니다. 오늘의 흐름을 이어가세요." : "미션 1개만 적어도 하루가 훨씬 선명해집니다."}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-white/45">3. 다음 확인</p>
+              <p className="mt-1 text-sm text-white/85">
+                활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg md:text-xl font-semibold">{selfName}</h1>
@@ -117,11 +318,14 @@ export function WorldClassHub() {
               {now.toLocaleTimeString("ko-KR", { hour12: false })}
             </span>
           </div>
-          <p className="text-sm text-white/75">{greetingByHour(hour)}</p>
+          <div className="space-y-1">
+            <p className="text-sm text-white/75">{greetingByHour(hour)}</p>
+            <p className="text-xs text-white/55">{vitalityHint(vitality)}</p>
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-white/60">
-              <span>Vitality</span>
+              <span>현재 활력</span>
               <span>{Math.round(vitality * 100)}%</span>
             </div>
             <div className="h-2 w-full rounded-full bg-white/10">
@@ -133,12 +337,18 @@ export function WorldClassHub() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {QUICK_PROMPTS.map((prompt) => (
+            {quickPrompts.map((prompt) => (
               <button
                 key={prompt}
                 type="button"
                 onClick={() => {
-                  if (!isStreaming) void sendMessage(prompt);
+                  if (!isStreaming) {
+                    void sendMessage(prompt, {
+                      experiment_key: isFirstSession ? EXPERIMENT.firstMessageOnboarding : undefined,
+                      experiment_variant: isFirstSession ? onboardingVariant : undefined,
+                      source: "prompt",
+                    });
+                  }
                 }}
                 disabled={isStreaming}
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85 hover:bg-white/10 disabled:opacity-50"
@@ -152,12 +362,148 @@ export function WorldClassHub() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">대화 수</p>
-              <p className="text-xl font-semibold">{userMessages}</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/50">기록된 대화</p>
+              <p className="text-xl font-semibold">{sessionMessages}</p>
             </div>
             <div className="rounded-xl bg-white/5 p-3">
               <p className="text-[10px] uppercase tracking-wider text-white/50">미션 달성률</p>
               <p className="text-xl font-semibold">{completionRate}%</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">최근 변화</p>
+                <p className="mt-1 text-sm font-medium text-white">{summary}</p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                Gen {genLevel}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">현재 기분</p>
+                <p className="mt-1 text-sm text-white/82">{mood}</p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">다음 변화 포인트</p>
+                <p className="mt-1 text-sm text-white/82">{evolutionHint}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/activity"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                활동에서 변화 보기
+              </Link>
+              <Link
+                href="/album"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                앨범에서 마일스톤 보기
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">당신이 없는 동안</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {newItemsSinceLastVisit.length > 0
+                    ? `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
+                    : "최근 활동과 마일스톤을 한 번에 확인할 수 있습니다."}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                {recentItems.length} recent
+              </span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
+                <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-white/55">{item.kind === "milestone" ? "마일스톤" : "활동"}</p>
+                    <p className="text-[11px] text-white/40">
+                      {new Date(item.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-sm text-white/82">{item.title}</p>
+                </div>
+              ))}
+              {recentItems.length === 0 && (
+                <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
+                  첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다.
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/activity"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                최근 활동 열기
+              </Link>
+              <Link
+                href="/album"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                앨범 다시 보기
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">리텐션 루프</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {recap?.next_action ?? "오늘의 짧은 체크인으로 다시 루프를 시작할 수 있습니다."}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                streak {recap?.streak.days ?? 0}
+              </span>
+            </div>
+            {recap?.premium_locked && (
+              <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
+                <p className="text-xs text-cyan-100/75">PRO RECAP</p>
+                <p className="mt-1 text-sm text-cyan-50">
+                  더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다.
+                </p>
+                <Link
+                  href="/plans"
+                  className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15"
+                >
+                  플랜 업그레이드 보기
+                </Link>
+              </div>
+            )}
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">오늘</p>
+                <p className="mt-1 text-sm text-white/82">
+                  메시지 {recap?.today.user_messages ?? 0} · 활동 {recap?.today.activities ?? 0}
+                </p>
+                <p className="mt-1 text-xs text-white/50">
+                  {recap?.streak.today_active ? "오늘의 기록이 이미 쌓였습니다." : "오늘의 기록을 아직 시작하지 않았습니다."}
+                </p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">이번 주</p>
+                <p className="mt-1 text-sm text-white/82">
+                  대화 {recap?.weekly.user_messages ?? 0} · 마일스톤 {recap?.weekly.milestones ?? 0}
+                </p>
+                <p className="mt-1 text-xs text-white/50">아티팩트 {recap?.weekly.artifacts ?? 0}개</p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">주간 하이라이트</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {recap?.weekly.highlight ?? "이번 주의 흐름이 쌓이면 여기서 다시 요약됩니다."}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -200,7 +546,11 @@ export function WorldClassHub() {
               </button>
             </div>
             <ul className="mt-2 space-y-1.5">
-              {missions.length === 0 && <li className="text-xs text-white/45">미션을 만들면 하루가 선명해집니다.</li>}
+              {missions.length === 0 && (
+                <li className="text-xs text-white/45">
+                  {isFirstSession ? "첫 미션 하나만 적어도 오늘의 대화가 훨씬 쉬워집니다." : "미션을 만들면 오늘의 대화와 실행이 더 선명해집니다."}
+                </li>
+              )}
               {missions.map((mission) => (
                 <li key={mission.id} className="flex items-center gap-2 text-sm">
                   <button
@@ -222,6 +572,7 @@ export function WorldClassHub() {
             </ul>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

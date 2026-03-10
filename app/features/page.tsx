@@ -16,6 +16,7 @@ const CATEGORY_LABEL: Record<FeatureCategory, string> = {
   world: "생태계",
   creative: "표현/시각화",
   experimental: "실험실",
+  operations: "운영 도구",
 };
 
 const CATEGORY_DESCRIPTION: Record<FeatureCategory, string> = {
@@ -24,6 +25,15 @@ const CATEGORY_DESCRIPTION: Record<FeatureCategory, string> = {
   world: "다른 존재, 공개 지표, 플랫폼 흐름과 연결되는 생태계 경험입니다.",
   creative: "기억과 존재를 시각적으로 표현하는 확장 경험입니다.",
   experimental: "미래 가치 검증을 위한 베타/실험 기능입니다.",
+  operations: "일반 사용 흐름보다 뒤에 놓여야 하는 운영/관측 도구입니다.",
+};
+const CATEGORY_ORDER: Record<FeatureCategory, number> = {
+  core: 0,
+  growth: 1,
+  world: 2,
+  creative: 3,
+  experimental: 4,
+  operations: 5,
 };
 
 const FILTERS: Array<FeatureStatus | "all"> = ["all", "ready", "beta", "planned"];
@@ -56,6 +66,10 @@ export default function FeaturesPage() {
         feature.summary.toLowerCase().includes(q) ||
         CATEGORY_LABEL[feature.category].toLowerCase().includes(q);
       return matchStatus && matchQuery;
+    }).sort((a, b) => {
+      const categoryDiff = CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category];
+      if (categoryDiff !== 0) return categoryDiff;
+      return a.name.localeCompare(b.name, "ko");
     });
   }, [query, statusFilter]);
 
@@ -122,8 +136,8 @@ export default function FeaturesPage() {
         <section className="mb-5">
           <h2 className="text-lg font-semibold">제품 구조 한눈에 보기</h2>
           <p className="mt-1 text-sm text-white/60">
-            결은 코어 루프를 중심으로 성장 기록, 생태계, 표현/시각화, 실험 기능이 확장되는 구조로 설계되어
-            있습니다.
+            결은 코어 루프를 중심으로 성장 기록, 생태계, 표현/시각화가 확장되고, 실험 기능과 운영 도구는 뒤에
+            배치되는 구조로 설계되어 있습니다.
           </p>
         </section>
 
@@ -146,7 +160,7 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        <section className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
           {(Object.keys(CATEGORY_LABEL) as FeatureCategory[]).map((category) => (
             <article key={category} className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-white/45">{CATEGORY_LABEL[category]}</p>

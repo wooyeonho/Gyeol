@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -17,12 +19,15 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    trackClientEvent(CLIENT_EVENT.signupStarted, { method: "password" });
     const { error: err } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (err) {
+      trackClientEvent(CLIENT_EVENT.authFailed, { method: "password", stage: "signup" });
       setError(err.message);
       return;
     }
+    trackClientEvent(CLIENT_EVENT.signupCompleted, { method: "password" });
     router.push("/login");
     router.refresh();
   }

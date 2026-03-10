@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { isMissingEnvError } from "@/lib/env/required";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 export async function GET() {
   try {
@@ -11,28 +12,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
-    let agentId = agents?.[0]?.id;
-    if (!agentId) {
-      const { data: newAgent } = await service.from("agents").insert({ user_id: user.id }).select("id").single();
-      agentId = newAgent?.id;
-      if (agentId) {
-        await service.from("agent_state").insert({
-          agent_id: agentId,
-          total_messages: 0,
-          intimacy_score: 0,
-          vitality: 1,
-          progress: 0,
-          gen_level: 1,
-          coins: 50,
-        });
-      }
-    }
+    const { agentId, hasMultiple } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) {
       return NextResponse.json({ agentId: null, agentState: null });
     }
     const { data: state } = await service.from("agent_state").select("*").eq("agent_id", agentId).single();
-    return NextResponse.json({ agentId, agentState: state ?? null });
+    return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple });
   } catch (e) {
     console.error("GET /api/agent/state error", e);
     if (isMissingEnvError(e)) {

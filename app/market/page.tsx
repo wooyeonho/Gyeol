@@ -1,22 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
+import { FEATURE_FLAG } from "@/lib/experiments/catalog";
+import { useFeatureFlag } from "@/lib/experiments/client";
+import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 
 type Item = { id: string; title?: string; name?: string; description?: string; price: number; type: string };
+type BillingData = {
+  entitlements: Record<EntitlementKey, boolean>;
+  plan: PlanDefinition;
+  subscription: {
+    cancel_at_period_end: boolean;
+    current_period_end: string | null;
+    provider: string | null;
+    status: string;
+  };
+};
 
 export default function MarketPage() {
   const [items, setItems] = useState<Item[]>([]);
+  const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const showPlansSurface = useFeatureFlag(FEATURE_FLAG.plansSurface);
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/market");
-        const json = await res.json().catch(() => ({ items: [] }));
+        const [marketRes, billingRes] = await Promise.all([
+          fetch("/api/market"),
+          fetch("/api/billing/me"),
+        ]);
+        const json = await marketRes.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
+        if (billingRes.ok) {
+          const billingJson = await billingRes.json().catch(() => null);
+          setBilling((billingJson as BillingData | null) ?? null);
+        }
       } catch {
         setItems([]);
       } finally {
@@ -56,10 +79,44 @@ export default function MarketPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">마켓</h1>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">BETA EXPANSION</p>
+          <h1 className="mt-2 text-xl font-semibold">마켓</h1>
+          <p className="mt-1 text-sm text-white/60">
+            마켓은 결의 코어 대화 루프 바깥에 있는 베타 확장 공간입니다. 먼저 홈, 활동, 앨범 경험을 충분히 쌓은 뒤
+            둘러보는 흐름을 권장합니다.
+          </p>
+        </div>
+        <Link
+          href="/features"
+          className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+        >
+          전체 구조 보기
+        </Link>
+      </div>
       {notice && (
         <div className="mb-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm">
           {notice}
+        </div>
+      )}
+      {showPlansSurface && (
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">더 깊은 회고와 생성은 플랜에서 확장됩니다</p>
+              <p className="mt-1 text-sm text-white/60">
+                마켓은 확장 경험의 일부입니다. 현재 {billing?.plan.tier.toUpperCase() ?? "FREE"} 플랜 기준으로 장기 히스토리,
+                고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.
+              </p>
+            </div>
+            <Link
+              href="/plans"
+              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+            >
+              플랜 보기
+            </Link>
+          </div>
         </div>
       )}
       <div className="space-y-3">

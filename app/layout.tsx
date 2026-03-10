@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 
 export const metadata: Metadata = {
   title: "결 GYEOL",
-  description: "Autonomous evolving AI lifeform",
+  description: "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱",
   manifest: "/manifest.json",
 };
 
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="bg-black text-white min-h-screen antialiased">
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <AnalyticsProvider>{children}</AnalyticsProvider>
+        </I18nProvider>
       </body>
     </html>
   );
