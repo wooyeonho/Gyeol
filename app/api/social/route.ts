@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 export async function GET() {
   try {
@@ -9,8 +10,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const service = createServiceClient();
-    const { data: myAgents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
-    const myAgentId = myAgents?.[0]?.id;
+    const { agentId: myAgentId } = await ensurePrimaryAgent(service, user.id);
     if (!myAgentId) {
       return NextResponse.json({ socialLogs: [], breedingRecords: [], otherAgents: [] });
     }

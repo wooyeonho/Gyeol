@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { getPrimaryAgent } from "@/lib/agents/primary";
 
 export async function GET() {
   try {
@@ -54,6 +55,13 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const service = createServiceClient();
+    const { agentId: currentPrimaryAgentId } = await getPrimaryAgent(service, user.id);
+    if (currentPrimaryAgentId) {
+      return NextResponse.json(
+        { error: "현재는 단일 메인 에이전트만 지원합니다. 입양은 멀티 에이전트 지원 이후 다시 열립니다." },
+        { status: 409 }
+      );
+    }
     const { data: claimed, error: claimError } = await service
       .from("adoption_board")
       .update({ status: "adopted" })

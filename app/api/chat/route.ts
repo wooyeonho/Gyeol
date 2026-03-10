@@ -8,6 +8,7 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { isMissingEnvError } from "@/lib/env/required";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
 type PromptMemory = { id: string; content: string; referenceCount: number };
@@ -46,9 +47,9 @@ export async function POST(req: NextRequest) {
     const allowed = await checkRateLimit(`chat:${user.id}`);
     if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
 
-    const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
-    if (!agent) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
-    const agentId = agent.id;
+    const service = createServiceClient();
+    const { agentId } = await ensurePrimaryAgent(service, user.id);
+    if (!agentId) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
 
     const { data: agentState } = await supabase.from("agent_state").select("*").eq("agent_id", agentId).single();
     const { data: worldState } = await supabase.from("world_state").select("*").eq("id", "global").single();

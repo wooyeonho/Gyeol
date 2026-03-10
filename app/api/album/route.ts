@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 const MILESTONE_TYPES = [
   "first_chat",
@@ -20,11 +21,10 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id, created_at").eq("user_id", user.id).limit(1);
-    const agentId = agents?.[0]?.id;
+    const { agentId, createdAt } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ milestones: [] });
 
-    const created = (agents?.[0] as { created_at?: string })?.created_at;
+    const created = createdAt;
     const milestones: { type: string; label: string; at: string; summary?: string }[] = [];
 
     const { data: firstChat } = await service

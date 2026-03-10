@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 const TYPE_FILTER: Record<string, string[]> = {
   dream: ["dream_journal", "dream"],
@@ -19,8 +20,7 @@ export async function GET(request: NextRequest) {
 
     const typeParam = request.nextUrl.searchParams.get("type") ?? "all";
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
-    const agentId = agents?.[0]?.id;
+    const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ items: [] });
 
     const [logsRes, artifactsRes] = await Promise.all([
