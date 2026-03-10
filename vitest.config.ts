@@ -13,7 +13,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules", ".next", "openclaw"],
+    exclude: ["node_modules", ".next"],
     coverage: {
       enabled: false,
     },
