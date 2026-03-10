@@ -49,6 +49,13 @@
 - `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
 - `OPS_ALERT_EMAIL_TO`: 운영 경보 이메일 수신자 (선택, `EMAIL_API_URL` 필요)
 
+### 운영 안전 정책 환경 변수
+
+- `RATE_LIMIT_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
+- `CRON_LOCK_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
+
+프로덕션에서 더 엄격한 운영을 원하면 위 두 값을 `closed`로 설정해 저장소/RPC 오류 시 요청 또는 중복 크론 실행을 보수적으로 막을 수 있습니다.
+
 ### 24시간 자율활동 권장 설정
 
 - OpenClaw 스케줄러를 기본(primary)으로 운영하고 GitHub cron은 fallback으로 유지

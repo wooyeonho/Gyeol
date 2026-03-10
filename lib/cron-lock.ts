@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
+const FAIL_MODE = process.env.CRON_LOCK_FAIL_MODE === "closed" ? "closed" : "open";
+
 export async function acquireCronLock(jobName: string, ttlSeconds = 300): Promise<boolean> {
   try {
     const db = createServiceClient();
@@ -9,12 +11,12 @@ export async function acquireCronLock(jobName: string, ttlSeconds = 300): Promis
     });
     if (error) {
       console.error("[CronLock] acquire rpc error", jobName, error.message);
-      return true;
+      return FAIL_MODE === "closed" ? false : true;
     }
     return Boolean(data);
   } catch (e) {
     console.error("[CronLock] acquire unexpected error", jobName, e);
-    return true;
+    return FAIL_MODE === "closed" ? false : true;
   }
 }
 
