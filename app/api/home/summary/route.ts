@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { getResolvedBillingState } from "@/lib/billing/service";
 
 type SummaryItem = {
   id: string;
@@ -100,6 +101,7 @@ export async function GET() {
     if (!agentId) {
       return NextResponse.json({ recent_items: [], summary: null });
     }
+    const billing = await getResolvedBillingState(service, user.id);
 
     const now = new Date();
     const todayStart = new Date(now);
@@ -203,7 +205,7 @@ export async function GET() {
 
     const recentItems = [...activityItems, ...milestoneItems]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 6);
+      .slice(0, billing.entitlements.long_term_history ? 6 : 3);
 
     const recentChats = (recentChatsForRecap ?? []) as Array<TimelineRow & { role?: string }>;
     const recentLogRows = (recentLogsForRecap ?? []) as Array<TimelineRow & { action_type?: string }>;
@@ -242,12 +244,15 @@ export async function GET() {
     return NextResponse.json({
       recent_items: recentItems,
       recap: {
-        next_action: buildNextAction({
-          isFirstSession: (state?.total_messages ?? 0) === 0,
-          streakDays,
-          todayActive,
-          weeklyMessageCount: weekUserMessages,
-        }),
+        next_action: billing.entitlements.advanced_recaps
+          ? buildNextAction({
+              isFirstSession: (state?.total_messages ?? 0) === 0,
+              streakDays,
+              todayActive,
+              weeklyMessageCount: weekUserMessages,
+            })
+          : "고급 리캡은 Pro 이상에서 열립니다. 지금은 오늘의 체크인과 최근 활동에 집중해보세요.",
+        premium_locked: !billing.entitlements.advanced_recaps,
         streak: {
           days: streakDays,
           today_active: todayActive,
@@ -258,18 +263,22 @@ export async function GET() {
         },
         weekly: {
           artifacts: weekArtifacts,
-          highlight: buildWeeklyHighlight({
-            artifactCount: weekArtifacts,
-            milestoneCount: weekMilestones,
-            userMessageCount: weekUserMessages,
-          }),
+          highlight: billing.entitlements.advanced_recaps
+            ? buildWeeklyHighlight({
+                artifactCount: weekArtifacts,
+                milestoneCount: weekMilestones,
+                userMessageCount: weekUserMessages,
+              })
+            : "주간 하이라이트와 더 긴 회고는 Pro 이상 플랜에서 확인할 수 있습니다.",
           milestones: weekMilestones,
           user_messages: weekUserMessages,
         },
       },
       summary: {
+        entitlements: billing.entitlements,
         gen_level: state?.gen_level ?? 1,
         mood: state?.mood ?? null,
+        plan_tier: billing.plan.tier,
         total_messages: state?.total_messages ?? 0,
         vitality: state?.vitality ?? 1,
       },

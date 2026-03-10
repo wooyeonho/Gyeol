@@ -23,6 +23,7 @@ const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 export default function PlansPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
   const { t } = useTranslations();
 
   useEffect(() => {
@@ -44,12 +45,44 @@ export default function PlansPage() {
     };
   }, []);
 
-  function handleUpgradeClick(plan: PlanDefinition) {
+  async function handleUpgradeClick(plan: PlanDefinition) {
     trackClientEvent(CLIENT_EVENT.upgradeCtaClicked, {
       plan: plan.tier,
       source: "plans_page",
     });
-    setNotice(`${plan.tier.toUpperCase()} ${t("plans.noticeSuffix")}`);
+    try {
+      setSubmittingTier(plan.tier);
+      const res = await fetch("/api/billing/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_tier: plan.tier }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setNotice("플랜 변경에 실패했습니다.");
+        return;
+      }
+      setBilling((json as BillingData | null) ?? null);
+      setNotice(`${plan.tier.toUpperCase()} ${t("plans.noticeSuffix")}`);
+    } finally {
+      setSubmittingTier(null);
+    }
+  }
+
+  async function handleDowngrade() {
+    try {
+      setSubmittingTier("free");
+      const res = await fetch("/api/billing/me", { method: "DELETE" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setNotice("무료 플랜 전환에 실패했습니다.");
+        return;
+      }
+      setBilling((json as BillingData | null) ?? null);
+      setNotice("무료 플랜으로 전환되었습니다.");
+    } finally {
+      setSubmittingTier(null);
+    }
   }
 
   return (
@@ -80,6 +113,32 @@ export default function PlansPage() {
           <div className="mb-6 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-50">
             {notice}
           </div>
+        )}
+
+        {billing && billing.plan.tier !== "free" && (
+          <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-white/60">현재 구독 상태</p>
+                <p className="mt-1 text-lg font-semibold">
+                  {billing.plan.tier.toUpperCase()} · {billing.subscription.status}
+                </p>
+                {billing.subscription.current_period_end && (
+                  <p className="mt-1 text-sm text-white/55">
+                    갱신 기준: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleDowngrade()}
+                disabled={submittingTier === "free"}
+                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+              >
+                무료 플랜으로 전환
+              </button>
+            </div>
+          </section>
         )}
 
         <section className="grid gap-4 lg:grid-cols-3">
@@ -137,10 +196,11 @@ export default function PlansPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => handleUpgradeClick(plan)}
-                  className="mt-5 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
+                  onClick={() => void handleUpgradeClick(plan)}
+                  disabled={submittingTier === plan.tier}
+                  className="mt-5 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
                 >
-                  {plan.cta}
+                  {submittingTier === plan.tier ? "처리 중..." : plan.cta}
                 </button>
               )}
             </article>

@@ -25,6 +25,7 @@ type HomeSummaryItem = {
 
 type HomeRecap = {
   next_action: string;
+  premium_locked?: boolean;
   streak: {
     days: number;
     today_active: boolean;
@@ -466,6 +467,20 @@ export function WorldClassHub() {
                 streak {recap?.streak.days ?? 0}
               </span>
             </div>
+            {recap?.premium_locked && (
+              <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
+                <p className="text-xs text-cyan-100/75">PRO RECAP</p>
+                <p className="mt-1 text-sm text-cyan-50">
+                  더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다.
+                </p>
+                <Link
+                  href="/plans"
+                  className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15"
+                >
+                  플랜 업그레이드 보기
+                </Link>
+              </div>
+            )}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">오늘</p>

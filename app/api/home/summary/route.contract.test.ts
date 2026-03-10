@@ -124,6 +124,29 @@ describe("/api/home/summary contract", () => {
             }),
           };
         }
+        if (table === "user_subscriptions") {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: () => ({
+                  limit: () => ({
+                    maybeSingle: async () => ({
+                      data: {
+                        id: "sub-1",
+                        plan_tier: "pro",
+                        status: "active",
+                        provider: "mock",
+                        current_period_end: new Date().toISOString(),
+                        cancel_at_period_end: false,
+                        created_at: new Date().toISOString(),
+                      },
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
         throw new Error(`unexpected table: ${table}`);
       },
     });

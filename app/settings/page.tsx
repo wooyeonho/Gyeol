@@ -151,12 +151,15 @@ export default function SettingsPage() {
                     다음 갱신 기준: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
                   </p>
                 )}
+                {billing?.subscription.status && (
+                  <p className="mt-1 text-xs text-white/45">상태: {billing.subscription.status}</p>
+                )}
               </div>
               <Link
                 href="/plans"
                 className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
               >
-                플랜 보기
+                플랜 관리
               </Link>
             </div>
           </div>
