@@ -23,6 +23,24 @@ type HomeSummaryItem = {
   created_at: string;
 };
 
+type HomeRecap = {
+  next_action: string;
+  streak: {
+    days: number;
+    today_active: boolean;
+  };
+  today: {
+    activities: number;
+    user_messages: number;
+  };
+  weekly: {
+    artifacts: number;
+    highlight: string;
+    milestones: number;
+    user_messages: number;
+  };
+};
+
 const STORAGE_KEY = "gyeol-worldclass-missions-v1";
 const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 
@@ -124,6 +142,7 @@ export function WorldClassHub() {
   const [draftMission, setDraftMission] = useState("");
   const [recentItems, setRecentItems] = useState<HomeSummaryItem[]>([]);
   const [newItemsSinceLastVisit, setNewItemsSinceLastVisit] = useState<HomeSummaryItem[]>([]);
+  const [recap, setRecap] = useState<HomeRecap | null>(null);
   const onboardingVariant = useFirstMessageOnboardingVariant();
 
   useEffect(() => {
@@ -146,10 +165,11 @@ export function WorldClassHub() {
       try {
         const res = await fetch("/api/home/summary", { cache: "no-store" });
         if (!res.ok) return;
-        const json = await res.json().catch(() => ({ recent_items: [] }));
+        const json = await res.json().catch(() => ({ recent_items: [], recap: null }));
         const items = (Array.isArray(json.recent_items) ? json.recent_items : []) as HomeSummaryItem[];
         if (cancelled) return;
         setRecentItems(items);
+        setRecap((json.recap as HomeRecap | null) ?? null);
 
         if (typeof window === "undefined") return;
         const lastSeenAt = window.localStorage.getItem(HOME_LAST_SEEN_KEY);
@@ -164,6 +184,7 @@ export function WorldClassHub() {
         if (!cancelled) {
           setRecentItems([]);
           setNewItemsSinceLastVisit([]);
+          setRecap(null);
         }
       }
     }
@@ -430,6 +451,44 @@ export function WorldClassHub() {
               >
                 앨범 다시 보기
               </Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">리텐션 루프</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {recap?.next_action ?? "오늘의 짧은 체크인으로 다시 루프를 시작할 수 있습니다."}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                streak {recap?.streak.days ?? 0}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">오늘</p>
+                <p className="mt-1 text-sm text-white/82">
+                  메시지 {recap?.today.user_messages ?? 0} · 활동 {recap?.today.activities ?? 0}
+                </p>
+                <p className="mt-1 text-xs text-white/50">
+                  {recap?.streak.today_active ? "오늘의 기록이 이미 쌓였습니다." : "오늘의 기록을 아직 시작하지 않았습니다."}
+                </p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">이번 주</p>
+                <p className="mt-1 text-sm text-white/82">
+                  대화 {recap?.weekly.user_messages ?? 0} · 마일스톤 {recap?.weekly.milestones ?? 0}
+                </p>
+                <p className="mt-1 text-xs text-white/50">아티팩트 {recap?.weekly.artifacts ?? 0}개</p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">주간 하이라이트</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {recap?.weekly.highlight ?? "이번 주의 흐름이 쌓이면 여기서 다시 요약됩니다."}
+                </p>
+              </div>
             </div>
           </div>
 
