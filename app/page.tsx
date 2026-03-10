@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
-import { WorldWeather } from "@/components/world-weather";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -46,7 +45,6 @@ export default function Home() {
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
-  const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "...";
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
 
@@ -73,23 +71,7 @@ export default function Home() {
           isListening={isStreaming}
         />
       </div>
-
-      <WorldWeather />
       <WorldClassHub />
-
-      <div className="fixed top-4 left-4 z-10 flex items-center gap-2 text-xs text-white/70">
-        <span
-          className={`inline-block w-3 h-3 rounded-full ${
-            vitality > 0.7 ? "bg-green-500" : vitality > 0.3 ? "bg-yellow-500" : "bg-red-500"
-          }`}
-          aria-hidden="true"
-        />
-        <span>활력 {Math.round(vitality * 100)}%</span>
-      </div>
-
-      <div className="fixed top-4 right-4 z-10 text-white/80 text-sm">
-        {selfName}
-      </div>
 
       <ChatPanel />
       <BottomNav />
