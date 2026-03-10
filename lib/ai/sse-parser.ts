@@ -1,6 +1,6 @@
 type DeltaChunk = { choices?: Array<{ delta?: { content?: string } }> };
 
-function appendContentFromDataLine(line: string, fullText: string): string {
+export function appendAssistantContentFromDataLine(line: string, fullText: string): string {
   const payload = line.slice(6).trim();
   if (!payload || payload === "[DONE]") return fullText;
   try {
@@ -27,7 +27,7 @@ export async function readSseAssistantText(stream: ReadableStream<Uint8Array>): 
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (line.startsWith("data: ")) {
-        fullText = appendContentFromDataLine(line, fullText);
+        fullText = appendAssistantContentFromDataLine(line, fullText);
       }
     }
   }
@@ -37,7 +37,7 @@ export async function readSseAssistantText(stream: ReadableStream<Uint8Array>): 
   for (const rawLine of tailLines) {
     const line = rawLine.trim();
     if (line.startsWith("data: ")) {
-      fullText = appendContentFromDataLine(line, fullText);
+      fullText = appendAssistantContentFromDataLine(line, fullText);
     }
   }
   return fullText;
