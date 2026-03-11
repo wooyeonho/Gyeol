@@ -56,18 +56,21 @@ export async function upsertSubscriptionFromStripe(
     metadata?: Record<string, unknown>;
   }
 ) {
-  await db.from("user_subscriptions").insert({
-    user_id: params.user_id,
-    plan_tier: params.plan_tier,
-    status: params.status,
-    provider: params.provider,
-    provider_subscription_id: params.provider_subscription_id,
-    provider_customer_id: params.provider_customer_id,
-    current_period_end: params.current_period_end,
-    cancel_at_period_end: params.cancel_at_period_end,
-    metadata: params.metadata ?? {},
-    updated_at: new Date().toISOString(),
-  });
+  await db.from("user_subscriptions").upsert(
+    {
+      user_id: params.user_id,
+      plan_tier: params.plan_tier,
+      status: params.status,
+      provider: params.provider,
+      provider_subscription_id: params.provider_subscription_id,
+      provider_customer_id: params.provider_customer_id,
+      current_period_end: params.current_period_end,
+      cancel_at_period_end: params.cancel_at_period_end,
+      metadata: params.metadata ?? {},
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "provider_subscription_id" }
+  );
 }
 
 export async function getResolvedBillingState(db: DbClient, userId: string) {
