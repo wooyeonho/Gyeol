@@ -35,12 +35,8 @@ describe("/api/research/tasks contract", () => {
         return {
           select: () => ({
             eq: () => ({
-              order: () => ({
-                order: () => ({
-                  limit: async () => ({
-                    data: [{ id: "task-1", title: "정리할 문제", status: "pending", priority: 2 }],
-                  }),
-                }),
+              limit: async () => ({
+                data: [{ id: "task-1", title: "정리할 문제", status: "pending", priority: 2 }],
               }),
             }),
           }),
@@ -57,7 +53,9 @@ describe("/api/research/tasks contract", () => {
   it("cancels a task", async () => {
     const eq = vi.fn().mockResolvedValue({ error: null });
     (createServiceClient as Mock).mockReturnValue({
-      from: (_table: string) => ({
+      from: (table: string) => {
+        expect(table).toBe("research_tasks");
+        return ({
         select: () => ({
           eq: () => ({
             eq: () => ({
@@ -68,7 +66,8 @@ describe("/api/research/tasks contract", () => {
         update: () => ({
           eq,
         }),
-      }),
+      });
+      },
     });
 
     const res = await PATCH(

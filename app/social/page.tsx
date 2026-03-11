@@ -39,7 +39,7 @@ export default function SocialPage() {
       }
     }
     void load();
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (

@@ -152,12 +152,8 @@ describe("/api/home/summary contract", () => {
             select: () => ({
               eq: () => ({
                 eq: () => ({
-                  order: () => ({
-                    order: () => ({
-                      limit: async () => ({
-                        data: [{ id: "rt1", title: "최신 연구 과제", priority: 2, created_at: new Date().toISOString() }],
-                      }),
-                    }),
+                  limit: async () => ({
+                    data: [{ id: "rt1", title: "최신 연구 과제", priority: 2, created_at: new Date().toISOString() }],
                   }),
                 }),
               }),

@@ -9,7 +9,7 @@ vi.mock("@/lib/billing/stripe", () => ({
   getStripeWebhookSecret: vi.fn(() => "whsec_test"),
   getStripe: vi.fn(() => ({
     webhooks: {
-      constructEvent: vi.fn((_payload: string, _sig: string, _secret: string) => ({
+      constructEvent: vi.fn(() => ({
         id: "evt_1",
         type: "customer.subscription.updated",
         data: {

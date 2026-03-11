@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { computeEffectivePriority, sortResearchTasks } from "@/lib/goals/task-utils";
 
 export async function GET() {
   const supabase = await createClient();
@@ -17,13 +18,16 @@ export async function GET() {
 
     const { data } = await service
       .from("research_tasks")
-      .select("id, title, status, priority, result_summary, created_at, completed_at")
+      .select("id, title, status, priority, attempt_count, last_attempted_at, result_summary, created_at, completed_at")
       .eq("agent_id", agentId)
-      .order("priority", { ascending: false })
-      .order("created_at", { ascending: false })
       .limit(20);
 
-    return NextResponse.json({ tasks: data ?? [] });
+    const tasks = sortResearchTasks((data ?? []) as Array<Record<string, unknown>>).map((task) => ({
+      ...task,
+      effective_priority: computeEffectivePriority(task),
+    }));
+
+    return NextResponse.json({ tasks });
   } catch (error) {
     console.error("GET /api/research/tasks error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

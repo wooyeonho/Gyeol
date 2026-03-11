@@ -5,6 +5,7 @@ import { generateTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { sortResearchTasks } from "@/lib/goals/task-utils";
 
 const DEFAULT_FEED_URLS = [
   "https://hnrss.org/frontpage",
@@ -149,15 +150,21 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         continue;
       }
 
-      const { data: pendingTask } = await service
+      const { data: pendingTasks } = await service
         .from("research_tasks")
-        .select("id, title, priority")
+        .select("id, title, priority, attempt_count, last_attempted_at, created_at")
         .eq("agent_id", agentId)
         .eq("status", "pending")
-        .order("priority", { ascending: false })
-        .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle();
+        ;
+      const pendingTask = sortResearchTasks((pendingTasks ?? []) as Array<{
+        id: string;
+        title?: string | null;
+        priority?: number | null;
+        attempt_count?: number | null;
+        last_attempted_at?: string | null;
+        created_at?: string | null;
+      }>)[0];
 
       const taskAwareContent = pendingTask?.title
         ? capText(`연구 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)
@@ -170,6 +177,13 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         embedding: embedding.length > 0 ? embedding : null,
       });
       if (pendingTask?.id) {
+        await service
+          .from("research_tasks")
+          .update({
+            attempt_count: Number((pendingTask as { attempt_count?: number }).attempt_count ?? 0) + 1,
+            last_attempted_at: new Date().toISOString(),
+          })
+          .eq("id", pendingTask.id);
         await service
           .from("research_tasks")
           .update({

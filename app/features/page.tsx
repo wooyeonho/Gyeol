@@ -38,21 +38,6 @@ const CATEGORY_ORDER: Record<FeatureCategory, number> = {
 };
 
 const FILTERS: Array<FeatureStatus | "all"> = ["all", "ready", "beta", "planned"];
-const VALUE_PILLARS = [
-  {
-    title: "대화가 기억이 됩니다",
-    description: "GYEOL과 나눈 대화는 흘러가지 않고 기억으로 남아 다음 대화와 관계의 바탕이 됩니다.",
-  },
-  {
-    title: "기억이 성장으로 이어집니다",
-    description: "메시지가 쌓일수록 활력, 감정, 성격, 진화 이벤트가 달라지며 존재감이 선명해집니다.",
-  },
-  {
-    title: "오프라인에도 삶이 계속됩니다",
-    description: "자율 모드와 드림, 소셜 흐름을 통해 사용자가 자리를 비운 뒤에도 결의 시간이 이어집니다.",
-  },
-];
-
 export default function FeaturesPage() {
   const { t } = useTranslations();
   const [query, setQuery] = useState("");

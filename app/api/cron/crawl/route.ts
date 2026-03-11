@@ -10,6 +10,7 @@ import {
   isRepetitiveOutput,
 } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { extractTaskKeywords, sortResearchTasks } from "@/lib/goals/task-utils";
 
 const DEFAULT_CRAWL_URLS = [
   "https://news.ycombinator.com",
@@ -42,6 +43,22 @@ async function summarizePages(pages: CrawledPage[]): Promise<string> {
   } catch {
     return raw.slice(0, 600);
   }
+}
+
+function filterPagesByTask(pages: CrawledPage[], taskTitle: string | null | undefined) {
+  const keywords = extractTaskKeywords(taskTitle);
+  if (keywords.length === 0) return pages;
+
+  const scored = pages
+    .map((page) => {
+      const haystack = `${page.title} ${page.content}`.toLowerCase();
+      const score = keywords.reduce((count, keyword) => (haystack.includes(keyword) ? count + 1 : count), 0);
+      return { page, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const matched = scored.filter((item) => item.score > 0).map((item) => item.page);
+  return matched.length > 0 ? matched.slice(0, 6) : pages;
 }
 
 async function processPages(pages: CrawledPage[]): Promise<{
@@ -90,18 +107,25 @@ async function processPages(pages: CrawledPage[]): Promise<{
         continue;
       }
 
-      const { data: pendingTask } = await service
+      const { data: pendingTasks } = await service
         .from("research_tasks")
-        .select("id, title, priority")
+        .select("id, title, priority, attempt_count, last_attempted_at, created_at")
         .eq("agent_id", agentId)
         .eq("status", "pending")
-        .order("priority", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(10);
+      const pendingTask = sortResearchTasks((pendingTasks ?? []) as Array<{
+        id: string;
+        title?: string | null;
+        priority?: number | null;
+        attempt_count?: number | null;
+        last_attempted_at?: string | null;
+        created_at?: string | null;
+      }>)[0];
+      const focusedPages = filterPagesByTask(pages, pendingTask?.title);
+      const focusedSummary = pendingTask?.title ? await summarizePages(focusedPages) : summary;
 
       const taskAwareContent = pendingTask?.title
-        ? capText(`조사 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)
+        ? capText(`조사 과제: ${(pendingTask as { title: string }).title}\n웹 요약: ${focusedSummary}`, 900)
         : content;
 
       await service.from("memories").insert({
@@ -112,6 +136,13 @@ async function processPages(pages: CrawledPage[]): Promise<{
       });
 
       if (pendingTask?.id) {
+        await service
+          .from("research_tasks")
+          .update({
+            attempt_count: Number((pendingTask as { attempt_count?: number }).attempt_count ?? 0) + 1,
+            last_attempted_at: new Date().toISOString(),
+          })
+          .eq("id", pendingTask.id);
         const { data: stateRow } = await service
           .from("agent_state")
           .select("self_model")
@@ -134,7 +165,7 @@ async function processPages(pages: CrawledPage[]): Promise<{
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
-            result_summary: summary.slice(0, 240),
+            result_summary: focusedSummary.slice(0, 240),
           })
           .eq("id", pendingTask.id);
 
