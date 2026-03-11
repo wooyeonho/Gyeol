@@ -309,6 +309,15 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="flex justify-between items-center">
+            <span>저전력 모드</span>
+            <button
+              onClick={() => toggleConfig("performance_minimal", !config.performance_minimal)}
+              className={`px-3 py-1 rounded ${config.performance_minimal ? "bg-green-500/30" : "bg-white/10"}`}
+            >
+              {config.performance_minimal ? "ON" : "OFF"}
+            </button>
+          </div>
+          <div className="flex justify-between items-center">
             <span>{t("settings.recapEmail")}</span>
             <button
               onClick={() => toggleRecapEmail(!state?.channels?.email)}

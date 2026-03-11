@@ -49,6 +49,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.dream_enabled === "boolean") config.dream_enabled = body.dream_enabled;
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
+    if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
 
     const updates: Record<string, unknown> = { config };
     const { data: stateRow } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();

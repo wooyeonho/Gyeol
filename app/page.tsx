@@ -45,6 +45,8 @@ export default function Home() {
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
+  const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
+  const performanceMinimal = config.performance_minimal === true;
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
 
@@ -58,18 +60,25 @@ export default function Home() {
         />
       )}
       <div className="fixed inset-0 z-0">
-        <VoidCanvas
-          shape={visual.shape ?? "sphere"}
-          color={visual.color ?? "#a0a0ff"}
-          size={Math.min(50, Math.max(10, visual.size ?? 24))}
-          glow={Math.min(100, Math.max(0, visual.glow ?? 60))}
-          animation={visual.animation ?? "float"}
-          particles={visual.particles ?? 20}
-          background={visual.background ?? "#000000"}
-          vitality={vitality}
-          mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
-          isListening={isStreaming}
-        />
+        {performanceMinimal ? (
+          <div
+            className="fixed inset-0 bg-[radial-gradient(circle_at_top,#1e293b_0%,#020617_55%,#000000_100%)]"
+            aria-hidden="true"
+          />
+        ) : (
+          <VoidCanvas
+            shape={visual.shape ?? "sphere"}
+            color={visual.color ?? "#a0a0ff"}
+            size={Math.min(50, Math.max(10, visual.size ?? 24))}
+            glow={Math.min(100, Math.max(0, visual.glow ?? 60))}
+            animation={visual.animation ?? "float"}
+            particles={visual.particles ?? 20}
+            background={visual.background ?? "#000000"}
+            vitality={vitality}
+            mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
+            isListening={isStreaming}
+          />
+        )}
       </div>
       <WorldClassHub />
 
