@@ -28,6 +28,7 @@ type HomeRecap = {
   goal_loop?: {
     active_goal: string | null;
     latest_task?: string | null;
+    next_action?: string | null;
     pending_count?: number;
     research_focus: string | null;
     updated_at: string | null;
@@ -556,7 +557,7 @@ export function WorldClassHub() {
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-white/45">goal loop</p>
                 <p className="mt-1 text-sm font-medium text-white">
-                  {recap?.goal_loop?.active_goal ?? "아직 장기 목표가 없습니다. 오늘의 목표나 풀고 싶은 문제를 한 줄로 말해보세요."}
+                  {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? "아직 장기 목표가 없습니다. 오늘의 목표나 풀고 싶은 문제를 한 줄로 말해보세요."}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">

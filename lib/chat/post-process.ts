@@ -2,6 +2,7 @@ import type { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
+import { computeEffectivePriority } from "@/lib/goals/task-utils";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -84,8 +85,12 @@ async function applyGoalLoop(params: {
         status: "pending",
         title: signal.researchFocus,
       });
-    } else if ((recentTask as { id?: string; priority?: number } | null)?.id) {
-      const currentPriority = Number((recentTask as { priority?: number }).priority ?? 1);
+    } else if ((recentTask as { id?: string; priority?: number; last_attempted_at?: string | null; attempt_count?: number } | null)?.id) {
+      const currentPriority = computeEffectivePriority(recentTask as {
+        attempt_count?: number | null;
+        last_attempted_at?: string | null;
+        priority?: number | null;
+      });
       if (signal.priority > currentPriority) {
         await params.writer
           .from("research_tasks")

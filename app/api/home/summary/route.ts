@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { buildTaskNextAction, sortResearchTasks } from "@/lib/goals/task-utils";
 
 type SummaryItem = {
   id: string;
@@ -171,11 +172,9 @@ export async function GET() {
           .limit(100),
         service
           .from("research_tasks")
-          .select("id, title, priority, created_at")
+          .select("id, title, priority, attempt_count, last_attempted_at, result_summary, created_at")
           .eq("agent_id", agentId)
           .eq("status", "pending")
-          .order("priority", { ascending: false })
-          .order("created_at", { ascending: false })
           .limit(5),
       ]);
 
@@ -225,6 +224,18 @@ export async function GET() {
       ...recentArtifactRows.map((item) => item.created_at).filter(Boolean),
     ] as string[];
     const { streakDays, todayActive } = countStreakDays(allActivityDates);
+    const sortedTasks = sortResearchTasks(
+      ((pendingTasks ?? []) as Array<{
+        attempt_count?: number | null;
+        created_at?: string | null;
+        id: string;
+        last_attempted_at?: string | null;
+        priority?: number | null;
+        result_summary?: string | null;
+        title?: string | null;
+      }>)
+    );
+    const topTask = sortedTasks[0] ?? null;
 
     const todayStartIso = todayStart.toISOString();
     const todayUserMessages = recentChats.filter(
@@ -257,9 +268,10 @@ export async function GET() {
       recap: {
         goal_loop: {
           active_goal: typeof config.active_goal === "string" ? config.active_goal : null,
-          pending_count: Array.isArray(pendingTasks) ? pendingTasks.length : 0,
+          next_action: buildTaskNextAction(topTask, typeof config.active_goal === "string" ? config.active_goal : null),
+          pending_count: sortedTasks.length,
           research_focus: typeof config.research_focus === "string" ? config.research_focus : null,
-          latest_task: Array.isArray(pendingTasks) ? ((pendingTasks[0] as { title?: string } | undefined)?.title ?? null) : null,
+          latest_task: topTask?.title ?? null,
           updated_at: typeof config.goal_updated_at === "string" ? config.goal_updated_at : null,
         },
         next_action: billing.entitlements.advanced_recaps

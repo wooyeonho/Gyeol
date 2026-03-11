@@ -444,7 +444,9 @@ create table if not exists research_tasks (
   source text not null default 'chat',
   status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'cancelled')),
   priority int not null default 1,
+  attempt_count int not null default 0,
   cancellation_reason text,
+  last_attempted_at timestamptz,
   result_summary text,
   created_at timestamptz not null default now(),
   completed_at timestamptz
