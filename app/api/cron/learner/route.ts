@@ -151,9 +151,10 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
 
       const { data: pendingTask } = await service
         .from("research_tasks")
-        .select("id, title")
+        .select("id, title, priority")
         .eq("agent_id", agentId)
         .eq("status", "pending")
+        .order("priority", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

@@ -90,12 +90,60 @@ async function processPages(pages: CrawledPage[]): Promise<{
         continue;
       }
 
+      const { data: pendingTask } = await service
+        .from("research_tasks")
+        .select("id, title, priority")
+        .eq("agent_id", agentId)
+        .eq("status", "pending")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const taskAwareContent = pendingTask?.title
+        ? capText(`조사 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)
+        : content;
+
       await service.from("memories").insert({
         agent_id: agentId,
         type: "web_crawl",
-        content,
+        content: taskAwareContent,
         embedding: embedding.length > 0 ? embedding : null,
       });
+
+      if (pendingTask?.id) {
+        const { data: stateRow } = await service
+          .from("agent_state")
+          .select("self_model")
+          .eq("agent_id", agentId)
+          .single();
+        const selfModel = (stateRow as { self_model?: { observations?: string[] } } | null)?.self_model ?? {};
+        const observations = Array.isArray(selfModel.observations) ? selfModel.observations : [];
+        await service
+          .from("agent_state")
+          .update({
+            self_model: {
+              ...selfModel,
+              observations: [...observations.slice(-7), `Researched and synthesized: ${(pendingTask as { title: string }).title}`],
+            },
+          })
+          .eq("agent_id", agentId);
+
+        await service
+          .from("research_tasks")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+            result_summary: summary.slice(0, 240),
+          })
+          .eq("id", pendingTask.id);
+
+        await service.from("autonomous_logs").insert({
+          agent_id: agentId,
+          action_type: "research_task_completed",
+          summary: `Research task completed via crawl: ${(pendingTask as { title: string }).title}`,
+        });
+      }
       stored++;
     } catch (err) {
       console.error("[Crawl] memory insert", agentId, err);
