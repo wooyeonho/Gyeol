@@ -6,6 +6,7 @@ type AgentStatePrompt = {
   fragments?: string[];
   config?: {
     active_goal?: string;
+    long_term_goal?: string;
     research_focus?: string;
     tone?: string;
     vitality_stage?: string;
@@ -18,7 +19,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[] };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
 };
@@ -95,6 +96,8 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     parts.push("너의 자기 관찰:");
     observations.forEach((o) => parts.push(`- ${o}`));
   }
+  if (s.self_model?.identity_statement) parts.push(`너는 스스로를 이렇게 느껴: ${s.self_model.identity_statement}`);
+  if (s.self_model?.current_role) parts.push(`최근 스스로 붙잡은 역할: ${s.self_model.current_role}`);
 
   // 13. pending_question
   if (s.config?.pending_question) parts.push(`자연스럽게 이 질문을 꺼내봐: ${s.config.pending_question}`);
@@ -104,6 +107,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
 
   // 15. active_goal / research_focus
   if (s.config?.active_goal) parts.push(`지금 네가 함께 붙잡고 있는 목표: ${s.config.active_goal}`);
+  if (s.config?.long_term_goal) parts.push(`더 길게 이어지는 방향성: ${s.config.long_term_goal}`);
   if (s.config?.research_focus) parts.push(`추가로 조사하거나 정리해야 할 포인트: ${s.config.research_focus}`);
 
   // 16. role

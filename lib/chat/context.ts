@@ -112,6 +112,7 @@ export async function buildChatPromptContext(params: {
     ...agentState,
     config: {
       active_goal: typeof promptConfig.active_goal === "string" ? promptConfig.active_goal : undefined,
+      long_term_goal: typeof promptConfig.long_term_goal === "string" ? promptConfig.long_term_goal : undefined,
       research_focus: typeof promptConfig.research_focus === "string" ? promptConfig.research_focus : undefined,
       tone: typeof promptConfig.tone === "string" ? promptConfig.tone : undefined,
       vitality_stage: typeof promptConfig.vitality_stage === "string" ? promptConfig.vitality_stage : undefined,

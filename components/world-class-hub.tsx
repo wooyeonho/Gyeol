@@ -27,6 +27,7 @@ type HomeSummaryItem = {
 type HomeRecap = {
   goal_loop?: {
     active_goal: string | null;
+    long_term_goal?: string | null;
     latest_task?: string | null;
     next_action?: string | null;
     pending_count?: number;
@@ -555,24 +556,32 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">goal loop</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "goal loop" : "goal loop"}</p>
                 <p className="mt-1 text-sm font-medium text-white">
                   {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopSummaryEmpty")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-                {recap?.goal_loop?.pending_count ?? 0} tasks
+                {locale === "en"
+                  ? `${recap?.goal_loop?.pending_count ?? 0} tasks`
+                  : `대기 태스크 ${recap?.goal_loop?.pending_count ?? 0}개`}
               </span>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">현재 목표</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current goal" : "현재 목표"}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">추가 조사 포인트</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {recap?.goal_loop?.long_term_goal ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
+                </p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.latest_task ??
                     recap?.goal_loop?.research_focus ??

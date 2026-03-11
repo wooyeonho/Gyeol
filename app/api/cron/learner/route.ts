@@ -229,6 +229,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         const nextConfig = {
           ...stateConfig,
           active_goal: typeof plan?.active_goal === "string" ? plan.active_goal : stateConfig.active_goal,
+          long_term_goal: typeof plan?.long_term_goal === "string" ? plan.long_term_goal : stateConfig.long_term_goal,
           research_focus: typeof plan?.next_task === "string" ? plan.next_task : stateConfig.research_focus,
           goal_updated_at: new Date().toISOString(),
         };
@@ -244,6 +245,9 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
             self_model: {
               ...selfModel,
               current_role: typeof plan?.role_shift === "string" ? plan.role_shift : (selfModel as { current_role?: string }).current_role,
+              identity_statement: typeof plan?.identity_statement === "string"
+                ? plan.identity_statement
+                : (selfModel as { identity_statement?: string }).identity_statement,
               observations: typeof plan?.self_observation === "string"
                 ? [...observations.slice(-7), plan.self_observation]
                 : observations,

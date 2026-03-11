@@ -268,6 +268,7 @@ export async function GET() {
       recap: {
         goal_loop: {
           active_goal: typeof config.active_goal === "string" ? config.active_goal : null,
+          long_term_goal: typeof config.long_term_goal === "string" ? config.long_term_goal : null,
           next_action: buildTaskNextAction(topTask, typeof config.active_goal === "string" ? config.active_goal : null),
           pending_count: sortedTasks.length,
           research_focus: typeof config.research_focus === "string" ? config.research_focus : null,

@@ -72,6 +72,8 @@
 ### 운영 점검 문서
 
 - 비개발자용 SLO/장애대응 가이드: `OPS_SLO_RUNBOOK.md`
+- QA 인수인계서: `docs/QA_HANDOFF.md`
+- 환경변수/시크릿 정리: `docs/ENV_AND_SECRETS.md`
 
 ## Cost
 

@@ -2,6 +2,8 @@ import { generateJSON } from "@/lib/ai/router";
 
 type NextStepPlan = {
   active_goal?: string;
+  identity_statement?: string;
+  long_term_goal?: string;
   next_task?: string;
   priority?: 1 | 2 | 3;
   role_shift?: string;
@@ -22,6 +24,8 @@ Result summary: ${input.resultSummary}
 Return JSON with optional keys:
 {
   "active_goal": "refined long-term goal in Korean",
+  "long_term_goal": "broader long-term direction in Korean",
+  "identity_statement": "one sentence of who you are becoming in Korean",
   "next_task": "next concrete task in Korean",
   "priority": 1|2|3,
   "role_shift": "a short Korean role/identity shift statement",

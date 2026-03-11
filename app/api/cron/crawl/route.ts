@@ -12,6 +12,7 @@ import {
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractTaskKeywords, sortResearchTasks } from "@/lib/goals/task-utils";
 import { planNextResearchStep } from "@/lib/goals/next-step-planner";
+import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
 
 type PendingResearchTask = {
   id: string;
@@ -83,7 +84,7 @@ function filterPagesByTask(pages: CrawledPage[], taskTitle: string | null | unde
   return matched.length > 0 ? matched.slice(0, 6) : pages;
 }
 
-async function processPages(pages: CrawledPage[]): Promise<{
+async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promise<{
   stored: number;
   agents_updated: number;
 }> {
@@ -136,7 +137,19 @@ async function processPages(pages: CrawledPage[]): Promise<{
         .eq("status", "pending")
         .limit(10);
       const pendingTask = selectCrawlTask((pendingTasks ?? []) as PendingResearchTask[]);
-      const focusedPages = filterPagesByTask(pages, pendingTask?.title);
+      let agentPages = pages;
+      if (pendingTask?.title) {
+        const candidateUrls = getSeedUrlsForTask(pendingTask.title, fallbackUrls).slice(0, 2);
+        const taskPages: CrawledPage[] = [];
+        for (const url of candidateUrls) {
+          try {
+            const crawled = await crawlSite(url, 4, 1);
+            taskPages.push(...crawled);
+          } catch {}
+        }
+        if (taskPages.length > 0) agentPages = taskPages;
+      }
+      const focusedPages = filterPagesByTask(agentPages, pendingTask?.title);
       const focusedSummary = pendingTask?.title ? await summarizePages(focusedPages) : summary;
 
       const taskAwareContent = pendingTask?.title
@@ -197,12 +210,16 @@ async function processPages(pages: CrawledPage[]): Promise<{
             config: {
               ...stateConfig,
               active_goal: typeof plan?.active_goal === "string" ? plan.active_goal : stateConfig.active_goal,
+              long_term_goal: typeof plan?.long_term_goal === "string" ? plan.long_term_goal : stateConfig.long_term_goal,
               research_focus: typeof plan?.next_task === "string" ? plan.next_task : stateConfig.research_focus,
               goal_updated_at: new Date().toISOString(),
             },
             self_model: {
               ...selfModel,
               current_role: typeof plan?.role_shift === "string" ? plan.role_shift : (selfModel as { current_role?: string }).current_role,
+              identity_statement: typeof plan?.identity_statement === "string"
+                ? plan.identity_statement
+                : (selfModel as { identity_statement?: string }).identity_statement,
               observations: typeof plan?.self_observation === "string"
                 ? [...observations.slice(-6), `Researched and synthesized: ${(pendingTask as { title: string }).title}`, plan.self_observation]
                 : [...observations.slice(-7), `Researched and synthesized: ${(pendingTask as { title: string }).title}`],
@@ -271,7 +288,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const result = await processPages(allPages);
+    const result = await processPages(allPages, urls);
 
     return new Response(
       JSON.stringify({
@@ -344,7 +361,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await processPages(pages);
+    const fallbackUrls = body?.urls?.filter((item): item is string => typeof item === "string") ?? getCrawlUrls();
+    const result = await processPages(pages, fallbackUrls);
 
     return new Response(
       JSON.stringify({
