@@ -437,6 +437,20 @@ create index if not exists team_members_team_id_idx on team_members(team_id, cre
 create index if not exists team_members_user_id_idx on team_members(user_id, created_at desc);
 create index if not exists team_subscriptions_team_id_idx on team_subscriptions(team_id, created_at desc);
 
+create table if not exists research_tasks (
+  id uuid primary key default gen_random_uuid(),
+  agent_id uuid not null references agents(id) on delete cascade,
+  title text not null,
+  source text not null default 'chat',
+  status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'cancelled')),
+  result_summary text,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create index if not exists research_tasks_agent_id_created_idx on research_tasks(agent_id, created_at desc);
+create index if not exists research_tasks_agent_id_status_idx on research_tasks(agent_id, status, created_at desc);
+
 -- ============================================================
 -- RATE LIMITS
 -- ============================================================
@@ -526,6 +540,7 @@ alter table user_subscriptions enable row level security;
 alter table teams enable row level security;
 alter table team_members enable row level security;
 alter table team_subscriptions enable row level security;
+alter table research_tasks enable row level security;
 alter table user_connections enable row level security;
 alter table breeding_records enable row level security;
 alter table adoption_board enable row level security;
@@ -588,6 +603,11 @@ create policy "team_subscriptions: team access" on team_subscriptions
       union
       select team_id from team_members where user_id = auth.uid()
     )
+  );
+
+create policy "research_tasks: owner access" on research_tasks
+  for all using (
+    agent_id in (select id from agents where user_id = auth.uid())
   );
 
 -- Public tables (no RLS needed): world_state, tribes, market_items, war_events
