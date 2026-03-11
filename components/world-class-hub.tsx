@@ -51,35 +51,70 @@ type HomeRecap = {
 const STORAGE_KEY = "gyeol-worldclass-missions-v1";
 const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 
-const FIRST_SESSION_VARIANTS = {
-  identity: {
-    cta: "첫 인사 시작하기",
-    description: "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요.",
-    heading: "첫 대화로 결의 첫 기억을 만들어보세요",
-    prompts: [
-      "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
-      "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
-      "우리 관계를 시작하는 첫 질문 3개를 해줘.",
-    ],
-  },
-  productivity: {
-    cta: "오늘의 문제 정리하기",
-    description: "지금 가장 신경 쓰이는 문제 하나만 던져보세요. 결이 바로 오늘의 초점과 실행 흐름을 정리해줄 수 있습니다.",
-    heading: "결에게 오늘의 문제를 먼저 맡겨보세요",
-    prompts: [
-      "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
-      "지금 해야 할 일의 우선순위를 3개만 잡아줘.",
-      "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
-    ],
-  },
-} as const;
+function getFirstSessionVariants(locale: "ko" | "en") {
+  if (locale === "en") {
+    return {
+      identity: {
+        cta: "Start with a greeting",
+        description: "You do not need a long introduction. A single line about yourself or one suggested question is enough to begin the relationship.",
+        heading: "Create Gyeol’s first memory with the first conversation",
+        prompts: [
+          "Ask how Gyeol should remember me from today.",
+          "Help me write one sentence that describes who I am right now.",
+          "Ask me three first questions so we can get to know each other.",
+        ],
+      },
+      productivity: {
+        cta: "Sort today’s problem",
+        description: "Drop the one thing that feels blocked right now. Gyeol can shape the first focus and execution flow from there.",
+        heading: "Let Gyeol take the first problem of today",
+        prompts: [
+          "Help me define the single problem I should solve first today.",
+          "Set my top three priorities right now.",
+          "Build a 15-minute action plan from my current state.",
+        ],
+      },
+    } as const;
+  }
+  return {
+    identity: {
+      cta: "첫 인사 시작하기",
+      description: "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요.",
+      heading: "첫 대화로 결의 첫 기억을 만들어보세요",
+      prompts: [
+        "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
+        "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
+        "우리 관계를 시작하는 첫 질문 3개를 해줘.",
+      ],
+    },
+    productivity: {
+      cta: "오늘의 문제 정리하기",
+      description: "지금 가장 신경 쓰이는 문제 하나만 던져보세요. 결이 바로 오늘의 초점과 실행 흐름을 정리해줄 수 있습니다.",
+      heading: "결에게 오늘의 문제를 먼저 맡겨보세요",
+      prompts: [
+        "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
+        "지금 해야 할 일의 우선순위를 3개만 잡아줘.",
+        "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
+      ],
+    },
+  } as const;
+}
 
-const RETURNING_PROMPTS = [
-  "오늘 내 성장 포인트 3개만 뽑아줘.",
-  "집중력을 높이는 20분 루틴을 짜줘.",
-  "지금 기분에 맞는 음악/활동을 추천해줘.",
-  "이번 주 목표를 실행 가능한 태스크로 쪼개줘.",
-];
+function getReturningPrompts(locale: "ko" | "en") {
+  return locale === "en"
+    ? [
+        "Pick my top three growth points for today.",
+        "Design a 20-minute routine to improve focus.",
+        "Recommend music or activities that match how I feel now.",
+        "Break this week’s goal into executable tasks.",
+      ]
+    : [
+        "오늘 내 성장 포인트 3개만 뽑아줘.",
+        "집중력을 높이는 20분 루틴을 짜줘.",
+        "지금 기분에 맞는 음악/활동을 추천해줘.",
+        "이번 주 목표를 실행 가능한 태스크로 쪼개줘.",
+      ];
+}
 
 const QUICK_LINKS = [
   { href: "/activity", labelKey: "home.quickLinks.activity" },
@@ -126,7 +161,7 @@ function nextEvolutionHint(totalMessages: number) {
 }
 
 export function WorldClassHub() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
   const { messages, isStreaming, sendMessage } = useChatStore();
@@ -216,15 +251,15 @@ export function WorldClassHub() {
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
-  const mood = typeof agentState?.mood === "string" ? agentState.mood : "아직 감정 기록 없음";
+  const mood = typeof agentState?.mood === "string" ? agentState.mood : locale === "en" ? "No mood recorded yet" : "아직 감정 기록 없음";
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
   const weather = typeof worldState?.weather?.name === "string" ? worldState.weather.name : "Void";
   const hour = now.getHours();
   const sessionMessages = Math.max(totalMessages, userMessages);
   const isFirstSession = sessionMessages === 0;
-  const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
-  const quickPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
+  const firstSessionConfig = getFirstSessionVariants(locale)[onboardingVariant];
+  const quickPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
   const primaryPrompt = quickPrompts[0];
   const summary = growthSummary(sessionMessages);
   const evolutionHint = nextEvolutionHint(sessionMessages);

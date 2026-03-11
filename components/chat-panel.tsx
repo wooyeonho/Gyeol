@@ -7,37 +7,71 @@ import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
 
-const FIRST_SESSION_VARIANTS = {
-  identity: {
-    heading: "첫 대화는 짧아도 충분합니다",
-    helper: "자기소개를 길게 할 필요는 없습니다. 지금의 기분, 오늘의 목표, 혹은 한 줄의 인사만 보내도 결은 그 순간을 첫 기억으로 남깁니다.",
-    placeholder: "첫 인사나 지금의 기분을 한 줄로 남겨보세요",
-    prompts: [
-      "안녕, 오늘의 나를 어떻게 기억하면 좋을지 물어봐줘.",
-      "지금의 나를 설명하는 첫 문장을 같이 만들자.",
-      "우리가 서로를 알아가기 위한 첫 질문을 해줘.",
-    ],
-  },
-  productivity: {
-    heading: "오늘의 문제를 바로 정리해도 좋습니다",
-    helper: "긴 설명 없이 지금 가장 막히는 일 하나만 적어도 됩니다. 결은 바로 실행 가능한 첫 정리를 도와줄 수 있습니다.",
-    placeholder: "지금 가장 먼저 정리해야 할 문제를 적어보세요",
-    prompts: [
-      "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
-      "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
-      "지금 우선순위 3개를 빠르게 정해줘.",
-    ],
-  },
-} as const;
+function getFirstSessionVariants(locale: "ko" | "en") {
+  if (locale === "en") {
+    return {
+      identity: {
+        heading: "A short first message is enough",
+        helper: "You do not need a long introduction. A single line about how you feel or what matters today is enough for Gyeol to store its first memory.",
+        placeholder: "Leave a short greeting or your current mood",
+        prompts: [
+          "Say hello and ask how Gyeol should remember me from today.",
+          "Help me write one sentence that describes who I am right now.",
+          "Ask me three first questions so we can get to know each other.",
+        ],
+      },
+      productivity: {
+        heading: "You can start by naming today’s problem",
+        helper: "You do not need a long explanation. Drop the one thing that feels blocked right now and let Gyeol help you shape the first action.",
+        placeholder: "Write the one problem you want to sort out first",
+        prompts: [
+          "Help me define the single problem I should solve first today.",
+          "Make a 15-minute action plan from my current state.",
+          "Set my top three priorities right now.",
+        ],
+      },
+    } as const;
+  }
+  return {
+    identity: {
+      heading: "첫 대화는 짧아도 충분합니다",
+      helper: "자기소개를 길게 할 필요는 없습니다. 지금의 기분, 오늘의 목표, 혹은 한 줄의 인사만 보내도 결은 그 순간을 첫 기억으로 남깁니다.",
+      placeholder: "첫 인사나 지금의 기분을 한 줄로 남겨보세요",
+      prompts: [
+        "안녕, 오늘의 나를 어떻게 기억하면 좋을지 물어봐줘.",
+        "지금의 나를 설명하는 첫 문장을 같이 만들자.",
+        "우리가 서로를 알아가기 위한 첫 질문을 해줘.",
+      ],
+    },
+    productivity: {
+      heading: "오늘의 문제를 바로 정리해도 좋습니다",
+      helper: "긴 설명 없이 지금 가장 막히는 일 하나만 적어도 됩니다. 결은 바로 실행 가능한 첫 정리를 도와줄 수 있습니다.",
+      placeholder: "지금 가장 먼저 정리해야 할 문제를 적어보세요",
+      prompts: [
+        "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
+        "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
+        "지금 우선순위 3개를 빠르게 정해줘.",
+      ],
+    },
+  } as const;
+}
 
-const RETURNING_PROMPTS = [
-  "오늘 내가 집중해야 할 1가지만 알려줘.",
-  "기분이 좋아지는 루틴을 3개 추천해줘.",
-  "지금 상태를 바탕으로 실행 계획을 만들어줘.",
-];
+function getReturningPrompts(locale: "ko" | "en") {
+  return locale === "en"
+    ? [
+        "Tell me the one thing I should focus on today.",
+        "Recommend three routines that would improve my mood.",
+        "Build an action plan from how I feel right now.",
+      ]
+    : [
+        "오늘 내가 집중해야 할 1가지만 알려줘.",
+        "기분이 좋아지는 루틴을 3개 추천해줘.",
+        "지금 상태를 바탕으로 실행 계획을 만들어줘.",
+      ];
+}
 
 export function ChatPanel() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const { messages, isStreaming, sendMessage } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
   const onboardingVariant = useFirstMessageOnboardingVariant();
@@ -47,8 +81,8 @@ export function ChatPanel() {
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const isFirstSession = totalMessages === 0 && messages.length === 0;
-  const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
-  const starterPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
+  const firstSessionConfig = getFirstSessionVariants(locale)[onboardingVariant];
+  const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
   const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");
 
   useEffect(() => {

@@ -16,8 +16,8 @@ const requiredEnv = [
 const stripeEnv = [
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_PRICE_PRO_MONTHLY",
-  "STRIPE_PRICE_PREMIUM_MONTHLY",
+  "STRIPE_PRICE_PRO",
+  "STRIPE_PRICE_PREMIUM",
 ];
 
 function fail(message) {

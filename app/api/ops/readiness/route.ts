@@ -130,8 +130,8 @@ export async function GET(request?: NextRequest) {
     const stripeConfigured = Boolean(
       process.env.STRIPE_SECRET_KEY &&
       process.env.STRIPE_WEBHOOK_SECRET &&
-      process.env.STRIPE_PRICE_PRO_MONTHLY &&
-      process.env.STRIPE_PRICE_PREMIUM_MONTHLY
+      process.env.STRIPE_PRICE_PRO &&
+      process.env.STRIPE_PRICE_PREMIUM
     );
     if (!stripeConfigured) {
       recommendations.push("Stripe 실결제가 아직 구성되지 않았습니다.");
