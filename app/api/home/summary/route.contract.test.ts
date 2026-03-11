@@ -147,6 +147,21 @@ describe("/api/home/summary contract", () => {
             }),
           };
         }
+        if (table === "research_tasks") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  order: () => ({
+                    limit: async () => ({
+                      data: [{ id: "rt1", title: "최신 연구 과제", created_at: new Date().toISOString() }],
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
         throw new Error(`unexpected table: ${table}`);
       },
     });

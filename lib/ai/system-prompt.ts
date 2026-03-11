@@ -5,6 +5,8 @@ type AgentStatePrompt = {
   system_prompt?: { base?: string; fragments?: string[] };
   fragments?: string[];
   config?: {
+    active_goal?: string;
+    research_focus?: string;
     tone?: string;
     vitality_stage?: string;
     pending_question?: string;
@@ -100,10 +102,14 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 14. pending_concern
   if (s.config?.pending_concern) parts.push(`걱정되는 게 있어: ${s.config.pending_concern}`);
 
-  // 15. role
+  // 15. active_goal / research_focus
+  if (s.config?.active_goal) parts.push(`지금 네가 함께 붙잡고 있는 목표: ${s.config.active_goal}`);
+  if (s.config?.research_focus) parts.push(`추가로 조사하거나 정리해야 할 포인트: ${s.config.research_focus}`);
+
+  // 16. role
   if (s.role) parts.push(`너는 ${s.role} 역할이야.`);
 
-  // 16. lexicon (social.md - learned words from social encounters)
+  // 17. lexicon (social.md - learned words from social encounters)
   const lexicon = s.lexicon as { entries?: { word: string; meaning?: string }[] } | undefined;
   if (Array.isArray(lexicon?.entries) && lexicon.entries.length > 0) {
     const words = lexicon.entries.slice(0, 10).map((e) => `${e.word}${e.meaning ? `: ${e.meaning}` : ""}`).join("; ");

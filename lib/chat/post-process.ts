@@ -65,6 +65,26 @@ async function applyGoalLoop(params: {
       : `Active goal captured: ${signal.activeGoal}`,
   });
 
+  if (signal.researchFocus) {
+    const { data: recentTask } = await params.writer
+      .from("research_tasks")
+      .select("title")
+      .eq("agent_id", params.agentId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if ((recentTask as { title?: string } | null)?.title !== signal.researchFocus) {
+      await params.writer.from("research_tasks").insert({
+        agent_id: params.agentId,
+        source: "chat",
+        status: "pending",
+        title: signal.researchFocus,
+      });
+    }
+  }
+
   return signal;
 }
 

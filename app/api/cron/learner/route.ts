@@ -149,12 +149,40 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         continue;
       }
 
+      const { data: pendingTask } = await service
+        .from("research_tasks")
+        .select("id, title")
+        .eq("agent_id", agentId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const taskAwareContent = pendingTask?.title
+        ? capText(`연구 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)
+        : content;
+
       await service.from("memories").insert({
         agent_id: agentId,
         type: "rss_learner",
-        content,
+        content: taskAwareContent,
         embedding: embedding.length > 0 ? embedding : null,
       });
+      if (pendingTask?.id) {
+        await service
+          .from("research_tasks")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+            result_summary: summary.slice(0, 240),
+          })
+          .eq("id", pendingTask.id);
+        await service.from("autonomous_logs").insert({
+          agent_id: agentId,
+          action_type: "research_task_completed",
+          summary: `Research task completed: ${(pendingTask as { title: string }).title}`,
+        });
+      }
       stored++;
     } catch (e) {
       console.error("learner memory insert", agentId, e);

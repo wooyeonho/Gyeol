@@ -118,6 +118,7 @@ export async function GET() {
       { data: recentChatsForRecap },
       { data: recentLogsForRecap },
       { data: recentArtifactsForRecap },
+      { data: pendingTasks },
     ] =
       await Promise.all([
         service.from("agent_state").select("total_messages, gen_level, mood, vitality, config").eq("agent_id", agentId).single(),
@@ -168,6 +169,13 @@ export async function GET() {
           .gte("created_at", monthStartIso)
           .order("created_at", { ascending: false })
           .limit(100),
+        service
+          .from("research_tasks")
+          .select("id, title, created_at")
+          .eq("agent_id", agentId)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(5),
       ]);
 
     const activityItems: SummaryItem[] = [
@@ -248,7 +256,9 @@ export async function GET() {
       recap: {
         goal_loop: {
           active_goal: typeof config.active_goal === "string" ? config.active_goal : null,
+          pending_count: Array.isArray(pendingTasks) ? pendingTasks.length : 0,
           research_focus: typeof config.research_focus === "string" ? config.research_focus : null,
+          latest_task: Array.isArray(pendingTasks) ? ((pendingTasks[0] as { title?: string } | undefined)?.title ?? null) : null,
           updated_at: typeof config.goal_updated_at === "string" ? config.goal_updated_at : null,
         },
         next_action: billing.entitlements.advanced_recaps

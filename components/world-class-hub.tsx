@@ -27,6 +27,8 @@ type HomeSummaryItem = {
 type HomeRecap = {
   goal_loop?: {
     active_goal: string | null;
+    latest_task?: string | null;
+    pending_count?: number;
     research_focus: string | null;
     updated_at: string | null;
   };
@@ -558,7 +560,7 @@ export function WorldClassHub() {
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-                focus
+                {recap?.goal_loop?.pending_count ?? 0} tasks
               </span>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -571,7 +573,9 @@ export function WorldClassHub() {
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">추가 조사 포인트</p>
                 <p className="mt-1 text-sm text-white/82">
-                  {recap?.goal_loop?.research_focus ?? "조사/비교/알아봐 같은 표현을 쓰면 research focus가 잡힙니다."}
+                  {recap?.goal_loop?.latest_task ??
+                    recap?.goal_loop?.research_focus ??
+                    "조사/비교/알아봐 같은 표현을 쓰면 research focus가 잡힙니다."}
                 </p>
               </div>
             </div>
