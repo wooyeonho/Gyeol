@@ -226,6 +226,22 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        if (typeof baseConfig.research_focus === "string") {
+          const { data: pendingTasks } = await db
+            .from("research_tasks")
+            .select("id, title, priority")
+            .eq("agent_id", agentId)
+            .eq("status", "pending")
+            .limit(5);
+          const matchingTask = (pendingTasks ?? []).find((task) => (task.title ?? "").includes(String(baseConfig.research_focus)));
+          if (matchingTask?.id) {
+            await db
+              .from("research_tasks")
+              .update({ priority: Math.max(Number(matchingTask.priority ?? 1), autonomyPlan?.task_priority ?? 2) })
+              .eq("id", matchingTask.id);
+          }
+        }
+
         try { const { processVitality } = await import("@/lib/evolution/vitality"); await processVitality(agentId); } catch {}
         try { const { processScar } = await import("@/lib/evolution/scars"); await processScar(agentId); } catch {}
         try { const { checkSelfNaming } = await import("@/lib/personality/naming"); await checkSelfNaming(agentId); } catch {}

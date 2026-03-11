@@ -6,6 +6,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { sortResearchTasks } from "@/lib/goals/task-utils";
+import { planNextResearchStep } from "@/lib/goals/next-step-planner";
 
 type PendingResearchTask = {
   id: string;
@@ -211,6 +212,58 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
           action_type: "research_task_completed",
           summary: `Research task completed: ${(pendingTask as { title: string }).title}`,
         });
+
+        const { data: stateRow } = await service
+          .from("agent_state")
+          .select("config, self_model")
+          .eq("agent_id", agentId)
+          .single();
+        const stateConfig = ((stateRow as { config?: Record<string, unknown> } | null)?.config ?? {}) as Record<string, unknown>;
+        const selfModel = ((stateRow as { self_model?: Record<string, unknown> } | null)?.self_model ?? {}) as Record<string, unknown>;
+        const plan = await planNextResearchStep({
+          activeGoal: typeof stateConfig.active_goal === "string" ? stateConfig.active_goal : null,
+          completedTask: (pendingTask as { title: string }).title,
+          resultSummary: summary,
+        });
+
+        const nextConfig = {
+          ...stateConfig,
+          active_goal: typeof plan?.active_goal === "string" ? plan.active_goal : stateConfig.active_goal,
+          research_focus: typeof plan?.next_task === "string" ? plan.next_task : stateConfig.research_focus,
+          goal_updated_at: new Date().toISOString(),
+        };
+        const observations = Array.isArray(selfModel.observations) ? selfModel.observations : [];
+        const roleHistory = Array.isArray((selfModel as { role_history?: string[] }).role_history)
+          ? ((selfModel as { role_history?: string[] }).role_history as string[])
+          : [];
+
+        await service
+          .from("agent_state")
+          .update({
+            config: nextConfig,
+            self_model: {
+              ...selfModel,
+              current_role: typeof plan?.role_shift === "string" ? plan.role_shift : (selfModel as { current_role?: string }).current_role,
+              observations: typeof plan?.self_observation === "string"
+                ? [...observations.slice(-7), plan.self_observation]
+                : observations,
+              role_history: typeof plan?.role_shift === "string"
+                ? [...roleHistory.slice(-4), plan.role_shift]
+                : roleHistory,
+            },
+          })
+          .eq("agent_id", agentId);
+
+        if (typeof plan?.next_task === "string") {
+          await service.from("research_tasks").insert({
+            agent_id: agentId,
+            parent_task_id: pendingTask.id,
+            priority: plan.priority ?? 2,
+            source: "planner",
+            status: "pending",
+            title: plan.next_task,
+          });
+        }
       }
       stored++;
     } catch (e) {

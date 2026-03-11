@@ -440,6 +440,7 @@ create index if not exists team_subscriptions_team_id_idx on team_subscriptions(
 create table if not exists research_tasks (
   id uuid primary key default gen_random_uuid(),
   agent_id uuid not null references agents(id) on delete cascade,
+  parent_task_id uuid references research_tasks(id) on delete set null,
   title text not null,
   source text not null default 'chat',
   status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'cancelled')),
@@ -455,6 +456,7 @@ create table if not exists research_tasks (
 create index if not exists research_tasks_agent_id_created_idx on research_tasks(agent_id, created_at desc);
 create index if not exists research_tasks_agent_id_status_idx on research_tasks(agent_id, status, created_at desc);
 create index if not exists research_tasks_agent_id_priority_idx on research_tasks(agent_id, status, priority desc, created_at desc);
+create index if not exists research_tasks_parent_task_id_idx on research_tasks(parent_task_id, created_at desc);
 
 -- ============================================================
 -- RATE LIMITS
