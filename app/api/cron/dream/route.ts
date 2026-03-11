@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       try {
         const agentId = agent.id;
         const { data: state } = await db.from("agent_state").select("*").eq("agent_id", agentId).single();
-        if (!state || !state.config?.dream_enabled) continue;
+        if (!state || state.config?.dream_enabled === false) continue;
 
         const { data: lastChat } = await db.from("chats").select("created_at").eq("agent_id", agentId).eq("role", "user").order("created_at", { ascending: false }).limit(1).single();
         const hoursSince = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;

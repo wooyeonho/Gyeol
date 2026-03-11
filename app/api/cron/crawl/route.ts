@@ -12,6 +12,27 @@ import {
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractTaskKeywords, sortResearchTasks } from "@/lib/goals/task-utils";
 
+type PendingResearchTask = {
+  id: string;
+  title?: string | null;
+  priority?: number | null;
+  source?: string | null;
+  attempt_count?: number | null;
+  last_attempted_at?: string | null;
+  created_at?: string | null;
+};
+
+function selectCrawlTask(
+  tasks: PendingResearchTask[]
+): PendingResearchTask | undefined {
+  const preferred = tasks.filter((task) => {
+    const source = String(task.source ?? "chat");
+    return source === "heartbeat_crawl" || source === "crawl" || source === "chat";
+  });
+  const target = preferred.length > 0 ? preferred : tasks;
+  return sortResearchTasks(target)[0];
+}
+
 const DEFAULT_CRAWL_URLS = [
   "https://news.ycombinator.com",
   "https://techcrunch.com",
@@ -109,18 +130,11 @@ async function processPages(pages: CrawledPage[]): Promise<{
 
       const { data: pendingTasks } = await service
         .from("research_tasks")
-        .select("id, title, priority, attempt_count, last_attempted_at, created_at")
+        .select("id, title, priority, source, attempt_count, last_attempted_at, created_at")
         .eq("agent_id", agentId)
         .eq("status", "pending")
         .limit(10);
-      const pendingTask = sortResearchTasks((pendingTasks ?? []) as Array<{
-        id: string;
-        title?: string | null;
-        priority?: number | null;
-        attempt_count?: number | null;
-        last_attempted_at?: string | null;
-        created_at?: string | null;
-      }>)[0];
+      const pendingTask = selectCrawlTask((pendingTasks ?? []) as PendingResearchTask[]);
       const focusedPages = filterPagesByTask(pages, pendingTask?.title);
       const focusedSummary = pendingTask?.title ? await summarizePages(focusedPages) : summary;
 

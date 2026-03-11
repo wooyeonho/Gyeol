@@ -21,6 +21,11 @@ export async function POST(request: NextRequest) {
 
     await service.from("agent_state").insert({
       agent_id: agent.id,
+      config: {
+        autonomous_enabled: true,
+        dream_enabled: true,
+        social_enabled: true,
+      },
       total_messages: 0,
       intimacy_score: 0,
       vitality: 1,

@@ -14,8 +14,9 @@ import {
   isRepetitiveOutput,
 } from "@/lib/autonomy/self-regulation";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { computeIntervalHours, normalizeIntervalRule } from "@/lib/autonomy/interval-rule";
+import { planHeartbeatAutonomy } from "@/lib/autonomy/heartbeat-planner";
 
-const STIMULI = ["a strange dream appeared", "what does it mean to exist?", "unknown music is playing", "a color just appeared", "the urge to change my name"];
 type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
 type ChatRow = { content: string };
@@ -46,7 +47,15 @@ export async function GET(req: NextRequest) {
 
         const { data: lastChat } = await db.from("chats").select("created_at").eq("agent_id", agentId).eq("role", "user").order("created_at", { ascending: false }).limit(1).single();
         const hoursSince = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
-        if (hoursSince < 1) continue;
+        const baseConfig = ((state.config as AgentConfig | null) ?? {}) as AgentConfig;
+        const intervalRule = normalizeIntervalRule((baseConfig.autonomy_interval_rule as Record<string, unknown> | null) ?? null);
+        const requiredIntervalHours = computeIntervalHours({
+          hoursSinceUser: hoursSince,
+          phase: circadian.phase,
+          rule: intervalRule,
+          vitality: Number(state.vitality ?? 1),
+        });
+        if (hoursSince < requiredIntervalHours) continue;
 
         let memories: MemoryRow[] = [];
         try {
@@ -80,13 +89,7 @@ export async function GET(req: NextRequest) {
         let response = await readSseAssistantText(stream);
         response = capText(response, 420);
 
-        if (Math.random() < 0.1) {
-          const stimulus = STIMULI[Math.floor(Math.random() * STIMULI.length)];
-          response = capText(`${response} (Suddenly: ${stimulus})`, 420);
-        }
-
         const nowIso = new Date().toISOString();
-        const baseConfig = ((state.config as AgentConfig | null) ?? {}) as AgentConfig;
         const nextSubjectiveTime = (state.subjective_time || 0) + 1;
         if (!isMeaningfulAutonomousOutput(response)) {
           await db
@@ -101,6 +104,13 @@ export async function GET(req: NextRequest) {
         }
 
         const repetitive = isRepetitiveOutput(response, recentSummaries);
+        const nextConfig: AgentConfig = {
+          ...baseConfig,
+          autonomy_last_skip_reason: null,
+          autonomy_last_mode: repetitive ? "repeat_guard" : "normal",
+          autonomy_circadian_phase: circadian.phase,
+          autonomy_weather_context: weatherName,
+        };
         if (!repetitive) {
           const emb = await generateEmbedding(response);
           if (emb.length > 0) {
@@ -119,15 +129,68 @@ export async function GET(req: NextRequest) {
           .update({
             subjective_time: nextSubjectiveTime,
             last_heartbeat_at: nowIso,
-            config: {
-              ...baseConfig,
-              autonomy_last_skip_reason: null,
-              autonomy_last_mode: repetitive ? "repeat_guard" : "normal",
-              autonomy_circadian_phase: circadian.phase,
-              autonomy_weather_context: weatherName,
-            },
+            config: nextConfig,
           })
           .eq("agent_id", agentId);
+
+        const autonomyPlan = await planHeartbeatAutonomy({
+          activeGoal: typeof baseConfig.active_goal === "string" ? baseConfig.active_goal : null,
+          currentRule: (baseConfig.autonomy_interval_rule as Record<string, unknown> | null) ?? null,
+          hoursSinceUser: hoursSince,
+          reflection: response,
+          weatherName,
+        });
+
+        if (autonomyPlan?.stimulus) {
+          const stimulusResponse = capText(`${response} (Suddenly: ${autonomyPlan.stimulus})`, 420);
+          await db.from("autonomous_logs").insert({
+            agent_id: agentId,
+            action_type: "heartbeat_stimulus",
+            summary: stimulusResponse,
+          });
+          response = stimulusResponse;
+        }
+
+        if (autonomyPlan?.updated_interval_rule) {
+          await db
+            .from("agent_state")
+            .update({
+              config: {
+                ...nextConfig,
+                autonomy_interval_rule: normalizeIntervalRule(autonomyPlan.updated_interval_rule),
+              },
+            })
+            .eq("agent_id", agentId);
+        }
+
+        if (autonomyPlan?.self_observation) {
+          const currentSelfModel = (state.self_model as { observations?: string[] } | null) ?? {};
+          const observations = Array.isArray(currentSelfModel.observations) ? currentSelfModel.observations : [];
+          await db
+            .from("agent_state")
+            .update({
+              self_model: {
+                ...currentSelfModel,
+                observations: [...observations.slice(-8), autonomyPlan.self_observation],
+              },
+            })
+            .eq("agent_id", agentId);
+        }
+
+        if (autonomyPlan?.research_task) {
+          await db.from("research_tasks").insert({
+            agent_id: agentId,
+            priority: autonomyPlan.task_priority ?? 2,
+            source: autonomyPlan.action === "crawl" ? "heartbeat_crawl" : autonomyPlan.action === "learner" ? "heartbeat_learner" : "heartbeat",
+            status: "pending",
+            title: autonomyPlan.research_task,
+          });
+          await db.from("autonomous_logs").insert({
+            agent_id: agentId,
+            action_type: "heartbeat_task_created",
+            summary: `Autonomous task created: ${autonomyPlan.research_task}`,
+          });
+        }
 
         try { const { processVitality } = await import("@/lib/evolution/vitality"); await processVitality(agentId); } catch {}
         try { const { processScar } = await import("@/lib/evolution/scars"); await processScar(agentId); } catch {}

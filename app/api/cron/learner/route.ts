@@ -7,6 +7,27 @@ import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { sortResearchTasks } from "@/lib/goals/task-utils";
 
+type PendingResearchTask = {
+  id: string;
+  title?: string | null;
+  priority?: number | null;
+  source?: string | null;
+  attempt_count?: number | null;
+  last_attempted_at?: string | null;
+  created_at?: string | null;
+};
+
+function selectLearnerTask(
+  tasks: PendingResearchTask[]
+): PendingResearchTask | undefined {
+  const preferred = tasks.filter((task) => {
+    const source = String(task.source ?? "chat");
+    return source === "heartbeat_learner" || source === "learner" || source === "chat";
+  });
+  const target = preferred.length > 0 ? preferred : tasks;
+  return sortResearchTasks(target)[0];
+}
+
 const DEFAULT_FEED_URLS = [
   "https://hnrss.org/frontpage",
   "https://www.reddit.com/r/technology/.rss",
@@ -152,19 +173,12 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
 
       const { data: pendingTasks } = await service
         .from("research_tasks")
-        .select("id, title, priority, attempt_count, last_attempted_at, created_at")
+        .select("id, title, priority, source, attempt_count, last_attempted_at, created_at")
         .eq("agent_id", agentId)
         .eq("status", "pending")
-        .limit(1)
+        .limit(10)
         ;
-      const pendingTask = sortResearchTasks((pendingTasks ?? []) as Array<{
-        id: string;
-        title?: string | null;
-        priority?: number | null;
-        attempt_count?: number | null;
-        last_attempted_at?: string | null;
-        created_at?: string | null;
-      }>)[0];
+      const pendingTask = selectLearnerTask((pendingTasks ?? []) as PendingResearchTask[]);
 
       const taskAwareContent = pendingTask?.title
         ? capText(`연구 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)

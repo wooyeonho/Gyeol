@@ -3,6 +3,11 @@ import type { createServiceClient } from "@/lib/supabase/service";
 type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
 
 const INITIAL_AGENT_STATE = {
+  config: {
+    autonomous_enabled: true,
+    dream_enabled: true,
+    social_enabled: true,
+  },
   total_messages: 0,
   intimacy_score: 0,
   vitality: 1,
