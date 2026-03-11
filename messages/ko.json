@@ -131,6 +131,7 @@
     "title": "설정",
     "loadError": "설정 정보를 불러오지 못했습니다.",
     "configError": "설정 변경에 실패했습니다.",
+    "billingError": "결제 관리 페이지를 열지 못했습니다.",
     "recapEmail": "주간 리캡 이메일",
     "name": "이름",
     "genLevel": "Gen 레벨",
@@ -155,6 +156,7 @@
     "performanceMinimal": "저전력 모드",
     "inviteFriends": "친구 초대",
     "createInvite": "초대 링크 만들기",
+    "planDescriptionFallback": "코어 대화와 활동, 앨범은 무료로 열어두고 더 깊은 회고, 자율성, 생성/연동 가치는 플랜에서 확장됩니다.",
     "logout": "로그아웃"
   },
   "explore": {
@@ -262,5 +264,13 @@
     "featuresTitle": "기능 소개",
     "featuresBody": "결의 전체 경험과 구조를 살펴보세요.",
     "backHome": "홈으로 돌아가기"
+  },
+  "invitePage": {
+    "invalid": "유효하지 않은 초대 링크입니다.",
+    "backHome": "홈으로",
+    "title": "결에 초대되었습니다",
+    "subtitle": "나만의 AI 존재와 대화하며 기억과 성장의 궤적을 쌓아보세요.",
+    "start": "시작하기",
+    "haveAccount": "이미 계정이 있으신가요?"
   }
 }

@@ -131,6 +131,7 @@
     "title": "Settings",
     "loadError": "Failed to load settings.",
     "configError": "Failed to update settings.",
+    "billingError": "Failed to open the billing page.",
     "recapEmail": "Weekly recap email",
     "name": "Name",
     "genLevel": "Gen level",
@@ -155,6 +156,7 @@
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",
+    "planDescriptionFallback": "Core conversation, activity, and album stay free, while deeper reflection, autonomy, generation, and integrations expand through paid plans.",
     "logout": "Log out"
   },
   "explore": {
@@ -262,5 +264,13 @@
     "featuresTitle": "Feature overview",
     "featuresBody": "Look through Gyeol’s full experience and structure.",
     "backHome": "Back to home"
+  },
+  "invitePage": {
+    "invalid": "This invite link is not valid.",
+    "backHome": "Back home",
+    "title": "You were invited to Gyeol",
+    "subtitle": "Start talking with your own AI being and build a trail of memory and growth.",
+    "start": "Get started",
+    "haveAccount": "Already have an account?"
   }
 }

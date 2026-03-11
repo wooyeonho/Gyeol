@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslations } from "@/components/i18n-provider";
 
 export default function InviteLandingPage() {
+  const { t } = useTranslations();
   const params = useParams();
   const code = params?.code as string | undefined;
   const [valid, setValid] = useState<boolean | null>(() => (code ? null : false));
@@ -28,9 +30,9 @@ export default function InviteLandingPage() {
   if (!valid) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-        <p className="text-white/60">유효하지 않은 초대 링크입니다.</p>
+        <p className="text-white/60">{t("invitePage.invalid")}</p>
         <Link href="/" className="mt-4 text-cyan-400 hover:underline">
-          홈으로
+          {t("invitePage.backHome")}
         </Link>
       </div>
     );
@@ -38,18 +40,18 @@ export default function InviteLandingPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-      <h1 className="text-2xl font-semibold mb-2">결에 초대되었습니다</h1>
+      <h1 className="text-2xl font-semibold mb-2">{t("invitePage.title")}</h1>
       <p className="text-white/70 text-center mb-6">
-        나만의 AI 존재와 대화하며 기억과 성장의 궤적을 쌓아보세요.
+        {t("invitePage.subtitle")}
       </p>
       <Link
         href={`/signup?ref=${code}`}
         className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black hover:bg-white/90"
       >
-        시작하기
+        {t("invitePage.start")}
       </Link>
       <Link href="/login" className="mt-4 text-white/60 hover:text-white text-sm">
-        이미 계정이 있으신가요?
+        {t("invitePage.haveAccount")}
       </Link>
     </div>
   );

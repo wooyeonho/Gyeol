@@ -15,8 +15,9 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/billing/stripe", () => ({
   isStripeConfigured: vi.fn(() => false),
-  getPriceIdForPlan: vi.fn(() => null),
-  getStripeClient: vi.fn(() => null),
+  getStripe: vi.fn(() => null),
+  getStripeAppUrl: vi.fn(() => "https://example.com"),
+  getStripePriceId: vi.fn(() => "price_test"),
 }));
 
 describe("/api/billing/checkout contract", () => {

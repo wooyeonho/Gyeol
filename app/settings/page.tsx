@@ -123,7 +123,7 @@ export default function SettingsPage() {
           setBilling((billingJson as BillingData | null) ?? null);
         }
       } catch {
-        setError("설정 정보를 불러오지 못했습니다.");
+        setError(t("settings.loadError"));
       } finally {
         setLoading(false);
       }
@@ -171,7 +171,7 @@ export default function SettingsPage() {
     const res = await fetch("/api/billing/portal", { method: "POST" });
     const json = await res.json().catch(() => null);
     if (!res.ok || typeof json?.portal_url !== "string") {
-      setError("결제 관리 페이지를 열지 못했습니다.");
+      setError(t("settings.billingError"));
       return;
     }
     window.location.href = json.portal_url;
@@ -226,8 +226,7 @@ export default function SettingsPage() {
                 <div className="text-sm text-cyan-100/80">{t("settings.currentPlan")}</div>
                 <div className="mt-1 text-lg font-semibold">{billing?.plan.tier.toUpperCase() ?? "FREE"}</div>
                 <p className="mt-2 text-sm leading-6 text-white/70">
-                  {billing?.plan.description ??
-                    "코어 대화와 활동, 앨범은 무료로 열어두고 더 깊은 회고, 자율성, 생성/연동 가치는 플랜에서 확장됩니다."}
+                  {billing?.plan.description ?? t("settings.planDescriptionFallback")}
                 </p>
                 {billing?.subscription.current_period_end && (
                   <p className="mt-2 text-xs text-white/50">
