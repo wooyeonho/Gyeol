@@ -34,18 +34,23 @@ export function VoidCanvas({
 }: VoidCanvasProps) {
   void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const lowConcurrency = typeof navigator !== "undefined" && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+  const lowMemory = typeof navigator !== "undefined" && "deviceMemory" in navigator && Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4;
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const particleCount = prefersReducedMotion ? 0 : isMobile ? Math.floor(particles / 2) : particles;
+  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory;
+  const particleCount = reducedVisualMode ? 0 : isMobile ? Math.floor(particles / 2) : particles;
+  const effectiveGlow = reducedVisualMode ? Math.min(glow, 35) : glow;
+  const effectiveSize = reducedVisualMode ? Math.min(size, 24) : size;
 
   return (
     <div className="fixed inset-0 z-0" style={{ backgroundColor: background }}>
       <VoidCanvasInner
         shape={shape}
         color={color}
-        size={size}
-        glow={glow}
+        size={effectiveSize}
+        glow={effectiveGlow}
         animation={animation}
         particles={particleCount}
         vitality={vitality}

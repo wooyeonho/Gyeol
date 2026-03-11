@@ -459,7 +459,7 @@ export function WorldClassHub() {
                 <p className="mt-1 text-sm font-medium text-white">
                   {newItemsSinceLastVisit.length > 0
                     ? `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
-                    : "최근 활동과 마일스톤을 한 번에 확인할 수 있습니다."}
+                    : t("home.recentFallback")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
@@ -505,7 +505,7 @@ export function WorldClassHub() {
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.retentionLoop")}</p>
                 <p className="mt-1 text-sm font-medium text-white">
-                  {recap?.next_action ?? "오늘의 짧은 체크인으로 다시 루프를 시작할 수 있습니다."}
+                  {recap?.next_action ?? t("home.retentionFallback")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
@@ -533,7 +533,7 @@ export function WorldClassHub() {
                   메시지 {recap?.today.user_messages ?? 0} · 활동 {recap?.today.activities ?? 0}
                 </p>
                 <p className="mt-1 text-xs text-white/50">
-                  {recap?.streak.today_active ? "오늘의 기록이 이미 쌓였습니다." : "오늘의 기록을 아직 시작하지 않았습니다."}
+                  {recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
@@ -546,7 +546,7 @@ export function WorldClassHub() {
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
                 <p className="mt-1 text-sm text-white/82">
-                  {recap?.weekly.highlight ?? "이번 주의 흐름이 쌓이면 여기서 다시 요약됩니다."}
+                  {recap?.weekly.highlight ?? t("home.weeklyFallback")}
                 </p>
               </div>
             </div>
@@ -557,7 +557,7 @@ export function WorldClassHub() {
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-white/45">goal loop</p>
                 <p className="mt-1 text-sm font-medium text-white">
-                  {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? "아직 장기 목표가 없습니다. 오늘의 목표나 풀고 싶은 문제를 한 줄로 말해보세요."}
+                  {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopSummaryEmpty")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
@@ -568,7 +568,7 @@ export function WorldClassHub() {
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">현재 목표</p>
                 <p className="mt-1 text-sm text-white/82">
-                  {recap?.goal_loop?.active_goal ?? "목표가 감지되면 여기에 저장됩니다."}
+                  {recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
@@ -576,7 +576,7 @@ export function WorldClassHub() {
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.latest_task ??
                     recap?.goal_loop?.research_focus ??
-                    "조사/비교/알아봐 같은 표현을 쓰면 research focus가 잡힙니다."}
+                    t("home.goalLoopResearchEmpty")}
                 </p>
               </div>
             </div>
