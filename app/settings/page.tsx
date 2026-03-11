@@ -9,6 +9,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTranslations } from "@/components/i18n-provider";
 
 function InviteSection() {
+  const { t } = useTranslations();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -39,7 +40,7 @@ function InviteSection() {
           disabled={loading}
           className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
         >
-          {loading ? "..." : "초대 링크 만들기"}
+          {loading ? "..." : t("settings.createInvite")}
         </button>
       ) : (
         <div className="flex gap-2">
@@ -53,7 +54,7 @@ function InviteSection() {
             onClick={() => void copyUrl()}
             className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
           >
-            {copied ? "복사됨" : "복사"}
+            {copied ? t("chat.copied") : t("chat.copy")}
           </button>
         </div>
       )}
@@ -192,27 +193,27 @@ export default function SettingsPage() {
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-4">
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">이름</div>
+          <div className="text-sm text-white/60">{t("settings.name")}</div>
           <div>{state?.self_name || "—"}</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">Gen 레벨</div>
+          <div className="text-sm text-white/60">{t("settings.genLevel")}</div>
           <div>{state?.gen_level ?? 1}</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">총 메시지</div>
+          <div className="text-sm text-white/60">{t("settings.messages")}</div>
           <div>{state?.total_messages ?? 0}</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">활력</div>
+          <div className="text-sm text-white/60">{t("chat.vitality")}</div>
           <div>{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">기분</div>
+          <div className="text-sm text-white/60">{t("settings.mood")}</div>
           <div>{state?.mood || "—"}</div>
         </div>
         <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">코인</div>
+          <div className="text-sm text-white/60">{t("settings.coins")}</div>
           <div>{state?.coins ?? 0}</div>
         </div>
 
@@ -222,7 +223,7 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-sm text-cyan-100/80">현재 플랜</div>
+                <div className="text-sm text-cyan-100/80">{t("settings.currentPlan")}</div>
                 <div className="mt-1 text-lg font-semibold">{billing?.plan.tier.toUpperCase() ?? "FREE"}</div>
                 <p className="mt-2 text-sm leading-6 text-white/70">
                   {billing?.plan.description ??
@@ -230,18 +231,18 @@ export default function SettingsPage() {
                 </p>
                 {billing?.subscription.current_period_end && (
                   <p className="mt-2 text-xs text-white/50">
-                    다음 갱신 기준: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
+                    {t("settings.nextRenewal")}: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
                   </p>
                 )}
                 {billing?.subscription.status && (
-                  <p className="mt-1 text-xs text-white/45">상태: {billing.subscription.status}</p>
+                  <p className="mt-1 text-xs text-white/45">{t("settings.planStatus")}: {billing.subscription.status}</p>
                 )}
               </div>
               <Link
                 href="/plans"
                 className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
               >
-                플랜 관리
+                {t("settings.planManage")}
               </Link>
             </div>
             {billing?.subscription.provider === "stripe" && billing.subscription.provider_customer_id && (
@@ -250,7 +251,7 @@ export default function SettingsPage() {
                 onClick={() => void openBillingPortal()}
                 className="mt-4 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
               >
-                결제 관리 열기
+                {t("settings.openBilling")}
               </button>
             )}
           </div>
@@ -258,23 +259,23 @@ export default function SettingsPage() {
 
         {billing && (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-sm text-white/60">활성 권한</div>
+            <div className="text-sm text-white/60">{t("settings.entitlements")}</div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">고급 리캡</p>
-                <p className="mt-1 text-sm">{billing.entitlements.advanced_recaps ? "사용 가능" : "잠김"}</p>
+                <p className="text-xs text-white/45">{t("settings.advancedRecaps")}</p>
+                <p className="mt-1 text-sm">{billing.entitlements.advanced_recaps ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
               <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">장기 히스토리</p>
-                <p className="mt-1 text-sm">{billing.entitlements.long_term_history ? "사용 가능" : "잠김"}</p>
+                <p className="text-xs text-white/45">{t("settings.longTermHistory")}</p>
+                <p className="mt-1 text-sm">{billing.entitlements.long_term_history ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
               <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">멀티채널</p>
-                <p className="mt-1 text-sm">{billing.entitlements.multichannel ? "사용 가능" : "잠김"}</p>
+                <p className="text-xs text-white/45">{t("settings.multichannel")}</p>
+                <p className="mt-1 text-sm">{billing.entitlements.multichannel ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
               <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">고급 생성</p>
-                <p className="mt-1 text-sm">{billing.entitlements.premium_generation ? "사용 가능" : "잠김"}</p>
+                <p className="text-xs text-white/45">{t("settings.premiumGeneration")}</p>
+                <p className="mt-1 text-sm">{billing.entitlements.premium_generation ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
             </div>
           </div>
@@ -282,7 +283,7 @@ export default function SettingsPage() {
 
         <div className="bg-white/5 rounded-xl p-4 space-y-3">
           <div className="flex justify-between items-center">
-            <span>자율 모드</span>
+            <span>{t("settings.autonomous")}</span>
             <button
               onClick={() => toggleConfig("autonomous_enabled", !config.autonomous_enabled)}
               className={`px-3 py-1 rounded ${config.autonomous_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
@@ -291,7 +292,7 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span>드림 엔진</span>
+            <span>{t("settings.dream")}</span>
             <button
               onClick={() => toggleConfig("dream_enabled", !config.dream_enabled)}
               className={`px-3 py-1 rounded ${config.dream_enabled ? "bg-green-500/30" : "bg-white/10"}`}
@@ -300,7 +301,7 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span>소셜</span>
+            <span>{t("settings.social")}</span>
             <button
               onClick={() => toggleConfig("social_enabled", !config.social_enabled)}
               className={`px-3 py-1 rounded ${config.social_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
@@ -309,7 +310,7 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span>저전력 모드</span>
+            <span>{t("settings.performanceMinimal")}</span>
             <button
               onClick={() => toggleConfig("performance_minimal", !config.performance_minimal)}
               className={`px-3 py-1 rounded ${config.performance_minimal ? "bg-green-500/30" : "bg-white/10"}`}
@@ -329,12 +330,12 @@ export default function SettingsPage() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm text-white/60">친구 초대</p>
+          <p className="text-sm text-white/60">{t("settings.inviteFriends")}</p>
           <InviteSection />
         </div>
 
         <button onClick={logout} className="w-full py-3 rounded-xl bg-red-500/20 text-red-400">
-          로그아웃
+          {t("settings.logout")}
         </button>
       </div>
       <BottomNav />

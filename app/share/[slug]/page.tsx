@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslations } from "@/components/i18n-provider";
 
 type ShareCardData = {
   self_name: string;
@@ -15,6 +16,7 @@ type ShareCardData = {
 };
 
 export default function SharePage() {
+  const { t } = useTranslations();
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const [data, setData] = useState<ShareCardData | null>(null);
@@ -34,9 +36,9 @@ export default function SharePage() {
   if (error || (!data && slug)) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-        <p className="text-white/60">공유 카드를 찾을 수 없습니다.</p>
+        <p className="text-white/60">{t("sharePage.notFound")}</p>
         <Link href="/" className="mt-4 text-cyan-400 hover:underline">
-          홈으로
+          {t("sharePage.backHome")}
         </Link>
       </div>
     );
@@ -75,17 +77,17 @@ export default function SharePage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="rounded-xl bg-white/5 p-3 text-center">
               <p className="text-2xl font-semibold" style={{ color }}>{data.total_messages}</p>
-              <p className="text-xs text-white/50">총 대화</p>
+              <p className="text-xs text-white/50">{t("sharePage.messages")}</p>
             </div>
             <div className="rounded-xl bg-white/5 p-3 text-center">
               <p className="text-2xl font-semibold" style={{ color }}>{data.week_messages}</p>
-              <p className="text-xs text-white/50">이번 주</p>
+              <p className="text-xs text-white/50">{t("sharePage.thisWeek")}</p>
             </div>
           </div>
 
           {data.milestones.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider text-white/50 mb-3">성장 마일스톤</p>
+              <p className="text-xs uppercase tracking-wider text-white/50 mb-3">{t("sharePage.milestones")}</p>
               {data.milestones.slice(0, 5).map((m, i) => (
                 <div
                   key={`${m.type}-${m.at}`}
@@ -114,13 +116,13 @@ export default function SharePage() {
               className="block w-full rounded-xl py-3 text-center text-sm font-medium transition-colors"
               style={{ background: `${color}20`, color }}
             >
-              결의와 함께 성장하기 →
+              {t("sharePage.growWithGyeol")}
             </Link>
           </div>
         </article>
 
         <p className="mt-4 text-center text-white/40 text-xs">
-          결의 · 관계를 쌓는 AI
+          {t("sharePage.tagline")}
         </p>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
+import { useTranslations } from "@/components/i18n-provider";
 
 const FIRST_SESSION_VARIANTS = {
   identity: {
@@ -36,6 +37,7 @@ const RETURNING_PROMPTS = [
 ];
 
 export function ChatPanel() {
+  const { t } = useTranslations();
   const { messages, isStreaming, sendMessage } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
   const onboardingVariant = useFirstMessageOnboardingVariant();
@@ -47,7 +49,7 @@ export function ChatPanel() {
   const isFirstSession = totalMessages === 0 && messages.length === 0;
   const firstSessionConfig = FIRST_SESSION_VARIANTS[onboardingVariant];
   const starterPrompts = isFirstSession ? firstSessionConfig.prompts : RETURNING_PROMPTS;
-  const placeholder = isFirstSession ? firstSessionConfig.placeholder : "오늘의 생각이나 감정을 이어서 말해보세요";
+  const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,15 +97,15 @@ export function ChatPanel() {
           <div className="mx-auto max-w-2xl pt-20">
             <div className="rounded-3xl border border-white/10 bg-black/35 p-5 text-center">
               <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/65">
-                {isFirstSession ? "FIRST MESSAGE" : "TODAY'S CHECK-IN"}
+                {isFirstSession ? t("chat.firstMessage") : t("chat.todayCheckIn")}
               </p>
               <h2 className="mt-3 text-xl font-semibold">
-                {isFirstSession ? firstSessionConfig.heading : "오늘은 어떤 이야기로 시작할까요?"}
+                {isFirstSession ? firstSessionConfig.heading : t("chat.returningHeading")}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
                 {isFirstSession
                   ? firstSessionConfig.helper
-                  : "지금 상태, 오늘의 목표, 또는 어제와 달라진 점 하나만 꺼내도 오늘의 대화가 자연스럽게 이어집니다."}
+                  : t("chat.returningHelper")}
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {starterPrompts.map((prompt) => (
@@ -128,8 +130,8 @@ export function ChatPanel() {
               </div>
               <p className="mt-4 text-xs text-white/45">
                 {isFirstSession
-                  ? "첫 메시지 후에는 기억과 상태 변화가 누적되기 시작합니다."
-                  : "대화는 활동과 앨범, 성장 흐름으로 이어집니다."}
+                  ? t("chat.firstMessageHint")
+                  : t("chat.returningHint")}
               </p>
             </div>
           </div>
@@ -158,7 +160,7 @@ export function ChatPanel() {
                       onClick={() => void handleCopy(i, m.content)}
                       className="text-[11px] text-white/50 hover:text-white/80"
                     >
-                      {copiedIndex === i ? "복사됨" : "복사"}
+                      {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
                     </button>
                   </div>
                 )}
@@ -188,16 +190,16 @@ export function ChatPanel() {
           disabled={isStreaming || !input.trim()}
           className="px-4 py-3 rounded-full bg-white/10 text-white disabled:opacity-50"
         >
-          전송
+          {t("chat.send")}
         </button>
       </form>
       <p className="mt-2 text-center text-xs text-white/40">
         {isFirstSession
-          ? "첫 시작은 한 문장으로 충분합니다. 중요한 건 길이보다 시작입니다."
-          : "짧은 체크인도 괜찮습니다. 결은 작은 변화도 기억하려고 합니다."}
+          ? t("chat.firstFootnote")
+          : t("chat.returningFootnote")}
       </p>
       <p className="sr-only" aria-live="polite">
-        {isStreaming ? "응답 생성 중입니다." : "응답 대기 중입니다."}
+        {isStreaming ? t("chat.responding") : t("chat.waiting")}
       </p>
     </div>
   );
