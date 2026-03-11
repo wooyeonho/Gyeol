@@ -22,6 +22,30 @@ type LogRow = { summary: string | null };
 type ChatRow = { content: string };
 type AgentConfig = Record<string, unknown>;
 
+function getAppBaseUrl(req: NextRequest) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) return appUrl.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return req.nextUrl.origin;
+}
+
+async function triggerAutonomousAction(baseUrl: string, action: "learner" | "crawl", cronSecret: string) {
+  const endpoint = action === "learner" ? "/api/cron/learner" : "/api/cron/crawl";
+  try {
+    await fetch(`${baseUrl}${endpoint}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cronSecret}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ source: "heartbeat" }),
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch (error) {
+    console.error(`[Heartbeat] immediate ${action} trigger failed`, error);
+  }
+}
+
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const lockKey = "cron:heartbeat";
@@ -30,6 +54,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = createServiceClient();
+    const baseUrl = getAppBaseUrl(req);
+    const cronSecret = process.env.CRON_SECRET ?? "";
     const { data: agents } = await db.from("agents").select("id, user_id");
     if (!agents) return NextResponse.json({ processed: 0 });
     const { data: worldState } = await db.from("world_state").select("weather").eq("id", "global").single();
@@ -190,6 +216,14 @@ export async function GET(req: NextRequest) {
             action_type: "heartbeat_task_created",
             summary: `Autonomous task created: ${autonomyPlan.research_task}`,
           });
+          if (cronSecret && (autonomyPlan.action === "learner" || autonomyPlan.action === "crawl")) {
+            await triggerAutonomousAction(baseUrl, autonomyPlan.action, cronSecret);
+            await db.from("autonomous_logs").insert({
+              agent_id: agentId,
+              action_type: "heartbeat_action_triggered",
+              summary: `Triggered immediate ${autonomyPlan.action} execution for task: ${autonomyPlan.research_task}`,
+            });
+          }
         }
 
         try { const { processVitality } = await import("@/lib/evolution/vitality"); await processVitality(agentId); } catch {}
