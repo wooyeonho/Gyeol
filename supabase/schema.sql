@@ -443,6 +443,8 @@ create table if not exists research_tasks (
   title text not null,
   source text not null default 'chat',
   status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'cancelled')),
+  priority int not null default 1,
+  cancellation_reason text,
   result_summary text,
   created_at timestamptz not null default now(),
   completed_at timestamptz
@@ -450,6 +452,7 @@ create table if not exists research_tasks (
 
 create index if not exists research_tasks_agent_id_created_idx on research_tasks(agent_id, created_at desc);
 create index if not exists research_tasks_agent_id_status_idx on research_tasks(agent_id, status, created_at desc);
+create index if not exists research_tasks_agent_id_priority_idx on research_tasks(agent_id, status, priority desc, created_at desc);
 
 -- ============================================================
 -- RATE LIMITS

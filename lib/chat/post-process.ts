@@ -68,9 +68,10 @@ async function applyGoalLoop(params: {
   if (signal.researchFocus) {
     const { data: recentTask } = await params.writer
       .from("research_tasks")
-      .select("title")
+      .select("id, title, priority")
       .eq("agent_id", params.agentId)
       .eq("status", "pending")
+      .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -78,10 +79,19 @@ async function applyGoalLoop(params: {
     if ((recentTask as { title?: string } | null)?.title !== signal.researchFocus) {
       await params.writer.from("research_tasks").insert({
         agent_id: params.agentId,
+        priority: signal.priority,
         source: "chat",
         status: "pending",
         title: signal.researchFocus,
       });
+    } else if ((recentTask as { id?: string; priority?: number } | null)?.id) {
+      const currentPriority = Number((recentTask as { priority?: number }).priority ?? 1);
+      if (signal.priority > currentPriority) {
+        await params.writer
+          .from("research_tasks")
+          .update({ priority: signal.priority })
+          .eq("id", (recentTask as { id: string }).id);
+      }
     }
   }
 

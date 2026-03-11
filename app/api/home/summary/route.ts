@@ -171,9 +171,10 @@ export async function GET() {
           .limit(100),
         service
           .from("research_tasks")
-          .select("id, title, created_at")
+          .select("id, title, priority, created_at")
           .eq("agent_id", agentId)
           .eq("status", "pending")
+          .order("priority", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(5),
       ]);
