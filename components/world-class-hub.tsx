@@ -25,6 +25,11 @@ type HomeSummaryItem = {
 };
 
 type HomeRecap = {
+  goal_loop?: {
+    active_goal: string | null;
+    research_focus: string | null;
+    updated_at: string | null;
+  };
   next_action: string;
   premium_locked?: boolean;
   streak: {
@@ -504,6 +509,34 @@ export function WorldClassHub() {
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.weekly.highlight ?? "이번 주의 흐름이 쌓이면 여기서 다시 요약됩니다."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">goal loop</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {recap?.goal_loop?.active_goal ?? "아직 장기 목표가 없습니다. 오늘의 목표나 풀고 싶은 문제를 한 줄로 말해보세요."}
+                </p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                focus
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">현재 목표</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {recap?.goal_loop?.active_goal ?? "목표가 감지되면 여기에 저장됩니다."}
+                </p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">추가 조사 포인트</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {recap?.goal_loop?.research_focus ?? "조사/비교/알아봐 같은 표현을 쓰면 research focus가 잡힙니다."}
                 </p>
               </div>
             </div>

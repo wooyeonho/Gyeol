@@ -1,6 +1,7 @@
 import type { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
+import { detectGoalSignal } from "@/lib/goals/detector";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -34,6 +35,39 @@ async function runEvolutionHooks(agentId: string, totalMessages: number, message
   }
 }
 
+async function applyGoalLoop(params: {
+  agentId: string;
+  agentState: AgentStateRow | null;
+  message: string;
+  writer: DbWriter;
+}) {
+  const signal = detectGoalSignal(params.message);
+  if (!signal.activeGoal && !signal.researchFocus) return null;
+
+  const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+  const nextConfig: Record<string, unknown> = {
+    ...currentConfig,
+    goal_updated_at: new Date().toISOString(),
+  };
+  if (signal.activeGoal) nextConfig.active_goal = signal.activeGoal;
+  if (signal.researchFocus) nextConfig.research_focus = signal.researchFocus;
+
+  await params.writer
+    .from("agent_state")
+    .update({ config: nextConfig })
+    .eq("agent_id", params.agentId);
+
+  await params.writer.from("autonomous_logs").insert({
+    agent_id: params.agentId,
+    action_type: signal.researchFocus ? "research_focus_updated" : "goal_captured",
+    summary: signal.researchFocus
+      ? `Research focus updated: ${signal.researchFocus}`
+      : `Active goal captured: ${signal.activeGoal}`,
+  });
+
+  return signal;
+}
+
 export async function persistChatTurn(params: {
   agentId: string;
   agentState: AgentStateRow | null;
@@ -65,11 +99,20 @@ export async function persistChatTurn(params: {
     vitality: newVitality,
   }).eq("agent_id", params.agentId);
 
+  const goalSignal = await applyGoalLoop({
+    agentId: params.agentId,
+    agentState: params.agentState,
+    message: params.message,
+    writer: params.writer,
+  });
+
   await runEvolutionHooks(params.agentId, totalMessages, params.message, params.reply);
 
   recordServerEvent(PRODUCT_EVENT.chatPostProcessCompleted, {
     agentId: params.agentId,
     durationMs: params.durationMs,
+    goalCaptured: Boolean(goalSignal?.activeGoal),
+    researchFocusUpdated: Boolean(goalSignal?.researchFocus),
     replyLength: params.reply.length,
     totalMessages,
   });

@@ -120,7 +120,7 @@ export async function GET() {
       { data: recentArtifactsForRecap },
     ] =
       await Promise.all([
-        service.from("agent_state").select("total_messages, gen_level, mood, vitality").eq("agent_id", agentId).single(),
+        service.from("agent_state").select("total_messages, gen_level, mood, vitality, config").eq("agent_id", agentId).single(),
         service
           .from("autonomous_logs")
           .select("id, action_type, summary, created_at")
@@ -235,15 +235,22 @@ export async function GET() {
     ).length;
 
     const state = (stateRow ?? null) as {
+      config?: Record<string, unknown>;
       total_messages?: number;
       gen_level?: number;
       mood?: string;
       vitality?: number;
     } | null;
+    const config = state?.config ?? {};
 
     return NextResponse.json({
       recent_items: recentItems,
       recap: {
+        goal_loop: {
+          active_goal: typeof config.active_goal === "string" ? config.active_goal : null,
+          research_focus: typeof config.research_focus === "string" ? config.research_focus : null,
+          updated_at: typeof config.goal_updated_at === "string" ? config.goal_updated_at : null,
+        },
         next_action: billing.entitlements.advanced_recaps
           ? buildNextAction({
               isFirstSession: (state?.total_messages ?? 0) === 0,
