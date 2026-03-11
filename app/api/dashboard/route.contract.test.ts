@@ -39,29 +39,6 @@ function mockDashboardService() {
           select: async () => ({ count: 5 }),
         };
       }
-      if (table === "agent_state") {
-        return {
-          select: async () => ({
-            data: [
-              { config: { autonomous_enabled: true }, status: "active", last_heartbeat_at: new Date().toISOString(), last_dream_at: new Date().toISOString() },
-              { config: { autonomous_enabled: true }, status: "echo", last_heartbeat_at: null, last_dream_at: null },
-              { config: { autonomous_enabled: false }, status: "active", last_heartbeat_at: new Date().toISOString(), last_dream_at: new Date().toISOString() },
-            ],
-          }),
-        };
-      }
-      if (table === "cron_job_locks") {
-        return {
-          select: () => ({
-            in: async () => ({
-              data: [
-                { job_name: "cron:heartbeat", updated_at: new Date().toISOString() },
-                { job_name: "cron:dream", updated_at: "2020-01-01T00:00:00.000Z" },
-              ],
-            }),
-          }),
-        };
-      }
       throw new Error(`unexpected table: ${table}`);
     },
   };
@@ -73,7 +50,7 @@ describe("/api/dashboard contract", () => {
     (createServiceClient as Mock).mockReturnValue(mockDashboardService());
   });
 
-  it("returns contract fields with autonomy health", async () => {
+  it("returns public dashboard contract fields", async () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, unknown>;
@@ -81,11 +58,7 @@ describe("/api/dashboard contract", () => {
     expect(typeof body.agent_count).toBe("number");
     expect(typeof body.social_count).toBe("number");
     expect(typeof body.artifact_count).toBe("number");
-    expect(Array.isArray(body.cron_freshness)).toBe(true);
-
-    const autonomyHealth = body.autonomy_health as Record<string, unknown>;
-    expect(typeof autonomyHealth.score).toBe("number");
-    expect(["healthy", "warning", "critical"]).toContain(String(autonomyHealth.tier));
-    expect(Array.isArray(autonomyHealth.reasons)).toBe(true);
+    expect(typeof body.weather_name === "string" || body.weather_name == null).toBe(true);
+    expect(typeof body.collective_emotion === "object" || body.collective_emotion == null).toBe(true);
   });
 });

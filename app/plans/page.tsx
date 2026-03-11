@@ -26,7 +26,7 @@ export default function PlansPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.plansOpened);
@@ -36,13 +36,17 @@ export default function PlansPage() {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
     if (success === "1") {
-      setNotice("결제가 완료되었습니다. 플랜이 곧 반영됩니다.");
+      setNotice(
+        locale === "en"
+          ? "Payment completed. Your plan will appear automatically as soon as subscription sync finishes."
+          : "결제가 완료되었습니다. 구독 동기화가 끝나는 대로 플랜이 자동 반영됩니다."
+      );
       window.history.replaceState({}, "", "/plans");
     } else if (canceled === "1") {
-      setNotice("결제가 취소되었습니다.");
+      setNotice(locale === "en" ? "Payment was canceled." : "결제가 취소되었습니다.");
       window.history.replaceState({}, "", "/plans");
     }
-  }, [searchParams]);
+  }, [locale, searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +81,7 @@ export default function PlansPage() {
         return;
       }
       if (checkoutRes.status !== 503) {
-        setNotice("플랜 변경에 실패했습니다.");
+        setNotice(locale === "en" ? "Unable to change your plan right now." : "플랜 변경에 실패했습니다.");
         return;
       }
 
@@ -88,7 +92,15 @@ export default function PlansPage() {
       });
       const json = await mockRes.json().catch(() => null);
       if (!mockRes.ok) {
-        setNotice("플랜 변경에 실패했습니다.");
+        if (mockRes.status === 403) {
+          setNotice(
+            locale === "en"
+              ? "Plan changes are available only in live billing environments. Please connect Stripe to open real checkout."
+              : "플랜 변경은 실결제 환경에서만 열립니다. 운영 환경에서는 Stripe 연동 후 실제 체크아웃만 허용됩니다."
+          );
+          return;
+        }
+        setNotice(locale === "en" ? "Unable to change your plan right now." : "플랜 변경에 실패했습니다.");
         return;
       }
       setBilling((json as BillingData | null) ?? null);
@@ -105,10 +117,10 @@ export default function PlansPage() {
       if (res.ok && json?.url) {
         window.location.href = json.url;
       } else {
-        setNotice("결제 관리 페이지를 열 수 없습니다.");
+        setNotice(locale === "en" ? "Unable to open billing management." : "결제 관리 페이지를 열 수 없습니다.");
       }
     } catch {
-      setNotice("결제 관리 페이지를 열 수 없습니다.");
+      setNotice(locale === "en" ? "Unable to open billing management." : "결제 관리 페이지를 열 수 없습니다.");
     }
   }
 
@@ -118,11 +130,19 @@ export default function PlansPage() {
       const res = await fetch("/api/billing/me", { method: "DELETE" });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
-        setNotice("무료 플랜 전환에 실패했습니다.");
+        if (res.status === 403) {
+          setNotice(
+            locale === "en"
+              ? "Mock downgrades are disabled in this environment."
+              : "이 환경에서는 mock 플랜 전환이 비활성화되어 있습니다."
+          );
+          return;
+        }
+        setNotice(locale === "en" ? "Unable to switch to the free plan." : "무료 플랜 전환에 실패했습니다.");
         return;
       }
       setBilling((json as BillingData | null) ?? null);
-      setNotice("무료 플랜으로 전환되었습니다.");
+      setNotice(locale === "en" ? "Switched to the free plan." : "무료 플랜으로 전환되었습니다.");
     } finally {
       setSubmittingTier(null);
     }

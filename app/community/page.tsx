@@ -5,50 +5,57 @@ import { useTranslations } from "@/components/i18n-provider";
 
 export default function CommunityPage() {
   const { t } = useTranslations();
+  const cards = [
+    {
+      href: "/explore",
+      title: t("communityPage.exploreTitle"),
+      body: t("communityPage.exploreBody"),
+      eyebrow: "explore",
+    },
+    {
+      href: "/invite",
+      title: t("communityPage.inviteTitle"),
+      body: t("communityPage.inviteBody"),
+      eyebrow: "invite",
+    },
+    {
+      href: "/adopt",
+      title: t("communityPage.adoptTitle"),
+      body: t("communityPage.adoptBody"),
+      eyebrow: "adopt",
+    },
+    {
+      href: "/features",
+      title: t("communityPage.featuresTitle"),
+      body: t("communityPage.featuresBody"),
+      eyebrow: "world",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black px-6 py-12 text-white">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-2">{t("communityPage.title")}</h1>
-        <p className="text-white/70 mb-8">
-          {t("communityPage.subtitle")}
-        </p>
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.06)] sm:p-8">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">community</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("communityPage.title")}</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-white/68">
+            {t("communityPage.subtitle")}
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/explore"
-            className="rounded-2xl border border-white/15 bg-white/5 p-6 hover:bg-white/10 transition-colors"
-          >
-            <h2 className="font-medium mb-2">{t("communityPage.exploreTitle")}</h2>
-            <p className="text-sm text-white/60">
-              {t("communityPage.exploreBody")}
-            </p>
-          </Link>
-          <Link
-            href="/invite"
-            className="rounded-2xl border border-white/15 bg-white/5 p-6 hover:bg-white/10 transition-colors"
-          >
-            <h2 className="font-medium mb-2">{t("communityPage.inviteTitle")}</h2>
-            <p className="text-sm text-white/60">
-              {t("communityPage.inviteBody")}
-            </p>
-          </Link>
-          <Link
-            href="/adopt"
-            className="rounded-2xl border border-white/15 bg-white/5 p-6 hover:bg-white/10 transition-colors"
-          >
-            <h2 className="font-medium mb-2">{t("communityPage.adoptTitle")}</h2>
-            <p className="text-sm text-white/60">
-              {t("communityPage.adoptBody")}
-            </p>
-          </Link>
-          <Link
-            href="/features"
-            className="rounded-2xl border border-white/15 bg-white/5 p-6 hover:bg-white/10 transition-colors"
-          >
-            <h2 className="font-medium mb-2">{t("communityPage.featuresTitle")}</h2>
-            <p className="text-sm text-white/60">
-              {t("communityPage.featuresBody")}
-            </p>
-          </Link>
+          {cards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="group rounded-[1.5rem] border border-white/12 bg-white/[0.04] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 hover:bg-white/[0.06] hover:shadow-[0_0_50px_rgba(34,211,238,0.06)]"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{card.eyebrow}</p>
+              <h2 className="mt-3 font-medium text-white group-hover:text-cyan-100">{card.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-white/60">
+                {card.body}
+              </p>
+            </Link>
+          ))}
         </div>
         <div className="mt-8">
           <Link href="/" className="text-cyan-400 hover:underline text-sm">

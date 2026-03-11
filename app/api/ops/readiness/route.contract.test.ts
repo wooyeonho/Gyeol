@@ -88,12 +88,19 @@ function createOpsService() {
 describe("/api/ops/readiness contract", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.OPS_ADMIN_USER_IDS = "user-1";
   });
 
   it("returns 401 when not logged in", async () => {
     (createClient as Mock).mockResolvedValue(createAuthedClient(null));
     const res = await GET();
     expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for non-admin users", async () => {
+    (createClient as Mock).mockResolvedValue(createAuthedClient("user-2"));
+    const res = await GET();
+    expect(res.status).toBe(403);
   });
 
   it("returns readiness payload with alert summary fields", async () => {

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { type PlanTier } from "@/lib/billing/catalog";
 import { getLatestSubscription, getResolvedBillingState } from "@/lib/billing/service";
+import { isMockBillingEnabled } from "@/lib/billing/mock-billing";
 
 function isPlanTier(value: unknown): value is PlanTier {
   return value === "free" || value === "pro" || value === "premium";
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isMockBillingEnabled()) {
+    return NextResponse.json({ error: "Mock billing disabled" }, { status: 403 });
+  }
 
   try {
     const body = await request.json().catch(() => ({}));
@@ -69,6 +73,9 @@ export async function DELETE() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isMockBillingEnabled()) {
+    return NextResponse.json({ error: "Mock billing disabled" }, { status: 403 });
+  }
 
   try {
     const service = createServiceClient();

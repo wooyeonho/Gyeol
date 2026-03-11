@@ -51,6 +51,7 @@
    - billing portal 이동
    - `/plans` 이동
    가 모두 자연스럽게 작동하는지 확인
+6. production 성격의 환경에서는 Stripe 미설정 시 mock upgrade가 열리지 않고 안내 문구만 노출되는지 확인
 
 ### E. 자율 연구 루프
 
@@ -108,7 +109,12 @@
    - `/api/cron/learner`
    - `/api/cron/lifeline`
 
-## 6. 릴리즈 후 24시간 관찰 포인트
+## 6. 운영 권한 체크
+
+- `/ops`, `/api/ops/readiness`, `/api/ops/product`는 `OPS_ADMIN_USER_IDS`에 포함된 운영자 계정만 접근 가능합니다.
+- 운영 계정이 아니면 403이 정상입니다.
+
+## 7. 릴리즈 후 24시간 관찰 포인트
 
 - research task가 한 방향으로만 쏠리지 않는지
 - self_model observation이 중복 문장만 반복하지 않는지

@@ -16,51 +16,128 @@ type ShareCardData = {
 };
 
 export default function SharePage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const [data, setData] = useState<ShareCardData | null>(null);
-  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "not_found" | "error">(
+    slug ? "loading" : "not_found"
+  );
 
   useEffect(() => {
     if (!slug) return;
+    let cancelled = false;
     fetch(`/api/share/${slug}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d) setData(d);
-        else setError(true);
+      .then(async (r) => {
+        if (r.ok) return r.json();
+        if (r.status === 404) {
+          if (!cancelled) setStatus("not_found");
+          return null;
+        }
+        throw new Error("share_fetch_failed");
       })
-      .catch(() => setError(true));
+      .then((d) => {
+        if (d) {
+          if (!cancelled) {
+            setData(d);
+            setStatus("ready");
+          }
+        } else if (!cancelled) {
+          setStatus("not_found");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
-  if (error || (!data && slug)) {
+  if (!slug) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-        <p className="text-white/60">{t("sharePage.notFound")}</p>
-        <Link href="/" className="mt-4 text-cyan-400 hover:underline">
-          {t("sharePage.backHome")}
-        </Link>
+      <div className="min-h-screen bg-black px-6 py-12 text-white">
+        <div className="mx-auto flex max-w-md flex-col items-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center shadow-[0_0_80px_rgba(34,211,238,0.08)]">
+          <div className="mb-4 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/55">
+            {locale === "en" ? "shared growth card" : "shared growth card"}
+          </div>
+          <p className="text-base text-white/72">{t("sharePage.notFound")}</p>
+          <Link
+            href="/"
+            className="mt-5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-5 py-2 text-sm text-cyan-100 hover:bg-cyan-400/15"
+          >
+            {t("sharePage.backHome")}
+          </Link>
+        </div>
       </div>
     );
   }
 
-  if (!data) {
+  if (status === "not_found" || status === "error") {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
+      <div className="min-h-screen bg-black px-6 py-12 text-white">
+        <div className="mx-auto flex max-w-md flex-col items-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center shadow-[0_0_80px_rgba(34,211,238,0.08)]">
+          <div className="mb-4 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/55">
+            {locale === "en" ? "shared growth card" : "shared growth card"}
+          </div>
+          <p className="text-base text-white/72">{t("sharePage.notFound")}</p>
+          <Link
+            href="/"
+            className="mt-5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-5 py-2 text-sm text-cyan-100 hover:bg-cyan-400/15"
+          >
+            {t("sharePage.backHome")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "loading" || !data) {
+    return (
+      <div className="min-h-screen bg-black px-6 py-12 text-white">
+        <div className="mx-auto max-w-md">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.08)]">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 animate-pulse rounded-2xl bg-white/10" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+                <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="h-20 animate-pulse rounded-xl bg-white/5" />
+              <div className="h-20 animate-pulse rounded-xl bg-white/5" />
+            </div>
+            <div className="mt-6 space-y-2">
+              <div className="h-12 animate-pulse rounded-xl bg-white/5" />
+              <div className="h-12 animate-pulse rounded-xl bg-white/5" />
+              <div className="h-12 animate-pulse rounded-xl bg-white/5" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   const color = data.visual?.color ?? "rgb(34, 211, 238)";
+  const dateLocale = locale === "en" ? "en-US" : "ko-KR";
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black px-6 py-12 text-white">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),transparent_60%)]"
+        aria-hidden="true"
+      />
       <div className="max-w-md mx-auto">
         <article
-          className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.06] to-transparent p-6 shadow-xl"
+          className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent p-6 shadow-[0_0_90px_rgba(34,211,238,0.08)]"
           style={{ borderColor: `${color}40` }}
         >
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-28 opacity-70"
+            style={{ background: `linear-gradient(180deg, ${color}18, transparent)` }}
+          />
           <div className="flex items-center gap-3 mb-6">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
@@ -68,9 +145,11 @@ export default function SharePage() {
             >
               {data.gen_level}
             </div>
-            <div>
+            <div className="relative">
               <h1 className="text-xl font-semibold">{data.self_name}</h1>
-              <p className="text-sm text-white/50">Gen {data.gen_level} · 활력 {Math.round((data.vitality ?? 1) * 100)}%</p>
+              <p className="text-sm text-white/50">
+                Gen {data.gen_level} · {t("chat.vitality")} {Math.round((data.vitality ?? 1) * 100)}%
+              </p>
             </div>
           </div>
 
@@ -102,7 +181,7 @@ export default function SharePage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{m.label}</p>
                     <p className="text-white/45 text-xs">
-                      {new Date(m.at).toLocaleDateString("ko-KR", { dateStyle: "short" })}
+                      {new Date(m.at).toLocaleDateString(dateLocale, { dateStyle: "medium" })}
                     </p>
                   </div>
                 </div>

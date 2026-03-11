@@ -49,7 +49,9 @@
 - `REDEMPTION_AUTO_APPROVE`: 상환 스텁 자동승인 스위치 (`false` 권장)
 - `OPS_ALERT_SLACK_WEBHOOK_URL`: 운영 경보 Slack 웹훅 (선택)
 - `OPS_ALERT_EMAIL_TO`: 운영 경보 이메일 수신자 (선택, `EMAIL_API_URL` 필요)
+- `OPS_ADMIN_USER_IDS`: `/ops` 접근 가능한 운영자 user id 목록 (선택이지만 권장)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM`: Stripe 결제 (선택)
+- `ENABLE_MOCK_BILLING`: 개발/테스트용 mock billing 허용 여부 (`false` 권장, 운영에서는 비활성화)
 - `EMAIL_API_URL`: 주간 리캡 이메일 발송 (선택, POST `{ to, subject, body }` 지원)
 
 ### 운영 안전 정책 환경 변수

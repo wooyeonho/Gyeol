@@ -127,6 +127,33 @@ describe("/api/billing/me contract", () => {
     expect(insert).toHaveBeenCalled();
   });
 
+  it("blocks mock billing writes in production when disabled", async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousFlag = process.env.ENABLE_MOCK_BILLING;
+    const env = process.env as Record<string, string | undefined>;
+    env.NODE_ENV = "production";
+    delete env.ENABLE_MOCK_BILLING;
+
+    (createClient as Mock).mockResolvedValue({
+      auth: {
+        getUser: async () => ({ data: { user: { id: "user-1" } } }),
+      },
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/billing/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_tier: "premium" }),
+      })
+    );
+    expect(response.status).toBe(403);
+
+    env.NODE_ENV = previousNodeEnv;
+    if (previousFlag == null) delete env.ENABLE_MOCK_BILLING;
+    else env.ENABLE_MOCK_BILLING = previousFlag;
+  });
+
   it("downgrades to free via DELETE", async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
     const update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });

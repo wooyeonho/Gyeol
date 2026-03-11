@@ -33,8 +33,9 @@
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRICE_PRO`
 - `STRIPE_PRICE_PREMIUM`
+- `ENABLE_MOCK_BILLING`
 
-> Stripe를 붙이지 않은 환경에서는 plans/settings 표면은 열리되 실제 결제는 mock/fallback 동작 기준으로 검증하면 됩니다.
+> 운영 환경에서는 `ENABLE_MOCK_BILLING=false`를 유지하고 Stripe를 단일 진실원으로 쓰는 것을 권장합니다.
 
 ### Email / Recap / Ops mail
 
@@ -50,6 +51,7 @@
 - `RATE_LIMIT_FAIL_MODE`
 - `CRON_LOCK_FAIL_MODE`
 - `PRODUCT_EVENTS_RETENTION_DAYS`
+- `OPS_ADMIN_USER_IDS`
 
 ### Invite / Referral
 
@@ -100,6 +102,7 @@
 5. Stripe 사용 시 product/price id가 운영 계정 기준인지 확인
 6. email 발송 사용 시 `EMAIL_API_URL`, `RESEND_API_KEY`, `EMAIL_FROM` 조합 점검
 7. Telegram 사용 시 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` 확인
+8. `/ops` 사용 시 `OPS_ADMIN_USER_IDS`에 운영자 user id를 등록
 
 ## 5. 시크릿 취급 원칙
 
@@ -136,6 +139,14 @@
 
 - settings/plans에서 billing portal / checkout 실패
 
+### `ENABLE_MOCK_BILLING`
+
+- production에서 잘못 켜두면 실제 결제 없이 mock 구독 생성 가능
+
+### `OPS_ADMIN_USER_IDS`
+
+- `/ops`, `/api/ops/readiness`, `/api/ops/product` 접근 403
+
 ### `EMAIL_API_URL` 또는 `RESEND_API_KEY`
 
 - recap 메일 / ops 메일 미발송
@@ -147,6 +158,7 @@
 ## 7. 운영 추천값
 
 - `REDEMPTION_AUTO_APPROVE=false`
+- `ENABLE_MOCK_BILLING=false`
 - `RATE_LIMIT_FAIL_MODE=closed` (프로덕션 보수 운영 시)
 - `CRON_LOCK_FAIL_MODE=closed` (프로덕션 보수 운영 시)
 - `PRODUCT_EVENTS_RETENTION_DAYS=90`

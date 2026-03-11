@@ -62,7 +62,7 @@ export const FEATURE_CATALOG: FeatureItem[] = [
   {
     id: "dashboard",
     name: "공개 대시보드",
-    summary: "플랫폼 전체의 활동량과 자율성 건강 상태를 공개 지표로 확인합니다.",
+    summary: "플랫폼 전체의 활동량, 월드 분위기, 공개 가능한 생태계 지표를 한눈에 확인합니다.",
     href: "/dashboard",
     category: "operations",
     status: "ready",

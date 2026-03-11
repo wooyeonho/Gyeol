@@ -86,6 +86,7 @@ export default function OpsPage() {
       fetch("/api/ops/readiness").then(async (res) => {
         if (!res.ok) {
           if (res.status === 401) throw new Error("로그인이 필요합니다.");
+          if (res.status === 403) throw new Error("운영 센터는 운영자 계정에서만 열 수 있습니다.");
           throw new Error("운영 상태를 불러오지 못했습니다.");
         }
         return res.json();
@@ -93,6 +94,7 @@ export default function OpsPage() {
       fetch("/api/ops/product").then(async (res) => {
         if (!res.ok) {
           if (res.status === 401) throw new Error("로그인이 필요합니다.");
+          if (res.status === 403) throw new Error("운영 센터는 운영자 계정에서만 열 수 있습니다.");
           throw new Error("제품 분석 지표를 불러오지 못했습니다.");
         }
         return res.json();

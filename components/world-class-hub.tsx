@@ -288,6 +288,65 @@ export function WorldClassHub() {
     setDraftMission("");
   };
 
+  if (isFirstSession) {
+    return (
+      <section className="fixed left-1/2 top-14 z-20 w-[min(760px,calc(100%-1.5rem))] -translate-x-1/2 rounded-[2rem] border border-white/15 bg-black/45 p-4 shadow-[0_0_80px_rgba(80,128,255,0.18)] backdrop-blur-xl">
+        <div className="absolute inset-0 pointer-events-none rounded-[2rem] aurora-flow opacity-55" />
+        <div className="relative rounded-[1.5rem] border border-white/10 bg-black/35 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+            <span>{t("home.firstMinute")}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/60 normal-case tracking-normal">
+              {selfName}
+            </span>
+          </div>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+            {firstSessionConfig.heading}
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/68 sm:text-base">
+            {firstSessionConfig.description}
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78">
+              {locale === "en" ? `Weather · ${weather}` : `날씨 · ${weather}`}
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78">
+              {t("chat.vitality")} · {Math.round(vitality * 100)}%
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78">
+              Gen {genLevel}
+            </span>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isStreaming) {
+                  void sendMessage(primaryPrompt, {
+                    experiment_key: EXPERIMENT.firstMessageOnboarding,
+                    experiment_variant: onboardingVariant,
+                    source: "cta",
+                  });
+                }
+              }}
+              disabled={isStreaming}
+              className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black disabled:opacity-50"
+            >
+              {firstSessionConfig.cta}
+            </button>
+            <Link
+              href="/features"
+              className="rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white/85 hover:bg-white/10"
+            >
+              {t("home.viewFlow")}
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="fixed top-14 left-1/2 -translate-x-1/2 z-20 w-[min(920px,calc(100%-1.5rem))] rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl shadow-[0_0_80px_rgba(80,128,255,0.18)]">
       <div className="absolute inset-0 pointer-events-none rounded-2xl aurora-flow opacity-55" />
