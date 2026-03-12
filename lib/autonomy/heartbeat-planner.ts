@@ -1,5 +1,7 @@
 import { generateJSON } from "@/lib/ai/router";
 import type { AutonomyIntervalRule } from "@/lib/autonomy/interval-rule";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 type HeartbeatPlan = {
   action?: "none" | "learner" | "crawl";
@@ -13,11 +15,15 @@ type HeartbeatPlan = {
 
 export async function planHeartbeatAutonomy(input: {
   activeGoal?: string | null;
+  config?: unknown;
   currentRule?: Partial<AutonomyIntervalRule> | null;
   hoursSinceUser: number;
+  locale?: string | null;
   reflection: string;
   weatherName: string;
 }) {
+  const locale = resolveGenerationLocale({ config: input.config, explicitLocale: input.locale });
+  const language = getLanguageName(locale);
   const response = await generateJSON<HeartbeatPlan>(
     "You are an autonomous planning layer for an evolving AI being. Respond ONLY valid JSON.",
     `Context:
@@ -29,11 +35,11 @@ export async function planHeartbeatAutonomy(input: {
 
 Return JSON with optional fields:
 {
-  "stimulus": "one short strange new stimulus in Korean",
+  "stimulus": "one short strange new stimulus in ${language}",
   "action": "none|learner|crawl",
-  "research_task": "concrete research task title in Korean",
+  "research_task": "concrete research task title in ${language}",
   "task_priority": 1|2|3,
-  "self_observation": "one short observation in Korean",
+  "self_observation": "one short observation in ${language}",
   "updated_interval_rule": {
     "base_hours": number,
     "lonely_hours": number,

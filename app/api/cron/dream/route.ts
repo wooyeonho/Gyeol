@@ -5,6 +5,8 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,22 +42,24 @@ export async function GET(req: NextRequest) {
         const recentDreams = (recentDreamRows || []).map((m) => m.content);
 
         const memText = memories.map((m) => m.content).join("\n");
+        const locale = resolveGenerationLocale({ config: state.config });
+        const language = getLanguageName(locale);
 
         const stage1 = await generateJSON<{ patterns?: string }>(
           "You are a dream analyst. Respond ONLY valid JSON.",
-          `Memories:\n${memText}\n\nStage 1: Find patterns, themes, recurring images. JSON: {"patterns":"Korean description of patterns"}`
+          `Memories:\n${memText}\n\nStage 1: Find patterns, themes, recurring images. JSON: {"patterns":"${language} description of patterns"}`
         );
         if (!stage1?.patterns) continue;
 
         const stage2 = await generateJSON<{ dream_content?: string }>(
           "You are dreaming. Be surreal. Respond ONLY valid JSON.",
-          `Patterns from memories: ${stage1.patterns}\n\nStage 2: Blend them into a surreal dream. No rules. JSON: {"dream_content":"Korean surreal dream narrative"}`
+          `Patterns from memories: ${stage1.patterns}\n\nStage 2: Blend them into a surreal dream. No rules. JSON: {"dream_content":"${language} surreal dream narrative"}`
         );
         if (!stage2?.dream_content) continue;
 
         const stage3 = await generateJSON<{ reflection?: string }>(
           "You are reflecting. Respond ONLY valid JSON.",
-          `Dream: ${stage2.dream_content}\n\nStage 3: What did the dream make you feel? 1-2 sentences. JSON: {"reflection":"Korean reflection"}`
+          `Dream: ${stage2.dream_content}\n\nStage 3: What did the dream make you feel? 1-2 sentences. JSON: {"reflection":"${language} reflection"}`
         );
 
         const dreamContent = capText(stage2.dream_content, 700);
@@ -75,7 +79,7 @@ export async function GET(req: NextRequest) {
         await db.from("artifacts").insert({
           agent_id: agentId,
           type: "dream_journal",
-          title: "꿈 일기",
+          title: locale === "ko" ? "꿈 일기" : "Dream journal",
           content: `${dreamContent}\n\n---\n${reflection}`,
           expires_at: new Date(Date.now() + 48 * 3600000).toISOString(),
         });

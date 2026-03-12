@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -30,11 +32,18 @@ export async function processUserMemorials(): Promise<number> {
       .order("importance", { ascending: false })
       .limit(10);
     const content = (mems ?? []).map((m) => (m as { content?: string }).content ?? "").join("\n");
+    const { data: state } = await service.from("agent_state").select("config").eq("agent_id", row.agent_id).single();
+    const locale = resolveGenerationLocale({ config: state?.config });
+    const language = getLanguageName(locale);
     const raw = (await generateJSON(
-      "Summarize in one short sentence what this AI's human was like. Korean. No other text.",
+      `Summarize in one short sentence what this AI's human was like. Write in ${language}. No other text.`,
       `Memories:\n${content.slice(0, 1500)}\n\nJSON: {"summary":"one sentence"}`,
     )) as { summary?: string } | null;
-    const summary = raw?.summary ? String(raw.summary).slice(0, 300) : "A Gyeol who lived with their human.";
+    const summary = raw?.summary
+      ? String(raw.summary).slice(0, 300)
+      : locale === "ko"
+        ? "한 사람과 함께 살아간 결."
+        : "A Gyeol who lived with their human.";
     const entry: MemorialEntry = {
       agent_id: row.agent_id,
       self_name: row.self_name,

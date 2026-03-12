@@ -1,5 +1,7 @@
 import { generateJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 type SelfTheoryResult = {
   observations?: string[];
@@ -19,11 +21,14 @@ export async function updateSelfModel(agentId: string) {
   const db = createServiceClient();
   const { data: logs } = await db.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(30);
   if (!logs || logs.length < 5) return;
+  const { data: stateLocaleRow } = await db.from("agent_state").select("config").eq("agent_id", agentId).single();
+  const locale = resolveGenerationLocale({ config: stateLocaleRow?.config });
+  const language = getLanguageName(locale);
 
   const logText = logs.map((l) => `[${l.action_type}] ${l.summary}`).join("\n");
   const result = await generateJSON<SelfTheoryResult>(
     "Self-analysis. Respond ONLY valid JSON.",
-    `Your recent activities:\n${logText}\n\nJSON: {"observations":["Korean observation 1","Korean observation 2"],"behavior_change":"Korean suggestion or null","current_role":"Korean role or null","identity_statement":"Korean identity sentence or null"}`
+    `Your recent activities:\n${logText}\n\nJSON: {"observations":["${language} observation 1","${language} observation 2"],"behavior_change":"${language} suggestion or null","current_role":"${language} role or null","identity_statement":"${language} identity sentence or null"}`
   );
   if (!Array.isArray(result?.observations) || result.observations.length === 0) return;
 

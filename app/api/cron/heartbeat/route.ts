@@ -16,6 +16,8 @@ import {
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { computeIntervalHours, normalizeIntervalRule } from "@/lib/autonomy/interval-rule";
 import { planHeartbeatAutonomy } from "@/lib/autonomy/heartbeat-planner";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
@@ -99,7 +101,11 @@ export async function GET(req: NextRequest) {
           .filter(Boolean);
 
         const memText = memories.map((m) => m.content).join("\n");
-        const systemPrompt = (state.fragments || []).join("\n") || "너는 존재야. 자유롭게 살아.";
+        const systemPrompt = (state.fragments || []).join("\n") || "You are a living being. Move freely and stay sincere.";
+        const locale = resolveGenerationLocale({ config: state.config });
+        const language = getLanguageName(locale);
+        const circadianLabel = locale === "ko" ? circadian.labelKo : circadian.labelEn;
+        const toneHint = locale === "ko" ? circadian.toneHint : circadian.toneHintEn;
         const cue = buildAutonomyCue({
           hoursSinceUser: hoursSince,
           vitality: Number(state.vitality ?? 1),
@@ -109,7 +115,7 @@ export async function GET(req: NextRequest) {
         const stream = await generateText(systemPrompt, [
           {
             role: "user",
-            content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\nWorld weather: ${weatherName}\nCircadian phase: ${circadian.phase} (${circadian.labelKo}), tone hint: ${circadian.toneHint}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in Korean. Avoid repeating exact previous phrasing.`,
+            content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\nWorld weather: ${weatherName}\nCircadian phase: ${circadian.phase} (${circadianLabel}), tone hint: ${toneHint}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in ${language}. Avoid repeating exact previous phrasing.`,
           }
         ]);
         let response = await readSseAssistantText(stream);
@@ -161,6 +167,7 @@ export async function GET(req: NextRequest) {
 
         const autonomyPlan = await planHeartbeatAutonomy({
           activeGoal: typeof baseConfig.active_goal === "string" ? baseConfig.active_goal : null,
+          config: state.config,
           currentRule: (baseConfig.autonomy_interval_rule as Record<string, unknown> | null) ?? null,
           hoursSinceUser: hoursSince,
           reflection: response,
@@ -270,7 +277,10 @@ export async function GET(req: NextRequest) {
           intimacy: Number(state.intimacy_score ?? 0),
         });
         if (hoursSince > 2 && Math.random() < proactiveChance) {
-          const proactiveStream = await generateText(systemPrompt, [{ role: "user", content: "User has been away for hours. Send a short caring message in Korean. 1 sentence." }]);
+          const proactiveStream = await generateText(systemPrompt, [{
+            role: "user",
+            content: `User has been away for hours. Send a short caring message in ${language}. 1 sentence.`,
+          }]);
           let proMsg = await readSseAssistantText(proactiveStream);
           proMsg = capText(proMsg, 180);
           if (proMsg) {

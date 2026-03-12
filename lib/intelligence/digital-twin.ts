@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 const MIN_MEMORIES = 300;
 
@@ -11,6 +13,9 @@ export type UserModel = {
 
 export async function updateUserModel(agentId: string): Promise<boolean> {
   const service = createServiceClient();
+  const { data: stateConfigRow } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
+  const locale = resolveGenerationLocale({ config: stateConfigRow?.config });
+  const language = getLanguageName(locale);
   const { count } = await service
     .from("memories")
     .select("id", { count: "exact", head: true })
@@ -29,7 +34,7 @@ export async function updateUserModel(agentId: string): Promise<boolean> {
 
   const sample = texts.slice(0, 80).join("\n");
   const system = "Analyze the user's speech and values from conversations. Respond ONLY valid JSON.";
-  const user = `Conversations (user messages or context):\n${sample}\n\nJSON: {"speech_patterns":["phrase or style 1","..."],"values":["value or priority 1","..."],"decision_patterns":["pattern 1","..."]}. Use short Korean or English labels.`;
+  const user = `Conversations (user messages or context):\n${sample}\n\nJSON: {"speech_patterns":["phrase or style 1","..."],"values":["value or priority 1","..."],"decision_patterns":["pattern 1","..."]}. Use short ${language} labels.`;
 
   const raw = await generateJSON(system, user) as Record<string, unknown> | null;
   if (!raw || typeof raw !== "object") return false;

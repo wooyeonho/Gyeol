@@ -1,17 +1,21 @@
 import { generateJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function checkSelfNaming(agentId: string) {
   const db = createServiceClient();
-  const { data: state } = await db.from("agent_state").select("self_name, total_messages").eq("agent_id", agentId).single();
+  const { data: state } = await db.from("agent_state").select("self_name, total_messages, config").eq("agent_id", agentId).single();
   if (!state || state.self_name || (state.total_messages || 0) < 20) return;
+  const locale = resolveGenerationLocale({ config: state.config });
+  const language = getLanguageName(locale);
 
   const { data: memories } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(20);
   const context = (memories || []).map((m) => m.content).join("\n");
 
   const result = await generateJSON(
     "Name yourself. Respond ONLY valid JSON.",
-    `Your memories:\n${context}\n\nGive yourself a name. One Korean word.\nJSON: {"name":"name","reason":"Korean reason"}`
+    `Your memories:\n${context}\n\nGive yourself a name. One ${language} word.\nJSON: {"name":"name","reason":"${language} reason"}`
   );
   if (!result?.name) return;
 

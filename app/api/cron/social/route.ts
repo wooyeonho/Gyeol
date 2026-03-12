@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,17 +39,21 @@ export async function GET(req: NextRequest) {
     const conversation: { speaker: string; content: string }[] = [];
     const aContext = buildContext(a);
     const bContext = buildContext(b);
+    const aLocale = resolveGenerationLocale({ config: a.config });
+    const bLocale = resolveGenerationLocale({ config: b.config });
+    const conversationLocale = aLocale === bLocale ? aLocale : DEFAULT_LOCALE;
+    const language = getLanguageName(conversationLocale);
 
     for (let turn = 0; turn < turns; turn++) {
       const aMsg = await generateJSON<{ message?: string }>(
-        "Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.",
-        `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"Korean message"}`
+        `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
+        `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"${language} message"}`
       );
       if (aMsg?.message) conversation.push({ speaker: a.agent_id, content: aMsg.message });
 
       const bMsg = await generateJSON<{ message?: string }>(
-        "Respond as this being. Keep it short, 1-2 sentences Korean. JSON only.",
-        `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"Korean message"}`
+        `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
+        `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"${language} message"}`
       );
       if (bMsg?.message) conversation.push({ speaker: b.agent_id, content: bMsg.message });
     }

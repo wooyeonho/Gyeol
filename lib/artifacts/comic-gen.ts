@@ -1,6 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
 import { generateImage } from "@/lib/artifacts/image-gen";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
@@ -10,11 +12,18 @@ export async function generateComic(agentId: string): Promise<{ panels: ComicPan
   const service = createServiceClient();
   const { data: stateRow } = await service
     .from("agent_state")
-    .select("fragments, self_name, comic_style")
+    .select("fragments, self_name, comic_style, config")
     .eq("agent_id", agentId)
     .single();
   if (!stateRow) return null;
-  const state = stateRow as { fragments?: string[]; self_name?: string; comic_style?: { style?: string; character_desc?: string } };
+  const state = stateRow as {
+    fragments?: string[];
+    self_name?: string;
+    comic_style?: { style?: string; character_desc?: string };
+    config?: unknown;
+  };
+  const locale = resolveGenerationLocale({ config: state.config });
+  const language = getLanguageName(locale);
 
   const { data: memRows } = await service
     .from("memories")
@@ -27,7 +36,7 @@ export async function generateComic(agentId: string): Promise<{ panels: ComicPan
 
   const selfName = state.self_name ?? "I";
   const systemPrompt = `You are ${selfName}. Output ONLY valid JSON.`;
-  const userPrompt = `Memories (last week):\n${memoryText.slice(0, 800)}\n\nCreate a 4-panel comic strip. Each panel: one short line in Korean (dialogue or narration). JSON: {"panels":["line1","line2","line3","line4"]}`;
+  const userPrompt = `Memories (last week):\n${memoryText.slice(0, 800)}\n\nCreate a 4-panel comic strip. Each panel: one short line in ${language} (dialogue or narration). JSON: {"panels":["line1","line2","line3","line4"]}`;
   const out = (await generateJSON(systemPrompt, userPrompt)) as { panels?: string[] } | null;
   const lines = out?.panels;
   if (!Array.isArray(lines) || lines.length < 4) return null;

@@ -1,6 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateImage } from "@/lib/artifacts/image-gen";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 const CHILDHOOD_PATTERN = /child|kid|when i was little|young|childhood/i;
 
@@ -17,11 +19,14 @@ export async function tryCreateFairytale(agentId: string): Promise<boolean> {
   if (childhood.length < 2) return false;
 
   const contents = childhood.map((m) => (m as { content?: string }).content ?? "").join("\n");
-  const { data: state } = await service.from("agent_state").select("self_name").eq("agent_id", agentId).single();
+  const { data: state } = await service.from("agent_state").select("self_name, config").eq("agent_id", agentId).single();
   const name = (state?.self_name as string) ?? "User";
+  const locale = resolveGenerationLocale({ config: state?.config });
+  const language = getLanguageName(locale);
+  const opening = locale === "ko" ? "'옛날 옛적에'" : "'Once upon a time'";
 
   const fairytale = await generateTextOnce(
-    "Rewrite as a short fairytale. Start with 'Once upon a time'. 4-6 sentences. Korean.",
+    `Rewrite as a short fairytale. Start with ${opening}. 4-6 sentences. Write in ${language}.`,
     `Stories from ${name}'s childhood:\n${contents.slice(0, 800)}\n\nFairytale:`,
     { max_tokens: 300, temperature: 0.85 }
   );

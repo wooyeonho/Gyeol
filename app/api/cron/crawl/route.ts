@@ -13,6 +13,8 @@ import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { extractTaskKeywords, sortResearchTasks } from "@/lib/goals/task-utils";
 import { planNextResearchStep } from "@/lib/goals/next-step-planner";
 import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 type PendingResearchTask = {
   id: string;
@@ -51,7 +53,7 @@ function getCrawlUrls(): string[] {
   return DEFAULT_CRAWL_URLS;
 }
 
-async function summarizePages(pages: CrawledPage[]): Promise<string> {
+async function summarizePages(pages: CrawledPage[], language: string): Promise<string> {
   const raw = pages
     .map((p) => `[${p.title}] ${p.content.slice(0, 400)}`)
     .join("\n\n")
@@ -59,7 +61,7 @@ async function summarizePages(pages: CrawledPage[]): Promise<string> {
 
   try {
     return await generateTextOnce(
-      "You are a knowledge summarizer for an AI being. Output in Korean.",
+      `You are a knowledge summarizer for an AI being. Write in ${language}.`,
       `Summarize these web pages into 3-5 key insights:\n\n${raw}\n\nConcise insights only.`,
       { max_tokens: 400, temperature: 0.5 }
     );
@@ -91,20 +93,10 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
   if (pages.length === 0) return { stored: 0, agents_updated: 0 };
 
   const service = createServiceClient();
-  const summary = await summarizePages(pages);
-  const content = capText(`웹 학습: ${summary}`, 900);
-
-  if (!isMeaningfulAutonomousOutput(content)) {
-    return { stored: 0, agents_updated: 0 };
-  }
-
-  let embedding: number[] = [];
-  try {
-    embedding = await generateEmbedding(content);
-  } catch {}
-
   const { data: agents } = await service.from("agents").select("id");
   if (!agents?.length) return { stored: 0, agents_updated: 0 };
+  const summaryCache = new Map<string, string>();
+  const contentCache = new Map<string, { content: string; embedding: number[] }>();
 
   let stored = 0;
   for (const { id: agentId } of agents) {
@@ -116,6 +108,28 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
         .single();
       const config = (state?.config as Record<string, unknown>) ?? {};
       if (config.crawl_enabled === false) continue;
+      const locale = resolveGenerationLocale({ config });
+      const language = getLanguageName(locale);
+      let summary = summaryCache.get(locale);
+      if (!summary) {
+        summary = await summarizePages(pages, language);
+        summaryCache.set(locale, summary);
+      }
+      let cachedContent = contentCache.get(locale);
+      if (!cachedContent) {
+        const content = capText(`${locale === "ko" ? "웹 학습" : "Web learning"}: ${summary}`, 900);
+        let embedding: number[] = [];
+        try {
+          embedding = await generateEmbedding(content);
+        } catch {}
+        cachedContent = { content, embedding };
+        contentCache.set(locale, cachedContent);
+      }
+      const { content, embedding } = cachedContent;
+
+      if (!isMeaningfulAutonomousOutput(content)) {
+        continue;
+      }
 
       const { data: latest } = await service
         .from("memories")
@@ -150,10 +164,10 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
         if (taskPages.length > 0) agentPages = taskPages;
       }
       const focusedPages = filterPagesByTask(agentPages, pendingTask?.title);
-      const focusedSummary = pendingTask?.title ? await summarizePages(focusedPages) : summary;
+      const focusedSummary = pendingTask?.title ? await summarizePages(focusedPages, language) : summary;
 
       const taskAwareContent = pendingTask?.title
-        ? capText(`조사 과제: ${(pendingTask as { title: string }).title}\n웹 요약: ${focusedSummary}`, 900)
+        ? capText(`${locale === "ko" ? "조사 과제" : "Research task"}: ${(pendingTask as { title: string }).title}\n${locale === "ko" ? "웹 요약" : "Web summary"}: ${focusedSummary}`, 900)
         : content;
 
       await service.from("memories").insert({
@@ -197,6 +211,7 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
         const plan = await planNextResearchStep({
           activeGoal: typeof stateConfig.active_goal === "string" ? stateConfig.active_goal : null,
           completedTask: (pendingTask as { title: string }).title,
+          config: stateConfig,
           resultSummary: focusedSummary,
         });
 
