@@ -6,6 +6,7 @@ import { useAgentStore } from "@/store/agent-store";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 function getFirstSessionVariants(locale: "ko" | "en") {
   if (locale === "en") {
@@ -72,7 +73,7 @@ function getReturningPrompts(locale: "ko" | "en") {
 
 export function ChatPanel() {
   const { locale, t } = useTranslations();
-  const { messages, isStreaming, sendMessage } = useChatStore();
+  const { messages, isStreaming, sendMessage, pendingUsageMode } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
   const onboardingVariant = useFirstMessageOnboardingVariant();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,10 +81,29 @@ export function ChatPanel() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
+  const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const isFirstSession = totalMessages === 0 && messages.length === 0;
   const firstSessionConfig = getFirstSessionVariants(locale)[onboardingVariant];
   const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
   const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
+      visual: (agentState?.visual as { color?: string | null; shape?: string | null; glow?: number | null; particles?: number | null; animation?: string | null; background?: string | null } | undefined) ?? null,
+      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
+      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
+      config: {
+        mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
+        usage_profile: pendingUsageMode
+          ? { ...(config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined), primary_mode: pendingUsageMode }
+          : ((config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null),
+      },
+      genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
+      vitality: typeof agentState?.vitality === "number" ? agentState.vitality : 1,
+      mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+    },
+    locale
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -141,6 +161,9 @@ export function ChatPanel() {
                   ? firstSessionConfig.helper
                   : t("chat.returningHelper")}
               </p>
+              <p className="mt-3 text-[11px] uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
+                {appearance.voice.accentLabel}
+              </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {starterPrompts.map((prompt) => (
                   <button
@@ -180,13 +203,24 @@ export function ChatPanel() {
                 {m.content}
               </div>
             ) : (
-              <div className="max-w-[80%] rounded-2xl border border-white/10 bg-black/35 px-4 py-2">
+              <div
+                className="max-w-[80%] rounded-2xl border bg-black/35 px-4 py-2"
+                style={{
+                  borderColor: `${appearance.palette.primary}35`,
+                  boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
+                }}
+              >
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {m.content}
                   {isStreaming && i === messages.length - 1 && (
-                    <span className="animate-pulse">|</span>
+                    <span className="animate-pulse" style={{ color: appearance.palette.primary }}>|</span>
                   )}
                 </p>
+                {!isStreaming && i === messages.length - 1 && (
+                  <p className="mt-2 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    {appearance.voice.toneHint}
+                  </p>
+                )}
                 {!isStreaming && m.content && (
                   <div className="mt-2 flex justify-end">
                     <button
@@ -217,12 +251,14 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isStreaming}
-          className="flex-1 bg-white/5 rounded-full px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 disabled:opacity-50"
+          className="flex-1 rounded-full bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:outline-none disabled:opacity-50"
+          style={{ boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset` }}
         />
         <button
           type="submit"
           disabled={isStreaming || !input.trim()}
-          className="px-4 py-3 rounded-full bg-white/10 text-white disabled:opacity-50"
+          className="px-4 py-3 rounded-full text-white disabled:opacity-50"
+          style={{ background: `${appearance.palette.primary}28` }}
         >
           {t("chat.send")}
         </button>

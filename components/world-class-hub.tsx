@@ -201,7 +201,7 @@ export function WorldClassHub() {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
-  const { messages, isStreaming, sendMessage } = useChatStore();
+  const { messages, isStreaming, sendMessage, pendingUsageMode } = useChatStore();
 
   const [now, setNow] = useState<Date>(new Date());
   const [missions, setMissions] = useState<Mission[]>(() => {
@@ -308,7 +308,12 @@ export function WorldClassHub() {
       selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
       config: {
         mutation_trait: typeof (agentState?.config as Record<string, unknown> | undefined)?.mutation_trait === "string" ? String((agentState?.config as Record<string, unknown>).mutation_trait) : null,
-        usage_profile: ((agentState?.config as Record<string, unknown> | undefined)?.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null,
+        usage_profile: pendingUsageMode
+          ? {
+              ...(((agentState?.config as Record<string, unknown> | undefined)?.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null),
+              primary_mode: pendingUsageMode,
+            }
+          : (((agentState?.config as Record<string, unknown> | undefined)?.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null),
       },
       genLevel,
       vitality,

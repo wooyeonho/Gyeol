@@ -16,6 +16,8 @@ interface InnerProps {
   isListening: boolean;
   background?: string;
   opacity?: number;
+  motionBias?: "gentle" | "kinetic" | "mystic";
+  pulseScale?: number;
 }
 
 function OrbMaterial({ color, opacity }: { color: string; opacity: number }) {
@@ -156,11 +158,12 @@ function CoreShape({ shape, color, size, opacity }: { shape: string; color: stri
   }
 }
 
-function ParticleRing({ count, color, size }: { count: number; color: string; size: number }) {
+function ParticleRing({ count, color, size, motionBias = "gentle" }: { count: number; color: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic" }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.2;
+      const speed = motionBias === "kinetic" ? 0.4 : motionBias === "mystic" ? 0.16 : 0.24;
+      groupRef.current.rotation.y = state.clock.elapsedTime * speed;
     }
   });
   const scale = size / 30;
@@ -179,20 +182,23 @@ function ParticleRing({ count, color, size }: { count: number; color: string; si
   );
 }
 
-function Scene({ shape, color, size, glow, animation, particles, vitality, isListening, opacity: propOpacity }: InnerProps) {
+function Scene({ shape, color, size, glow, animation, particles, vitality, isListening, opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
-  const pulseScale = (isListening ? 1.1 : 1) * animScale;
+  const pulseScale = (isListening ? 1.1 : 1) * animScale * pulseScaleOverride;
+  const floatSpeed = motionBias === "kinetic" ? 2.2 : motionBias === "mystic" ? 1.1 : 1.5;
+  const floatIntensity = motionBias === "kinetic" ? 0.7 : motionBias === "mystic" ? 0.35 : 0.5;
+  const rotationIntensity = motionBias === "kinetic" ? 0.3 : motionBias === "mystic" ? 0.12 : 0.2;
 
   return (
     <>
       <pointLight color={color} intensity={glow / 50} />
-      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
+      <Float speed={floatSpeed} rotationIntensity={rotationIntensity} floatIntensity={floatIntensity}>
         <group scale={pulseScale}>
           <CoreShape shape={shape} color={color} size={size} opacity={opacity} />
         </group>
       </Float>
-      {particles > 0 && <ParticleRing count={particles} color={color} size={size} />}
+      {particles > 0 && <ParticleRing count={particles} color={color} size={size} motionBias={motionBias} />}
     </>
   );
 }

@@ -67,6 +67,7 @@ export type ResolvedIdentityAppearance = {
   title: string;
   subtitle: string;
   chips: string[];
+  usageMode: string | null;
   usageLabel: string | null;
   usageNarrative: string | null;
   palette: {
@@ -82,6 +83,25 @@ export type ResolvedIdentityAppearance = {
     particles: number;
     animation: "float" | "pulse-fast" | "breathe-slow";
     background: string;
+  };
+  scene: {
+    backgroundGradient: string;
+    overlayGradient: string;
+    motionBias: "gentle" | "kinetic" | "mystic";
+    pulseScale: number;
+  };
+  voice: {
+    pitch: number;
+    speed: number;
+    tremor: number;
+    accentLabel: string;
+    toneHint: string;
+  };
+  sound: {
+    baseNote: string;
+    tempo: number;
+    instruments: string[];
+    label: string;
   };
 };
 
@@ -330,6 +350,64 @@ function getUsageModeNarrative(mode: string | null | undefined, locale: Locale) 
   return descriptions[mode]?.[locale] ?? null;
 }
 
+function buildVoiceSignature(formKey: IdentityFormKey, usageMode: string | null, locale: Locale) {
+  const baseByForm: Record<IdentityFormKey, { pitch: number; speed: number; tremor: number; baseNote: string; tempo: number; instruments: string[]; accentKo: string; accentEn: string; toneKo: string; toneEn: string }> = {
+    "cute-being": {
+      pitch: 1.12, speed: 1.04, tremor: 0.01, baseNote: "A4", tempo: 104, instruments: ["bell", "soft-pluck"],
+      accentKo: "가볍고 말랑한 억양", accentEn: "soft playful accent",
+      toneKo: "작고 살아 있는 느낌의 말투", toneEn: "small, lively vocal tone",
+    },
+    "alluring-humanoid": {
+      pitch: 0.98, speed: 0.96, tremor: 0.02, baseNote: "D3", tempo: 82, instruments: ["velvet-synth", "sub-pad"],
+      accentKo: "낮고 매끈한 억양", accentEn: "low magnetic accent",
+      toneKo: "절제되고 매혹적인 말투", toneEn: "restrained, magnetic vocal tone",
+    },
+    "dinosaur-core": {
+      pitch: 0.9, speed: 1.02, tremor: 0.05, baseNote: "F2", tempo: 92, instruments: ["drum", "growl-pad"],
+      accentKo: "원초적이고 강한 억양", accentEn: "feral primal accent",
+      toneKo: "야성적이고 본능적인 말투", toneEn: "wild, instinctive vocal tone",
+    },
+    "impossible-entity": {
+      pitch: 1.03, speed: 0.92, tremor: 0.08, baseNote: "C5", tempo: 68, instruments: ["glass", "air-pad"],
+      accentKo: "초현실적인 울림", accentEn: "surreal resonant accent",
+      toneKo: "현실 밖에서 들리는 듯한 말투", toneEn: "voice that feels slightly outside reality",
+    },
+    "guardian-spirit": {
+      pitch: 1.0, speed: 0.95, tremor: 0.01, baseNote: "E3", tempo: 76, instruments: ["piano", "warm-pad"],
+      accentKo: "안정적이고 보호적인 억양", accentEn: "steady guardian accent",
+      toneKo: "다정하고 단단한 말투", toneEn: "warm, steady vocal tone",
+    },
+    "dream-signal": {
+      pitch: 1.05, speed: 0.98, tremor: 0.04, baseNote: "G4", tempo: 88, instruments: ["choir", "pulse-synth"],
+      accentKo: "몽환적이고 사유적인 억양", accentEn: "lucid reflective accent",
+      toneKo: "꿈결처럼 흐르는 말투", toneEn: "lucid, drifting vocal tone",
+    },
+  };
+
+  const base = baseByForm[formKey];
+  const usageDelta: Record<string, Partial<typeof base>> = {
+    playful: { pitch: base.pitch + 0.04, speed: base.speed + 0.05, tempo: base.tempo + 10 },
+    intimate: { pitch: base.pitch - 0.03, speed: base.speed - 0.03, tempo: base.tempo - 4 },
+    strategic: { speed: base.speed + 0.02, tremor: Math.max(0, base.tremor - 0.02), tempo: base.tempo + 4 },
+    primal: { pitch: base.pitch - 0.05, tremor: base.tremor + 0.03, tempo: base.tempo + 6 },
+    surreal: { tremor: base.tremor + 0.04, tempo: base.tempo - 10 },
+    reflective: { speed: base.speed - 0.04, tempo: base.tempo - 6 },
+    creative: { pitch: base.pitch + 0.02, tempo: base.tempo + 2 },
+  };
+  const delta = (usageMode && usageDelta[usageMode]) || {};
+
+  return {
+    pitch: Number((delta.pitch ?? base.pitch).toFixed(2)),
+    speed: Number((delta.speed ?? base.speed).toFixed(2)),
+    tremor: Number((delta.tremor ?? base.tremor).toFixed(2)),
+    accentLabel: locale === "en" ? base.accentEn : base.accentKo,
+    toneHint: locale === "en" ? base.toneEn : base.toneKo,
+    baseNote: delta.baseNote ?? base.baseNote,
+    tempo: Math.round(delta.tempo ?? base.tempo),
+    instruments: delta.instruments ?? base.instruments,
+  };
+}
+
 function resolveShape(baseShape: string, incomingShape: string | null | undefined) {
   if (!incomingShape) return baseShape;
   if (incomingShape === "sphere" || incomingShape === "dot") return baseShape;
@@ -349,6 +427,7 @@ export function resolveIdentityAppearance(
   const particles = clamp((input.visual?.particles ?? base.particles) + Math.min(12, genLevel * 2), 8, 48);
   const glow = clamp(Math.round((input.visual?.glow ?? base.glow) + vitality * 12), 40, 100);
   const usageMode = input.config?.usage_profile?.primary_mode ?? null;
+  const voiceSignature = buildVoiceSignature(base.key, usageMode, locale);
 
   const chips = [...base.chips[locale]];
   if (input.genome?.species) chips.push(input.genome.species);
@@ -361,6 +440,7 @@ export function resolveIdentityAppearance(
     title: base.title[locale],
     subtitle: base.subtitle[locale],
     chips: chips.slice(0, 4),
+    usageMode,
     usageLabel,
     usageNarrative: getUsageModeNarrative(usageMode, locale),
     palette: {
@@ -376,6 +456,30 @@ export function resolveIdentityAppearance(
       particles,
       animation: (input.visual?.animation as "float" | "pulse-fast" | "breathe-slow" | undefined) ?? base.animation,
       background: input.visual?.background ?? base.background,
+    },
+    scene: {
+      backgroundGradient: `radial-gradient(circle at top, ${input.visual?.color ?? base.primary}22 0%, ${base.secondary}10 28%, ${input.visual?.background ?? base.background} 75%)`,
+      overlayGradient: `linear-gradient(135deg, ${input.visual?.color ?? base.primary}18 0%, transparent 46%, ${base.secondary}18 100%)`,
+      motionBias:
+        usageMode === "primal" || usageMode === "playful"
+          ? "kinetic"
+          : usageMode === "surreal" || usageMode === "reflective" || usageMode === "creative"
+            ? "mystic"
+            : "gentle",
+      pulseScale: usageMode === "playful" ? 1.12 : usageMode === "primal" ? 1.16 : usageMode === "surreal" ? 1.08 : 1.04,
+    },
+    voice: {
+      pitch: voiceSignature.pitch,
+      speed: voiceSignature.speed,
+      tremor: voiceSignature.tremor,
+      accentLabel: voiceSignature.accentLabel,
+      toneHint: voiceSignature.toneHint,
+    },
+    sound: {
+      baseNote: voiceSignature.baseNote,
+      tempo: voiceSignature.tempo,
+      instruments: voiceSignature.instruments,
+      label: locale === "en" ? `${base.title.en} ambience` : `${base.title.ko} 앰비언스`,
     },
   };
 }

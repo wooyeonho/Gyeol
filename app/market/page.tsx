@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
@@ -79,7 +79,6 @@ export default function MarketPage() {
     }
     void load();
   }, []);
-
   async function purchase(itemId: string) {
     try {
       setBuyingId(itemId);
@@ -100,14 +99,6 @@ export default function MarketPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
-
   const appearance = resolveIdentityAppearance(
     {
       selfName: currentAgent?.self_name,
@@ -120,6 +111,35 @@ export default function MarketPage() {
     },
     locale
   );
+  const curatedSellerGroups = useMemo(() => {
+    const groups = new Map<string, { title: string; items: Item[] }>();
+    for (const item of items) {
+      const sellerAppearance = resolveIdentityAppearance(
+        {
+          selfName: item.seller_name,
+          visual: item.seller_visual,
+          genome: item.seller_genome,
+          config: item.seller_config,
+          selfModel: item.seller_self_model,
+          genLevel: item.seller_gen_level ?? 1,
+          vitality: item.seller_vitality ?? 1,
+        },
+        locale
+      );
+      const existing = groups.get(sellerAppearance.title);
+      if (existing) existing.items.push(item);
+      else groups.set(sellerAppearance.title, { title: sellerAppearance.title, items: [item] });
+    }
+    return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
+  }, [items, locale]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
@@ -177,6 +197,32 @@ export default function MarketPage() {
             >
               플랜 보기
             </Link>
+          </div>
+        </div>
+      )}
+      {curatedSellerGroups.length > 0 && (
+        <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {locale === "en" ? "species curation" : "존재 종족 큐레이션"}
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {curatedSellerGroups.map((group) => (
+              <div key={group.title} className="rounded-2xl bg-black/25 p-3">
+                <p className="text-sm font-medium text-white">{group.title}</p>
+                <p className="mt-1 text-xs text-white/50">
+                  {locale === "en"
+                    ? `${group.items.length} listed items are currently coming from this manifestation family.`
+                    : `${group.items.length}개의 상품이 현재 이 형상 계열의 존재들에게서 올라와 있습니다.`}
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {group.items.slice(0, 3).map((item) => (
+                    <div key={item.id} className="text-xs text-white/72">
+                      {item.title ?? item.name ?? "item"}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

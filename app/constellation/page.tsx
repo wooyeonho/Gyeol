@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
@@ -54,6 +54,37 @@ export default function ConstellationPage() {
     },
     locale
   );
+  const evolutionTimeline = useMemo(() => {
+    const firstStar = stars[0];
+    const lastStar = stars[stars.length - 1];
+    const stages = [
+      firstStar
+        ? {
+            id: "origin",
+            title: locale === "en" ? "Origin memory" : "기원 기억",
+            body: firstStar.content,
+            at: firstStar.created_at ?? null,
+          }
+        : null,
+      constellations[0]
+        ? {
+            id: "pattern",
+            title: constellations[0].name,
+            body: locale === "en" ? "A recognizable memory pattern emerged." : "기억이 하나의 패턴으로 묶이기 시작했습니다.",
+            at: firstStar?.created_at ?? null,
+          }
+        : null,
+      lastStar
+        ? {
+            id: "current",
+            title: appearance.title,
+            body: appearance.usageNarrative ?? appearance.subtitle,
+            at: lastStar.created_at ?? null,
+          }
+        : null,
+    ].filter(Boolean) as Array<{ id: string; title: string; body: string; at: string | null }>;
+    return stages;
+  }, [appearance, constellations, locale, stars]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -84,13 +115,46 @@ export default function ConstellationPage() {
           />
         )}
       </div>
-      <div className="p-4 space-y-2">
-        {constellations.map((c) => (
-          <div key={c.name} className="text-sm text-white/70">
-            <span className="font-medium text-white/90">{c.name}</span>
-            <span className="ml-2">{c.starIds.length} {t("constellationPage.stars")}</span>
+      <div className="grid gap-4 p-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="space-y-2 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {locale === "en" ? "constellation clusters" : "별자리 묶음"}
+          </p>
+          {constellations.map((c) => (
+            <div key={c.name} className="text-sm text-white/70">
+              <span className="font-medium text-white/90">{c.name}</span>
+              <span className="ml-2">{c.starIds.length} {t("constellationPage.stars")}</span>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {locale === "en" ? "identity evolution timeline" : "정체성 evolution timeline"}
+          </p>
+          <div className="mt-4 space-y-4">
+            {evolutionTimeline.map((item, index) => (
+              <div key={item.id} className="relative pl-8">
+                {index < evolutionTimeline.length - 1 && (
+                  <div className="absolute left-[11px] top-6 h-[calc(100%+0.5rem)] w-px bg-white/10" />
+                )}
+                <div
+                  className="absolute left-0 top-1 h-6 w-6 rounded-full border"
+                  style={{
+                    borderColor: `${appearance.palette.primary}45`,
+                    background: `${appearance.palette.primary}22`,
+                  }}
+                />
+                <p className="text-sm font-medium text-white">{item.title}</p>
+                {item.at && (
+                  <p className="mt-1 text-xs text-white/48">
+                    {new Date(item.at).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+                )}
+                <p className="mt-2 text-sm leading-6 text-white/66">{item.body}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
       <div className="p-4 pb-24">
         <Link href="/" className="text-white/50 text-sm hover:text-white/80">{t("constellationPage.backHome")}</Link>

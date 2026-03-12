@@ -35,6 +35,13 @@ async function runEvolutionHooks(agentId: string, totalMessages: number, message
   } catch (error) {
     console.error("[Emotions]", error);
   }
+
+  try {
+    const { updateVoiceParams } = await import("@/lib/personality/voice");
+    await updateVoiceParams(agentId);
+  } catch (error) {
+    console.error("[Voice]", error);
+  }
 }
 
 async function applyGoalLoop(params: {

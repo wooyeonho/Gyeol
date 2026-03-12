@@ -13,6 +13,8 @@ interface VoidCanvasProps {
   vitality?: number;
   mood?: string;
   isListening?: boolean;
+  motionBias?: "gentle" | "kinetic" | "mystic";
+  pulseScale?: number;
 }
 
 const VoidCanvasInner = dynamic(
@@ -31,6 +33,8 @@ export function VoidCanvas({
   vitality = 1,
   mood = "",
   isListening = false,
+  motionBias = "gentle",
+  pulseScale = 1,
 }: VoidCanvasProps) {
   void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -55,6 +59,8 @@ export function VoidCanvas({
         particles={particleCount}
         vitality={vitality}
         isListening={isListening}
+        motionBias={motionBias}
+        pulseScale={pulseScale}
       />
     </div>
   );

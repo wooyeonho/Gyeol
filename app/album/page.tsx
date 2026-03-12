@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
@@ -15,6 +15,7 @@ export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
   const [config, setConfig] = useState<{ usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null>(null);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
@@ -48,10 +49,28 @@ export default function AlbumPage() {
         setMilestones(d.milestones ?? []);
         setVisual(d.visual ?? null);
         setConfig(d.config ?? null);
+        setCreatedAt(typeof d.created === "string" ? d.created : null);
       })
       .catch(() => setMilestones([]))
       .finally(() => setLoading(false));
   }, []);
+  const timeline = useMemo(() => {
+    const rows = milestones.slice(0, 6).map((milestone) => ({
+      id: `${milestone.type}-${milestone.at}`,
+      title: milestone.label,
+      body: milestone.summary ?? (locale === "en" ? "A new identity shift was recorded here." : "이 지점에서 새로운 정체성 변화가 기록되었습니다."),
+      at: milestone.at,
+    }));
+    if (appearance.usageLabel) {
+      rows.push({
+        id: "current-manifestation",
+        title: appearance.title,
+        body: appearance.usageNarrative ?? appearance.subtitle,
+        at: config?.usage_profile?.updated_at ?? milestones[milestones.length - 1]?.at ?? createdAt ?? new Date().toISOString(),
+      });
+    }
+    return rows;
+  }, [appearance, config?.usage_profile?.updated_at, createdAt, locale, milestones]);
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24 text-white">
@@ -78,6 +97,33 @@ export default function AlbumPage() {
             {t("album.empty")}
           </div>
         ) : (
+          <>
+          <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+              {locale === "en" ? "identity evolution timeline" : "정체성 evolution timeline"}
+            </p>
+            <div className="mt-4 space-y-4">
+              {timeline.map((item, index) => (
+                <div key={item.id} className="relative pl-8">
+                  {index < timeline.length - 1 && (
+                    <div className="absolute left-[11px] top-6 h-[calc(100%+0.5rem)] w-px bg-white/10" />
+                  )}
+                  <div
+                    className="absolute left-0 top-1 h-6 w-6 rounded-full border"
+                    style={{
+                      borderColor: `${appearance.palette.primary}45`,
+                      background: `${appearance.palette.primary}22`,
+                    }}
+                  />
+                  <p className="text-sm font-medium text-white">{item.title}</p>
+                  <p className="mt-1 text-xs text-white/48">
+                    {new Date(item.at).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/66">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
           <ul className="space-y-4">
             {milestones.map((m, i) => (
               <li
@@ -100,6 +146,7 @@ export default function AlbumPage() {
               </li>
             ))}
           </ul>
+          </>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
           <button

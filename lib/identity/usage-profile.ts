@@ -91,6 +91,20 @@ function applyMessageHeuristics(text: string, scores: Record<UsageMode, number>)
   if (text.includes("!")) scores.playful += 0.2;
 }
 
+export function detectPrimaryUsageModeFromText(text: string): UsageMode {
+  const scores = getDefaultScores();
+  applyMessageHeuristics(text.toLowerCase(), scores);
+  let primaryMode: UsageMode = "reflective";
+  let bestScore = -Infinity;
+  for (const mode of MODES) {
+    if (scores[mode] > bestScore) {
+      bestScore = scores[mode];
+      primaryMode = mode;
+    }
+  }
+  return primaryMode;
+}
+
 export function updateUsageProfile(
   previous: unknown,
   userMessage: string,

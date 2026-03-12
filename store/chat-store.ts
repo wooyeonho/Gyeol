@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useAgentStore } from "@/store/agent-store";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { detectPrimaryUsageModeFromText } from "@/lib/identity/usage-profile";
 
 interface Message { role: "user" | "assistant"; content: string }
 type MessageMeta = {
@@ -12,11 +13,12 @@ type MessageMeta = {
 interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
+  pendingUsageMode: string | null;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
-  messages: [], isStreaming: false,
+  messages: [], isStreaming: false, pendingUsageMode: null,
   sendMessage: async (message: string, meta) => {
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;
@@ -40,7 +42,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
     }
 
-    set((s) => ({ messages: [...s.messages, { role: "user", content: message }], isStreaming: true }));
+    set((s) => ({
+      messages: [...s.messages, { role: "user", content: message }],
+      isStreaming: true,
+      pendingUsageMode: detectPrimaryUsageModeFromText(message),
+    }));
     set((s) => ({ messages: [...s.messages, { role: "assistant", content: "" }] }));
 
     try {
@@ -83,7 +89,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       } catch (e) {
         console.error("[Chat] agent refresh failed", e);
       }
-      set({ isStreaming: false });
+      set({ isStreaming: false, pendingUsageMode: null });
     }
   },
 }));

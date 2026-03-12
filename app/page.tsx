@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
+import { useTranslations } from "@/components/i18n-provider";
+import Soundscape from "@/components/soundscape";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -27,14 +29,48 @@ type Visual = {
 };
 
 export default function Home() {
+  const { locale } = useTranslations();
   const { agentState, loading, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
   const isStreaming = useChatStore((s) => s.isStreaming);
+  const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  const visual = (agentState?.visual as Visual | undefined) ?? {};
+  const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
+  const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
+  const performanceMinimal = config.performance_minimal === true;
+  const effectiveConfig = useMemo(
+    () => ({
+      mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
+      usage_profile: pendingUsageMode
+        ? { ...(config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined), primary_mode: pendingUsageMode }
+        : ((config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null),
+    }),
+    [config.mutation_trait, config.usage_profile, pendingUsageMode]
+  );
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
+      visual,
+      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
+      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
+      config: effectiveConfig,
+      genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
+      vitality,
+      mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+    },
+    locale
+  );
+  const soundProfile = (agentState?.sound_profile as { base_note?: string; tempo?: number; instruments?: string[] } | undefined) ?? {
+    base_note: appearance.sound.baseNote,
+    tempo: appearance.sound.tempo,
+    instruments: appearance.sound.instruments,
+  };
 
   if (loading) {
     return (
@@ -43,27 +79,6 @@ export default function Home() {
       </div>
     );
   }
-
-  const visual = (agentState?.visual as Visual | undefined) ?? {};
-  const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
-  const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
-  const performanceMinimal = config.performance_minimal === true;
-  const appearance = resolveIdentityAppearance(
-    {
-      selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
-      visual,
-      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
-      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
-      config: {
-        mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
-        usage_profile: (config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null,
-      },
-      genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
-      vitality,
-      mood: typeof agentState?.mood === "string" ? agentState.mood : null,
-    },
-    "ko"
-  );
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
 
@@ -76,10 +91,22 @@ export default function Home() {
           onComplete={clearEvolution}
         />
       )}
-      <div className="fixed inset-0 z-0">
+      <div
+        className="fixed inset-0 z-0 transition-[background] duration-700"
+        style={{ backgroundImage: appearance.scene.backgroundGradient }}
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-90 transition-all duration-700"
+          style={{
+            backgroundImage: appearance.scene.overlayGradient,
+            transform: isStreaming || pendingUsageMode ? `scale(${appearance.scene.pulseScale})` : "scale(1)",
+            filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
+          }}
+        />
         {performanceMinimal ? (
           <div
-            className="fixed inset-0 bg-[radial-gradient(circle_at_top,#1e293b_0%,#020617_55%,#000000_100%)]"
+            className="fixed inset-0"
+            style={{ backgroundImage: appearance.scene.backgroundGradient }}
             aria-hidden="true"
           />
         ) : (
@@ -94,12 +121,20 @@ export default function Home() {
             vitality={vitality}
             mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
             isListening={isStreaming}
+            motionBias={appearance.scene.motionBias}
+            pulseScale={appearance.scene.pulseScale}
           />
         )}
       </div>
       <WorldClassHub />
 
       <ChatPanel />
+      <Soundscape
+        enabled={!performanceMinimal}
+        soundProfile={soundProfile}
+        label={appearance.sound.label}
+        accentColor={appearance.palette.primary}
+      />
       <BottomNav />
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
@@ -68,14 +68,6 @@ export default function SocialPage() {
     void load();
   }, [t]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
-
   const appearance = resolveIdentityAppearance(
     {
       selfName: selfAgent?.self_name,
@@ -89,6 +81,34 @@ export default function SocialPage() {
     },
     locale
   );
+  const curatedEncounterGroups = useMemo(() => {
+    const groups = new Map<string, { title: string; items: OtherAgent[] }>();
+    for (const agent of otherAgents) {
+      const agentAppearance = resolveIdentityAppearance(
+        {
+          selfName: agent.self_name,
+          visual: agent.visual,
+          genome: agent.genome,
+          config: agent.config,
+          selfModel: agent.self_model,
+          genLevel: agent.gen_level ?? 1,
+        },
+        locale
+      );
+      const existing = groups.get(agentAppearance.title);
+      if (existing) existing.items.push(agent);
+      else groups.set(agentAppearance.title, { title: agentAppearance.title, items: [agent] });
+    }
+    return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
+  }, [locale, otherAgents]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
@@ -161,6 +181,33 @@ export default function SocialPage() {
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {curatedEncounterGroups.length > 0 && (
+        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {locale === "en" ? "species curation" : "존재 종족 큐레이션"}
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {curatedEncounterGroups.map((group) => (
+              <div key={group.title} className="rounded-2xl bg-black/25 p-3">
+                <p className="text-sm font-medium text-white">{group.title}</p>
+                <p className="mt-1 text-xs text-white/50">
+                  {locale === "en"
+                    ? `${group.items.length} encountered beings share this current manifestation.`
+                    : `${group.items.length}개의 존재가 현재 이 형상 계열에 묶여 있습니다.`}
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {group.items.slice(0, 3).map((agent) => (
+                    <div key={agent.id} className="text-xs text-white/72">
+                      {agent.self_name || t("adoptPage.nameless")}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
