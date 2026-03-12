@@ -10,6 +10,7 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_APP_URL`
+- `DATABASE_URL` (migration / psql 스크립트용)
 
 ### Core auth / cron / encryption
 
@@ -36,6 +37,10 @@
 - `ENABLE_MOCK_BILLING`
 
 > 운영 환경에서는 `ENABLE_MOCK_BILLING=false`를 유지하고 Stripe를 단일 진실원으로 쓰는 것을 권장합니다.
+
+### Deployment / Verification helpers
+
+- `APP_URL` (배포 검증 스크립트 fallback)
 
 ### Email / Recap / Ops mail
 
@@ -99,10 +104,11 @@
 2. Vercel / Koyeb / 스케줄러에 동일한 `CRON_SECRET` 반영
 3. Supabase production 프로젝트 키 재확인
 4. `NEXT_PUBLIC_APP_URL`이 실제 도메인과 완전히 일치하는지 확인
-5. Stripe 사용 시 product/price id가 운영 계정 기준인지 확인
-6. email 발송 사용 시 `EMAIL_API_URL`, `RESEND_API_KEY`, `EMAIL_FROM` 조합 점검
-7. Telegram 사용 시 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` 확인
-8. `/ops` 사용 시 `OPS_ADMIN_USER_IDS`에 운영자 user id를 등록
+5. `DATABASE_URL`이 migration 실행 대상과 일치하는지 확인
+6. Stripe 사용 시 product/price id가 운영 계정 기준인지 확인
+7. email 발송 사용 시 `EMAIL_API_URL`, `RESEND_API_KEY`, `EMAIL_FROM` 조합 점검
+8. Telegram 사용 시 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` 확인
+9. `/ops` 사용 시 `OPS_ADMIN_USER_IDS`에 운영자 user id를 등록
 
 ## 5. 시크릿 취급 원칙
 
@@ -125,6 +131,11 @@
 
 - share / invite / internal webhook URL 생성 오류
 - Stripe redirect / Telegram internal call 불안정
+
+### `DATABASE_URL`
+
+- `scripts/run-migrations.mjs` 실행 실패
+- 로컬/운영 migration 대상 혼선
 
 ### `SUPABASE_SERVICE_ROLE_KEY`
 
@@ -169,3 +180,4 @@
 - `.env.example`
 - `README.md`
 - `docs/QA_HANDOFF.md`
+- `docs/PRODUCT_FINAL_STATE.md`

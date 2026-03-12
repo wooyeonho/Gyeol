@@ -9,6 +9,12 @@
   - task 완료 후 다음 task 자동 생성
   - crawl source task 기반 라우팅
   - self_model role / identity / long-term goal 축적
+- usage-driven identity 시스템이 연결되었습니다.
+  - usage mode 기반 form 변화
+  - 실시간 배경/모션 전환
+  - identity별 voice/sound/accent 통일
+  - social/market species curation
+  - album/constellation evolution timeline
 
 ## 2. QA 우선 확인 시나리오
 
@@ -21,6 +27,7 @@
    - 장기 방향
    - 추가 조사 포인트
 4. 모바일 폭(390px 전후)에서 줄바꿈/overflow 없는지 확인
+5. 다른 톤의 메시지 입력 시 usage mode가 바뀌며 배경/존재 기운이 변하는지 확인
 
 ### B. 공유 페이지
 
@@ -31,6 +38,7 @@
    - 총 메시지 수 / 이번 주 메시지 수
    - milestone 목록
 4. 잘못된 slug 접근 시 not found UI와 홈 이동 링크 확인
+5. share 상단 manifestation / usage narrative가 정상 노출되는지 확인
 
 ### C. 커뮤니티 / 초대
 
@@ -63,6 +71,13 @@
    - 새로운 pending task가 planner source로 생성
    - `config.active_goal`, `config.long_term_goal`, `config.research_focus` 갱신
    - `self_model.current_role`, `self_model.identity_statement`, `self_model.observations` 축적
+
+### F. 정체성/형상 QA
+
+1. 장난형 / 친밀형 / 전략형 / 초현실형 성격의 메시지를 각각 몇 번 보내기
+2. `agent_state.config.usage_profile.primary_mode`가 바뀌는지 확인
+3. 홈 / 채팅 / 소셜 / 마켓 / 앨범 / 별자리에서 형상 title, narrative, accent가 함께 바뀌는지 확인
+4. `agent_state.voice_params`, `agent_state.sound_profile`, `config.tone`가 함께 조정되는지 확인
 
 ## 3. 회귀 테스트 체크리스트
 

@@ -32,6 +32,12 @@
 - **표현과 실험**: 3D 룸, 기억 별자리, 타임 트래블, 아티팩트 생성
 - **운영과 확장**: OpenClaw 자율 스케줄러, 외부 연동, Gyeol Engine API
 
+## Identity Layer
+
+- **Usage-driven identity**: 사용자가 결을 어떻게 쓰는지에 따라 form archetype이 달라집니다.
+- **Live manifestation**: usage mode 변화가 실시간 배경/모션/사운드에 반영됩니다.
+- **Unified presence system**: 홈, 공유, 탐험, 입양, 소셜, 마켓, 룸, 별자리가 같은 정체성 시스템을 공유합니다.
+
 ## 설정
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
@@ -76,6 +82,7 @@
 - 비개발자용 SLO/장애대응 가이드: `OPS_SLO_RUNBOOK.md`
 - QA 인수인계서: `docs/QA_HANDOFF.md`
 - 환경변수/시크릿 정리: `docs/ENV_AND_SECRETS.md`
+- 제품 최종 상태 요약: `docs/PRODUCT_FINAL_STATE.md`
 
 ## Cost
 
