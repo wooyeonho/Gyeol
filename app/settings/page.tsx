@@ -7,6 +7,7 @@ import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTranslations } from "@/components/i18n-provider";
+import { getIntlLocale, type Locale } from "@/lib/i18n/config";
 
 function InviteSection() {
   const { t } = useTranslations();
@@ -63,7 +64,12 @@ function InviteSection() {
 }
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
-import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
+import {
+  formatPlanTierLabel,
+  formatSubscriptionStatus,
+  type EntitlementKey,
+  type PlanDefinition,
+} from "@/lib/billing/catalog";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
 type AgentState = {
@@ -91,34 +97,12 @@ type BillingData = {
   };
 };
 
-function formatPlanTierLabel(
-  tier: PlanDefinition["tier"] | null | undefined,
-  locale: "ko" | "en"
-) {
-  if (tier === "premium") return locale === "en" ? "Premium" : "Premium";
-  if (tier === "pro") return locale === "en" ? "Pro" : "Pro";
-  return locale === "en" ? "Free" : "Free";
-}
-
-function formatSubscriptionStatus(
-  status: string | null | undefined,
-  locale: "ko" | "en"
-) {
-  if (!status) return locale === "en" ? "Not connected yet" : "아직 연결되지 않음";
-  const normalized = status.toLowerCase();
-  if (normalized === "active") return locale === "en" ? "Active" : "정상 사용 중";
-  if (normalized === "trialing") return locale === "en" ? "Trialing" : "체험 중";
-  if (normalized === "past_due") return locale === "en" ? "Past due" : "결제 확인 필요";
-  if (normalized === "cancelled") return locale === "en" ? "Cancelled" : "해지됨";
-  return status;
-}
-
 function formatLocaleDate(
   value: string | null | undefined,
   locale: "ko" | "en"
 ) {
   if (!value) return null;
-  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+  return new Date(value).toLocaleDateString(getIntlLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -264,6 +248,21 @@ export default function SettingsPage() {
     setState({ ...state, channels });
   }
 
+  async function handleLocaleChange(nextLocale: Locale) {
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferred_locale: nextLocale }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+    if (!state) return;
+    const config: AgentConfig = { ...(state.config || {}), preferred_locale: nextLocale };
+    setState({ ...state, config });
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -379,7 +378,7 @@ export default function SettingsPage() {
                 : "현재 세션을 유지한 채 제품 전체 언어를 바꿀 수 있습니다."}
             </p>
           </div>
-          <LocaleSwitcher />
+          <LocaleSwitcher onLocaleChange={handleLocaleChange} />
         </section>
 
         {showPlansSurface && (

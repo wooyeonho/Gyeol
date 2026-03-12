@@ -10,7 +10,7 @@ const BUNDLED: Record<Locale, Messages> = {
 };
 
 export async function loadMessages(locale: Locale): Promise<Messages> {
-  return BUNDLED[locale] ?? BUNDLED.ko;
+  return BUNDLED[locale] ?? BUNDLED.en;
 }
 
 export function getNested(obj: Record<string, unknown>, path: string): string | undefined {

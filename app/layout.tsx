@@ -3,11 +3,18 @@ import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { DocumentLocaleSync } from "@/components/document-locale-sync";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { type Locale } from "@/lib/i18n/config";
 
-export const metadata: Metadata = {
-  title: "결 GYEOL",
-  description: "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱",
-  manifest: "/manifest.json",
+const METADATA_BY_LOCALE: Record<Locale, Pick<Metadata, "title" | "description">> = {
+  ko: {
+    title: "결 GYEOL",
+    description: "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱",
+  },
+  en: {
+    title: "GYEOL",
+    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+  },
 };
 
 export const viewport = {
@@ -15,15 +22,25 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  return {
+    ...METADATA_BY_LOCALE[locale],
+    manifest: "/manifest.json",
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="ko">
+    <html lang={locale}>
       <body className="bg-black text-white min-h-screen antialiased">
-        <I18nProvider>
+        <I18nProvider initialLocale={locale}>
           <DocumentLocaleSync />
           <AnalyticsProvider>{children}</AnalyticsProvider>
         </I18nProvider>

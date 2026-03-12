@@ -1,29 +1,18 @@
 import type { Metadata } from "next";
+import { createServiceClient } from "@/lib/supabase/service";
+import { getRequestLocale } from "@/lib/i18n/server";
+import { buildShareCardMetadata, loadShareCardData } from "@/lib/share/card";
 
 type ShareLayoutProps = {
   children: React.ReactNode;
   params: Promise<{ slug: string }>;
 };
 
-async function loadShareData(slug: string) {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-  if (!appUrl) return null;
-  try {
-    const res = await fetch(`${appUrl}/api/share/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
 export async function generateMetadata({ params }: ShareLayoutProps): Promise<Metadata> {
   const { slug } = await params;
-  const data = await loadShareData(slug);
-  const title = data?.self_name ? `${data.self_name}의 성장 카드` : "결의 공유 카드";
-  const description = data?.week_messages != null
-    ? `이번 주 ${data.week_messages}개의 대화가 쌓인 결의 성장 카드입니다.`
-    : "결의 성장 카드와 마일스톤을 확인해보세요.";
+  const locale = await getRequestLocale();
+  const data = await loadShareCardData(createServiceClient(), slug, locale);
+  const { title, description } = buildShareCardMetadata(data, locale);
   return {
     title,
     description,

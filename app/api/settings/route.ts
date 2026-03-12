@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { normalizeLocale } from "@/lib/i18n/config";
 
 export async function GET() {
   try {
@@ -50,6 +51,10 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
     if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
+    if (typeof body.preferred_locale === "string") {
+      const preferredLocale = normalizeLocale(body.preferred_locale);
+      if (preferredLocale) config.preferred_locale = preferredLocale;
+    }
 
     const updates: Record<string, unknown> = { config };
     const { data: stateRow } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
