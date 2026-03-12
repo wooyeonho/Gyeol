@@ -4,12 +4,20 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { type PlanTier } from "@/lib/billing/catalog";
 import { getLatestSubscription, getResolvedBillingState } from "@/lib/billing/service";
 import { isMockBillingEnabled } from "@/lib/billing/mock-billing";
+import { resolveLocale, type Locale } from "@/lib/i18n/config";
 
 function isPlanTier(value: unknown): value is PlanTier {
   return value === "free" || value === "pro" || value === "premium";
 }
 
-export async function GET() {
+function getRequestLocale(request?: Request): Locale {
+  return resolveLocale({
+    acceptLanguage: request?.headers.get("accept-language") ?? null,
+    cookieHeader: request?.headers.get("cookie") ?? null,
+  });
+}
+
+export async function GET(request?: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,7 +26,7 @@ export async function GET() {
 
   try {
     const service = createServiceClient();
-    return NextResponse.json(await getResolvedBillingState(service, user.id));
+    return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)));
   } catch (error) {
     console.error("GET /api/billing/me error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
@@ -60,14 +68,14 @@ export async function POST(request: Request) {
       metadata: { source: "product_ui" },
     });
 
-    return NextResponse.json(await getResolvedBillingState(service, user.id), { status: 201 });
+    return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)), { status: 201 });
   } catch (error) {
     console.error("POST /api/billing/me error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request?: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -100,7 +108,7 @@ export async function DELETE() {
       metadata: { source: "product_ui_downgrade" },
     });
 
-    return NextResponse.json(await getResolvedBillingState(service, user.id));
+    return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)));
   } catch (error) {
     console.error("DELETE /api/billing/me error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

@@ -5,8 +5,16 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
-import { PLAN_DEFINITIONS, type EntitlementKey, type PlanDefinition, type PlanTier } from "@/lib/billing/catalog";
+import {
+  formatPlanTierLabel,
+  formatSubscriptionStatus,
+  getLocalizedPlanDefinitions,
+  type EntitlementKey,
+  type PlanDefinition,
+  type PlanTier,
+} from "@/lib/billing/catalog";
 import { useTranslations } from "@/components/i18n-provider";
+import { getIntlLocale } from "@/lib/i18n/config";
 
 type BillingData = {
   entitlements: Record<EntitlementKey, boolean>;
@@ -21,30 +29,15 @@ type BillingData = {
 
 const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 
-function formatSubscriptionStatus(status: string | null | undefined, locale: "ko" | "en") {
-  if (!status) return locale === "en" ? "Not connected yet" : "아직 연결되지 않음";
-  const normalized = status.toLowerCase();
-  if (normalized === "active") return locale === "en" ? "Active" : "정상 사용 중";
-  if (normalized === "trialing") return locale === "en" ? "Trialing" : "체험 중";
-  if (normalized === "past_due") return locale === "en" ? "Past due" : "결제 확인 필요";
-  if (normalized === "cancelled") return locale === "en" ? "Cancelled" : "해지됨";
-  return status;
-}
-
-function formatPlanTierLabel(tier: PlanTier | null | undefined, locale: "ko" | "en") {
-  if (tier === "premium") return locale === "en" ? "Premium" : "Premium";
-  if (tier === "pro") return locale === "en" ? "Pro" : "Pro";
-  return locale === "en" ? "Free" : "Free";
-}
-
 export default function PlansPage() {
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
   const { locale, t } = useTranslations();
+  const planDefinitions = getLocalizedPlanDefinitions(locale);
   const renewalDate = billing?.subscription.current_period_end
-    ? new Date(billing.subscription.current_period_end).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+    ? new Date(billing.subscription.current_period_end).toLocaleDateString(getIntlLocale(locale), {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -255,7 +248,7 @@ export default function PlansPage() {
 
         <section className="grid gap-4 lg:grid-cols-3">
           {PLAN_ORDER.map((tier) => {
-            const plan = PLAN_DEFINITIONS[tier];
+            const plan = planDefinitions[tier];
             const isCurrentPlan = billing?.plan?.tier === plan.tier;
             return (
             <article

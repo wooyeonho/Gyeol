@@ -1,10 +1,11 @@
 import type { createServiceClient } from "@/lib/supabase/service";
 import {
-  PLAN_DEFINITIONS,
+  getPlanDefinition,
   resolveEntitlements,
   type PlanTier,
   type SubscriptionStatus,
 } from "@/lib/billing/catalog";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
 
@@ -73,14 +74,18 @@ export async function upsertSubscriptionFromStripe(
   );
 }
 
-export async function getResolvedBillingState(db: DbClient, userId: string) {
+export async function getResolvedBillingState(
+  db: DbClient,
+  userId: string,
+  locale: Locale = DEFAULT_LOCALE
+) {
   const subscription = await getLatestSubscription(db, userId);
   const planTier: PlanTier = isPlanTier(subscription?.plan_tier) ? subscription.plan_tier : "free";
   const status: SubscriptionStatus = isSubscriptionStatus(subscription?.status) ? subscription.status : "active";
 
   return {
     entitlements: resolveEntitlements(planTier),
-    plan: PLAN_DEFINITIONS[planTier],
+    plan: getPlanDefinition(planTier, locale),
     subscription: {
       cancel_at_period_end: Boolean(subscription?.cancel_at_period_end),
       current_period_end: subscription?.current_period_end ?? null,
