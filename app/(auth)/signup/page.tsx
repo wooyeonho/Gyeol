@@ -12,6 +12,8 @@ import { OAuthButtons } from "@/components/auth/oauth-buttons";
 export default function SignupPage() {
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref");
+  const nextPath = searchParams.get("next") || "/";
+  const callbackErrorCode = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,10 @@ export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useTranslations();
+  const authError =
+    error
+    ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
+  const loginHref = `/login${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +46,11 @@ export default function SignupPage() {
       }).catch(() => {});
     }
     trackClientEvent(CLIENT_EVENT.signupCompleted, { method: "password" });
-    router.push("/login");
+    if (data?.session) {
+      router.push(nextPath);
+    } else {
+      router.push(`/login${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`);
+    }
     router.refresh();
   }
 
@@ -80,7 +90,7 @@ export default function SignupPage() {
           className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
           required
         />
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {authError && <p className="text-sm text-red-400">{authError}</p>}
         <button
           type="submit"
           disabled={loading}
@@ -94,6 +104,7 @@ export default function SignupPage() {
         <OAuthButtons
           flow="signup"
           loading={loading}
+          nextPath={nextPath}
           refCode={refCode}
           onError={(message) => setError(message || null)}
           onLoadingChange={setLoading}
@@ -101,7 +112,7 @@ export default function SignupPage() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-white/55">
-        <Link href="/login" className="hover:text-white/80">
+        <Link href={loginHref} className="hover:text-white/80">
           {t("auth.loginLink")}
         </Link>
         <Link href="/features" className="hover:text-white/80">

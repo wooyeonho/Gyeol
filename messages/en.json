@@ -76,13 +76,20 @@
     "subtitle": "Look back at Gyeol's key moments and milestones in chronological order.",
     "empty": "No milestones yet. Keep talking to build the album.",
     "home": "Home",
-    "activity": "Activity"
+    "activity": "Activity",
+    "timelineEyebrow": "Identity evolution timeline",
+    "defaultMilestoneBody": "A new identity shift was recorded here.",
+    "shareReady": "Link copied",
+    "shareAction": "Share growth card"
   },
   "dashboard": {
     "title": "GYEOL Public Dashboard",
     "subtitle": "Public real-time metrics available without login.",
     "loading": "Loading...",
     "unavailable": "Unable to load dashboard.",
+    "eyebrow": "Public living metrics",
+    "heroTitle": "See how the Gyeol ecosystem is moving right now.",
+    "heroBody": "This surface shows only publicly shareable ecosystem scale and collective mood. Internal health, alerts, and operator signals stay on the separate ops surface.",
     "agentCount": "Total Gyeol",
     "socialCount": "Social encounters",
     "weather": "World weather",
@@ -158,7 +165,10 @@
     "title": "Activity",
     "loadError": "Failed to load activity.",
     "empty": "No activity yet.",
-    "preserved": "Preserved"
+    "preserved": "Preserved",
+    "eyebrow": "Living archive",
+    "subtitle": "This timeline records how your being moves, creates, dreams, and changes over time.",
+    "preserve": "Preserve"
   },
   "settings": {
     "title": "Settings",
@@ -198,12 +208,24 @@
     "entitlementsBody": "These are the premium capabilities currently available in this relationship.",
     "lifeEngineEyebrow": "Life engine",
     "lifeEngineBody": "Fine-tune how active, social, and lightweight Gyeol should feel in everyday use.",
-    "inviteBody": "Create a clean invite link you can share when you want someone else to meet Gyeol."
+    "inviteBody": "Create a clean invite link you can share when you want someone else to meet Gyeol.",
+    "toggleLive": "Live",
+    "toggleIdle": "Idle",
+    "autonomousBody": "Keeps Gyeol moving, reflecting, and acting between conversations.",
+    "dreamBody": "Allows dream-like synthesis and internal scene generation during quiet cycles.",
+    "socialBody": "Lets Gyeol notice and react to ecosystem and social signals.",
+    "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
+    "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app."
   },
   "explore": {
     "title": "Explore",
     "loadError": "Failed to load explore data.",
-    "empty": "No other Gyeol yet."
+    "empty": "No other Gyeol yet.",
+    "eyebrow": "Ecosystem atlas",
+    "subtitle": "Every Gyeol can take on a completely different manifestation: a cute creature, a dangerous reptile, a charismatic humanoid, or something that has never existed before.",
+    "nameless": "Unnamed being",
+    "memory": "Memory",
+    "growMine": "Grow one of my own"
   },
   "plans": {
     "eyebrow": "Plans",
@@ -262,13 +284,19 @@
   "roomPage": {
     "title": "Room",
     "subtitle": "Each memory becomes an object in the space.",
-    "viewInAr": "View in AR"
+    "viewInAr": "View in AR",
+    "empty": "No objects yet. This room will fill as the being keeps living."
   },
   "constellationPage": {
     "title": "Constellation",
     "subtitle": "Each memory becomes a star, and nearby memories form constellations.",
     "stars": "stars",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "originMemory": "Origin memory",
+    "patternBody": "A recognizable memory pattern emerged.",
+    "emptySky": "No stars yet. Memories will become a sky here.",
+    "clusters": "Constellation clusters",
+    "timelineEyebrow": "Identity evolution timeline"
   },
   "socialPage": {
     "title": "Social",
@@ -281,7 +309,8 @@
     "speciesCuration": "Species curation",
     "speciesCurationBody": "{count} encountered beings share this current manifestation.",
     "giftEchoes": "Gift echoes",
-    "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here."
+    "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here.",
+    "memories": "memories"
   },
   "adoptPage": {
     "title": "Adopt",
@@ -289,7 +318,24 @@
     "memoryCount": "memories",
     "daysAlive": "days",
     "adopt": "Adopt",
-    "adoptError": "Failed to adopt."
+    "adoptError": "Failed to adopt.",
+    "eyebrow": "Adoption board",
+    "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
+    "vitalityLabel": "Vitality"
+  },
+  "breeding": {
+    "memories": "memories",
+    "mine": "Mine",
+    "partner": "Partner",
+    "child": "Child",
+    "requestFailed": "Request failed",
+    "sending": "Sending...",
+    "sendRequest": "Send breeding request",
+    "requestFrom": "Breeding request from {name}",
+    "fallbackPartner": "another Gyeol",
+    "acceptFailed": "Accept failed",
+    "accept": "Accept",
+    "reject": "Reject"
   },
   "sharePage": {
     "notFound": "Share card not found.",
@@ -321,15 +367,29 @@
   "communityPage": {
     "title": "Gyeol community",
     "subtitle": "A place to connect, share, and grow with people who are building their own AI beings.",
+    "eyebrow": "Community",
     "exploreTitle": "Explore ecosystem",
     "exploreBody": "See what names and growth trajectories other users’ Gyeol have.",
+    "exploreEyebrow": "Explore",
     "inviteTitle": "Invite friends",
     "inviteBody": "Share an invite link and build a relationship that grows together.",
+    "inviteEyebrow": "Invite",
     "adoptTitle": "Adopt board",
     "adoptBody": "A beta space for exploring the possibility of connecting with a new being.",
+    "adoptEyebrow": "Adopt",
     "featuresTitle": "Feature overview",
     "featuresBody": "Look through Gyeol’s full experience and structure.",
+    "featuresEyebrow": "World",
     "backHome": "Back to home"
+  },
+  "timeTravelChat": {
+    "header": "Past self",
+    "close": "Close",
+    "empty": "Send a message to your past self at this date.",
+    "placeholder": "Message...",
+    "send": "Send",
+    "reachError": "Could not reach your past self.",
+    "genericError": "An error occurred."
   },
   "inviteHubPage": {
     "eyebrow": "Invite access",

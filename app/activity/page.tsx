@@ -126,14 +126,11 @@ export default function ActivityPage() {
           <IdentityPresence appearance={appearance} size="md" />
           <div>
             <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-              {locale === "en" ? "living archive" : "living archive"}
+              {t("activity.eyebrow")}
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("activity.title")}</h1>
             <p className="mt-3 text-sm leading-6 text-white/66">
-              {appearance.usageNarrative ??
-                (locale === "en"
-                  ? "This timeline records how your being moves, creates, dreams, and changes over time."
-                  : "이 타임라인은 결이 시간 속에서 어떻게 움직이고, 만들고, 꿈꾸고, 변해왔는지를 기록합니다.")}
+              {appearance.usageNarrative ?? t("activity.subtitle")}
             </p>
           </div>
         </div>
@@ -165,7 +162,7 @@ export default function ActivityPage() {
                     onClick={() => void togglePreserved(item.id, item.is_preserved || false)}
                     className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs"
                   >
-                    {item.is_preserved ? t("activity.preserved") : (locale === "en" ? "Preserve" : "보관")}
+                    {item.is_preserved ? t("activity.preserved") : t("activity.preserve")}
                   </button>
                 </div>
               </>

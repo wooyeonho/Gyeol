@@ -62,7 +62,7 @@ export default function ExplorePage() {
         }));
         setAgents(list);
       } catch {
-        setError("탐색 데이터를 불러오지 못했습니다.");
+        setError(t("explore.loadError"));
         setAgents([]);
       } finally {
         setLoading(false);
@@ -84,13 +84,11 @@ export default function ExplorePage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-            {locale === "en" ? "ecosystem atlas" : "ecosystem atlas"}
+            {t("explore.eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("explore.title")}</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/66">
-            {locale === "en"
-              ? "Every Gyeol can take on a completely different manifestation: a cute creature, a dangerous reptile, a charismatic humanoid, or something that has never existed before."
-              : "각 결은 완전히 다른 형상으로 자랄 수 있습니다. 귀여운 생명체가 될 수도, 원초적 파충 존재가 될 수도, 매혹적인 인간형이 될 수도, 세상에 없던 무언가가 될 수도 있습니다."}
+            {t("explore.subtitle")}
           </p>
         </header>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
@@ -118,7 +116,7 @@ export default function ExplorePage() {
                   <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
                     {appearance.title}
                   </p>
-                  <div className="mt-2 font-medium text-white">{a.self_name || (locale === "en" ? "Unnamed being" : "이름 없음")}</div>
+                  <div className="mt-2 font-medium text-white">{a.self_name || t("explore.nameless")}</div>
                   <p className="mt-1 text-xs leading-5 text-white/55">{appearance.usageNarrative ?? appearance.subtitle}</p>
                 </div>
               </div>
@@ -128,7 +126,7 @@ export default function ExplorePage() {
                   <p className="mt-1 text-sm font-medium text-white">{a.gen_level}</p>
                 </div>
                 <div className="rounded-xl bg-black/25 p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "memory" : "기억"}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-white/45">{t("explore.memory")}</p>
                   <p className="mt-1 text-sm font-medium text-white">{a.total_messages}</p>
                 </div>
                 <div className="rounded-xl bg-black/25 p-3">
@@ -157,7 +155,7 @@ export default function ExplorePage() {
       </div>
       <div className="mt-8 text-center">
         <Link href="/signup" className="inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-black hover:bg-white/90">
-          {locale === "en" ? "Grow one of my own" : "나만의 결 키워보기"}
+          {t("explore.growMine")}
         </Link>
       </div>
       </div>

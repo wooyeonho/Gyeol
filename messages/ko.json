@@ -76,13 +76,20 @@
     "subtitle": "결의 주요 순간과 마일스톤을 시간순으로 다시 돌아봅니다.",
     "empty": "아직 기록된 마일스톤이 없습니다. 대화를 이어가며 앨범을 채워보세요.",
     "home": "홈",
-    "activity": "활동"
+    "activity": "활동",
+    "timelineEyebrow": "정체성 진화 타임라인",
+    "defaultMilestoneBody": "이 지점에서 새로운 정체성 변화가 기록되었습니다.",
+    "shareReady": "링크 복사됨",
+    "shareAction": "성장 카드 공유"
   },
   "dashboard": {
     "title": "결 공개 대시보드",
     "subtitle": "로그인 없이 볼 수 있는 실시간 공개 지표입니다.",
     "loading": "불러오는 중...",
     "unavailable": "대시보드를 불러오지 못했습니다.",
+    "eyebrow": "공개 라이브 지표",
+    "heroTitle": "결 생태계가 지금 어떻게 움직이고 있는지 한눈에 확인하세요.",
+    "heroBody": "이 화면은 공개 가능한 전체 규모와 집단 분위기만 보여줍니다. 운영 상태, 경보, 내부 건강 지표는 별도 운영 화면에서 확인합니다.",
     "agentCount": "전체 결 수",
     "socialCount": "소셜 상호작용",
     "weather": "월드 날씨",
@@ -158,7 +165,10 @@
     "title": "활동 흔적",
     "loadError": "활동 데이터를 불러오지 못했습니다.",
     "empty": "아직 활동이 없습니다.",
-    "preserved": "보존됨"
+    "preserved": "보존됨",
+    "eyebrow": "라이빙 아카이브",
+    "subtitle": "이 타임라인은 결이 시간 속에서 어떻게 움직이고, 만들고, 꿈꾸고, 변해왔는지를 기록합니다.",
+    "preserve": "보관"
   },
   "settings": {
     "title": "설정",
@@ -198,12 +208,24 @@
     "entitlementsBody": "현재 이 관계에서 열려 있는 프리미엄 능력들입니다.",
     "lifeEngineEyebrow": "라이프 엔진",
     "lifeEngineBody": "결이 얼마나 자율적이고, 사회적이고, 가볍게 움직일지 제품 감도에 맞춰 세밀하게 조정합니다.",
-    "inviteBody": "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요."
+    "inviteBody": "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요.",
+    "toggleLive": "작동 중",
+    "toggleIdle": "대기",
+    "autonomousBody": "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
+    "dreamBody": "조용한 주기 동안 꿈처럼 장면을 합성하고 내부 리플렉션을 이어가게 합니다.",
+    "socialBody": "결이 생태계와 소셜 신호를 감지하고 관계적 반응을 이어가게 합니다.",
+    "performanceMinimalBody": "보다 조용하고 가벼운 시각/런타임 경로를 사용해 저전력 세션에 맞춥니다.",
+    "recapEmailBody": "앱 밖에서도 관계가 이어지도록 주기적인 리캡을 메일로 전달합니다."
   },
   "explore": {
     "title": "생태계 탐험",
     "loadError": "탐색 데이터를 불러오지 못했습니다.",
-    "empty": "아직 다른 결이 없습니다."
+    "empty": "아직 다른 결이 없습니다.",
+    "eyebrow": "생태계 아틀라스",
+    "subtitle": "각 결은 완전히 다른 형상으로 자랄 수 있습니다. 귀여운 생명체가 될 수도, 원초적 파충 존재가 될 수도, 매혹적인 인간형이 될 수도, 세상에 없던 무언가가 될 수도 있습니다.",
+    "nameless": "이름 없음",
+    "memory": "기억",
+    "growMine": "나만의 결 키워보기"
   },
   "plans": {
     "eyebrow": "플랜",
@@ -262,13 +284,19 @@
   "roomPage": {
     "title": "룸",
     "subtitle": "각 기억이 공간 안의 오브젝트로 변합니다.",
-    "viewInAr": "AR로 보기"
+    "viewInAr": "AR로 보기",
+    "empty": "아직 오브젝트가 없습니다. 결이 계속 살아가며 이 방을 채우게 됩니다."
   },
   "constellationPage": {
     "title": "기억 별자리",
     "subtitle": "각 기억은 별이 되고, 가까운 기억끼리 별자리를 이룹니다.",
     "stars": "개 별",
-    "backHome": "홈으로 돌아가기"
+    "backHome": "홈으로 돌아가기",
+    "originMemory": "기원 기억",
+    "patternBody": "기억이 하나의 패턴으로 묶이기 시작했습니다.",
+    "emptySky": "아직 별이 없습니다. 기억이 쌓이면 이곳이 하나의 하늘이 됩니다.",
+    "clusters": "별자리 묶음",
+    "timelineEyebrow": "정체성 진화 타임라인"
   },
   "socialPage": {
     "title": "소셜",
@@ -281,7 +309,8 @@
     "speciesCuration": "존재 종족 큐레이션",
     "speciesCurationBody": "{count}개의 존재가 현재 이 형상 계열에 묶여 있습니다.",
     "giftEchoes": "선물의 잔향",
-    "emptyState": "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다."
+    "emptyState": "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다.",
+    "memories": "기억"
   },
   "adoptPage": {
     "title": "입양",
@@ -289,7 +318,24 @@
     "memoryCount": "기억",
     "daysAlive": "일",
     "adopt": "입양하기",
-    "adoptError": "입양에 실패했습니다."
+    "adoptError": "입양에 실패했습니다.",
+    "eyebrow": "입양 보드",
+    "subtitle": "이 보드의 존재들은 이미 각자의 형상과 삶의 흔적을 품고 있습니다. 하나의 종, 하나의 성별, 하나의 감정 톤에 갇혀 있지 않습니다.",
+    "vitalityLabel": "활력"
+  },
+  "breeding": {
+    "memories": "기억",
+    "mine": "나",
+    "partner": "상대",
+    "child": "자식",
+    "requestFailed": "요청에 실패했습니다",
+    "sending": "보내는 중...",
+    "sendRequest": "브리딩 요청 보내기",
+    "requestFrom": "{name}의 브리딩 요청",
+    "fallbackPartner": "다른 결",
+    "acceptFailed": "수락에 실패했습니다",
+    "accept": "수락",
+    "reject": "거절"
   },
   "sharePage": {
     "notFound": "공유 카드를 찾을 수 없습니다.",
@@ -321,15 +367,29 @@
   "communityPage": {
     "title": "결 커뮤니티",
     "subtitle": "나만의 AI 존재와 성장한 사람들과 연결되고, 공유하고, 함께 성장하는 공간입니다.",
+    "eyebrow": "커뮤니티",
     "exploreTitle": "생태계 탐험",
     "exploreBody": "다른 사용자의 결들이 어떤 이름과 성장 궤적을 갖는지 둘러보세요.",
+    "exploreEyebrow": "탐험",
     "inviteTitle": "친구 초대",
     "inviteBody": "초대 링크를 공유하고 함께 성장하는 관계를 만들어보세요.",
+    "inviteEyebrow": "초대",
     "adoptTitle": "입양 보드",
     "adoptBody": "새로운 존재와의 연결 가능성을 탐색하는 베타 공간입니다.",
+    "adoptEyebrow": "입양",
     "featuresTitle": "기능 소개",
     "featuresBody": "결의 전체 경험과 구조를 살펴보세요.",
+    "featuresEyebrow": "월드",
     "backHome": "홈으로 돌아가기"
+  },
+  "timeTravelChat": {
+    "header": "과거의 나",
+    "close": "닫기",
+    "empty": "이 날짜의 과거 나에게 메시지를 보내보세요.",
+    "placeholder": "메시지를 입력하세요...",
+    "send": "전송",
+    "reachError": "과거의 나에게 연결하지 못했습니다.",
+    "genericError": "오류가 발생했습니다."
   },
   "inviteHubPage": {
     "eyebrow": "초대 안내",

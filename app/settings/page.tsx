@@ -7,7 +7,8 @@ import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTranslations } from "@/components/i18n-provider";
-import { getIntlLocale, type Locale } from "@/lib/i18n/config";
+import { type Locale } from "@/lib/i18n/config";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 function InviteSection() {
   const { t } = useTranslations();
@@ -102,11 +103,7 @@ function formatLocaleDate(
   locale: "ko" | "en"
 ) {
   if (!value) return null;
-  return new Date(value).toLocaleDateString(getIntlLocale(locale), {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatLocalizedDate(value, locale);
 }
 
 function SettingsStatCard({
@@ -137,13 +134,13 @@ function SettingsToggle({
   description,
   enabled,
   onToggle,
-  locale,
+  stateLabel,
 }: {
   label: string;
   description: string;
   enabled: boolean;
   onToggle: () => void;
-  locale: "ko" | "en";
+  stateLabel: string;
 }) {
   return (
     <button
@@ -157,7 +154,7 @@ function SettingsToggle({
       </div>
       <div className="flex items-center gap-3">
         <span className={`text-[11px] uppercase tracking-[0.18em] ${enabled ? "text-cyan-100/80" : "text-white/35"}`}>
-          {enabled ? (locale === "en" ? "live" : "작동 중") : (locale === "en" ? "idle" : "대기")}
+          {stateLabel}
         </span>
         <span
           className={`relative h-7 w-12 rounded-full border transition-colors ${
@@ -302,46 +299,31 @@ export default function SettingsPage() {
   const toggleRows = [
     {
       label: t("settings.autonomous"),
-      description:
-        locale === "en"
-          ? "Keeps Gyeol moving, reflecting, and acting between conversations."
-          : "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
+      description: t("settings.autonomousBody"),
       enabled: config.autonomous_enabled !== false,
       onToggle: () => toggleConfig("autonomous_enabled", !config.autonomous_enabled),
     },
     {
       label: t("settings.dream"),
-      description:
-        locale === "en"
-          ? "Allows dream-like synthesis and internal scene generation during quiet cycles."
-          : "조용한 주기 동안 꿈처럼 장면을 합성하고 내부 리플렉션을 이어가게 합니다.",
+      description: t("settings.dreamBody"),
       enabled: Boolean(config.dream_enabled),
       onToggle: () => toggleConfig("dream_enabled", !config.dream_enabled),
     },
     {
       label: t("settings.social"),
-      description:
-        locale === "en"
-          ? "Lets Gyeol notice and react to ecosystem and social signals."
-          : "결이 생태계와 소셜 신호를 감지하고 관계적 반응을 이어가게 합니다.",
+      description: t("settings.socialBody"),
       enabled: config.social_enabled !== false,
       onToggle: () => toggleConfig("social_enabled", !config.social_enabled),
     },
     {
       label: t("settings.performanceMinimal"),
-      description:
-        locale === "en"
-          ? "Uses a lighter visual/runtime path for quieter or lower-power sessions."
-          : "보다 조용하고 가벼운 시각/런타임 경로를 사용해 저전력 세션에 맞춥니다.",
+      description: t("settings.performanceMinimalBody"),
       enabled: Boolean(config.performance_minimal),
       onToggle: () => toggleConfig("performance_minimal", !config.performance_minimal),
     },
     {
       label: t("settings.recapEmail"),
-      description:
-        locale === "en"
-          ? "Sends a periodic recap so the relationship can continue outside the app."
-          : "앱 밖에서도 관계가 이어지도록 주기적인 리캡을 메일로 전달합니다.",
+      description: t("settings.recapEmailBody"),
       enabled: Boolean(state?.channels?.email),
       onToggle: () => toggleRecapEmail(!state?.channels?.email),
     },
@@ -462,7 +444,7 @@ export default function SettingsPage() {
                 description={toggle.description}
                 enabled={toggle.enabled}
                 onToggle={toggle.onToggle}
-                locale={locale}
+                stateLabel={toggle.enabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
               />
             ))}
           </div>

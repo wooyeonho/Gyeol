@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "@/components/i18n-provider";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 type TimeTravelChatProps = {
   targetDate: string;
@@ -8,6 +10,7 @@ type TimeTravelChatProps = {
 };
 
 export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatProps) {
+  const { locale, t } = useTranslations();
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -30,7 +33,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
         body: JSON.stringify({ target_date: targetDate, message: text }),
       });
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, { role: "assistant", content: "Could not reach past self." }]);
+        setMessages((m) => [...m, { role: "assistant", content: t("timeTravelChat.reachError") }]);
         return;
       }
       const reader = res.body.getReader();
@@ -69,7 +72,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
       }
       setMessages((m) => [...m, { role: "assistant", content: full || "..." }]);
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Error." }]);
+      setMessages((m) => [...m, { role: "assistant", content: t("timeTravelChat.genericError") }]);
     } finally {
       setStreaming(false);
     }
@@ -78,16 +81,16 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
   return (
     <div className="flex flex-col h-full max-h-[70vh] rounded-xl overflow-hidden bg-[#2a2520] border border-amber-900/50">
       <div className="flex items-center justify-between px-4 py-2 border-b border-amber-900/30 bg-[#1f1b18]">
-        <span className="text-amber-200/90 text-sm">Past self · {new Date(targetDate).toLocaleDateString()}</span>
+        <span className="text-amber-200/90 text-sm">{t("timeTravelChat.header")} · {formatLocalizedDate(targetDate, locale)}</span>
         {onClose && (
           <button type="button" onClick={onClose} className="text-amber-200/70 hover:text-amber-200 text-sm">
-            Close
+            {t("timeTravelChat.close")}
           </button>
         )}
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
-          <p className="text-amber-200/50 text-sm">Send a message to your past self at this date.</p>
+          <p className="text-amber-200/50 text-sm">{t("timeTravelChat.empty")}</p>
         )}
         {messages.map((msg, i) => (
           <div
@@ -119,7 +122,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-            placeholder="Message..."
+            placeholder={t("timeTravelChat.placeholder")}
             className="flex-1 rounded-lg bg-[#1f1b18] border border-amber-900/30 px-3 py-2 text-sm text-amber-100 placeholder-amber-200/40"
             disabled={streaming}
           />
@@ -129,7 +132,7 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
             disabled={streaming || !input.trim()}
             className="rounded-lg bg-amber-800/60 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-50"
           >
-            Send
+            {t("timeTravelChat.send")}
           </button>
         </div>
       </div>

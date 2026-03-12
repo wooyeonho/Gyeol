@@ -13,15 +13,16 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   const next = sanitizeNextPath(url.searchParams.get("next"));
   const ref = url.searchParams.get("ref");
+  const flow = url.searchParams.get("flow") === "signup" ? "signup" : "login";
 
   if (!code) {
-    return NextResponse.redirect(new URL("/login?error=missing_oauth_code", request.url));
+    return NextResponse.redirect(new URL(`/${flow}?error=missing_oauth_code`, request.url));
   }
 
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL("/login?error=oauth_exchange_failed", request.url));
+    return NextResponse.redirect(new URL(`/${flow}?error=oauth_exchange_failed`, request.url));
   }
 
   if (ref) {

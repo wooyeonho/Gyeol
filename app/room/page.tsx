@@ -66,7 +66,7 @@ export default function RoomPage() {
             objects={objects}
             accentColor={appearance.palette.primary}
             backgroundColor={appearance.palette.background}
-            emptyLabel={locale === "en" ? "No objects yet. This room will fill as the being keeps living." : "아직 오브젝트가 없습니다. 결이 계속 살아가며 이 방을 채우게 됩니다."}
+            emptyLabel={t("roomPage.empty")}
           />
         )}
       </div>

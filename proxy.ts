@@ -50,6 +50,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !pathname.startsWith("/api")) {
     const loginUrl = new URL("/login", request.url);
+    const nextPath = `${pathname}${request.nextUrl.search}`;
+    if (nextPath && nextPath !== "/") {
+      loginUrl.searchParams.set("next", nextPath);
+    }
     return NextResponse.redirect(loginUrl);
   }
 

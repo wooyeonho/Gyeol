@@ -14,7 +14,7 @@ import {
   type PlanTier,
 } from "@/lib/billing/catalog";
 import { useTranslations } from "@/components/i18n-provider";
-import { getIntlLocale } from "@/lib/i18n/config";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 type BillingData = {
   entitlements: Record<EntitlementKey, boolean>;
@@ -37,11 +37,7 @@ export default function PlansPage() {
   const { locale, t } = useTranslations();
   const planDefinitions = getLocalizedPlanDefinitions(locale);
   const renewalDate = billing?.subscription.current_period_end
-    ? new Date(billing.subscription.current_period_end).toLocaleDateString(getIntlLocale(locale), {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+    ? formatLocalizedDate(billing.subscription.current_period_end, locale)
     : null;
   const statusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const currentPlanLabel = formatPlanTierLabel(billing?.plan.tier, locale);

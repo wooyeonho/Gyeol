@@ -14,7 +14,7 @@ type DashboardData = {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { locale, t } = useTranslations();
+  const { t } = useTranslations();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,16 +40,12 @@ export default function DashboardPage() {
       ) : data ? (
         <div className="grid max-w-3xl gap-4">
           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">public living metrics</p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">{t("dashboard.eyebrow")}</p>
             <h2 className="mt-3 text-xl font-semibold">
-              {locale === "en"
-                ? "See how the Gyeol ecosystem is moving right now."
-                : "결 생태계가 지금 어떻게 움직이고 있는지 한눈에 확인하세요."}
+              {t("dashboard.heroTitle")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-white/60">
-              {locale === "en"
-                ? "This surface shows only publicly shareable ecosystem scale and collective mood. Internal health, alerts, and operator signals stay on the separate ops surface."
-                : "이 화면은 공개 가능한 전체 규모와 집단 분위기만 보여줍니다. 운영 상태, 경보, 내부 건강 지표는 별도 운영 화면에서 확인합니다."}
+              {t("dashboard.heroBody")}
             </p>
           </div>
 

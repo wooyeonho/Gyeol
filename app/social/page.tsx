@@ -173,7 +173,7 @@ export default function SocialPage() {
                       <p className="text-xs uppercase tracking-wider text-white/45">{otherAppearance.title}</p>
                       <p className="mt-1 text-sm font-medium text-white">{agent.self_name || t("adoptPage.nameless")}</p>
                       <p className="mt-1 text-xs text-white/55">
-                        Gen {agent.gen_level ?? 1} · {locale === "en" ? "memories" : "기억"} {agent.memory_count}
+                        Gen {agent.gen_level ?? 1} · {t("socialPage.memories")} {agent.memory_count}
                       </p>
                     </div>
                   </div>

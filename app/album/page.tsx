@@ -59,7 +59,7 @@ export default function AlbumPage() {
     const rows = milestones.slice(0, 6).map((milestone) => ({
       id: `${milestone.type}-${milestone.at}`,
       title: milestone.label,
-      body: milestone.summary ?? (locale === "en" ? "A new identity shift was recorded here." : "이 지점에서 새로운 정체성 변화가 기록되었습니다."),
+      body: milestone.summary ?? t("album.defaultMilestoneBody"),
       at: milestone.at,
     }));
     if (appearance.usageLabel) {
@@ -71,7 +71,7 @@ export default function AlbumPage() {
       });
     }
     return rows;
-  }, [appearance, config?.usage_profile?.updated_at, createdAt, locale, milestones]);
+  }, [appearance, config?.usage_profile?.updated_at, createdAt, locale, milestones, t]);
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24 text-white">
@@ -101,7 +101,7 @@ export default function AlbumPage() {
           <>
           <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-              {locale === "en" ? "identity evolution timeline" : "정체성 evolution timeline"}
+              {t("album.timelineEyebrow")}
             </p>
             <div className="mt-4 space-y-4">
               {timeline.map((item, index) => (
@@ -156,7 +156,7 @@ export default function AlbumPage() {
             disabled={shareLoading}
             className="rounded-full bg-cyan-500/20 border border-cyan-400/30 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-50"
           >
-            {shareLoading ? "..." : shareUrl ? "링크 복사됨" : "성장 카드 공유"}
+            {shareLoading ? "..." : shareUrl ? t("album.shareReady") : t("album.shareAction")}
           </button>
           <Link
             href="/"

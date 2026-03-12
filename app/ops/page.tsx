@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
+import { formatLocalizedDateTime } from "@/lib/i18n/format";
 
 type OpsData = {
   checked_at: string;
@@ -230,7 +231,7 @@ export default function OpsPage() {
             <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-white/50 uppercase tracking-wider">최근 시스템 경보</p>
-                <span className="text-xs text-white/40">{new Date(data.checked_at).toLocaleString("ko-KR")}</span>
+                <span className="text-xs text-white/40">{formatLocalizedDateTime(data.checked_at, "ko")}</span>
               </div>
               {data.recent_alerts.length === 0 ? (
                 <p className="text-sm text-white/60">경보가 없습니다.</p>
@@ -240,7 +241,7 @@ export default function OpsPage() {
                     <div key={`${alert.code}-${alert.created_at}`} className="rounded-lg border border-white/10 px-3 py-2">
                       <div className="flex items-center justify-between text-xs text-white/60">
                         <span>{alert.source}</span>
-                        <span>{new Date(alert.created_at).toLocaleString("ko-KR")}</span>
+                        <span>{formatLocalizedDateTime(alert.created_at, "ko")}</span>
                       </div>
                       <p className="text-sm mt-1">
                         <span className="text-white/50 mr-2">[{alert.level}]</span>
@@ -257,7 +258,7 @@ export default function OpsPage() {
                 <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-white/50 uppercase tracking-wider">제품 활성화 (7일)</p>
-                    <span className="text-xs text-white/40">{new Date(productData.checked_at).toLocaleString("ko-KR")}</span>
+                    <span className="text-xs text-white/40">{formatLocalizedDateTime(productData.checked_at, "ko")}</span>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-white/10 bg-black/25 p-3">

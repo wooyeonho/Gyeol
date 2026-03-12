@@ -10,25 +10,25 @@ export default function CommunityPage() {
       href: "/explore",
       title: t("communityPage.exploreTitle"),
       body: t("communityPage.exploreBody"),
-      eyebrow: "explore",
+      eyebrow: t("communityPage.exploreEyebrow"),
     },
     {
       href: "/invite",
       title: t("communityPage.inviteTitle"),
       body: t("communityPage.inviteBody"),
-      eyebrow: "invite",
+      eyebrow: t("communityPage.inviteEyebrow"),
     },
     {
       href: "/adopt",
       title: t("communityPage.adoptTitle"),
       body: t("communityPage.adoptBody"),
-      eyebrow: "adopt",
+      eyebrow: t("communityPage.adoptEyebrow"),
     },
     {
       href: "/features",
       title: t("communityPage.featuresTitle"),
       body: t("communityPage.featuresBody"),
-      eyebrow: "world",
+      eyebrow: t("communityPage.featuresEyebrow"),
     },
   ];
 
@@ -36,7 +36,7 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-black px-6 py-12 text-white">
       <div className="max-w-2xl mx-auto">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.06)] sm:p-8">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">community</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">{t("communityPage.eyebrow")}</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("communityPage.title")}</h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-white/68">
             {t("communityPage.subtitle")}

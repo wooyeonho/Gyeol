@@ -62,7 +62,7 @@ export default function ConstellationPage() {
       firstStar
         ? {
             id: "origin",
-            title: locale === "en" ? "Origin memory" : "기원 기억",
+            title: t("constellationPage.originMemory"),
             body: firstStar.content,
             at: firstStar.created_at ?? null,
           }
@@ -71,7 +71,7 @@ export default function ConstellationPage() {
         ? {
             id: "pattern",
             title: constellations[0].name,
-            body: locale === "en" ? "A recognizable memory pattern emerged." : "기억이 하나의 패턴으로 묶이기 시작했습니다.",
+            body: t("constellationPage.patternBody"),
             at: firstStar?.created_at ?? null,
           }
         : null,
@@ -85,7 +85,7 @@ export default function ConstellationPage() {
         : null,
     ].filter(Boolean) as Array<{ id: string; title: string; body: string; at: string | null }>;
     return stages;
-  }, [appearance, constellations, locale, stars]);
+  }, [appearance, constellations, locale, stars, t]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -112,14 +112,14 @@ export default function ConstellationPage() {
             stars={stars}
             color={appearance.palette.primary}
             backgroundColor={appearance.palette.background}
-            emptyLabel={locale === "en" ? "No stars yet. Memories will become a sky here." : "아직 별이 없습니다. 기억이 쌓이면 이곳이 하나의 하늘이 됩니다."}
+            emptyLabel={t("constellationPage.emptySky")}
           />
         )}
       </div>
       <div className="grid gap-4 p-4 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-2 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "constellation clusters" : "별자리 묶음"}
+            {t("constellationPage.clusters")}
           </p>
           {constellations.map((c) => (
             <div key={c.name} className="text-sm text-white/70">
@@ -130,7 +130,7 @@ export default function ConstellationPage() {
         </div>
         <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "identity evolution timeline" : "정체성 evolution timeline"}
+            {t("constellationPage.timelineEyebrow")}
           </p>
           <div className="mt-4 space-y-4">
             {evolutionTimeline.map((item, index) => (

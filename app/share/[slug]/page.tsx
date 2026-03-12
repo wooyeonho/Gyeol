@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
-import { getIntlLocale } from "@/lib/i18n/config";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 import type { ShareCardData } from "@/lib/share/card";
 
 export default function SharePage() {
@@ -115,7 +115,6 @@ export default function SharePage() {
   }
 
   const color = data.visual?.color ?? "rgb(34, 211, 238)";
-  const dateLocale = getIntlLocale(locale);
   const appearance = resolveIdentityAppearance(
     {
       selfName: data.self_name,
@@ -212,7 +211,7 @@ export default function SharePage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{m.label}</p>
                     <p className="text-white/45 text-xs">
-                      {new Date(m.at).toLocaleDateString(dateLocale, { dateStyle: "medium" })}
+                      {formatLocalizedDate(m.at, locale, { dateStyle: "medium" })}
                     </p>
                   </div>
                 </div>

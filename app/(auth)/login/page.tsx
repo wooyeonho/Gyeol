@@ -19,6 +19,8 @@ export default function LoginPage() {
   const supabase = createClient();
   const { t } = useTranslations();
   const callbackErrorCode = searchParams.get("error");
+  const nextPath = searchParams.get("next") || "/";
+  const signupHref = `/signup${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
@@ -36,7 +38,7 @@ export default function LoginPage() {
       return;
     }
     trackClientEvent(CLIENT_EVENT.loginCompleted, { method: "password" });
-    router.push("/");
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -52,7 +54,7 @@ export default function LoginPage() {
       return;
     }
     trackClientEvent(CLIENT_EVENT.guestCompleted, { entry: "login" });
-    router.push("/");
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -109,6 +111,7 @@ export default function LoginPage() {
         <OAuthButtons
           flow="login"
           loading={loading}
+          nextPath={nextPath}
           onError={(message) => setError(message || null)}
           onLoadingChange={setLoading}
         />
@@ -124,7 +127,7 @@ export default function LoginPage() {
           {t("auth.guestContinue")}
         </button>
         <div className="flex flex-wrap items-center justify-between gap-2 text-white/55">
-          <Link href="/signup" className="hover:text-white/80">
+          <Link href={signupHref} className="hover:text-white/80">
             {t("auth.signupLink")}
           </Link>
           <Link href="/features" className="hover:text-white/80">
