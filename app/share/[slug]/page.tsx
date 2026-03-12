@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "@/components/i18n-provider";
+import { IdentityPresence } from "@/components/identity-presence";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 type ShareCardData = {
   self_name: string;
@@ -122,6 +124,15 @@ export default function SharePage() {
 
   const color = data.visual?.color ?? "rgb(34, 211, 238)";
   const dateLocale = locale === "en" ? "en-US" : "ko-KR";
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: data.self_name,
+      visual: data.visual,
+      genLevel: data.gen_level,
+      vitality: data.vitality,
+    },
+    locale
+  );
 
   return (
     <div className="min-h-screen bg-black px-6 py-12 text-white">
@@ -138,6 +149,15 @@ export default function SharePage() {
             className="pointer-events-none absolute inset-x-0 top-0 h-28 opacity-70"
             style={{ background: `linear-gradient(180deg, ${color}18, transparent)` }}
           />
+          <div className="relative mb-5 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">
+                {locale === "en" ? "manifestation" : "manifestation"}
+              </p>
+              <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
+            </div>
+            <IdentityPresence appearance={appearance} size="sm" />
+          </div>
           <div className="flex items-center gap-3 mb-6">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
@@ -150,6 +170,21 @@ export default function SharePage() {
               <p className="text-sm text-white/50">
                 Gen {data.gen_level} · {t("chat.vitality")} {Math.round((data.vitality ?? 1) * 100)}%
               </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {appearance.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border px-2 py-1 text-[11px]"
+                    style={{
+                      borderColor: `${appearance.palette.primary}30`,
+                      background: `${appearance.palette.primary}12`,
+                      color: "rgba(255,255,255,0.82)",
+                    }}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

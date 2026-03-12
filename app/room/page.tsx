@@ -5,14 +5,17 @@ import dynamic from "next/dynamic";
 import type { RoomObject } from "@/lib/room/types";
 import ARViewer from "@/components/ar-viewer";
 import { useTranslations } from "@/components/i18n-provider";
+import { IdentityPresence } from "@/components/identity-presence";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
 
 export default function RoomPage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const [objects, setObjects] = useState<RoomObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [arColor, setArColor] = useState("#a0a0ff");
+  const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/room")
@@ -20,6 +23,7 @@ export default function RoomPage() {
       .then((d) => {
         setObjects(Array.isArray(d.objects) ? d.objects : []);
         if (d.visual?.color) setArColor(d.visual.color);
+        setVisual(d.visual ?? null);
       })
       .catch(() => setObjects([]))
       .finally(() => setLoading(false));
@@ -33,11 +37,19 @@ export default function RoomPage() {
     }).catch(() => {});
   };
 
+  const appearance = resolveIdentityAppearance({ visual }, locale);
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="p-4 border-b border-white/10">
-        <h1 className="text-xl font-semibold">{t("roomPage.title")}</h1>
-        <p className="text-white/50 text-sm mt-1">{t("roomPage.subtitle")}</p>
+      <div className="border-b border-white/10 p-4">
+        <div className="mx-auto flex max-w-4xl items-start gap-4">
+          <IdentityPresence appearance={appearance} size="md" />
+          <div>
+            <h1 className="text-xl font-semibold">{t("roomPage.title")}</h1>
+            <p className="mt-1 text-sm text-white/50">{t("roomPage.subtitle")}</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
+          </div>
+        </div>
       </div>
       <div className="flex-1 relative min-h-[60vh]">
         {loading ? (

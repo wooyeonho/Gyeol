@@ -10,7 +10,7 @@ export async function GET() {
     const agentIds = (rows ?? []).map((r) => (r as { agent_id: string }).agent_id);
     if (agentIds.length === 0) return NextResponse.json({ list: [] });
 
-    const { data: states } = await service.from("agent_state").select("agent_id, self_name, vitality").in("agent_id", agentIds);
+    const { data: states } = await service.from("agent_state").select("agent_id, self_name, vitality, visual, genome").in("agent_id", agentIds);
     const { data: mems } = await service.from("memories").select("agent_id").in("agent_id", agentIds);
     const countByAgent: Record<string, number> = {};
     (mems ?? []).forEach((r) => {
@@ -20,7 +20,7 @@ export async function GET() {
     const stateMap = (states ?? []).reduce((acc, r) => {
       acc[(r as { agent_id: string }).agent_id] = r;
       return acc;
-    }, {} as Record<string, { self_name?: string; vitality?: number }>);
+    }, {} as Record<string, { self_name?: string; vitality?: number; visual?: unknown; genome?: { species?: string | null } }>);
     const { data: agents } = await service.from("agents").select("id, created_at").in("id", agentIds);
     const createdMap = (agents ?? []).reduce((acc, r) => {
       acc[(r as { id: string }).id] = (r as { created_at?: string }).created_at;
@@ -37,6 +37,8 @@ export async function GET() {
         vitality: s?.vitality ?? 0,
         memory_count: countByAgent[id] ?? 0,
         days_alive: days,
+        visual: s?.visual ?? null,
+        species: (s?.genome as { species?: string | null } | undefined)?.species ?? null,
       };
     });
     return NextResponse.json({ list });

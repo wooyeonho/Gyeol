@@ -14,9 +14,10 @@ import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 type Visual = {
-  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent";
+  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
   color?: string;
   size?: number;
   glow?: number;
@@ -47,6 +48,19 @@ export default function Home() {
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const performanceMinimal = config.performance_minimal === true;
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
+      visual,
+      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
+      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
+      config: { mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null },
+      genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
+      vitality,
+      mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+    },
+    "ko"
+  );
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
 
@@ -67,13 +81,13 @@ export default function Home() {
           />
         ) : (
           <VoidCanvas
-            shape={visual.shape ?? "sphere"}
-            color={visual.color ?? "#a0a0ff"}
+            shape={appearance.visual.shape as Visual["shape"]}
+            color={appearance.visual.color}
             size={Math.min(50, Math.max(10, visual.size ?? 24))}
-            glow={Math.min(100, Math.max(0, visual.glow ?? 60))}
-            animation={visual.animation ?? "float"}
-            particles={visual.particles ?? 20}
-            background={visual.background ?? "#000000"}
+            glow={Math.min(100, Math.max(0, appearance.visual.glow))}
+            animation={appearance.visual.animation}
+            particles={appearance.visual.particles}
+            background={appearance.visual.background}
             vitality={vitality}
             mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
             isListening={isStreaming}

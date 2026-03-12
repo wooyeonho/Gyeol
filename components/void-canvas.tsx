@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 interface VoidCanvasProps {
-  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent";
+  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
   color?: string;
   size?: number;
   glow?: number;

@@ -18,6 +18,10 @@ interface InnerProps {
   opacity?: number;
 }
 
+function OrbMaterial({ color, opacity }: { color: string; opacity: number }) {
+  return <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.28} transparent opacity={opacity} roughness={0.3} metalness={0.12} />;
+}
+
 function CoreShape({ shape, color, size, opacity }: { shape: string; color: string; size: number; opacity: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -28,19 +32,127 @@ function CoreShape({ shape, color, size, opacity }: { shape: string; color: stri
   });
 
   const scale = size / 30;
-  const meshProps = { ref: meshRef, color, transparent: true as const, opacity };
-
   switch (shape) {
     case "dot":
-      return <mesh {...meshProps}><sphereGeometry args={[0.3 * scale, 16, 16]} /></mesh>;
+      return (
+        <mesh ref={meshRef}>
+          <sphereGeometry args={[0.3 * scale, 16, 16]} />
+          <OrbMaterial color={color} opacity={opacity} />
+        </mesh>
+      );
+    case "creature":
+      return (
+        <group>
+          <mesh ref={meshRef} position={[0, -0.02, 0]}>
+            <sphereGeometry args={[0.42 * scale, 24, 24]} />
+            <OrbMaterial color={color} opacity={opacity} />
+          </mesh>
+          <mesh position={[-0.18 * scale, 0.22 * scale, 0]}>
+            <sphereGeometry args={[0.14 * scale, 18, 18]} />
+            <OrbMaterial color={color} opacity={opacity * 0.9} />
+          </mesh>
+          <mesh position={[0.18 * scale, 0.22 * scale, 0]}>
+            <sphereGeometry args={[0.14 * scale, 18, 18]} />
+            <OrbMaterial color={color} opacity={opacity * 0.9} />
+          </mesh>
+        </group>
+      );
+    case "humanoid":
+      return (
+        <group>
+          <mesh position={[0, 0.22 * scale, 0]}>
+            <sphereGeometry args={[0.16 * scale, 24, 24]} />
+            <OrbMaterial color={color} opacity={opacity} />
+          </mesh>
+          <mesh ref={meshRef} position={[0, -0.06 * scale, 0]}>
+            <capsuleGeometry args={[0.16 * scale, 0.46 * scale, 6, 14]} />
+            <OrbMaterial color={color} opacity={opacity * 0.92} />
+          </mesh>
+          <mesh position={[0, -0.18 * scale, 0]}>
+            <torusGeometry args={[0.26 * scale, 0.04 * scale, 10, 30]} />
+            <OrbMaterial color={color} opacity={opacity * 0.4} />
+          </mesh>
+        </group>
+      );
+    case "beast":
+      return (
+        <group rotation={[0, 0, -0.18]}>
+          <mesh ref={meshRef} position={[-0.04 * scale, -0.02 * scale, 0]}>
+            <capsuleGeometry args={[0.14 * scale, 0.5 * scale, 5, 14]} />
+            <OrbMaterial color={color} opacity={opacity * 0.9} />
+          </mesh>
+          <mesh position={[0.24 * scale, 0.12 * scale, 0]}>
+            <coneGeometry args={[0.18 * scale, 0.3 * scale, 4]} />
+            <OrbMaterial color={color} opacity={opacity} />
+          </mesh>
+          <mesh position={[-0.28 * scale, -0.06 * scale, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <coneGeometry args={[0.1 * scale, 0.28 * scale, 4]} />
+            <OrbMaterial color={color} opacity={opacity * 0.6} />
+          </mesh>
+        </group>
+      );
+    case "amorphous":
+      return (
+        <group>
+          <mesh ref={meshRef} position={[0, 0, 0]}>
+            <icosahedronGeometry args={[0.38 * scale, 1]} />
+            <OrbMaterial color={color} opacity={opacity * 0.95} />
+          </mesh>
+          <mesh position={[0.26 * scale, -0.08 * scale, 0]}>
+            <sphereGeometry args={[0.16 * scale, 18, 18]} />
+            <OrbMaterial color={color} opacity={opacity * 0.58} />
+          </mesh>
+          <mesh position={[-0.22 * scale, 0.2 * scale, 0]}>
+            <sphereGeometry args={[0.12 * scale, 18, 18]} />
+            <OrbMaterial color={color} opacity={opacity * 0.52} />
+          </mesh>
+        </group>
+      );
+    case "seraph":
+      return (
+        <group>
+          <mesh ref={meshRef}>
+            <octahedronGeometry args={[0.32 * scale, 0]} />
+            <OrbMaterial color={color} opacity={opacity} />
+          </mesh>
+          <mesh position={[-0.32 * scale, 0, 0]} rotation={[0, 0, 0.5]}>
+            <torusGeometry args={[0.16 * scale, 0.03 * scale, 8, 24, Math.PI]} />
+            <OrbMaterial color={color} opacity={opacity * 0.36} />
+          </mesh>
+          <mesh position={[0.32 * scale, 0, 0]} rotation={[0, 0, -0.5]}>
+            <torusGeometry args={[0.16 * scale, 0.03 * scale, 8, 24, Math.PI]} />
+            <OrbMaterial color={color} opacity={opacity * 0.36} />
+          </mesh>
+        </group>
+      );
     case "polygon":
-      return <mesh {...meshProps}><octahedronGeometry args={[0.5 * scale, 0]} /></mesh>;
+      return (
+        <mesh ref={meshRef}>
+          <octahedronGeometry args={[0.5 * scale, 0]} />
+          <OrbMaterial color={color} opacity={opacity} />
+        </mesh>
+      );
     case "complex":
-      return <mesh {...meshProps}><icosahedronGeometry args={[0.5 * scale, 1]} /></mesh>;
+      return (
+        <mesh ref={meshRef}>
+          <icosahedronGeometry args={[0.5 * scale, 1]} />
+          <OrbMaterial color={color} opacity={opacity} />
+        </mesh>
+      );
     case "transcendent":
-      return <mesh {...meshProps}><dodecahedronGeometry args={[0.5 * scale, 0]} /></mesh>;
+      return (
+        <mesh ref={meshRef}>
+          <dodecahedronGeometry args={[0.5 * scale, 0]} />
+          <OrbMaterial color={color} opacity={opacity} />
+        </mesh>
+      );
     default:
-      return <mesh {...meshProps}><sphereGeometry args={[0.5 * scale, 32, 32]} /></mesh>;
+      return (
+        <mesh ref={meshRef}>
+          <sphereGeometry args={[0.5 * scale, 32, 32]} />
+          <OrbMaterial color={color} opacity={opacity} />
+        </mesh>
+      );
   }
 }
 

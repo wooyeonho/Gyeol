@@ -10,6 +10,8 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
+import { IdentityPresence } from "@/components/identity-presence";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 type Mission = {
   id: string;
@@ -298,6 +300,19 @@ export function WorldClassHub() {
   const primaryPrompt = quickPrompts[0];
   const summary = growthSummary(sessionMessages, locale);
   const evolutionHint = nextEvolutionHint(sessionMessages, locale);
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName,
+      visual: (agentState?.visual as { color?: string | null; shape?: string | null; glow?: number | null; particles?: number | null; animation?: string | null; background?: string | null } | undefined) ?? null,
+      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
+      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
+      config: { mutation_trait: typeof (agentState?.config as Record<string, unknown> | undefined)?.mutation_trait === "string" ? String((agentState?.config as Record<string, unknown>).mutation_trait) : null },
+      genLevel,
+      vitality,
+      mood,
+    },
+    locale
+  );
 
   const toggleMission = (id: string) => {
     setMissions((prev) => prev.map((mission) => (mission.id === id ? { ...mission, done: !mission.done } : mission)));
@@ -338,6 +353,16 @@ export function WorldClassHub() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
+            <span
+              className="rounded-full border px-3 py-1.5 text-xs"
+              style={{
+                borderColor: `${appearance.palette.primary}35`,
+                background: `${appearance.palette.primary}14`,
+                color: "rgba(255,255,255,0.9)",
+              }}
+            >
+              {appearance.title}
+            </span>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78">
               {locale === "en" ? `Weather · ${weather}` : `날씨 · ${weather}`}
             </span>
@@ -477,6 +502,34 @@ export function WorldClassHub() {
           <div className="space-y-1">
             <p className="text-sm text-white/75">{t(`home.greeting.${greetingKeyByHour(hour)}`)}</p>
             <p className="text-xs text-white/55">{t(`home.vitalityHint.${vitalityHintKey(vitality)}`)}</p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+            <div className="flex items-start gap-3">
+              <IdentityPresence appearance={appearance} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">
+                  {locale === "en" ? "current manifestation" : "현재 형상"}
+                </p>
+                <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
+                <p className="mt-1 text-xs leading-5 text-white/58">{appearance.subtitle}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {appearance.chips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-full border px-2 py-1 text-[11px]"
+                      style={{
+                        borderColor: `${appearance.palette.primary}30`,
+                        background: `${appearance.palette.primary}12`,
+                        color: "rgba(255,255,255,0.82)",
+                      }}
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
