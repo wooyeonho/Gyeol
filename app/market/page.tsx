@@ -6,8 +6,25 @@ import { BottomNav } from "@/components/bottom-nav";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
+import { IdentityPresence } from "@/components/identity-presence";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { useTranslations } from "@/components/i18n-provider";
 
-type Item = { id: string; title?: string; name?: string; description?: string; price: number; type: string };
+type Item = {
+  id: string;
+  title?: string;
+  name?: string;
+  description?: string;
+  price: number;
+  type: string;
+  seller_name?: string;
+  seller_visual?: { color?: string; shape?: string } | null;
+  seller_genome?: { species?: string | null; mutations?: string[] | null } | null;
+  seller_config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
+  seller_self_model?: { current_role?: string | null; identity_statement?: string | null } | null;
+  seller_gen_level?: number;
+  seller_vitality?: number;
+};
 type BillingData = {
   entitlements: Record<EntitlementKey, boolean>;
   plan: PlanDefinition;
@@ -19,9 +36,21 @@ type BillingData = {
   };
 };
 
+type MarketAgent = {
+  self_name?: string | null;
+  visual?: { color?: string; shape?: string } | null;
+  genome?: { species?: string | null; mutations?: string[] | null } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
+  self_model?: { current_role?: string | null; identity_statement?: string | null } | null;
+  gen_level?: number;
+  vitality?: number;
+};
+
 export default function MarketPage() {
+  const { locale } = useTranslations();
   const [items, setItems] = useState<Item[]>([]);
   const [billing, setBilling] = useState<BillingData | null>(null);
+  const [currentAgent, setCurrentAgent] = useState<MarketAgent | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -36,12 +65,14 @@ export default function MarketPage() {
         ]);
         const json = await marketRes.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
+        setCurrentAgent((json.currentAgent as MarketAgent | null) ?? null);
         if (billingRes.ok) {
           const billingJson = await billingRes.json().catch(() => null);
           setBilling((billingJson as BillingData | null) ?? null);
         }
       } catch {
         setItems([]);
+        setCurrentAgent(null);
       } finally {
         setLoading(false);
       }
@@ -77,17 +108,47 @@ export default function MarketPage() {
     );
   }
 
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: currentAgent?.self_name,
+      visual: currentAgent?.visual,
+      genome: currentAgent?.genome,
+      config: currentAgent?.config,
+      selfModel: currentAgent?.self_model,
+      genLevel: currentAgent?.gen_level ?? 1,
+      vitality: currentAgent?.vitality ?? 1,
+    },
+    locale
+  );
+
   return (
     <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mx-auto max-w-5xl">
+      <div className="mb-4 flex items-start justify-between gap-3 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">BETA EXPANSION</p>
           <h1 className="mt-2 text-xl font-semibold">마켓</h1>
           <p className="mt-1 text-sm text-white/60">
-            마켓은 결의 코어 대화 루프 바깥에 있는 베타 확장 공간입니다. 먼저 홈, 활동, 앨범 경험을 충분히 쌓은 뒤
-            둘러보는 흐름을 권장합니다.
+            {appearance.usageNarrative ??
+              "마켓은 결의 코어 대화 루프 바깥에 있는 확장 공간입니다. 여기서도 누구의 존재가 무엇을 만들고 교환하는지 정체성이 계속 드러납니다."}
           </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {appearance.chips.map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border px-2 py-1 text-[11px]"
+                style={{
+                  borderColor: `${appearance.palette.primary}30`,
+                  background: `${appearance.palette.primary}12`,
+                  color: "rgba(255,255,255,0.82)",
+                }}
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
+        <IdentityPresence appearance={appearance} size="md" />
         <Link
           href="/features"
           className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
@@ -121,9 +182,28 @@ export default function MarketPage() {
       )}
       <div className="space-y-3">
         {items.map((item) => (
-          <div key={item.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <div className="font-medium">{item.title ?? item.name ?? "이름 없는 아이템"}</div>
-            <div className="text-sm text-white/60">{item.type}</div>
+          <div key={item.id} className="bg-white/[0.04] rounded-[1.75rem] p-4 border border-white/10">
+            <div className="flex items-start gap-3">
+              <IdentityPresence
+                appearance={resolveIdentityAppearance(
+                  {
+                    selfName: item.seller_name,
+                    visual: item.seller_visual,
+                    genome: item.seller_genome,
+                    config: item.seller_config,
+                    selfModel: item.seller_self_model,
+                    genLevel: item.seller_gen_level ?? 1,
+                    vitality: item.seller_vitality ?? 1,
+                  },
+                  locale
+                )}
+                size="sm"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{item.title ?? item.name ?? "이름 없는 아이템"}</div>
+                <div className="text-sm text-white/60">{item.type} · {item.seller_name ?? "..."}</div>
+              </div>
+            </div>
             <div className="text-white/80 mt-1">{item.description}</div>
             <div className="mt-3 flex items-center justify-between">
               <div className="text-amber-400">{item.price} 코인</div>
@@ -137,6 +217,7 @@ export default function MarketPage() {
             </div>
           </div>
         ))}
+      </div>
       </div>
       <BottomNav />
     </div>

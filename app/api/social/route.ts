@@ -15,17 +15,18 @@ export async function GET() {
       return NextResponse.json({ socialLogs: [], breedingRecords: [], otherAgents: [] });
     }
 
-    const [logsRes, breedingRes, agentsRes, giftRes] = await Promise.all([
+    const [logsRes, breedingRes, agentsRes, giftRes, selfStateRes] = await Promise.all([
       service.from("social_logs").select("id, agent_a_id, agent_b_id, topic, conversation, message, outcome, created_at").or(`agent_a_id.eq.${myAgentId},agent_b_id.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(30),
       service.from("breeding_records").select("id, parent_a, parent_b, child_id, status, traits_blend, created_at, updated_at").or(`parent_a.eq.${myAgentId},parent_b.eq.${myAgentId}`).order("created_at", { ascending: false }).limit(20),
       service.from("agents").select("id").neq("user_id", user.id).limit(50),
       service.from("autonomous_logs").select("id, summary, created_at").eq("agent_id", myAgentId).eq("action_type", "gift_exchange").order("created_at", { ascending: false }).limit(20),
+      service.from("agent_state").select("self_name, visual, genome, config, self_model, gen_level, vitality, mood").eq("agent_id", myAgentId).single(),
     ]);
 
     const otherIds = (agentsRes.data ?? []).map((r) => (r as { id: string }).id);
-    let otherAgents: { id: string; self_name: string | null; gen_level: number; memory_count: number; visual?: unknown }[] = [];
+    let otherAgents: { id: string; self_name: string | null; gen_level: number; memory_count: number; visual?: unknown; genome?: unknown; config?: unknown; self_model?: unknown }[] = [];
     if (otherIds.length > 0) {
-      const { data: states } = await service.from("agent_state").select("agent_id, self_name, gen_level, visual").in("agent_id", otherIds);
+      const { data: states } = await service.from("agent_state").select("agent_id, self_name, gen_level, visual, genome, config, self_model").in("agent_id", otherIds);
       const { data: counts } = await service.from("memories").select("agent_id").in("agent_id", otherIds);
       const countByAgent = (counts ?? []).reduce((acc, r) => {
         const aid = (r as { agent_id: string }).agent_id;
@@ -33,15 +34,20 @@ export async function GET() {
         return acc;
       }, {} as Record<string, number>);
       const stateByAgent = (states ?? []).reduce((acc, r) => {
-        acc[(r as { agent_id: string }).agent_id] = r as { agent_id: string; self_name: string | null; gen_level: number; visual?: unknown };
+        acc[(r as { agent_id: string }).agent_id] = r as { agent_id: string; self_name: string | null; gen_level: number; visual?: unknown; genome?: unknown; config?: unknown; self_model?: unknown };
         return acc;
-      }, {} as Record<string, { agent_id: string; self_name: string | null; gen_level: number; visual?: unknown }>);
+      }, {} as Record<string, { agent_id: string; self_name: string | null; gen_level: number; visual?: unknown; genome?: unknown; config?: unknown; self_model?: unknown }>);
       otherAgents = otherIds.map((id) => ({
         id,
         self_name: stateByAgent[id]?.self_name ?? null,
         gen_level: stateByAgent[id]?.gen_level ?? 1,
         memory_count: countByAgent[id] ?? 0,
         visual: stateByAgent[id]?.visual,
+        genome: stateByAgent[id]?.genome ?? null,
+        config: {
+          usage_profile: (stateByAgent[id]?.config as { usage_profile?: unknown } | undefined)?.usage_profile ?? null,
+        },
+        self_model: stateByAgent[id]?.self_model ?? null,
       }));
     }
 
@@ -77,7 +83,35 @@ export async function GET() {
       summary: (r as { summary?: string }).summary,
       created_at: (r as { created_at?: string }).created_at,
     }));
-    return NextResponse.json({ socialLogs, breedingRecords, otherAgents, giftExchanges });
+    const selfState = selfStateRes.data as {
+      self_name?: string | null;
+      visual?: unknown;
+      genome?: unknown;
+      config?: { usage_profile?: unknown } | null;
+      self_model?: unknown;
+      gen_level?: number | null;
+      vitality?: number | null;
+      mood?: string | null;
+    } | null;
+
+    return NextResponse.json({
+      socialLogs,
+      breedingRecords,
+      otherAgents,
+      giftExchanges,
+      selfAgent: selfState
+        ? {
+            self_name: selfState.self_name ?? null,
+            visual: selfState.visual ?? null,
+            genome: selfState.genome ?? null,
+            config: { usage_profile: selfState.config?.usage_profile ?? null },
+            self_model: selfState.self_model ?? null,
+            gen_level: selfState.gen_level ?? 1,
+            vitality: selfState.vitality ?? 1,
+            mood: selfState.mood ?? null,
+          }
+        : null,
+    });
   } catch (e) {
     console.error("GET /api/social error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

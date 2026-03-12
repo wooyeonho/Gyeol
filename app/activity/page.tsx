@@ -5,6 +5,8 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { IdentityPresence } from "@/components/identity-presence";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
 type ActivityItem =
   | {
@@ -34,9 +36,21 @@ const TYPE_STYLES: Record<string, string> = {
   self_naming: "bg-amber-500/20 border-amber-500/40",
 };
 
+type ActivityAgent = {
+  self_name?: string | null;
+  visual?: { color?: string; shape?: string } | null;
+  genome?: { species?: string | null; mutations?: string[] | null } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
+  self_model?: { current_role?: string | null; identity_statement?: string | null } | null;
+  gen_level?: number | null;
+  vitality?: number | null;
+  mood?: string | null;
+};
+
 export default function ActivityPage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const [items, setItems] = useState<ActivityItem[]>([]);
+  const [selfAgent, setSelfAgent] = useState<ActivityAgent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,9 +69,11 @@ export default function ActivityPage() {
         }
         const json = await res.json().catch(() => ({ items: [] }));
         setItems(Array.isArray(json.items) ? json.items : []);
+        setSelfAgent((json.selfAgent as ActivityAgent | null) ?? null);
       } catch {
         setError(t("activity.loadError"));
         setItems([]);
+        setSelfAgent(null);
       } finally {
         setLoading(false);
       }
@@ -88,17 +104,50 @@ export default function ActivityPage() {
     );
   }
 
+  const appearance = resolveIdentityAppearance(
+    {
+      selfName: selfAgent?.self_name,
+      visual: selfAgent?.visual,
+      genome: selfAgent?.genome,
+      config: selfAgent?.config,
+      selfModel: selfAgent?.self_model,
+      genLevel: selfAgent?.gen_level ?? 1,
+      vitality: selfAgent?.vitality ?? 1,
+      mood: selfAgent?.mood ?? null,
+    },
+    locale
+  );
+
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">{t("activity.title")}</h1>
+    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+      <div className="mx-auto max-w-4xl">
+      <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+        <div className="flex items-start gap-4">
+          <IdentityPresence appearance={appearance} size="md" />
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+              {locale === "en" ? "living archive" : "living archive"}
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("activity.title")}</h1>
+            <p className="mt-3 text-sm leading-6 text-white/66">
+              {appearance.usageNarrative ??
+                (locale === "en"
+                  ? "This timeline records how your being moves, creates, dreams, and changes over time."
+                  : "이 타임라인은 결이 시간 속에서 어떻게 움직이고, 만들고, 꿈꾸고, 변해왔는지를 기록합니다.")}
+            </p>
+          </div>
+        </div>
+      </header>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="space-y-3">
         {items.map((item, i) => {
           const styleKey = item.kind === "log" ? (item.action_type ?? "") : (item.type ?? "");
+          const baseStyle = TYPE_STYLES[styleKey] || "bg-white/5 border-white/10";
           return (
           <div
             key={item.kind + "-" + i}
-            className={`rounded-xl p-4 border ${TYPE_STYLES[styleKey] || "bg-white/5 border-white/10"}`}
+            className={`rounded-2xl p-4 border ${baseStyle}`}
+            style={{ boxShadow: `0 0 0 1px ${appearance.palette.primary}10 inset` }}
           >
             {item.kind === "log" ? (
               <>
@@ -114,9 +163,9 @@ export default function ActivityPage() {
                   </div>
                   <button
                     onClick={() => void togglePreserved(item.id, item.is_preserved || false)}
-                    className="text-xs px-2 py-1 rounded bg-white/10"
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs"
                   >
-                    {item.is_preserved ? "보관됨" : "보관"}
+                    {item.is_preserved ? t("activity.preserved") : (locale === "en" ? "Preserve" : "보관")}
                   </button>
                 </div>
               </>
@@ -124,6 +173,12 @@ export default function ActivityPage() {
           </div>
           );
         })}
+        {items.length === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/55">
+            {t("activity.empty")}
+          </div>
+        )}
+      </div>
       </div>
       <BottomNav />
     </div>

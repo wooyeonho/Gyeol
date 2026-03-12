@@ -23,9 +23,10 @@ export async function GET(request: NextRequest) {
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ items: [] });
 
-    const [logsRes, artifactsRes] = await Promise.all([
+    const [logsRes, artifactsRes, stateRes] = await Promise.all([
       service.from("autonomous_logs").select("id, action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(80),
       service.from("artifacts").select("id, type, content, created_at, expires_at, is_preserved, is_public").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(80),
+      service.from("agent_state").select("self_name, visual, genome, config, self_model, gen_level, vitality, mood").eq("agent_id", agentId).single(),
     ]);
 
     const logs = (logsRes.data ?? []).map((r) => ({
@@ -58,7 +59,32 @@ export async function GET(request: NextRequest) {
     }
     combined = combined.slice(0, 50);
 
-    return NextResponse.json({ items: combined });
+    const state = stateRes.data as {
+      self_name?: string | null;
+      visual?: unknown;
+      genome?: unknown;
+      config?: { usage_profile?: unknown } | null;
+      self_model?: unknown;
+      gen_level?: number | null;
+      vitality?: number | null;
+      mood?: string | null;
+    } | null;
+
+    return NextResponse.json({
+      items: combined,
+      selfAgent: state
+        ? {
+            self_name: state.self_name ?? null,
+            visual: state.visual ?? null,
+            genome: state.genome ?? null,
+            config: { usage_profile: state.config?.usage_profile ?? null },
+            self_model: state.self_model ?? null,
+            gen_level: state.gen_level ?? 1,
+            vitality: state.vitality ?? 1,
+            mood: state.mood ?? null,
+          }
+        : null,
+    });
   } catch (e) {
     console.error("GET /api/activity error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

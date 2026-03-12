@@ -62,7 +62,12 @@ export default function RoomPage() {
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
           </div>
         ) : (
-          <RoomScene objects={objects} />
+          <RoomScene
+            objects={objects}
+            accentColor={appearance.palette.primary}
+            backgroundColor={appearance.palette.background}
+            emptyLabel={locale === "en" ? "No objects yet. This room will fill as the being keeps living." : "아직 오브젝트가 없습니다. 결이 계속 살아가며 이 방을 채우게 됩니다."}
+          />
         )}
       </div>
       <section className="p-4 border-t border-white/10 pb-24">

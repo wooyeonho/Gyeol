@@ -13,12 +13,19 @@ export async function GET() {
     const agentId = agents?.[0]?.id;
     if (!agentId) return NextResponse.json({ stars: [], constellations: [] });
 
-    const { data: mems } = await service
-      .from("memories")
-      .select("id, content, type, created_at")
-      .eq("agent_id", agentId)
-      .order("created_at", { ascending: true })
-      .limit(100);
+    const [{ data: mems }, { data: state }] = await Promise.all([
+      service
+        .from("memories")
+        .select("id, content, type, created_at")
+        .eq("agent_id", agentId)
+        .order("created_at", { ascending: true })
+        .limit(100),
+      service
+        .from("agent_state")
+        .select("self_name, visual, genome, config, self_model, gen_level, vitality, mood")
+        .eq("agent_id", agentId)
+        .single(),
+    ]);
     const stars = (mems ?? []).map((m, i) => ({
       id: (m as { id: string }).id,
       content: ((m as { content?: string }).content ?? "").slice(0, 60),
@@ -35,7 +42,33 @@ export async function GET() {
       { name: "Bright day", starIds: stars.filter((s) => /happy|good|joy/i.test(s.content)).slice(0, 3).map((s) => s.id) },
     ].filter((c) => c.starIds.length > 0);
 
-    return NextResponse.json({ stars, constellations });
+    const stateData = state as {
+      self_name?: string | null;
+      visual?: unknown;
+      genome?: unknown;
+      config?: { usage_profile?: unknown } | null;
+      self_model?: unknown;
+      gen_level?: number | null;
+      vitality?: number | null;
+      mood?: string | null;
+    } | null;
+
+    return NextResponse.json({
+      stars,
+      constellations,
+      selfAgent: stateData
+        ? {
+            self_name: stateData.self_name ?? null,
+            visual: stateData.visual ?? null,
+            genome: stateData.genome ?? null,
+            config: { usage_profile: stateData.config?.usage_profile ?? null },
+            self_model: stateData.self_model ?? null,
+            gen_level: stateData.gen_level ?? 1,
+            vitality: stateData.vitality ?? 1,
+            mood: stateData.mood ?? null,
+          }
+        : null,
+    });
   } catch (e) {
     console.error("constellation GET", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
