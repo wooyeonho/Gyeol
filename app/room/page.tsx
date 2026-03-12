@@ -16,6 +16,7 @@ export default function RoomPage() {
   const [loading, setLoading] = useState(true);
   const [arColor, setArColor] = useState("#a0a0ff");
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
+  const [config, setConfig] = useState<{ usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null>(null);
 
   useEffect(() => {
     fetch("/api/room")
@@ -24,6 +25,7 @@ export default function RoomPage() {
         setObjects(Array.isArray(d.objects) ? d.objects : []);
         if (d.visual?.color) setArColor(d.visual.color);
         setVisual(d.visual ?? null);
+        setConfig(d.config ?? null);
       })
       .catch(() => setObjects([]))
       .finally(() => setLoading(false));
@@ -37,7 +39,7 @@ export default function RoomPage() {
     }).catch(() => {});
   };
 
-  const appearance = resolveIdentityAppearance({ visual }, locale);
+  const appearance = resolveIdentityAppearance({ visual, config }, locale);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -48,6 +50,9 @@ export default function RoomPage() {
             <h1 className="text-xl font-semibold">{t("roomPage.title")}</h1>
             <p className="mt-1 text-sm text-white/50">{t("roomPage.subtitle")}</p>
             <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
+            {appearance.usageNarrative && (
+              <p className="mt-2 text-xs leading-5 text-white/56">{appearance.usageNarrative}</p>
+            )}
           </div>
         </div>
       </div>

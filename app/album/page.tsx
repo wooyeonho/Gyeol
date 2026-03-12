@@ -14,11 +14,12 @@ type Milestone = { type: string; label: string; at: string; summary?: string };
 export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
+  const [config, setConfig] = useState<{ usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const { locale, t } = useTranslations();
-  const appearance = resolveIdentityAppearance({ visual }, locale);
+  const appearance = resolveIdentityAppearance({ visual, config }, locale);
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.albumOpened);
@@ -46,6 +47,7 @@ export default function AlbumPage() {
       .then((d) => {
         setMilestones(d.milestones ?? []);
         setVisual(d.visual ?? null);
+        setConfig(d.config ?? null);
       })
       .catch(() => setMilestones([]))
       .finally(() => setLoading(false));
@@ -61,6 +63,9 @@ export default function AlbumPage() {
               <h1 className="mb-2 text-xl font-semibold">{t("album.title")}</h1>
               <p className="text-sm text-white/50">{t("album.subtitle")}</p>
               <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
+              {appearance.usageNarrative && (
+                <p className="mt-2 text-xs leading-5 text-white/56">{appearance.usageNarrative}</p>
+              )}
             </div>
           </div>
         </div>

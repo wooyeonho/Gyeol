@@ -3,6 +3,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
+import { updateUsageProfile } from "@/lib/identity/usage-profile";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -39,13 +40,14 @@ async function runEvolutionHooks(agentId: string, totalMessages: number, message
 async function applyGoalLoop(params: {
   agentId: string;
   agentState: AgentStateRow | null;
+  baseConfig?: Record<string, unknown>;
   message: string;
   writer: DbWriter;
 }) {
   const signal = detectGoalSignal(params.message);
   if (!signal.activeGoal && !signal.researchFocus) return null;
 
-  const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+  const currentConfig = params.baseConfig ?? (params.agentState?.config as Record<string, unknown> | null) ?? {};
   const nextConfig: Record<string, unknown> = {
     ...currentConfig,
     goal_updated_at: new Date().toISOString(),
@@ -128,15 +130,25 @@ export async function persistChatTurn(params: {
 
   const totalMessages = (params.agentState?.total_messages ?? 0) + 1;
   const newVitality = Math.min(1, (params.agentState?.vitality ?? 1) + 0.02);
+  const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+  const previousUsageProfile = currentConfig.usage_profile;
+  const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
+  const nextConfig = {
+    ...currentConfig,
+    usage_profile: nextUsageProfile,
+  };
+
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,
     intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
     vitality: newVitality,
+    config: nextConfig,
   }).eq("agent_id", params.agentId);
 
   const goalSignal = await applyGoalLoop({
     agentId: params.agentId,
     agentState: params.agentState,
+    baseConfig: nextConfig,
     message: params.message,
     writer: params.writer,
   });

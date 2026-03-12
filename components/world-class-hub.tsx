@@ -306,7 +306,10 @@ export function WorldClassHub() {
       visual: (agentState?.visual as { color?: string | null; shape?: string | null; glow?: number | null; particles?: number | null; animation?: string | null; background?: string | null } | undefined) ?? null,
       genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
       selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
-      config: { mutation_trait: typeof (agentState?.config as Record<string, unknown> | undefined)?.mutation_trait === "string" ? String((agentState?.config as Record<string, unknown>).mutation_trait) : null },
+      config: {
+        mutation_trait: typeof (agentState?.config as Record<string, unknown> | undefined)?.mutation_trait === "string" ? String((agentState?.config as Record<string, unknown>).mutation_trait) : null,
+        usage_profile: ((agentState?.config as Record<string, unknown> | undefined)?.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null,
+      },
       genLevel,
       vitality,
       mood,
@@ -512,7 +515,7 @@ export function WorldClassHub() {
                   {locale === "en" ? "current manifestation" : "현재 형상"}
                 </p>
                 <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
-                <p className="mt-1 text-xs leading-5 text-white/58">{appearance.subtitle}</p>
+                <p className="mt-1 text-xs leading-5 text-white/58">{appearance.usageNarrative ?? appearance.subtitle}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {appearance.chips.map((chip) => (
                     <span

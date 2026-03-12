@@ -78,10 +78,16 @@ export async function GET() {
     }
 
     milestones.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
-    const { data: state } = await service.from("agent_state").select("visual").eq("agent_id", agentId).single();
+    const { data: state } = await service.from("agent_state").select("visual, config").eq("agent_id", agentId).single();
     const visual = (state as { visual?: { color?: string; shape?: string } } | null)?.visual;
+    const config = (state as { config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } } | null)?.config;
 
-    return NextResponse.json({ milestones, visual, created });
+    return NextResponse.json({
+      milestones,
+      visual,
+      config: { usage_profile: config?.usage_profile ?? null },
+      created,
+    });
   } catch (e) {
     console.error("album GET error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

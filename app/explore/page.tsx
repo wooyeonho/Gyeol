@@ -16,6 +16,7 @@ type Agent = {
   gen_level: number;
   species?: string | null;
   visual?: { color?: string; shape?: string } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
 };
 type ExploreProfile = {
   id: string;
@@ -25,6 +26,7 @@ type ExploreProfile = {
   gen_level?: number;
   species?: string | null;
   visual?: { color?: string; shape?: string } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
 };
 
 export default function ExplorePage() {
@@ -56,6 +58,7 @@ export default function ExplorePage() {
           gen_level: Number(p.gen_level ?? 1),
           species: p.species ?? null,
           visual: p.visual ?? null,
+          config: p.config ?? null,
         }));
         setAgents(list);
       } catch {
@@ -98,6 +101,7 @@ export default function ExplorePage() {
               selfName: a.self_name,
               visual: a.visual,
               genome: { species: a.species },
+              config: a.config ?? null,
               genLevel: a.gen_level,
               vitality: a.vitality,
             },
@@ -115,7 +119,7 @@ export default function ExplorePage() {
                     {appearance.title}
                   </p>
                   <div className="mt-2 font-medium text-white">{a.self_name || (locale === "en" ? "Unnamed being" : "이름 없음")}</div>
-                  <p className="mt-1 text-xs leading-5 text-white/55">{appearance.subtitle}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/55">{appearance.usageNarrative ?? appearance.subtitle}</p>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">

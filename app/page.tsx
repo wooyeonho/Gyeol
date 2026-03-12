@@ -54,7 +54,10 @@ export default function Home() {
       visual,
       genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
       selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
-      config: { mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null },
+      config: {
+        mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
+        usage_profile: (config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null,
+      },
       genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
       vitality,
       mood: typeof agentState?.mood === "string" ? agentState.mood : null,

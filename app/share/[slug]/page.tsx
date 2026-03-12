@@ -10,6 +10,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 type ShareCardData = {
   self_name: string;
   visual: { color?: string; shape?: string } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
   total_messages: number;
   vitality: number;
   gen_level: number;
@@ -128,6 +129,7 @@ export default function SharePage() {
     {
       selfName: data.self_name,
       visual: data.visual,
+      config: data.config ?? null,
       genLevel: data.gen_level,
       vitality: data.vitality,
     },
@@ -170,6 +172,9 @@ export default function SharePage() {
               <p className="text-sm text-white/50">
                 Gen {data.gen_level} · {t("chat.vitality")} {Math.round((data.vitality ?? 1) * 100)}%
               </p>
+              {appearance.usageNarrative && (
+                <p className="mt-2 text-xs leading-5 text-white/58">{appearance.usageNarrative}</p>
+              )}
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {appearance.chips.map((chip) => (
                   <span

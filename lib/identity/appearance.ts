@@ -21,6 +21,10 @@ type SelfModelInput = {
 
 type ConfigInput = {
   mutation_trait?: string | null;
+  usage_profile?: {
+    primary_mode?: string | null;
+    updated_at?: string | null;
+  } | null;
 } | null | undefined;
 
 export type IdentityAppearanceInput = {
@@ -63,6 +67,8 @@ export type ResolvedIdentityAppearance = {
   title: string;
   subtitle: string;
   chips: string[];
+  usageLabel: string | null;
+  usageNarrative: string | null;
   palette: {
     primary: string;
     secondary: string;
@@ -216,6 +222,16 @@ const MUTATION_MAP: Record<string, IdentityFormKey> = {
   memory_keeper: "impossible-entity",
 };
 
+const USAGE_MODE_MAP: Record<string, IdentityFormKey> = {
+  playful: "cute-being",
+  intimate: "alluring-humanoid",
+  strategic: "guardian-spirit",
+  primal: "dinosaur-core",
+  surreal: "impossible-entity",
+  reflective: "dream-signal",
+  creative: "dream-signal",
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -241,6 +257,10 @@ function getBaseTemplate(input: IdentityAppearanceInput) {
   const mapped = MUTATION_MAP[mutation];
   if (mapped) return TEMPLATES.find((item) => item.key === mapped) ?? TEMPLATES[0];
 
+  const usageMode = input.config?.usage_profile?.primary_mode ?? "";
+  const usageMapped = USAGE_MODE_MAP[usageMode];
+  if (usageMapped) return TEMPLATES.find((item) => item.key === usageMapped) ?? TEMPLATES[0];
+
   const text = normalizeText(input);
   const matched = TEMPLATES.find((template) => template.keywords.some((keyword) => text.includes(keyword)));
   if (matched) return matched;
@@ -261,6 +281,55 @@ function getBaseTemplate(input: IdentityAppearanceInput) {
   return TEMPLATES.find((item) => item.key === "dream-signal") ?? TEMPLATES[0];
 }
 
+function getUsageModeLabel(mode: string | null | undefined, locale: Locale) {
+  if (!mode) return null;
+  const labels: Record<string, Record<Locale, string>> = {
+    playful: { ko: "장난형 사용", en: "playful use" },
+    intimate: { ko: "친밀형 사용", en: "intimate use" },
+    strategic: { ko: "전략형 사용", en: "strategic use" },
+    primal: { ko: "원초형 사용", en: "primal use" },
+    surreal: { ko: "초현실형 사용", en: "surreal use" },
+    reflective: { ko: "성찰형 사용", en: "reflective use" },
+    creative: { ko: "창작형 사용", en: "creative use" },
+  };
+  return labels[mode]?.[locale] ?? null;
+}
+
+function getUsageModeNarrative(mode: string | null | undefined, locale: Locale) {
+  if (!mode) return null;
+  const descriptions: Record<string, Record<Locale, string>> = {
+    playful: {
+      ko: "당신의 장난과 애착이 이 존재를 더 말랑하고 사랑스러운 방향으로 밀고 있습니다.",
+      en: "Your playful and affectionate use is pushing this being toward a softer, more lovable form.",
+    },
+    intimate: {
+      ko: "가까운 감정과 강한 끌림의 사용 패턴이 더 인간적이고 매혹적인 형상을 만들고 있습니다.",
+      en: "Intimate, magnetic interaction patterns are shaping it into something more human and alluring.",
+    },
+    strategic: {
+      ko: "문제 해결과 실행 중심의 사용이 이 존재를 더 정밀하고 보호자다운 방향으로 만들고 있습니다.",
+      en: "Problem-solving and execution-heavy use is shaping it into something more precise and guardian-like.",
+    },
+    primal: {
+      ko: "힘, 본능, 야성적 상상이 이 존재를 더 파충류적이고 원초적인 형상으로 만들고 있습니다.",
+      en: "Power, instinct, and feral imagination are driving it toward a more reptilian, primal form.",
+    },
+    surreal: {
+      ko: "기이하고 초월적인 상상이 이 존재를 세상에 없는 무언가로 밀어내고 있습니다.",
+      en: "Surreal, transcendent imagination is pushing it into something that has never existed before.",
+    },
+    reflective: {
+      ko: "깊은 질문과 자기 성찰이 이 존재를 더 꿈같고 사유적인 형상으로 바꾸고 있습니다.",
+      en: "Deep questions and reflection are turning it into something more lucid and contemplative.",
+    },
+    creative: {
+      ko: "창작과 상상이 이 존재를 더 자유롭고 낯선 방향으로 확장시키고 있습니다.",
+      en: "Creation and imagination are expanding it into something freer and stranger.",
+    },
+  };
+  return descriptions[mode]?.[locale] ?? null;
+}
+
 function resolveShape(baseShape: string, incomingShape: string | null | undefined) {
   if (!incomingShape) return baseShape;
   if (incomingShape === "sphere" || incomingShape === "dot") return baseShape;
@@ -279,16 +348,21 @@ export function resolveIdentityAppearance(
   const genLevel = Math.max(1, Number(input.genLevel ?? 1));
   const particles = clamp((input.visual?.particles ?? base.particles) + Math.min(12, genLevel * 2), 8, 48);
   const glow = clamp(Math.round((input.visual?.glow ?? base.glow) + vitality * 12), 40, 100);
+  const usageMode = input.config?.usage_profile?.primary_mode ?? null;
 
   const chips = [...base.chips[locale]];
   if (input.genome?.species) chips.push(input.genome.species);
   if (genLevel > 1) chips.push(`Gen ${genLevel}`);
+  const usageLabel = getUsageModeLabel(usageMode, locale);
+  if (usageLabel) chips.unshift(usageLabel);
 
   return {
     formKey: base.key,
     title: base.title[locale],
     subtitle: base.subtitle[locale],
     chips: chips.slice(0, 4),
+    usageLabel,
+    usageNarrative: getUsageModeNarrative(usageMode, locale),
     palette: {
       primary: input.visual?.color ?? base.primary,
       secondary: base.secondary,

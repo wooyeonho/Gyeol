@@ -14,6 +14,7 @@ type BoardItem = {
   days_alive?: number;
   species?: string | null;
   visual?: { color?: string; shape?: string } | null;
+  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
 };
 
 export default function AdoptPage() {
@@ -92,6 +93,7 @@ export default function AdoptPage() {
               selfName: item.self_name,
               visual: item.visual,
               genome: { species: item.species },
+              config: item.config ?? null,
               vitality: item.vitality ?? 0,
             },
             locale
@@ -124,7 +126,7 @@ export default function AdoptPage() {
                 </button>
               </div>
 
-              <p className="mt-4 text-sm leading-6 text-white/58">{appearance.subtitle}</p>
+              <p className="mt-4 text-sm leading-6 text-white/58">{appearance.usageNarrative ?? appearance.subtitle}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {appearance.chips.map((chip) => (
                   <span

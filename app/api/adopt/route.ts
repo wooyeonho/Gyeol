@@ -10,7 +10,7 @@ export async function GET() {
     const agentIds = (rows ?? []).map((r) => (r as { agent_id: string }).agent_id);
     if (agentIds.length === 0) return NextResponse.json({ list: [] });
 
-    const { data: states } = await service.from("agent_state").select("agent_id, self_name, vitality, visual, genome").in("agent_id", agentIds);
+    const { data: states } = await service.from("agent_state").select("agent_id, self_name, vitality, visual, genome, config").in("agent_id", agentIds);
     const { data: mems } = await service.from("memories").select("agent_id").in("agent_id", agentIds);
     const countByAgent: Record<string, number> = {};
     (mems ?? []).forEach((r) => {
@@ -39,6 +39,9 @@ export async function GET() {
         days_alive: days,
         visual: s?.visual ?? null,
         species: (s?.genome as { species?: string | null } | undefined)?.species ?? null,
+        config: {
+          usage_profile: ((s as { config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } } | undefined)?.config?.usage_profile) ?? null,
+        },
       };
     });
     return NextResponse.json({ list });

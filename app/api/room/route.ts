@@ -15,7 +15,7 @@ export async function GET() {
     const agentId = agents?.[0]?.id;
     if (!agentId) return NextResponse.json({ room: null, objects: [] });
 
-    const { data: state } = await service.from("agent_state").select("room, visual").eq("agent_id", agentId).single();
+    const { data: state } = await service.from("agent_state").select("room, visual, config").eq("agent_id", agentId).single();
     const room = (state?.room as RoomState) ?? { objects: [], layout: "default", theme: "dark" };
     const visual = (state as { visual?: { color?: string } })?.visual;
     const existingObjects = Array.isArray(room.objects) ? room.objects : [];
@@ -32,10 +32,26 @@ export async function GET() {
       const merged = mergeRoomObjects(existingObjects, generated);
       const nextRoom: RoomState = { ...room, objects: merged };
       await service.from("agent_state").update({ room: nextRoom }).eq("agent_id", agentId);
-      return NextResponse.json({ room: nextRoom, objects: nextRoom.objects, visual });
+      return NextResponse.json({
+        room: nextRoom,
+        objects: nextRoom.objects,
+        visual,
+        config: {
+          usage_profile:
+            ((state as { config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } } | null)?.config?.usage_profile) ?? null,
+        },
+      });
     }
 
-    return NextResponse.json({ room, objects: room.objects, visual });
+    return NextResponse.json({
+      room,
+      objects: room.objects,
+      visual,
+      config: {
+        usage_profile:
+          ((state as { config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } } | null)?.config?.usage_profile) ?? null,
+      },
+    });
   } catch (e) {
     console.error("GET /api/room error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

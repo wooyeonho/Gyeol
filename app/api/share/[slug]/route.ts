@@ -36,7 +36,7 @@ export async function GET(
       { data: firstChat },
       { data: logs },
     ] = await Promise.all([
-      service.from("agent_state").select("self_name, visual, total_messages, vitality, gen_level").eq("agent_id", agentId).single(),
+      service.from("agent_state").select("self_name, visual, total_messages, vitality, gen_level, config").eq("agent_id", agentId).single(),
       service.from("chats").select("created_at").eq("agent_id", agentId).order("created_at", { ascending: true }).limit(1).single(),
       service.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: true }),
     ]);
@@ -73,6 +73,7 @@ export async function GET(
       total_messages?: number;
       vitality?: number;
       gen_level?: number;
+      config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null };
     } | null;
 
     const weekStart = new Date(Date.now() - 7 * 24 * 3600000).toISOString();
@@ -89,6 +90,9 @@ export async function GET(
       total_messages: stateData?.total_messages ?? 0,
       vitality: stateData?.vitality ?? 1,
       gen_level: stateData?.gen_level ?? 1,
+      config: {
+        usage_profile: stateData?.config?.usage_profile ?? null,
+      },
       milestones,
       week_messages: weekMessages,
     });
