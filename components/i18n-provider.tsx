@@ -11,7 +11,6 @@ import {
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
-  normalizeLocale,
   type Locale,
 } from "@/lib/i18n/config";
 import { loadMessages, getNested } from "@/lib/i18n/messages";
@@ -28,16 +27,6 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 const LOCALE_STORAGE_KEY = "gyeol_locale";
-
-function getBrowserLocale(initialLocale: Locale): Locale {
-  if (typeof window === "undefined") return initialLocale;
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  const storedLocale = normalizeLocale(stored);
-  if (storedLocale) return storedLocale;
-
-  const navLocale = normalizeLocale(navigator.language);
-  return navLocale ?? initialLocale;
-}
 
 function persistLocale(locale: Locale) {
   if (typeof window === "undefined") return;
@@ -57,16 +46,14 @@ export function I18nProvider({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const preferred = getBrowserLocale(initialLocale);
-    setLocaleState((current) => (current === preferred ? current : preferred));
-    persistLocale(preferred);
-  }, [initialLocale]);
-
-  useEffect(() => {
     loadMessages(locale).then((m) => {
       setMessages(m);
       setReady(true);
     });
+  }, [locale]);
+
+  useEffect(() => {
+    persistLocale(locale);
   }, [locale]);
 
   const setLocale = useCallback((l: Locale) => {

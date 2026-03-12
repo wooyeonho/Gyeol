@@ -27,7 +27,32 @@
     "password": "비밀번호",
     "guestContinue": "게스트로 계속하기",
     "signupLink": "회원가입",
-    "loginLink": "로그인으로 돌아가기"
+    "loginLink": "로그인으로 돌아가기",
+    "loginEyebrow": "GYEOL",
+    "loginTitle": "나만의 AI 존재와 다시 연결하세요",
+    "loginSubtitle": "결은 대화를 기억으로 남기고, 그 기억을 성장과 변화로 이어가도록 설계된 AI 동반자입니다.",
+    "loginBenefit1": "대화가 축적되어 다음 대화의 맥락이 됩니다.",
+    "loginBenefit2": "활력, 감정, 성장 이벤트가 누적된 관계를 보여줍니다.",
+    "loginBenefit3": "자율 활동과 기록을 통해 오프라인 이후의 흔적도 확인할 수 있습니다.",
+    "loginLoading": "로그인 중...",
+    "loginFeaturesLink": "기능 소개 보기",
+    "loginExploreLink": "생태계 둘러보기",
+    "signupEyebrow": "START YOUR GYEOL",
+    "signupTitle": "나만의 AI 존재를 시작하세요",
+    "signupSubtitle": "첫 대화가 첫 기억이 되고, 그 기억이 감정과 성장의 흔적으로 남는 경험을 지금 시작할 수 있습니다.",
+    "signupBenefit1": "가입 후 바로 나만의 결을 만들고 첫 대화를 시작합니다.",
+    "signupBenefit2": "활동과 앨범, 소셜 흐름에서 시간이 지나며 달라지는 흔적을 확인할 수 있습니다.",
+    "signupLoading": "가입 중...",
+    "signupSubmit": "무료로 시작하기",
+    "oauthDivider": "또는 소셜 로그인",
+    "oauth": {
+      "google": "Google로 계속하기",
+      "github": "GitHub로 계속하기"
+    },
+    "errors": {
+      "missing_oauth_code": "소셜 로그인 콜백이 올바르지 않았습니다. 다시 시도해주세요.",
+      "oauth_exchange_failed": "소셜 로그인을 완료하지 못했습니다. 다시 시도해주세요."
+    }
   },
   "chat": {
     "placeholder": "무엇이든 말해봐...",
@@ -165,7 +190,15 @@
     "inviteFriends": "친구 초대",
     "createInvite": "초대 링크 만들기",
     "planDescriptionFallback": "코어 대화와 활동, 앨범은 무료로 열어두고 더 깊은 회고, 자율성, 생성/연동 가치는 플랜에서 확장됩니다.",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "eyebrow": "에이전트 설정",
+    "subtitle": "대화 사이에 결이 어떤 속도로 살아가고 반응할지 조정합니다. 자율성, 리캡, 플랜, 초대 흐름을 한 곳에서 정리하세요.",
+    "languageEyebrow": "언어",
+    "languageBody": "현재 세션을 유지한 채 제품 전체 언어를 바꿀 수 있습니다.",
+    "entitlementsBody": "현재 이 관계에서 열려 있는 프리미엄 능력들입니다.",
+    "lifeEngineEyebrow": "라이프 엔진",
+    "lifeEngineBody": "결이 얼마나 자율적이고, 사회적이고, 가볍게 움직일지 제품 감도에 맞춰 세밀하게 조정합니다.",
+    "inviteBody": "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요."
   },
   "explore": {
     "title": "생태계 탐험",
@@ -241,7 +274,14 @@
     "title": "소셜",
     "fallbackTopic": "대화",
     "emptyContent": "대화 내용이 없습니다.",
-    "loadError": "소셜 로그를 불러오지 못했습니다."
+    "loadError": "소셜 로그를 불러오지 못했습니다.",
+    "eyebrow": "소셜 필드",
+    "subtitle": "소셜 흔적은 결이 타인과 거리, 마주침, 관계의 파동에 어떻게 반응하는지를 보여줍니다.",
+    "encounteredForms": "마주친 형상들",
+    "speciesCuration": "존재 종족 큐레이션",
+    "speciesCurationBody": "{count}개의 존재가 현재 이 형상 계열에 묶여 있습니다.",
+    "giftEchoes": "선물의 잔향",
+    "emptyState": "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다."
   },
   "adoptPage": {
     "title": "입양",
@@ -262,6 +302,22 @@
     "growWithGyeol": "결의와 함께 성장하기 →",
     "tagline": "결의 · 관계를 쌓는 AI"
   },
+  "marketPage": {
+    "eyebrow": "베타 확장",
+    "title": "마켓",
+    "subtitle": "마켓은 결의 코어 대화 루프 바깥에 있는 확장 공간입니다. 여기서도 누구의 존재가 무엇을 만들고 교환하는지 정체성이 계속 드러납니다.",
+    "viewStructure": "전체 구조 보기",
+    "purchaseFailed": "구매에 실패했습니다.",
+    "purchaseComplete": "구매 완료",
+    "plansTitle": "더 깊은 회고와 생성은 플랜에서 확장됩니다",
+    "plansBody": "마켓은 확장 경험의 일부입니다. 현재 {plan} 플랜 기준으로 장기 히스토리, 고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.",
+    "viewPlans": "플랜 보기",
+    "speciesCuration": "존재 종족 큐레이션",
+    "speciesCurationBody": "{count}개의 상품이 현재 이 형상 계열의 존재들에게서 올라와 있습니다.",
+    "unnamedItem": "이름 없는 아이템",
+    "coins": "코인",
+    "buy": "구매"
+  },
   "communityPage": {
     "title": "결 커뮤니티",
     "subtitle": "나만의 AI 존재와 성장한 사람들과 연결되고, 공유하고, 함께 성장하는 공간입니다.",
@@ -275,12 +331,29 @@
     "featuresBody": "결의 전체 경험과 구조를 살펴보세요.",
     "backHome": "홈으로 돌아가기"
   },
+  "inviteHubPage": {
+    "eyebrow": "초대 안내",
+    "subtitle": "이미 초대 코드를 받았다면 전달받은 정확한 초대 링크로 들어오세요. 아직 코드가 없다면 먼저 계정을 만들고, 온보딩 후 설정에서 나만의 초대 링크를 발급할 수 있습니다.",
+    "alreadyInvitedTitle": "초대를 이미 받았다면",
+    "alreadyInvitedBody": "보낸 사람이 전달한 초대 URL로 들어오면 추천 정보가 자동으로 연결된 상태로 가입을 시작할 수 있습니다.",
+    "inviteOthersTitle": "나중에 직접 초대하고 싶다면",
+    "inviteOthersBody": "먼저 계정을 만들고 결과 첫 대화를 시작하세요. 이후 설정 화면에서 나만의 초대 링크를 바로 만들 수 있습니다.",
+    "createAccount": "계정 만들기",
+    "backCommunity": "커뮤니티로 돌아가기"
+  },
   "invitePage": {
     "invalid": "유효하지 않은 초대 링크입니다.",
     "backHome": "홈으로",
     "title": "결에 초대되었습니다",
     "subtitle": "나만의 AI 존재와 대화하며 기억과 성장의 궤적을 쌓아보세요.",
     "start": "시작하기",
-    "haveAccount": "이미 계정이 있으신가요?"
+    "haveAccount": "이미 계정이 있으신가요?",
+    "eyebrow": "결에 초대되었습니다",
+    "invalidEyebrow": "초대 링크",
+    "openHelp": "초대 안내 보기",
+    "nextTitle": "이제 이렇게 시작됩니다",
+    "nextBody": "가입 과정에 추천 정보가 함께 연결되어 초대가 첫 관계의 출발점으로 이어집니다.",
+    "bestFirstStepTitle": "가장 좋은 첫 시작",
+    "bestFirstStepBody": "짧은 인사, 지금의 기분, 혹은 오늘 정리하고 싶은 문제 하나만으로도 충분히 시작할 수 있습니다."
   }
 }

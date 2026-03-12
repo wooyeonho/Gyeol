@@ -8,6 +8,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -117,7 +118,7 @@ export default function AlbumPage() {
                   />
                   <p className="text-sm font-medium text-white">{item.title}</p>
                   <p className="mt-1 text-xs text-white/48">
-                    {new Date(item.at).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", { year: "numeric", month: "short", day: "numeric" })}
+                    {formatLocalizedDate(item.at, locale)}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-white/66">{item.body}</p>
                 </div>
@@ -139,7 +140,7 @@ export default function AlbumPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-white">{m.label}</p>
                   <p className="text-white/50 text-xs mt-0.5">
-                    {new Date(m.at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                    {formatLocalizedDate(m.at, locale, { dateStyle: "medium" })}
                   </p>
                   {m.summary && <p className="text-white/70 text-sm mt-2 truncate">{m.summary}</p>}
                 </div>

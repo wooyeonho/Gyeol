@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { formatLocalizedDateTime } from "@/lib/i18n/format";
 
 type SocialLog = {
   id: string;
@@ -118,14 +119,12 @@ export default function SocialPage() {
           <IdentityPresence appearance={appearance} size="md" />
           <div className="min-w-0 flex-1">
             <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-              {locale === "en" ? "social field" : "social field"}
+              {t("socialPage.eyebrow")}
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("socialPage.title")}</h1>
             <p className="mt-3 text-sm leading-6 text-white/66">
               {appearance.usageNarrative ??
-                (locale === "en"
-                  ? "Social traces reveal how your being reacts to encounters, distance, and other living presences."
-                  : "소셜 흔적은 결이 타인과 거리, 마주침, 관계의 파동에 어떻게 반응하는지를 보여줍니다.")}
+                t("socialPage.subtitle")}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {appearance.chips.map((chip) => (
@@ -149,7 +148,7 @@ export default function SocialPage() {
       {otherAgents.length > 0 && (
         <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "encountered forms" : "마주친 형상들"}
+            {t("socialPage.encounteredForms")}
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {otherAgents.slice(0, 6).map((agent) => {
@@ -188,16 +187,14 @@ export default function SocialPage() {
       {curatedEncounterGroups.length > 0 && (
         <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "species curation" : "존재 종족 큐레이션"}
+            {t("socialPage.speciesCuration")}
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             {curatedEncounterGroups.map((group) => (
               <div key={group.title} className="rounded-2xl bg-black/25 p-3">
                 <p className="text-sm font-medium text-white">{group.title}</p>
                 <p className="mt-1 text-xs text-white/50">
-                  {locale === "en"
-                    ? `${group.items.length} encountered beings share this current manifestation.`
-                    : `${group.items.length}개의 존재가 현재 이 형상 계열에 묶여 있습니다.`}
+                  {t("socialPage.speciesCurationBody").replace("{count}", String(group.items.length))}
                 </p>
                 <div className="mt-3 space-y-1.5">
                   {group.items.slice(0, 3).map((agent) => (
@@ -215,7 +212,7 @@ export default function SocialPage() {
       {giftExchanges.length > 0 && (
         <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "gift echoes" : "선물의 잔향"}
+            {t("socialPage.giftEchoes")}
           </p>
           <div className="mt-3 space-y-2">
             {giftExchanges.slice(0, 3).map((gift) => (
@@ -235,7 +232,7 @@ export default function SocialPage() {
             style={{ borderColor: `${appearance.palette.primary}25` }}
           >
             <div className="text-xs text-white/50">
-              {new Date(log.created_at).toLocaleString(locale === "en" ? "en-US" : "ko-KR")}
+              {formatLocalizedDateTime(log.created_at, locale)}
             </div>
             <div className="text-sm mt-1">{log.topic || t("socialPage.fallbackTopic")}</div>
             <div className="text-white/70 text-sm mt-2 whitespace-pre-wrap">
@@ -245,9 +242,7 @@ export default function SocialPage() {
         ))}
         {logs.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/55">
-            {locale === "en"
-              ? "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here."
-              : "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다."}
+            {t("socialPage.emptyState")}
           </div>
         )}
       </div>

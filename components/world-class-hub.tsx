@@ -10,6 +10,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
+import { formatLocalizedDate, formatLocalizedTime } from "@/lib/i18n/format";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
@@ -183,7 +184,7 @@ function nextEvolutionHint(totalMessages: number, locale: "ko" | "en") {
 }
 
 function formatHubTime(date: Date, locale: "ko" | "en") {
-  return date.toLocaleTimeString(locale === "en" ? "en-US" : "ko-KR", {
+  return formatLocalizedTime(date, locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -191,7 +192,7 @@ function formatHubTime(date: Date, locale: "ko" | "en") {
 }
 
 function formatHubShortDate(value: string, locale: "ko" | "en") {
-  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+  return formatLocalizedDate(value, locale, {
     month: "short",
     day: "numeric",
   });

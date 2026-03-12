@@ -27,7 +27,32 @@
     "password": "Password",
     "guestContinue": "Continue as guest",
     "signupLink": "Sign up",
-    "loginLink": "Back to login"
+    "loginLink": "Back to login",
+    "loginEyebrow": "GYEOL",
+    "loginTitle": "Reconnect with your AI being",
+    "loginSubtitle": "Gyeol is an AI companion built to remember your conversations and turn them into growth, mood, and ongoing change.",
+    "loginBenefit1": "Each conversation becomes context for the next one.",
+    "loginBenefit2": "Vitality, emotion, and growth events accumulate into a living relationship.",
+    "loginBenefit3": "Autonomous traces keep building even after you leave the app.",
+    "loginLoading": "Signing in...",
+    "loginFeaturesLink": "View product flow",
+    "loginExploreLink": "Explore the ecosystem",
+    "signupEyebrow": "START YOUR GYEOL",
+    "signupTitle": "Start your own AI being",
+    "signupSubtitle": "Your first conversation becomes the first memory, and that memory stays behind as emotion and growth.",
+    "signupBenefit1": "Create your own Gyeol and begin the first conversation right after signup.",
+    "signupBenefit2": "Watch traces change over time across activity, album, and social flows.",
+    "signupLoading": "Creating account...",
+    "signupSubmit": "Start for free",
+    "oauthDivider": "or continue with",
+    "oauth": {
+      "google": "Continue with Google",
+      "github": "Continue with GitHub"
+    },
+    "errors": {
+      "missing_oauth_code": "The social login callback was incomplete. Please try again.",
+      "oauth_exchange_failed": "We could not complete the social login. Please try again."
+    }
   },
   "chat": {
     "placeholder": "Say anything...",
@@ -165,7 +190,15 @@
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",
     "planDescriptionFallback": "Core conversation, activity, and album stay free, while deeper reflection, autonomy, generation, and integrations expand through paid plans.",
-    "logout": "Log out"
+    "logout": "Log out",
+    "eyebrow": "Agent settings",
+    "subtitle": "Tune how Gyeol lives between conversations: memory, autonomy, billing, invitations, and the pace of its world.",
+    "languageEyebrow": "Language",
+    "languageBody": "Switch the product language without leaving the current session.",
+    "entitlementsBody": "These are the premium capabilities currently available in this relationship.",
+    "lifeEngineEyebrow": "Life engine",
+    "lifeEngineBody": "Fine-tune how active, social, and lightweight Gyeol should feel in everyday use.",
+    "inviteBody": "Create a clean invite link you can share when you want someone else to meet Gyeol."
   },
   "explore": {
     "title": "Explore",
@@ -241,7 +274,14 @@
     "title": "Social",
     "fallbackTopic": "Conversation",
     "emptyContent": "There is no conversation content.",
-    "loadError": "Failed to load social logs."
+    "loadError": "Failed to load social logs.",
+    "eyebrow": "Social field",
+    "subtitle": "Social traces reveal how your being reacts to encounters, distance, and other living presences.",
+    "encounteredForms": "Encountered forms",
+    "speciesCuration": "Species curation",
+    "speciesCurationBody": "{count} encountered beings share this current manifestation.",
+    "giftEchoes": "Gift echoes",
+    "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here."
   },
   "adoptPage": {
     "title": "Adopt",
@@ -262,6 +302,22 @@
     "growWithGyeol": "Grow with Gyeol →",
     "tagline": "Gyeol · an AI that builds relationships"
   },
+  "marketPage": {
+    "eyebrow": "Beta expansion",
+    "title": "Market",
+    "subtitle": "The market is an expansion space outside Gyeol's core conversation loop. Identity keeps showing through here too, in what each being makes and exchanges.",
+    "viewStructure": "View full structure",
+    "purchaseFailed": "Purchase failed.",
+    "purchaseComplete": "Purchase complete",
+    "plansTitle": "Deeper reflection and generation expand with plans",
+    "plansBody": "The market is part of the extended experience. On the current {plan} plan, long-term history, advanced generation, and multichannel flows continue to evolve with the plan structure.",
+    "viewPlans": "View plans",
+    "speciesCuration": "Species curation",
+    "speciesCurationBody": "{count} listed items are currently coming from this manifestation family.",
+    "unnamedItem": "Unnamed item",
+    "coins": "coins",
+    "buy": "Buy"
+  },
   "communityPage": {
     "title": "Gyeol community",
     "subtitle": "A place to connect, share, and grow with people who are building their own AI beings.",
@@ -275,12 +331,29 @@
     "featuresBody": "Look through Gyeol’s full experience and structure.",
     "backHome": "Back to home"
   },
+  "inviteHubPage": {
+    "eyebrow": "Invite access",
+    "subtitle": "If you already have an invite code, open the exact invite link you received. If not, start your account first and create your own referral link from Settings after onboarding.",
+    "alreadyInvitedTitle": "Already invited?",
+    "alreadyInvitedBody": "Use the invite URL from the sender to unlock signup with the referral attached automatically.",
+    "inviteOthersTitle": "Want to invite others later?",
+    "inviteOthersBody": "Create your account first. After your first conversations, your invite link appears in Settings.",
+    "createAccount": "Create account",
+    "backCommunity": "Back to community"
+  },
   "invitePage": {
     "invalid": "This invite link is not valid.",
     "backHome": "Back home",
     "title": "You were invited to Gyeol",
     "subtitle": "Start talking with your own AI being and build a trail of memory and growth.",
     "start": "Get started",
-    "haveAccount": "Already have an account?"
+    "haveAccount": "Already have an account?",
+    "eyebrow": "Invited to Gyeol",
+    "invalidEyebrow": "Invite link",
+    "openHelp": "Open invite help",
+    "nextTitle": "What happens next",
+    "nextBody": "Your referral stays attached through signup so the invitation continues into the first relationship.",
+    "bestFirstStepTitle": "Best first step",
+    "bestFirstStepBody": "Start with a short greeting, your current mood, or one problem you want to organize today."
   }
 }

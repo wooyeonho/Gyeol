@@ -352,13 +352,11 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-4xl space-y-4">
         <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)] sm:p-8">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-            {locale === "en" ? "agent settings" : "agent settings"}
+            {t("settings.eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("settings.title")}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/66">
-            {locale === "en"
-              ? "Tune how Gyeol lives between conversations: memory, autonomy, billing, invitations, and the pace of its world."
-              : "대화 사이에 결이 어떤 속도로 살아가고 반응할지 조정합니다. 자율성, 리캡, 플랜, 초대 흐름을 한 곳에서 정리하세요."}
+            {t("settings.subtitle")}
           </p>
         </header>
         {error && <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
@@ -371,11 +369,9 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "language" : "language"}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.languageEyebrow")}</p>
             <p className="mt-1 text-sm text-white/60">
-              {locale === "en"
-                ? "Switch the shell language without leaving the current session."
-                : "현재 세션을 유지한 채 제품 전체 언어를 바꿀 수 있습니다."}
+              {t("settings.languageBody")}
             </p>
           </div>
           <LocaleSwitcher onLocaleChange={handleLocaleChange} />
@@ -427,9 +423,7 @@ export default function SettingsPage() {
             <div className="mb-4">
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.entitlements")}</p>
               <p className="mt-1 text-sm text-white/60">
-                {locale === "en"
-                  ? "These are the premium capabilities currently available in this relationship."
-                  : "현재 이 관계에서 열려 있는 프리미엄 능력들입니다."}
+                {t("settings.entitlementsBody")}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -455,11 +449,9 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "life engine" : "life engine"}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.lifeEngineEyebrow")}</p>
             <p className="mt-1 text-sm text-white/60">
-              {locale === "en"
-                ? "Fine-tune how active, social, and lightweight Gyeol should feel in everyday use."
-                : "결이 얼마나 자율적이고, 사회적이고, 가볍게 움직일지 제품 감도에 맞춰 세밀하게 조정합니다."}
+              {t("settings.lifeEngineBody")}
             </p>
           </div>
           <div className="space-y-3">
@@ -479,9 +471,7 @@ export default function SettingsPage() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.inviteFriends")}</p>
           <p className="mt-1 text-sm text-white/60">
-            {locale === "en"
-              ? "Create a clean invite link you can share when you want someone else to meet Gyeol."
-              : "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요."}
+            {t("settings.inviteBody")}
           </p>
           <InviteSection />
         </section>

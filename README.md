@@ -47,6 +47,13 @@
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
 
+### 소셜 로그인 준비
+
+- Supabase Auth에서 사용할 OAuth provider(예: Google, GitHub)를 활성화
+- 각 provider의 redirect URL에 `https://your-app.vercel.app/auth/callback` 추가
+- 로컬 개발 시에도 동일하게 `NEXT_PUBLIC_APP_URL`을 맞춰 callback URL이 일치하도록 설정
+- 초대 링크로 소셜 가입하는 경우 `signup?ref=...` 흐름이 `auth/callback`을 통해 그대로 이어집니다
+
 ### 운영 필수 환경 변수
 
 - `CRON_SECRET`: cron/webhook 인증
