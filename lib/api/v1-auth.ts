@@ -6,8 +6,16 @@ type ApiKeyRow = {
   id?: string;
   key_hash?: string;
   is_active?: boolean;
+  owner_user_id?: string | null;
   scope?: string[] | null;
   scopes?: string[] | null;
+};
+
+export type V1ApiKeyContext = {
+  id: string | null;
+  identifier: string;
+  isLegacyEnvKey: boolean;
+  ownerUserId: string | null;
 };
 
 function getRawApiKey(request: NextRequest): string {
@@ -29,8 +37,15 @@ function hasScope(row: ApiKeyRow, requiredScope: string): boolean {
 }
 
 export async function verifyV1ApiKey(request: NextRequest, requiredScope: string): Promise<boolean> {
+  return Boolean(await authorizeV1ApiKey(request, requiredScope));
+}
+
+export async function authorizeV1ApiKey(
+  request: NextRequest,
+  requiredScope: string
+): Promise<V1ApiKeyContext | null> {
   const raw = getRawApiKey(request);
-  if (!raw) return false;
+  if (!raw) return null;
 
   const keyHash = crypto.createHash("sha256").update(raw).digest("hex");
   const service = createServiceClient();
@@ -44,23 +59,65 @@ export async function verifyV1ApiKey(request: NextRequest, requiredScope: string
 
   const row = (data ?? null) as ApiKeyRow | null;
   if (row?.id) {
-    if (row.is_active === false) return false;
-    if (!hasScope(row, requiredScope)) return false;
+    if (row.is_active === false) return null;
+    if (!hasScope(row, requiredScope)) return null;
     service
       .from("api_keys")
       .update({ last_used_at: new Date().toISOString() })
       .eq("id", row.id)
       .then(() => {});
-    return true;
+    return {
+      id: row.id,
+      identifier: getApiKeyIdentifier(request),
+      isLegacyEnvKey: false,
+      ownerUserId: row.owner_user_id ?? null,
+    };
   }
 
   // Backward compatibility: legacy single env key.
   const envKey = process.env.GYEOL_ENGINE_API_KEY;
-  return Boolean(envKey) && raw === envKey;
+  if (Boolean(envKey) && raw === envKey) {
+    return {
+      id: null,
+      identifier: getApiKeyIdentifier(request),
+      isLegacyEnvKey: true,
+      ownerUserId: null,
+    };
+  }
+
+  return null;
 }
 
 export function getApiKeyIdentifier(request: NextRequest): string {
   const raw = getRawApiKey(request);
   if (!raw) return "anonymous";
   return crypto.createHash("sha256").update(raw).digest("hex").slice(0, 16);
+}
+
+export function resolveAuthorizedUserId(
+  context: V1ApiKeyContext,
+  requestedUserId: string | null | undefined
+): { error?: "FORBIDDEN" | "MISSING_TENANT" | "MISSING_USER_ID"; userId?: string } {
+  if (context.ownerUserId) {
+    if (requestedUserId && requestedUserId !== context.ownerUserId) {
+      return { error: "FORBIDDEN" };
+    }
+    return { userId: context.ownerUserId };
+  }
+
+  if (!context.isLegacyEnvKey) {
+    return { error: "MISSING_TENANT" };
+  }
+
+  if (!requestedUserId) {
+    return { error: "MISSING_USER_ID" };
+  }
+
+  return { userId: requestedUserId };
+}
+
+export function canAccessAgent(context: V1ApiKeyContext, ownerUserId: string | null | undefined): boolean {
+  if (!ownerUserId) return false;
+  if (context.isLegacyEnvKey) return true;
+  return Boolean(context.ownerUserId) && context.ownerUserId === ownerUserId;
 }

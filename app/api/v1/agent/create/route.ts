@@ -1,10 +1,11 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
+import { authorizeV1ApiKey, getApiKeyIdentifier, resolveAuthorizedUserId } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  if (!(await verifyV1ApiKey(request, "v1:agent:create"))) {
+  const auth = await authorizeV1ApiKey(request, "v1:agent:create");
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -13,10 +14,19 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const userId = typeof body?.user_id === "string" ? body.user_id.trim() : null;
-    if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+    const userResolution = resolveAuthorizedUserId(auth, userId);
+    if (userResolution.error === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (userResolution.error === "MISSING_TENANT") {
+      return NextResponse.json({ error: "API key tenant binding required" }, { status: 403 });
+    }
+    if (userResolution.error === "MISSING_USER_ID" || !userResolution.userId) {
+      return NextResponse.json({ error: "user_id required" }, { status: 400 });
+    }
 
     const service = createServiceClient();
-    const { data: agent } = await service.from("agents").insert({ user_id: userId }).select("id").single();
+    const { data: agent } = await service.from("agents").insert({ user_id: userResolution.userId }).select("id").single();
     if (!agent?.id) return NextResponse.json({ error: "Create failed" }, { status: 500 });
 
     await service.from("agent_state").insert({

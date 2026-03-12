@@ -322,6 +322,7 @@ create table if not exists api_keys (
   key_hash text not null unique,
   label text,
   is_active boolean not null default true,
+  owner_user_id uuid references auth.users(id) on delete cascade,
   scope text[] not null default array['v1']::text[],
   last_used_at timestamptz,
   created_at timestamptz not null default now()
