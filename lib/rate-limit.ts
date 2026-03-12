@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
-const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "closed" ? "closed" : "open";
+const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "open" ? "open" : "closed";
 
 export async function checkRateLimit(key: string): Promise<boolean> {
   try {
