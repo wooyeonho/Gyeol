@@ -91,8 +91,111 @@ type BillingData = {
   };
 };
 
+function formatPlanTierLabel(
+  tier: PlanDefinition["tier"] | null | undefined,
+  locale: "ko" | "en"
+) {
+  if (tier === "premium") return locale === "en" ? "Premium" : "Premium";
+  if (tier === "pro") return locale === "en" ? "Pro" : "Pro";
+  return locale === "en" ? "Free" : "Free";
+}
+
+function formatSubscriptionStatus(
+  status: string | null | undefined,
+  locale: "ko" | "en"
+) {
+  if (!status) return locale === "en" ? "Not connected yet" : "아직 연결되지 않음";
+  const normalized = status.toLowerCase();
+  if (normalized === "active") return locale === "en" ? "Active" : "정상 사용 중";
+  if (normalized === "trialing") return locale === "en" ? "Trialing" : "체험 중";
+  if (normalized === "past_due") return locale === "en" ? "Past due" : "결제 확인 필요";
+  if (normalized === "cancelled") return locale === "en" ? "Cancelled" : "해지됨";
+  return status;
+}
+
+function formatLocaleDate(
+  value: string | null | undefined,
+  locale: "ko" | "en"
+) {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function SettingsStatCard({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        accent
+          ? "border-cyan-300/20 bg-cyan-400/[0.08] shadow-[0_0_50px_rgba(34,211,238,0.06)]"
+          : "border-white/10 bg-white/[0.04]"
+      }`}
+    >
+      <p className={`text-xs uppercase tracking-[0.2em] ${accent ? "text-cyan-100/75" : "text-white/45"}`}>{label}</p>
+      <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{value}</p>
+    </div>
+  );
+}
+
+function SettingsToggle({
+  label,
+  description,
+  enabled,
+  onToggle,
+  locale,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  onToggle: () => void;
+  locale: "ko" | "en";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-left transition-all duration-200 hover:border-cyan-300/20 hover:bg-black/35"
+    >
+      <div>
+        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="mt-1 text-xs leading-5 text-white/50">{description}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className={`text-[11px] uppercase tracking-[0.18em] ${enabled ? "text-cyan-100/80" : "text-white/35"}`}>
+          {enabled ? (locale === "en" ? "live" : "작동 중") : (locale === "en" ? "idle" : "대기")}
+        </span>
+        <span
+          className={`relative h-7 w-12 rounded-full border transition-colors ${
+            enabled
+              ? "border-cyan-300/35 bg-cyan-400/30"
+              : "border-white/15 bg-white/10"
+          }`}
+          aria-hidden="true"
+        >
+          <span
+            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-[0_6px_20px_rgba(255,255,255,0.2)] transition-transform ${
+              enabled ? "translate-x-6" : "translate-x-0.5"
+            }`}
+          />
+        </span>
+      </div>
+    </button>
+  );
+}
+
 export default function SettingsPage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const [state, setState] = useState<AgentState | null>(null);
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,154 +289,208 @@ export default function SettingsPage() {
   }
 
   const config: AgentConfig = state?.config || {};
+  const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
+  const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
+  const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
+  const summaryCards = [
+    { label: t("settings.name"), value: state?.self_name || "—" },
+    { label: t("settings.genLevel"), value: String(state?.gen_level ?? 1) },
+    { label: t("settings.messages"), value: String(state?.total_messages ?? 0) },
+    { label: t("chat.vitality"), value: `${((state?.vitality ?? 1) * 100).toFixed(0)}%`, accent: true },
+    { label: t("settings.mood"), value: state?.mood || "—" },
+    { label: t("settings.coins"), value: String(state?.coins ?? 0) },
+  ];
+  const toggleRows = [
+    {
+      label: t("settings.autonomous"),
+      description:
+        locale === "en"
+          ? "Keeps Gyeol moving, reflecting, and acting between conversations."
+          : "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
+      enabled: config.autonomous_enabled !== false,
+      onToggle: () => toggleConfig("autonomous_enabled", !config.autonomous_enabled),
+    },
+    {
+      label: t("settings.dream"),
+      description:
+        locale === "en"
+          ? "Allows dream-like synthesis and internal scene generation during quiet cycles."
+          : "조용한 주기 동안 꿈처럼 장면을 합성하고 내부 리플렉션을 이어가게 합니다.",
+      enabled: Boolean(config.dream_enabled),
+      onToggle: () => toggleConfig("dream_enabled", !config.dream_enabled),
+    },
+    {
+      label: t("settings.social"),
+      description:
+        locale === "en"
+          ? "Lets Gyeol notice and react to ecosystem and social signals."
+          : "결이 생태계와 소셜 신호를 감지하고 관계적 반응을 이어가게 합니다.",
+      enabled: config.social_enabled !== false,
+      onToggle: () => toggleConfig("social_enabled", !config.social_enabled),
+    },
+    {
+      label: t("settings.performanceMinimal"),
+      description:
+        locale === "en"
+          ? "Uses a lighter visual/runtime path for quieter or lower-power sessions."
+          : "보다 조용하고 가벼운 시각/런타임 경로를 사용해 저전력 세션에 맞춥니다.",
+      enabled: Boolean(config.performance_minimal),
+      onToggle: () => toggleConfig("performance_minimal", !config.performance_minimal),
+    },
+    {
+      label: t("settings.recapEmail"),
+      description:
+        locale === "en"
+          ? "Sends a periodic recap so the relationship can continue outside the app."
+          : "앱 밖에서도 관계가 이어지도록 주기적인 리캡을 메일로 전달합니다.",
+      enabled: Boolean(state?.channels?.email),
+      onToggle: () => toggleRecapEmail(!state?.channels?.email),
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
-      <h1 className="text-xl font-semibold mb-4">{t("settings.title")}</h1>
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
-      <div className="space-y-4">
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("settings.name")}</div>
-          <div>{state?.self_name || "—"}</div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("settings.genLevel")}</div>
-          <div>{state?.gen_level ?? 1}</div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("settings.messages")}</div>
-          <div>{state?.total_messages ?? 0}</div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("chat.vitality")}</div>
-          <div>{((state?.vitality ?? 1) * 100).toFixed(0)}%</div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("settings.mood")}</div>
-          <div>{state?.mood || "—"}</div>
-        </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60">{t("settings.coins")}</div>
-          <div>{state?.coins ?? 0}</div>
-        </div>
+    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+      <div className="mx-auto max-w-4xl space-y-4">
+        <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)] sm:p-8">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+            {locale === "en" ? "agent settings" : "agent settings"}
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("settings.title")}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/66">
+            {locale === "en"
+              ? "Tune how Gyeol lives between conversations: memory, autonomy, billing, invitations, and the pace of its world."
+              : "대화 사이에 결이 어떤 속도로 살아가고 반응할지 조정합니다. 자율성, 리캡, 플랜, 초대 흐름을 한 곳에서 정리하세요."}
+          </p>
+        </header>
+        {error && <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
 
-        <LocaleSwitcher />
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {summaryCards.map((card) => (
+            <SettingsStatCard key={card.label} label={card.label} value={card.value} accent={card.accent} />
+          ))}
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "language" : "language"}</p>
+            <p className="mt-1 text-sm text-white/60">
+              {locale === "en"
+                ? "Switch the shell language without leaving the current session."
+                : "현재 세션을 유지한 채 제품 전체 언어를 바꿀 수 있습니다."}
+            </p>
+          </div>
+          <LocaleSwitcher />
+        </section>
 
         {showPlansSurface && (
-          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-sm text-cyan-100/80">{t("settings.currentPlan")}</div>
-                <div className="mt-1 text-lg font-semibold">{billing?.plan.tier.toUpperCase() ?? "FREE"}</div>
-                <p className="mt-2 text-sm leading-6 text-white/70">
+          <section className="rounded-3xl border border-cyan-300/20 bg-cyan-400/[0.08] p-5 shadow-[0_0_70px_rgba(34,211,238,0.05)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/75">{t("settings.currentPlan")}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-semibold tracking-tight text-white">{planLabel}</h2>
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] text-white/80">
+                    {planStatusLabel}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-white/72">
                   {billing?.plan.description ?? t("settings.planDescriptionFallback")}
                 </p>
-                {billing?.subscription.current_period_end && (
-                  <p className="mt-2 text-xs text-white/50">
-                    {t("settings.nextRenewal")}: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
+                {nextRenewalLabel && (
+                  <p className="mt-3 text-xs text-white/55">
+                    {t("settings.nextRenewal")}: {nextRenewalLabel}
                   </p>
                 )}
-                {billing?.subscription.status && (
-                  <p className="mt-1 text-xs text-white/45">{t("settings.planStatus")}: {billing.subscription.status}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/plans"
+                  className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+                >
+                  {t("settings.planManage")}
+                </Link>
+                {billing?.subscription.provider === "stripe" && billing.subscription.provider_customer_id && (
+                  <button
+                    type="button"
+                    onClick={() => void openBillingPortal()}
+                    className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+                  >
+                    {t("settings.openBilling")}
+                  </button>
                 )}
               </div>
-              <Link
-                href="/plans"
-                className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
-              >
-                {t("settings.planManage")}
-              </Link>
             </div>
-            {billing?.subscription.provider === "stripe" && billing.subscription.provider_customer_id && (
-              <button
-                type="button"
-                onClick={() => void openBillingPortal()}
-                className="mt-4 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
-              >
-                {t("settings.openBilling")}
-              </button>
-            )}
-          </div>
+          </section>
         )}
 
         {billing && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-sm text-white/60">{t("settings.entitlements")}</div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">{t("settings.advancedRecaps")}</p>
-                <p className="mt-1 text-sm">{billing.entitlements.advanced_recaps ? t("settings.enabled") : t("settings.locked")}</p>
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.entitlements")}</p>
+              <p className="mt-1 text-sm text-white/60">
+                {locale === "en"
+                  ? "These are the premium capabilities currently available in this relationship."
+                  : "현재 이 관계에서 열려 있는 프리미엄 능력들입니다."}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-xs uppercase tracking-wider text-white/45">{t("settings.advancedRecaps")}</p>
+                <p className="mt-2 text-sm text-white">{billing.entitlements.advanced_recaps ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
-              <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">{t("settings.longTermHistory")}</p>
-                <p className="mt-1 text-sm">{billing.entitlements.long_term_history ? t("settings.enabled") : t("settings.locked")}</p>
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-xs uppercase tracking-wider text-white/45">{t("settings.longTermHistory")}</p>
+                <p className="mt-2 text-sm text-white">{billing.entitlements.long_term_history ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
-              <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">{t("settings.multichannel")}</p>
-                <p className="mt-1 text-sm">{billing.entitlements.multichannel ? t("settings.enabled") : t("settings.locked")}</p>
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-xs uppercase tracking-wider text-white/45">{t("settings.multichannel")}</p>
+                <p className="mt-2 text-sm text-white">{billing.entitlements.multichannel ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
-              <div className="rounded-xl bg-black/25 p-3">
-                <p className="text-xs text-white/45">{t("settings.premiumGeneration")}</p>
-                <p className="mt-1 text-sm">{billing.entitlements.premium_generation ? t("settings.enabled") : t("settings.locked")}</p>
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                <p className="text-xs uppercase tracking-wider text-white/45">{t("settings.premiumGeneration")}</p>
+                <p className="mt-2 text-sm text-white">{billing.entitlements.premium_generation ? t("settings.enabled") : t("settings.locked")}</p>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <span>{t("settings.autonomous")}</span>
-            <button
-              onClick={() => toggleConfig("autonomous_enabled", !config.autonomous_enabled)}
-              className={`px-3 py-1 rounded ${config.autonomous_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
-            >
-              {config.autonomous_enabled !== false ? "ON" : "OFF"}
-            </button>
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="mb-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "life engine" : "life engine"}</p>
+            <p className="mt-1 text-sm text-white/60">
+              {locale === "en"
+                ? "Fine-tune how active, social, and lightweight Gyeol should feel in everyday use."
+                : "결이 얼마나 자율적이고, 사회적이고, 가볍게 움직일지 제품 감도에 맞춰 세밀하게 조정합니다."}
+            </p>
           </div>
-          <div className="flex justify-between items-center">
-            <span>{t("settings.dream")}</span>
-            <button
-              onClick={() => toggleConfig("dream_enabled", !config.dream_enabled)}
-              className={`px-3 py-1 rounded ${config.dream_enabled ? "bg-green-500/30" : "bg-white/10"}`}
-            >
-              {config.dream_enabled ? "ON" : "OFF"}
-            </button>
+          <div className="space-y-3">
+            {toggleRows.map((toggle) => (
+              <SettingsToggle
+                key={toggle.label}
+                label={toggle.label}
+                description={toggle.description}
+                enabled={toggle.enabled}
+                onToggle={toggle.onToggle}
+                locale={locale}
+              />
+            ))}
           </div>
-          <div className="flex justify-between items-center">
-            <span>{t("settings.social")}</span>
-            <button
-              onClick={() => toggleConfig("social_enabled", !config.social_enabled)}
-              className={`px-3 py-1 rounded ${config.social_enabled !== false ? "bg-green-500/30" : "bg-white/10"}`}
-            >
-              {config.social_enabled !== false ? "ON" : "OFF"}
-            </button>
-          </div>
-          <div className="flex justify-between items-center">
-            <span>{t("settings.performanceMinimal")}</span>
-            <button
-              onClick={() => toggleConfig("performance_minimal", !config.performance_minimal)}
-              className={`px-3 py-1 rounded ${config.performance_minimal ? "bg-green-500/30" : "bg-white/10"}`}
-            >
-              {config.performance_minimal ? "ON" : "OFF"}
-            </button>
-          </div>
-          <div className="flex justify-between items-center">
-            <span>{t("settings.recapEmail")}</span>
-            <button
-              onClick={() => toggleRecapEmail(!state?.channels?.email)}
-              className={`px-3 py-1 rounded ${state?.channels?.email ? "bg-green-500/30" : "bg-white/10"}`}
-            >
-              {state?.channels?.email ? "ON" : "OFF"}
-            </button>
-          </div>
-        </div>
+        </section>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm text-white/60">{t("settings.inviteFriends")}</p>
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.inviteFriends")}</p>
+          <p className="mt-1 text-sm text-white/60">
+            {locale === "en"
+              ? "Create a clean invite link you can share when you want someone else to meet Gyeol."
+              : "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요."}
+          </p>
           <InviteSection />
-        </div>
+        </section>
 
-        <button onClick={logout} className="w-full py-3 rounded-xl bg-red-500/20 text-red-400">
+        <button
+          onClick={logout}
+          className="w-full rounded-2xl border border-red-400/20 bg-red-500/10 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/15"
+        >
           {t("settings.logout")}
         </button>
       </div>

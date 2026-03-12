@@ -21,12 +21,37 @@ type BillingData = {
 
 const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 
+function formatSubscriptionStatus(status: string | null | undefined, locale: "ko" | "en") {
+  if (!status) return locale === "en" ? "Not connected yet" : "아직 연결되지 않음";
+  const normalized = status.toLowerCase();
+  if (normalized === "active") return locale === "en" ? "Active" : "정상 사용 중";
+  if (normalized === "trialing") return locale === "en" ? "Trialing" : "체험 중";
+  if (normalized === "past_due") return locale === "en" ? "Past due" : "결제 확인 필요";
+  if (normalized === "cancelled") return locale === "en" ? "Cancelled" : "해지됨";
+  return status;
+}
+
+function formatPlanTierLabel(tier: PlanTier | null | undefined, locale: "ko" | "en") {
+  if (tier === "premium") return locale === "en" ? "Premium" : "Premium";
+  if (tier === "pro") return locale === "en" ? "Pro" : "Pro";
+  return locale === "en" ? "Free" : "Free";
+}
+
 export default function PlansPage() {
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
   const { locale, t } = useTranslations();
+  const renewalDate = billing?.subscription.current_period_end
+    ? new Date(billing.subscription.current_period_end).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+  const statusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
+  const currentPlanLabel = formatPlanTierLabel(billing?.plan.tier, locale);
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.plansOpened);
@@ -151,7 +176,7 @@ export default function PlansPage() {
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:py-16">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <header className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_90px_rgba(34,211,238,0.05)] sm:p-8">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">{t("plans.eyebrow")}</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
             {t("plans.title")}
@@ -170,6 +195,14 @@ export default function PlansPage() {
               {t("plans.viewStructure")}
             </Link>
           </div>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+              {locale === "en" ? "Core conversation stays open" : "코어 대화는 항상 열어둡니다"}
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+              {locale === "en" ? "Deeper value unlocks with plans" : "더 깊은 가치만 플랜에서 확장합니다"}
+            </span>
+          </div>
         </header>
 
         {notice && (
@@ -179,16 +212,19 @@ export default function PlansPage() {
         )}
 
         {billing && billing.plan.tier !== "free" && (
-          <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-white/60">현재 구독 상태</p>
-                <p className="mt-1 text-lg font-semibold">
-                  {billing.plan.tier.toUpperCase()} · {billing.subscription.status}
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                  {locale === "en" ? "current subscription" : "현재 구독 상태"}
                 </p>
-                {billing.subscription.current_period_end && (
+                <p className="mt-2 text-2xl font-semibold tracking-tight">
+                  {currentPlanLabel}
+                </p>
+                <p className="mt-2 text-sm text-white/60">{statusLabel}</p>
+                {renewalDate && (
                   <p className="mt-1 text-sm text-white/55">
-                    갱신 기준: {new Date(billing.subscription.current_period_end).toLocaleDateString("ko-KR")}
+                    {locale === "en" ? "Renews on" : "다음 갱신 기준"}: {renewalDate}
                   </p>
                 )}
               </div>
@@ -199,7 +235,7 @@ export default function PlansPage() {
                     onClick={() => void handleManageBilling()}
                     className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10"
                   >
-                    결제 관리
+                    {locale === "en" ? "Manage billing" : "결제 관리"}
                   </button>
                 )}
                 {billing.subscription.provider === "mock" && (
@@ -209,7 +245,7 @@ export default function PlansPage() {
                     disabled={submittingTier === "free"}
                     className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
                   >
-                    무료 플랜으로 전환
+                    {locale === "en" ? "Switch to free" : "무료 플랜으로 전환"}
                   </button>
                 )}
               </div>
@@ -280,7 +316,7 @@ export default function PlansPage() {
                       : "border border-white/20 bg-white/5 hover:bg-white/10"
                   }`}
                 >
-                  {submittingTier === plan.tier ? "처리 중..." : plan.cta}
+                  {submittingTier === plan.tier ? (locale === "en" ? "Processing..." : "처리 중...") : plan.cta}
                 </button>
               )}
             </article>

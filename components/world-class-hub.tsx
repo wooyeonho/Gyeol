@@ -141,7 +141,22 @@ function vitalityHintKey(vitality: number): "high" | "mid" | "low" {
   return "low";
 }
 
-function growthSummary(totalMessages: number) {
+function growthSummary(totalMessages: number, locale: "ko" | "en") {
+  if (locale === "en") {
+    if (totalMessages <= 0) {
+      return "The first message opens memory, activity, and growth traces at once.";
+    }
+    if (totalMessages === 1) {
+      return "The first memory has landed. From here, relationship and state changes begin to accumulate.";
+    }
+    if (totalMessages < 10) {
+      return `${totalMessages} conversations are already stored. This is the phase where tone, rhythm, and memory texture begin to form.`;
+    }
+    if (totalMessages < 30) {
+      return `${totalMessages} conversations have accumulated. Personality and response patterns are becoming clearer.`;
+    }
+    return `${totalMessages} conversations have been preserved. This is a good moment to revisit Gyeol's growth traces in activity and album.`;
+  }
   if (totalMessages <= 0) {
     return "첫 대화를 보내면 기억, 활동, 성장 앨범이 동시에 열리기 시작합니다.";
   }
@@ -157,11 +172,27 @@ function growthSummary(totalMessages: number) {
   return `${totalMessages}개의 대화가 축적되었습니다. 이제 결의 성장 흔적을 활동과 앨범에서 함께 회고해보세요.`;
 }
 
-function nextEvolutionHint(totalMessages: number) {
-  if (totalMessages <= 0) return "첫 메시지를 보내면 성장 루프가 시작됩니다.";
+function nextEvolutionHint(totalMessages: number, locale: "ko" | "en") {
+  if (totalMessages <= 0) return locale === "en" ? "Send the first message to start the growth loop." : "첫 메시지를 보내면 성장 루프가 시작됩니다.";
   const remainder = totalMessages % 10;
   const toNext = remainder === 0 ? 10 : 10 - remainder;
+  if (locale === "en") return `${toNext} more conversations until the next personality analysis stage.`;
   return `${toNext}번 더 대화하면 다음 성격 분석 구간에 도달합니다.`;
+}
+
+function formatHubTime(date: Date, locale: "ko" | "en") {
+  return date.toLocaleTimeString(locale === "en" ? "en-US" : "ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function formatHubShortDate(value: string, locale: "ko" | "en") {
+  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function WorldClassHub() {
@@ -265,8 +296,8 @@ export function WorldClassHub() {
   const firstSessionConfig = getFirstSessionVariants(locale)[onboardingVariant];
   const quickPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
   const primaryPrompt = quickPrompts[0];
-  const summary = growthSummary(sessionMessages);
-  const evolutionHint = nextEvolutionHint(sessionMessages);
+  const summary = growthSummary(sessionMessages, locale);
+  const evolutionHint = nextEvolutionHint(sessionMessages, locale);
 
   const toggleMission = (id: string) => {
     setMissions((prev) => prev.map((mission) => (mission.id === id ? { ...mission, done: !mission.done } : mission)));
@@ -358,12 +389,18 @@ export function WorldClassHub() {
                 {isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
               </p>
               <h2 className="mt-2 text-lg font-semibold">
-                {isFirstSession ? firstSessionConfig.heading : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
+                {isFirstSession
+                  ? firstSessionConfig.heading
+                  : locale === "en"
+                    ? `It is time to begin today's conversation with ${selfName}.`
+                    : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/68">
                 {isFirstSession
                   ? firstSessionConfig.description
-                  : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`}
+                  : locale === "en"
+                    ? `${selfName} responds on top of the memories already built. A quick note about your condition, concern, or goal is enough to start today's flow.`
+                    : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -396,19 +433,33 @@ export function WorldClassHub() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wider text-white/45">1. {t("home.firstAction")}</p>
               <p className="mt-1 text-sm text-white/85">
-                {sessionMessages > 0 ? "대화가 시작되었습니다. 이제 변화가 누적됩니다." : "추천 질문 하나로 첫 메시지를 보내보세요."}
+                {sessionMessages > 0
+                  ? locale === "en"
+                    ? "The conversation has started. Change now begins to accumulate."
+                    : "대화가 시작되었습니다. 이제 변화가 누적됩니다."
+                  : locale === "en"
+                    ? "Send the first message with one suggested prompt."
+                    : "추천 질문 하나로 첫 메시지를 보내보세요."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wider text-white/45">2. {t("home.todaysFocus")}</p>
               <p className="mt-1 text-sm text-white/85">
-                {missions.length > 0 ? "미션이 준비되었습니다. 오늘의 흐름을 이어가세요." : "미션 1개만 적어도 하루가 훨씬 선명해집니다."}
+                {missions.length > 0
+                  ? locale === "en"
+                    ? "A mission is ready. Keep today's flow moving."
+                    : "미션이 준비되었습니다. 오늘의 흐름을 이어가세요."
+                  : locale === "en"
+                    ? "Even one mission makes the day feel much clearer."
+                    : "미션 1개만 적어도 하루가 훨씬 선명해집니다."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wider text-white/45">3. {t("home.nextCheck")}</p>
               <p className="mt-1 text-sm text-white/85">
-                활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다.
+                {locale === "en"
+                  ? "Revisit traces, first shifts, and growth milestones in activity and album."
+                  : "활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다."}
               </p>
             </div>
           </div>
@@ -420,7 +471,7 @@ export function WorldClassHub() {
             <h1 className="text-lg md:text-xl font-semibold">{selfName}</h1>
             <span className="text-xs rounded-full bg-white/10 px-2 py-1 text-white/80">{weather}</span>
             <span className="text-xs text-white/60">
-              {now.toLocaleTimeString("ko-KR", { hour12: false })}
+              {formatHubTime(now, locale)}
             </span>
           </div>
           <div className="space-y-1">
@@ -467,11 +518,11 @@ export function WorldClassHub() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">기록된 대화</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/50">{locale === "en" ? "stored conversations" : "기록된 대화"}</p>
               <p className="text-xl font-semibold">{sessionMessages}</p>
             </div>
             <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">미션 달성률</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/50">{locale === "en" ? "mission completion" : "미션 달성률"}</p>
               <p className="text-xl font-semibold">{completionRate}%</p>
             </div>
           </div>
@@ -479,7 +530,7 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">최근 변화</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "recent change" : "최근 변화"}</p>
                 <p className="mt-1 text-sm font-medium text-white">{summary}</p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
@@ -488,11 +539,11 @@ export function WorldClassHub() {
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">현재 기분</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current mood" : "현재 기분"}</p>
                 <p className="mt-1 text-sm text-white/82">{mood}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">다음 변화 포인트</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "next evolution point" : "다음 변화 포인트"}</p>
                 <p className="mt-1 text-sm text-white/82">{evolutionHint}</p>
               </div>
             </div>
@@ -501,13 +552,13 @@ export function WorldClassHub() {
                 href="/activity"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                활동에서 변화 보기
+                {locale === "en" ? "View changes in activity" : "활동에서 변화 보기"}
               </Link>
               <Link
                 href="/album"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                앨범에서 마일스톤 보기
+                {locale === "en" ? "View milestones in album" : "앨범에서 마일스톤 보기"}
               </Link>
             </div>
           </div>
@@ -515,24 +566,26 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">당신이 없는 동안</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "while you were away" : "당신이 없는 동안"}</p>
                 <p className="mt-1 text-sm font-medium text-white">
                   {newItemsSinceLastVisit.length > 0
-                    ? `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
+                    ? locale === "en"
+                      ? `${newItemsSinceLastVisit.length} new traces were recorded.`
+                      : `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
                     : t("home.recentFallback")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-                {recentItems.length} recent
+                {locale === "en" ? `${recentItems.length} recent` : `최근 ${recentItems.length}개`}
               </span>
             </div>
             <div className="mt-3 space-y-2">
               {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
                 <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-white/55">{item.kind === "milestone" ? "마일스톤" : "활동"}</p>
+                    <p className="text-xs text-white/55">{item.kind === "milestone" ? (locale === "en" ? "Milestone" : "마일스톤") : (locale === "en" ? "Activity" : "활동")}</p>
                     <p className="text-[11px] text-white/40">
-                      {new Date(item.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                      {formatHubShortDate(item.created_at, locale)}
                     </p>
                   </div>
                   <p className="mt-1 text-sm text-white/82">{item.title}</p>
@@ -540,7 +593,9 @@ export function WorldClassHub() {
               ))}
               {recentItems.length === 0 && (
                 <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
-                  첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다.
+                  {locale === "en"
+                    ? "Once the first activity appears, a recent change summary will show up here."
+                    : "첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다."}
                 </div>
               )}
             </div>
@@ -549,13 +604,13 @@ export function WorldClassHub() {
                 href="/activity"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                최근 활동 열기
+                {locale === "en" ? "Open recent activity" : "최근 활동 열기"}
               </Link>
               <Link
                 href="/album"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                앨범 다시 보기
+                {locale === "en" ? "Open album again" : "앨범 다시 보기"}
               </Link>
             </div>
           </div>
@@ -569,20 +624,22 @@ export function WorldClassHub() {
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-                streak {recap?.streak.days ?? 0}
+                {locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
               </span>
             </div>
             {recap?.premium_locked && (
               <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
                 <p className="text-xs text-cyan-100/75">PRO RECAP</p>
                 <p className="mt-1 text-sm text-cyan-50">
-                  더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다.
+                  {locale === "en"
+                    ? "Deeper weekly recaps and longer history summaries open on Pro and above."
+                    : "더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다."}
                 </p>
                 <Link
                   href="/plans"
                   className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15"
                 >
-                  플랜 업그레이드 보기
+                  {locale === "en" ? "See upgrade plans" : "플랜 업그레이드 보기"}
                 </Link>
               </div>
             )}
@@ -590,7 +647,9 @@ export function WorldClassHub() {
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.today")}</p>
                 <p className="mt-1 text-sm text-white/82">
-                  메시지 {recap?.today.user_messages ?? 0} · 활동 {recap?.today.activities ?? 0}
+                  {locale === "en"
+                    ? `Messages ${recap?.today.user_messages ?? 0} · Activity ${recap?.today.activities ?? 0}`
+                    : `메시지 ${recap?.today.user_messages ?? 0} · 활동 ${recap?.today.activities ?? 0}`}
                 </p>
                 <p className="mt-1 text-xs text-white/50">
                   {recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}
@@ -599,9 +658,13 @@ export function WorldClassHub() {
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.thisWeek")}</p>
                 <p className="mt-1 text-sm text-white/82">
-                  대화 {recap?.weekly.user_messages ?? 0} · 마일스톤 {recap?.weekly.milestones ?? 0}
+                  {locale === "en"
+                    ? `Messages ${recap?.weekly.user_messages ?? 0} · Milestones ${recap?.weekly.milestones ?? 0}`
+                    : `대화 ${recap?.weekly.user_messages ?? 0} · 마일스톤 ${recap?.weekly.milestones ?? 0}`}
                 </p>
-                <p className="mt-1 text-xs text-white/50">아티팩트 {recap?.weekly.artifacts ?? 0}개</p>
+                <p className="mt-1 text-xs text-white/50">
+                  {locale === "en" ? `Artifacts ${recap?.weekly.artifacts ?? 0}` : `아티팩트 ${recap?.weekly.artifacts ?? 0}개`}
+                </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
@@ -615,7 +678,7 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "goal loop" : "goal loop"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.goalLoop")}</p>
                 <p className="mt-1 text-sm font-medium text-white">
                   {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopSummaryEmpty")}
                 </p>
@@ -665,7 +728,7 @@ export function WorldClassHub() {
           <div className="rounded-xl border border-white/10 bg-black/35 p-3">
             <div className="flex gap-2">
               <label htmlFor="mission-input" className="sr-only">
-                오늘의 미션 입력
+                {locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
               </label>
               <input
                 id="mission-input"
@@ -677,7 +740,7 @@ export function WorldClassHub() {
                     addMission();
                   }
                 }}
-                placeholder="오늘의 미션 추가"
+                placeholder={t("home.missionPlaceholder")}
                 className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
               />
               <button
@@ -685,13 +748,13 @@ export function WorldClassHub() {
                 onClick={addMission}
                 className="rounded-lg bg-white/10 px-3 text-sm text-white/85 hover:bg-white/20"
               >
-                추가
+                {t("home.missionAdd")}
               </button>
             </div>
             <ul className="mt-2 space-y-1.5">
               {missions.length === 0 && (
                 <li className="text-xs text-white/45">
-                  {isFirstSession ? "첫 미션 하나만 적어도 오늘의 대화가 훨씬 쉬워집니다." : "미션을 만들면 오늘의 대화와 실행이 더 선명해집니다."}
+                  {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
                 </li>
               )}
               {missions.map((mission) => (
@@ -700,7 +763,7 @@ export function WorldClassHub() {
                     type="button"
                     onClick={() => toggleMission(mission.id)}
                     className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
-                    aria-label="미션 완료 토글"
+                    aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
                   />
                   <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
                   <button
@@ -708,7 +771,7 @@ export function WorldClassHub() {
                     onClick={() => removeMission(mission.id)}
                     className="text-xs text-white/40 hover:text-white/70"
                   >
-                    삭제
+                    {t("home.missionDelete")}
                   </button>
                 </li>
               ))}
