@@ -1,0 +1,15 @@
+{
+  "baseImage": "ghcr.io/cursor-images/node-20:latest",
+  "persistedDirectories": [
+    "/home/ubuntu/.npm",
+    "/workspace/node_modules",
+    "/workspace/openclaw/node_modules",
+    "/workspace/.next/cache"
+  ],
+  "env": {
+    "NPM_CONFIG_CACHE": "/home/ubuntu/.npm",
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh"
+}
