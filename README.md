@@ -91,6 +91,7 @@
 - QA 인수인계서: `docs/QA_HANDOFF.md`
 - 환경변수/시크릿 정리: `docs/ENV_AND_SECRETS.md`
 - 제품 최종 상태 요약: `docs/PRODUCT_FINAL_STATE.md`
+- 발생형 존재 비전 문서: `docs/MANIFESTATION_ENGINE_V1.md`
 
 ### 공개 법적 페이지
 
