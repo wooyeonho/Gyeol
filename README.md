@@ -87,9 +87,15 @@
 ### 운영 점검 문서
 
 - 비개발자용 SLO/장애대응 가이드: `OPS_SLO_RUNBOOK.md`
+- 출시 직전 점검표: `docs/LAUNCH_CHECKLIST.md`
 - QA 인수인계서: `docs/QA_HANDOFF.md`
 - 환경변수/시크릿 정리: `docs/ENV_AND_SECRETS.md`
 - 제품 최종 상태 요약: `docs/PRODUCT_FINAL_STATE.md`
+
+### 공개 법적 페이지
+
+- 개인정보처리방침: `/privacy`
+- 이용약관: `/terms`
 
 ## Cost
 

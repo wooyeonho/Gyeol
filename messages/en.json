@@ -4,7 +4,9 @@
     "error": "An error occurred",
     "back": "Back",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
   },
   "locale": {
     "label": "Language",

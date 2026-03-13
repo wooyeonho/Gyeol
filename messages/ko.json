@@ -4,7 +4,9 @@
     "error": "오류가 발생했습니다",
     "back": "돌아가기",
     "save": "저장",
-    "cancel": "취소"
+    "cancel": "취소",
+    "privacyPolicy": "개인정보처리방침",
+    "termsOfService": "이용약관"
   },
   "locale": {
     "label": "언어",

@@ -44,15 +44,15 @@
 
 ## 6) Fail-Open / Fail-Closed 정책
 
-| 컴포넌트 | 기본값 | 환경변수 | closed 시 동작 |
-|----------|--------|----------|----------------|
-| Cron Lock | open | `CRON_LOCK_FAIL_MODE=closed` | DB/RPC 오류 시 잡 실행 차단 |
-| Rate Limit | open | `RATE_LIMIT_FAIL_MODE=closed` | DB 오류 시 요청 거부 |
+| 컴포넌트 | 기본값 | 환경변수 | open 시 동작 |
+|----------|--------|----------|--------------|
+| Cron Lock | closed | `CRON_LOCK_FAIL_MODE=open` | DB/RPC 오류 시에도 잡 실행 허용 |
+| Rate Limit | closed | `RATE_LIMIT_FAIL_MODE=open` | DB 오류 시에도 요청 허용 |
 
 - **open**: 장애 시 서비스 연속성 우선 (락/레이트제한 실패 시 허용)
 - **closed**: 장애 시 보수적 차단 (락/레이트제한 실패 시 거부)
 
-프로덕션에서 더 엄격한 운영을 원하면 `closed`로 설정하세요.
+현재 기본값은 `closed`입니다. 개발/점검 환경에서만 의도적으로 fail-open 동작이 필요할 때 `open`으로 완화하세요.
 
 ## 7) 환경변수는 나중에 입력해도 됩니다
 
