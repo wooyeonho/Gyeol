@@ -71,7 +71,7 @@ export default function AlbumPage() {
       });
     }
     return rows;
-  }, [appearance, config?.usage_profile?.updated_at, createdAt, locale, milestones, t]);
+  }, [appearance, config?.usage_profile?.updated_at, createdAt, milestones, t]);
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24 text-white">

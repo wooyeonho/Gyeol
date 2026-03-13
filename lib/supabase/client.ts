@@ -68,3 +68,7 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
+
+export function isBrowserSupabaseConfigured() {
+  return hasRequiredEnv(REQUIRED_PUBLIC_SUPABASE_ENV);
+}

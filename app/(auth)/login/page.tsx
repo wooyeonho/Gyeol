@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isBrowserSupabaseConfigured } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const callbackErrorCode = searchParams.get("error");
   const nextPath = searchParams.get("next") || "/";
   const signupHref = `/signup${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
+  const isConfigured = isBrowserSupabaseConfigured();
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
@@ -67,6 +68,12 @@ export default function LoginPage() {
           {t("auth.loginSubtitle")}
         </p>
       </div>
+
+      {!isConfigured && (
+        <div className="mb-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
+          {t("auth.configWarning")}
+        </div>
+      )}
 
       <div className="mb-6 grid gap-2">
         <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">

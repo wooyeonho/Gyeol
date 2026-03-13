@@ -85,7 +85,7 @@ export default function ConstellationPage() {
         : null,
     ].filter(Boolean) as Array<{ id: string; title: string; body: string; at: string | null }>;
     return stages;
-  }, [appearance, constellations, locale, stars, t]);
+  }, [appearance, constellations, stars, t]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">

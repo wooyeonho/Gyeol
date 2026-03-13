@@ -52,7 +52,8 @@
     "errors": {
       "missing_oauth_code": "The social login callback was incomplete. Please try again.",
       "oauth_exchange_failed": "We could not complete the social login. Please try again."
-    }
+    },
+    "configWarning": "Supabase is not configured in this environment. Password, guest, and social login will stay in preview mode until the public auth keys are added."
   },
   "chat": {
     "placeholder": "Say anything...",
@@ -271,7 +272,23 @@
     "pillar2Title": "Memory becomes growth",
     "pillar2Body": "As messages accumulate, vitality, mood, personality, and evolution events become more distinct.",
     "pillar3Title": "Life continues while you are away",
-    "pillar3Body": "Autonomy, dream, and social systems keep Gyeol's time moving even when the user steps away."
+    "pillar3Body": "Autonomy, dream, and social systems keep Gyeol's time moving even when the user steps away.",
+    "category": {
+      "core": "Core loop",
+      "growth": "Growth records",
+      "world": "Ecosystem",
+      "creative": "Expression & visuals",
+      "experimental": "Lab",
+      "operations": "Operations"
+    },
+    "categoryDescription": {
+      "core": "Experiences at the center of Gyeol, including conversation, memory, and state change.",
+      "growth": "Layers for reviewing the relationship and change through activity, milestones, and reflection.",
+      "world": "Ecosystem experiences connected to other beings, public signals, and platform flows.",
+      "creative": "Expanded experiences that express memory and presence visually.",
+      "experimental": "Beta and experimental features for validating future value.",
+      "operations": "Operator and observability tools that should sit behind the main user flow."
+    }
   },
   "timeTravel": {
     "title": "Time travel",

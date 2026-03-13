@@ -2,31 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { FEATURE_CATALOG, type FeatureCategory, type FeatureStatus } from "@/lib/features/catalog";
+import { getLocalizedFeatureCatalog, type FeatureCategory, type FeatureStatus } from "@/lib/features/catalog";
 import { useTranslations } from "@/components/i18n-provider";
 
-const STATUS_META: Record<FeatureStatus, { label: string; className: string }> = {
-  ready: { label: "사용 가능", className: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30" },
-  beta: { label: "베타", className: "bg-amber-500/20 text-amber-200 border-amber-400/30" },
-  planned: { label: "준비중", className: "bg-white/10 text-white/70 border-white/20" },
-};
-
-const CATEGORY_LABEL: Record<FeatureCategory, string> = {
-  core: "코어 루프",
-  growth: "성장 기록",
-  world: "생태계",
-  creative: "표현/시각화",
-  experimental: "실험실",
-  operations: "운영 도구",
-};
-
-const CATEGORY_DESCRIPTION: Record<FeatureCategory, string> = {
-  core: "대화, 기억, 상태 변화처럼 결의 중심을 이루는 경험입니다.",
-  growth: "활동, 마일스톤, 회고를 통해 관계와 변화를 확인하는 층위입니다.",
-  world: "다른 존재, 공개 지표, 플랫폼 흐름과 연결되는 생태계 경험입니다.",
-  creative: "기억과 존재를 시각적으로 표현하는 확장 경험입니다.",
-  experimental: "미래 가치 검증을 위한 베타/실험 기능입니다.",
-  operations: "일반 사용 흐름보다 뒤에 놓여야 하는 운영/관측 도구입니다.",
+const STATUS_META: Record<FeatureStatus, { className: string }> = {
+  ready: { className: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30" },
+  beta: { className: "bg-amber-500/20 text-amber-200 border-amber-400/30" },
+  planned: { className: "bg-white/10 text-white/70 border-white/20" },
 };
 const CATEGORY_ORDER: Record<FeatureCategory, number> = {
   core: 0,
@@ -39,29 +21,60 @@ const CATEGORY_ORDER: Record<FeatureCategory, number> = {
 
 const FILTERS: Array<FeatureStatus | "all"> = ["all", "ready", "beta", "planned"];
 export default function FeaturesPage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FeatureStatus | "all">("all");
+  const featureCatalog = useMemo(() => getLocalizedFeatureCatalog(locale), [locale]);
+  const categoryLabels = useMemo(
+    () => ({
+      core: t("featuresPage.category.core"),
+      growth: t("featuresPage.category.growth"),
+      world: t("featuresPage.category.world"),
+      creative: t("featuresPage.category.creative"),
+      experimental: t("featuresPage.category.experimental"),
+      operations: t("featuresPage.category.operations"),
+    }) satisfies Record<FeatureCategory, string>,
+    [t]
+  );
+  const categoryDescriptions = useMemo(
+    () => ({
+      core: t("featuresPage.categoryDescription.core"),
+      growth: t("featuresPage.categoryDescription.growth"),
+      world: t("featuresPage.categoryDescription.world"),
+      creative: t("featuresPage.categoryDescription.creative"),
+      experimental: t("featuresPage.categoryDescription.experimental"),
+      operations: t("featuresPage.categoryDescription.operations"),
+    }) satisfies Record<FeatureCategory, string>,
+    [t]
+  );
+  const statusLabels = useMemo(
+    () => ({
+      ready: t("featuresPage.ready"),
+      beta: t("featuresPage.beta"),
+      planned: t("featuresPage.planned"),
+    }) satisfies Record<FeatureStatus, string>,
+    [t]
+  );
 
   const filtered = useMemo(() => {
-    return FEATURE_CATALOG.filter((feature) => {
+    return featureCatalog.filter((feature) => {
       const matchStatus = statusFilter === "all" || feature.status === statusFilter;
       const q = query.trim().toLowerCase();
       const matchQuery =
         q.length === 0 ||
         feature.name.toLowerCase().includes(q) ||
         feature.summary.toLowerCase().includes(q) ||
-        CATEGORY_LABEL[feature.category].toLowerCase().includes(q);
+        categoryLabels[feature.category].toLowerCase().includes(q);
       return matchStatus && matchQuery;
     }).sort((a, b) => {
       const categoryDiff = CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category];
       if (categoryDiff !== 0) return categoryDiff;
       return a.name.localeCompare(b.name, "ko");
     });
-  }, [query, statusFilter]);
+  }, [categoryLabels, featureCatalog, query, statusFilter]);
 
   const counts = useMemo(() => {
-    return FEATURE_CATALOG.reduce(
+    return featureCatalog.reduce(
       (acc, feature) => {
         acc.total += 1;
         acc[feature.status] += 1;
@@ -69,7 +82,7 @@ export default function FeaturesPage() {
       },
       { total: 0, ready: 0, beta: 0, planned: 0 },
     );
-  }, []);
+  }, [featureCatalog]);
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:py-16">
@@ -151,17 +164,17 @@ export default function FeaturesPage() {
         </section>
 
         <section className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-          {(Object.keys(CATEGORY_LABEL) as FeatureCategory[]).map((category) => (
+          {(Object.keys(CATEGORY_ORDER) as FeatureCategory[]).map((category) => (
             <article key={category} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/45">{CATEGORY_LABEL[category]}</p>
-              <p className="mt-2 text-sm leading-6 text-white/72">{CATEGORY_DESCRIPTION[category]}</p>
+              <p className="text-xs text-white/45">{categoryLabels[category]}</p>
+              <p className="mt-2 text-sm leading-6 text-white/72">{categoryDescriptions[category]}</p>
             </article>
           ))}
         </section>
 
         <section className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-3">
           <label htmlFor="feature-search" className="sr-only">
-            기능 검색
+            {t("featuresPage.searchPlaceholder")}
           </label>
           <input
             id="feature-search"
@@ -202,11 +215,11 @@ export default function FeaturesPage() {
             <article key={feature.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs text-white/50">{CATEGORY_LABEL[feature.category]}</p>
+                  <p className="text-xs text-white/50">{categoryLabels[feature.category]}</p>
                   <h2 className="mt-0.5 font-medium">{feature.name}</h2>
                 </div>
                 <span className={`rounded-full border px-2 py-1 text-[11px] ${STATUS_META[feature.status].className}`}>
-                  {STATUS_META[feature.status].label}
+                  {statusLabels[feature.status]}
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-white/70">{feature.summary}</p>

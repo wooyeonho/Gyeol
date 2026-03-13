@@ -4,6 +4,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { buildTaskNextAction, sortResearchTasks } from "@/lib/goals/task-utils";
+import { getDemoHomeSummary } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
+import { resolveLocale } from "@/lib/i18n/config";
 
 type SummaryItem = {
   id: string;
@@ -89,7 +92,7 @@ function buildNextAction(params: {
   return "최근 변화 카드 중 하나를 열어 오늘의 흐름을 이어가세요.";
 }
 
-export async function GET() {
+export async function GET(request?: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -316,6 +319,16 @@ export async function GET() {
     });
   } catch (error) {
     console.error("GET /api/home/summary error", error);
+    if (isMissingEnvError(error)) {
+      const locale = resolveLocale({
+        acceptLanguage: request?.headers.get("accept-language") ?? null,
+        cookieHeader: request?.headers.get("cookie") ?? null,
+      });
+      return NextResponse.json({
+        ...getDemoHomeSummary(locale),
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

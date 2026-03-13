@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { getDemoAgentState, getDemoConstellation } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -71,6 +73,24 @@ export async function GET() {
     });
   } catch (e) {
     console.error("constellation GET", e);
+    if (isMissingEnvError(e)) {
+      const demoState = getDemoAgentState();
+      const demoConstellation = getDemoConstellation();
+      return NextResponse.json({
+        ...demoConstellation,
+        selfAgent: {
+          self_name: demoState.self_name,
+          visual: demoState.visual,
+          genome: demoState.genome,
+          config: { usage_profile: (demoState.config as { usage_profile?: unknown })?.usage_profile ?? null },
+          self_model: demoState.self_model,
+          gen_level: demoState.gen_level,
+          vitality: demoState.vitality,
+          mood: demoState.mood,
+        },
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
