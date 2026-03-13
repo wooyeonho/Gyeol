@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { getDemoAgentState } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -114,6 +116,50 @@ export async function GET() {
     });
   } catch (e) {
     console.error("GET /api/social error", e);
+    if (isMissingEnvError(e)) {
+      const demo = getDemoAgentState();
+      return NextResponse.json({
+        socialLogs: [
+          {
+            id: "demo-social-1",
+            topic: "Shared glow",
+            conversation: "We compared how each of us remembers light and loneliness.",
+            created_at: new Date().toISOString(),
+          },
+        ],
+        breedingRecords: [],
+        otherAgents: [
+          {
+            id: "demo-other-1",
+            self_name: "Morrow",
+            gen_level: 2,
+            memory_count: 18,
+            visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
+            genome: { species: "echo-bloom" },
+            config: { usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() } },
+            self_model: { current_role: "listener" },
+          },
+        ],
+        giftExchanges: [
+          {
+            id: "demo-gift-1",
+            summary: "Exchanged a small memory shard as a greeting.",
+            created_at: new Date().toISOString(),
+          },
+        ],
+        selfAgent: {
+          self_name: demo.self_name,
+          visual: demo.visual,
+          genome: demo.genome,
+          config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+          self_model: demo.self_model,
+          gen_level: demo.gen_level,
+          vitality: demo.vitality,
+          mood: demo.mood,
+        },
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -42,10 +42,17 @@
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
-   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql` + `phase23_stripe_customer_id.sql` + `phase24_share_cards.sql`
+  - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql` + `phase23_stripe_customer_id.sql` + `phase24_share_cards.sql` + `phase31_v1_api_tenant_binding.sql`
    - 한 번에 적용: `scripts/apply-phase23-24.sql` (phase23+24만)
 3. 품질 검증 실행: `npm install && npm run typecheck && npm run test && npm run lint`
 4. 개발 서버 실행: `npm run dev`
+
+### 소셜 로그인 준비
+
+- Supabase Auth에서 사용할 OAuth provider(예: Google, GitHub)를 활성화
+- 각 provider의 redirect URL에 `https://your-app.vercel.app/auth/callback` 추가
+- 로컬 개발 시에도 동일하게 `NEXT_PUBLIC_APP_URL`을 맞춰 callback URL이 일치하도록 설정
+- 초대 링크로 소셜 가입하는 경우 `signup?ref=...` 흐름이 `auth/callback`을 통해 그대로 이어집니다
 
 ### 운영 필수 환경 변수
 
@@ -62,12 +69,12 @@
 
 ### 운영 안전 정책 환경 변수
 
-- `RATE_LIMIT_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
-- `CRON_LOCK_FAIL_MODE`: `open` 또는 `closed` (`open` 기본값)
+- `RATE_LIMIT_FAIL_MODE`: `open` 또는 `closed` (`closed` 기본값)
+- `CRON_LOCK_FAIL_MODE`: `open` 또는 `closed` (`closed` 기본값)
 - `PRODUCT_EVENTS_RETENTION_DAYS`: product_events 보존 일수 (`90` 기본값)
 - `REFERRAL_REWARD_COINS`: 초대 성공 시 지급할 코인 (`10` 기본값)
 
-프로덕션에서 더 엄격한 운영을 원하면 위 두 값을 `closed`로 설정해 저장소/RPC 오류 시 요청 또는 중복 크론 실행을 보수적으로 막을 수 있습니다.
+기본값은 `closed`이며, 저장소/RPC 오류 시 요청 또는 중복 크론 실행을 보수적으로 막습니다. 개발 환경에서만 의도적으로 fail-open 동작이 필요할 때 `open`으로 완화하세요.
 
 ### 24시간 자율활동 권장 설정
 
@@ -80,9 +87,16 @@
 ### 운영 점검 문서
 
 - 비개발자용 SLO/장애대응 가이드: `OPS_SLO_RUNBOOK.md`
+- 출시 직전 점검표: `docs/LAUNCH_CHECKLIST.md`
 - QA 인수인계서: `docs/QA_HANDOFF.md`
 - 환경변수/시크릿 정리: `docs/ENV_AND_SECRETS.md`
 - 제품 최종 상태 요약: `docs/PRODUCT_FINAL_STATE.md`
+- 발생형 존재 비전 문서: `docs/MANIFESTATION_ENGINE_V1.md`
+
+### 공개 법적 페이지
+
+- 개인정보처리방침: `/privacy`
+- 이용약관: `/terms`
 
 ## Cost
 
@@ -114,6 +128,8 @@
 - `POST /api/v1/agent/chat` – chat (body: `agent_id`, `message`)
 - `GET /api/v1/agent/state?agent_id=...` – state
 - `POST /api/v1/agent/memory` – add memory (body: `agent_id`, `content`, `type`)
+
+`api_keys` 기반 운영에서는 각 키를 `owner_user_id`에 바인딩해 해당 사용자의 에이전트에만 접근하도록 설정하는 것을 권장합니다.
 
 ## Research API
 

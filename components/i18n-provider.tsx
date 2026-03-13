@@ -8,7 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DEFAULT_LOCALE, isValidLocale, type Locale } from "@/lib/i18n/config";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE_NAME,
+  type Locale,
+} from "@/lib/i18n/config";
 import { loadMessages, getNested } from "@/lib/i18n/messages";
 
 type Messages = Record<string, unknown>;
@@ -24,17 +28,20 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 const LOCALE_STORAGE_KEY = "gyeol_locale";
 
-function getInitialLocale(): Locale {
-  if (typeof window === "undefined") return DEFAULT_LOCALE;
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored && isValidLocale(stored)) return stored;
-  const nav = navigator.language?.slice(0, 2);
-  if (nav && isValidLocale(nav)) return nav;
-  return DEFAULT_LOCALE;
+function persistLocale(locale: Locale) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; samesite=lax`;
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(getInitialLocale);
+export function I18nProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const [messages, setMessages] = useState<Messages | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -45,9 +52,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     });
   }, [locale]);
 
+  useEffect(() => {
+    persistLocale(locale);
+  }, [locale]);
+
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    if (typeof window !== "undefined") localStorage.setItem(LOCALE_STORAGE_KEY, l);
+    persistLocale(l);
     loadMessages(l).then(setMessages);
   }, []);
 

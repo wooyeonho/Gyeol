@@ -47,7 +47,7 @@ type MarketAgent = {
 };
 
 export default function MarketPage() {
-  const { locale } = useTranslations();
+  const { locale, t } = useTranslations();
   const [items, setItems] = useState<Item[]>([]);
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [currentAgent, setCurrentAgent] = useState<MarketAgent | null>(null);
@@ -90,10 +90,10 @@ export default function MarketPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setNotice(json.error ?? "구매에 실패했습니다.");
+        setNotice(json.error ?? t("marketPage.purchaseFailed"));
         return;
       }
-      setNotice(`구매 완료: ${json.title ?? "아이템"}`);
+      setNotice(`${t("marketPage.purchaseComplete")}: ${json.title ?? t("marketPage.unnamedItem")}`);
     } finally {
       setBuyingId(null);
     }
@@ -146,11 +146,11 @@ export default function MarketPage() {
       <div className="mx-auto max-w-5xl">
       <div className="mb-4 flex items-start justify-between gap-3 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">BETA EXPANSION</p>
-          <h1 className="mt-2 text-xl font-semibold">마켓</h1>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">{t("marketPage.eyebrow")}</p>
+          <h1 className="mt-2 text-xl font-semibold">{t("marketPage.title")}</h1>
           <p className="mt-1 text-sm text-white/60">
             {appearance.usageNarrative ??
-              "마켓은 결의 코어 대화 루프 바깥에 있는 확장 공간입니다. 여기서도 누구의 존재가 무엇을 만들고 교환하는지 정체성이 계속 드러납니다."}
+              t("marketPage.subtitle")}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {appearance.chips.map((chip) => (
@@ -173,7 +173,7 @@ export default function MarketPage() {
           href="/features"
           className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
         >
-          전체 구조 보기
+          {t("marketPage.viewStructure")}
         </Link>
       </div>
       {notice && (
@@ -185,17 +185,16 @@ export default function MarketPage() {
         <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium">더 깊은 회고와 생성은 플랜에서 확장됩니다</p>
+              <p className="text-sm font-medium">{t("marketPage.plansTitle")}</p>
               <p className="mt-1 text-sm text-white/60">
-                마켓은 확장 경험의 일부입니다. 현재 {billing?.plan.tier.toUpperCase() ?? "FREE"} 플랜 기준으로 장기 히스토리,
-                고급 생성, 멀티채널 흐름은 플랜 구조와 함께 정리되고 있습니다.
+                {t("marketPage.plansBody").replace("{plan}", billing?.plan.tier.toUpperCase() ?? "FREE")}
               </p>
             </div>
             <Link
               href="/plans"
               className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
             >
-              플랜 보기
+              {t("marketPage.viewPlans")}
             </Link>
           </div>
         </div>
@@ -203,21 +202,19 @@ export default function MarketPage() {
       {curatedSellerGroups.length > 0 && (
         <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-            {locale === "en" ? "species curation" : "존재 종족 큐레이션"}
+            {t("marketPage.speciesCuration")}
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             {curatedSellerGroups.map((group) => (
               <div key={group.title} className="rounded-2xl bg-black/25 p-3">
                 <p className="text-sm font-medium text-white">{group.title}</p>
                 <p className="mt-1 text-xs text-white/50">
-                  {locale === "en"
-                    ? `${group.items.length} listed items are currently coming from this manifestation family.`
-                    : `${group.items.length}개의 상품이 현재 이 형상 계열의 존재들에게서 올라와 있습니다.`}
+                  {t("marketPage.speciesCurationBody").replace("{count}", String(group.items.length))}
                 </p>
                 <div className="mt-3 space-y-1.5">
                   {group.items.slice(0, 3).map((item) => (
                     <div key={item.id} className="text-xs text-white/72">
-                      {item.title ?? item.name ?? "item"}
+                      {item.title ?? item.name ?? t("marketPage.unnamedItem")}
                     </div>
                   ))}
                 </div>
@@ -246,19 +243,19 @@ export default function MarketPage() {
                 size="sm"
               />
               <div className="min-w-0 flex-1">
-                <div className="font-medium">{item.title ?? item.name ?? "이름 없는 아이템"}</div>
+                <div className="font-medium">{item.title ?? item.name ?? t("marketPage.unnamedItem")}</div>
                 <div className="text-sm text-white/60">{item.type} · {item.seller_name ?? "..."}</div>
               </div>
             </div>
             <div className="text-white/80 mt-1">{item.description}</div>
             <div className="mt-3 flex items-center justify-between">
-              <div className="text-amber-400">{item.price} 코인</div>
+              <div className="text-amber-400">{item.price} {t("marketPage.coins")}</div>
               <button
                 onClick={() => void purchase(item.id)}
                 disabled={buyingId === item.id}
                 className="rounded-lg bg-white/15 px-3 py-1.5 text-sm disabled:opacity-50"
               >
-                구매
+                {t("marketPage.buy")}
               </button>
             </div>
           </div>

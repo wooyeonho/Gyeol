@@ -2,12 +2,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
-import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
+import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { runSynchronousChatTurn } from "@/lib/chat/sync-turn";
 
 export async function POST(request: NextRequest) {
-  if (!(await verifyV1ApiKey(request, "v1:agent:chat"))) {
+  const auth = await authorizeV1ApiKey(request, "v1:agent:chat");
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest) {
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
 
     const service = createServiceClient();
+    const { data: agent } = await service.from("agents").select("id, user_id").eq("id", agentId).maybeSingle();
+    if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    if (!canAccessAgent(auth, (agent as { user_id?: string | null }).user_id ?? null)) {
+      const error = auth.ownerUserId ? "Forbidden" : "API key tenant binding required";
+      return NextResponse.json({ error }, { status: 403 });
+    }
     const result = await runSynchronousChatTurn({
       agentId,
       message,

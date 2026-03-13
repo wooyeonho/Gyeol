@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/features", "/plans", "/explore", "/dashboard", "/adopt", "/share", "/invite", "/community"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/features", "/plans", "/explore", "/dashboard", "/adopt", "/share", "/invite", "/community", "/privacy", "/terms"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -50,6 +50,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !pathname.startsWith("/api")) {
     const loginUrl = new URL("/login", request.url);
+    const nextPath = `${pathname}${request.nextUrl.search}`;
+    if (nextPath && nextPath !== "/") {
+      loginUrl.searchParams.set("next", nextPath);
+    }
     return NextResponse.redirect(loginUrl);
   }
 

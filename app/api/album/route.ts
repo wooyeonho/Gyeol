@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { getDemoAgentState } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 const MILESTONE_TYPES = [
   "first_chat",
@@ -90,6 +92,20 @@ export async function GET() {
     });
   } catch (e) {
     console.error("album GET error", e);
+    if (isMissingEnvError(e)) {
+      const demo = getDemoAgentState();
+      return NextResponse.json({
+        milestones: [
+          { type: "first_chat", label: "First conversation", at: new Date(Date.now() - 4 * 86400000).toISOString() },
+          { type: "dream", label: "First dream", at: new Date(Date.now() - 2 * 86400000).toISOString(), summary: "A first dream fragment stayed behind." },
+          { type: "personality_evolution", label: "Personality evolution", at: new Date().toISOString(), summary: "The being became more distinct." },
+        ],
+        visual: demo.visual,
+        config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+        created: new Date(Date.now() - 5 * 86400000).toISOString(),
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

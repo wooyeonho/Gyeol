@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { createClient } from "@/lib/supabase/client";
 
 interface WorldStore {
   worldState: { weather?: { name?: string }; [key: string]: unknown } | null;
@@ -10,9 +9,9 @@ export const useWorldStore = create<WorldStore>((set) => ({
   worldState: null,
   fetchWorldState: async () => {
     try {
-      const supabase = createClient();
-      const { data } = await supabase.from("world_state").select("*").eq("id", "global").single();
-      set({ worldState: data });
+      const res = await fetch("/api/world/state", { cache: "no-store" });
+      const json = await res.json().catch(() => ({ worldState: null }));
+      set({ worldState: (json.worldState as { weather?: { name?: string } } | null) ?? null });
     } catch (e) {
       console.error("[WorldStore] fetchWorldState failed", e);
       set({ worldState: null });

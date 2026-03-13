@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 const INVESTMENT_KEYWORDS = /invest|stock|buy|sell|market|portfolio|trade|fund|asset|loss|profit|panic|fomo|crash|bull|bear|buy the dip|margin/i;
 
@@ -8,6 +10,9 @@ const INVESTMENT_KEYWORDS = /invest|stock|buy|sell|market|portfolio|trade|fund|a
  */
 export async function analyzeInvestmentPattern(agentId: string): Promise<void> {
   const service = createServiceClient();
+  const { data: stateConfigRow } = await service.from("agent_state").select("config, self_model").eq("agent_id", agentId).single();
+  const locale = resolveGenerationLocale({ config: stateConfigRow?.config });
+  const language = getLanguageName(locale);
   const { data: mems } = await service
     .from("memories")
     .select("content, created_at")
@@ -21,13 +26,12 @@ export async function analyzeInvestmentPattern(agentId: string): Promise<void> {
 
   const content = investmentRelated.map((m) => m.content ?? "").join("\n").slice(0, 2500);
   const raw = (await generateJSON(
-    "From user's past mentions of investing/trading, identify one behavioral pattern (e.g. impulsive buys on Friday night, fear selling in downturns). One short sentence. No advice. Korean or English.",
+    `From user's past mentions of investing/trading, identify one behavioral pattern (e.g. impulsive buys on Friday night, fear selling in downturns). One short sentence. No advice. Write in ${language}.`,
     `Mentions:\n${content}\n\nJSON: {"pattern":"one sentence describing tendency or null"}`,
   )) as { pattern?: string } | null;
   if (!raw?.pattern) return;
 
-  const { data: stateRow } = await service.from("agent_state").select("self_model").eq("agent_id", agentId).single();
-  const selfModel = (stateRow as { self_model?: { observations?: string[] } })?.self_model ?? {};
+  const selfModel = (stateConfigRow as { self_model?: { observations?: string[] } })?.self_model ?? {};
   const observations = selfModel.observations ?? [];
   const line = `Investment pattern: ${raw.pattern.slice(0, 200)}`;
   if (observations.some((o) => o.includes("Investment pattern"))) return;

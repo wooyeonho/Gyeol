@@ -8,6 +8,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -58,7 +59,7 @@ export default function AlbumPage() {
     const rows = milestones.slice(0, 6).map((milestone) => ({
       id: `${milestone.type}-${milestone.at}`,
       title: milestone.label,
-      body: milestone.summary ?? (locale === "en" ? "A new identity shift was recorded here." : "이 지점에서 새로운 정체성 변화가 기록되었습니다."),
+      body: milestone.summary ?? t("album.defaultMilestoneBody"),
       at: milestone.at,
     }));
     if (appearance.usageLabel) {
@@ -70,7 +71,7 @@ export default function AlbumPage() {
       });
     }
     return rows;
-  }, [appearance, config?.usage_profile?.updated_at, createdAt, locale, milestones]);
+  }, [appearance, config?.usage_profile?.updated_at, createdAt, milestones, t]);
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24 text-white">
@@ -100,7 +101,7 @@ export default function AlbumPage() {
           <>
           <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-              {locale === "en" ? "identity evolution timeline" : "정체성 evolution timeline"}
+              {t("album.timelineEyebrow")}
             </p>
             <div className="mt-4 space-y-4">
               {timeline.map((item, index) => (
@@ -117,7 +118,7 @@ export default function AlbumPage() {
                   />
                   <p className="text-sm font-medium text-white">{item.title}</p>
                   <p className="mt-1 text-xs text-white/48">
-                    {new Date(item.at).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", { year: "numeric", month: "short", day: "numeric" })}
+                    {formatLocalizedDate(item.at, locale)}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-white/66">{item.body}</p>
                 </div>
@@ -139,7 +140,7 @@ export default function AlbumPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-white">{m.label}</p>
                   <p className="text-white/50 text-xs mt-0.5">
-                    {new Date(m.at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                    {formatLocalizedDate(m.at, locale, { dateStyle: "medium" })}
                   </p>
                   {m.summary && <p className="text-white/70 text-sm mt-2 truncate">{m.summary}</p>}
                 </div>
@@ -155,7 +156,7 @@ export default function AlbumPage() {
             disabled={shareLoading}
             className="rounded-full bg-cyan-500/20 border border-cyan-400/30 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-50"
           >
-            {shareLoading ? "..." : shareUrl ? "링크 복사됨" : "성장 카드 공유"}
+            {shareLoading ? "..." : shareUrl ? t("album.shareReady") : t("album.shareAction")}
           </button>
           <Link
             href="/"

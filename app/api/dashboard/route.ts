@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { getDemoWorldState } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -25,6 +27,17 @@ export async function GET() {
     });
   } catch (e) {
     console.error("dashboard GET", e);
+    if (isMissingEnvError(e)) {
+      const world = getDemoWorldState();
+      return NextResponse.json({
+        agent_count: 0,
+        social_count: 0,
+        artifact_count: 0,
+        collective_emotion: world.collective_emotion,
+        weather_name: world.weather.name,
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

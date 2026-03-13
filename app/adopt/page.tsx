@@ -72,13 +72,11 @@ export default function AdoptPage() {
       <div className="mx-auto max-w-5xl">
       <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
         <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-          {locale === "en" ? "adoption board" : "adoption board"}
+          {t("adoptPage.eyebrow")}
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("adoptPage.title")}</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-white/66">
-          {locale === "en"
-            ? "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register."
-            : "이 보드의 존재들은 이미 각자의 형상과 삶의 흔적을 품고 있습니다. 하나의 종, 하나의 성별, 하나의 감정 톤에 갇혀 있지 않습니다."}
+          {t("adoptPage.subtitle")}
         </p>
       </header>
       {error && (
@@ -112,8 +110,8 @@ export default function AdoptPage() {
                     <div className="mt-2 text-base font-medium text-white">{item.self_name || t("adoptPage.nameless")}</div>
                     <div className="mt-1 text-sm text-white/68">
                       {locale === "en"
-                        ? `Vitality ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0} · ${item.days_alive ?? 0} ${t("adoptPage.daysAlive")}`
-                        : `활력 ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0}개 · ${item.days_alive ?? 0}${t("adoptPage.daysAlive")}`}
+                        ? `${t("adoptPage.vitalityLabel")} ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0} · ${item.days_alive ?? 0} ${t("adoptPage.daysAlive")}`
+                        : `${t("adoptPage.vitalityLabel")} ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0}개 · ${item.days_alive ?? 0}${t("adoptPage.daysAlive")}`}
                     </div>
                   </div>
                 </div>

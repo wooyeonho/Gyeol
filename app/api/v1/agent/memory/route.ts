@@ -2,11 +2,12 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
-import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
+import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  if (!(await verifyV1ApiKey(request, "v1:agent:memory"))) {
+  const auth = await authorizeV1ApiKey(request, "v1:agent:memory");
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -22,8 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     const service = createServiceClient();
-    const { data: agent } = await service.from("agent_state").select("agent_id").eq("agent_id", agentId).single();
+    const { data: agent } = await service.from("agents").select("id, user_id").eq("id", agentId).maybeSingle();
     if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    if (!canAccessAgent(auth, (agent as { user_id?: string | null }).user_id ?? null)) {
+      const error = auth.ownerUserId ? "Forbidden" : "API key tenant binding required";
+      return NextResponse.json({ error }, { status: 403 });
+    }
 
     const embedding = await generateEmbedding(content);
     if (embedding.length === 0) return NextResponse.json({ error: "Embedding failed" }, { status: 500 });

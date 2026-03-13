@@ -41,7 +41,9 @@ function createNoopSupabaseClient() {
   const auth = {
     getUser: async () => ({ data: { user: null }, error: NOOP_ERROR }),
     getSession: async () => ({ data: { session: null }, error: NOOP_ERROR }),
+    signInAnonymously: async () => ({ data: { user: null, session: null }, error: NOOP_ERROR }),
     signInWithPassword: async () => ({ data: { user: null, session: null }, error: NOOP_ERROR }),
+    signInWithOAuth: async () => ({ data: { provider: null, url: null }, error: NOOP_ERROR }),
     signUp: async () => ({ data: { user: null, session: null }, error: NOOP_ERROR }),
     signOut: async () => ({ error: null }),
   };
@@ -65,4 +67,8 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+}
+
+export function isBrowserSupabaseConfigured() {
+  return hasRequiredEnv(REQUIRED_PUBLIC_SUPABASE_ENV);
 }

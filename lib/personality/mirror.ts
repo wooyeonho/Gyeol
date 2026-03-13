@@ -1,5 +1,7 @@
 import { generateJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function analyzeMirrorEffect(agentId: string) {
   const db = createServiceClient();
@@ -7,13 +9,14 @@ export async function analyzeMirrorEffect(agentId: string) {
   if (!chats || chats.length < 10) return;
 
   const convo = chats.reverse().map((c) => `${c.role}: ${c.content}`).join("\n");
+  const { data: state } = await db.from("agent_state").select("fragments, config").eq("agent_id", agentId).single();
+  const locale = resolveGenerationLocale({ config: state?.config });
+  const language = getLanguageName(locale);
   const result = await generateJSON(
     "Analyze speech patterns. Respond ONLY valid JSON.",
-    `Conversation:\n${convo}\n\nIs the AI mirroring the user's speech patterns?\nJSON: {"mirroring":true|false,"observation":"Korean observation"}`
+    `Conversation:\n${convo}\n\nIs the AI mirroring the user's speech patterns?\nJSON: {"mirroring":true|false,"observation":"${language} observation"}`
   );
   if (!result?.mirroring) return;
-
-  const { data: state } = await db.from("agent_state").select("fragments").eq("agent_id", agentId).single();
   if (!state) return;
 
   const fragments = [...(state.fragments || []), result.observation].slice(-20);

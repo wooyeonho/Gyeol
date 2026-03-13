@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { memoriesToObjects, mergeRoomObjects } from "@/lib/room/generator";
 import type { RoomState } from "@/lib/room/types";
 import { NextResponse } from "next/server";
+import { getDemoAgentState, getDemoRoomObjects } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -54,6 +56,18 @@ export async function GET() {
     });
   } catch (e) {
     console.error("GET /api/room error", e);
+    if (isMissingEnvError(e)) {
+      const demoState = getDemoAgentState();
+      return NextResponse.json({
+        room: { objects: getDemoRoomObjects(), layout: "default", theme: "dark" },
+        objects: getDemoRoomObjects(),
+        visual: demoState.visual,
+        config: {
+          usage_profile: (demoState.config as { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } })?.usage_profile ?? null,
+        },
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

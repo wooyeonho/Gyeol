@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { getDemoAgentState } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
@@ -50,6 +52,42 @@ export async function GET() {
     return NextResponse.json({ profiles, speciesBestiary });
   } catch (e) {
     console.error("GET /api/explore error", e);
+    if (isMissingEnvError(e)) {
+      const demo = getDemoAgentState();
+      return NextResponse.json({
+        profiles: [
+          {
+            id: "demo-1",
+            self_name: "Luma",
+            gen_level: 3,
+            vitality: 0.82,
+            total_messages: 34,
+            memory_count: 34,
+            visual: demo.visual,
+            created_at: new Date().toISOString(),
+            species: "lumen-being",
+            config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+          },
+          {
+            id: "demo-2",
+            self_name: "Morrow",
+            gen_level: 2,
+            vitality: 0.64,
+            total_messages: 21,
+            memory_count: 21,
+            visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
+            created_at: new Date().toISOString(),
+            species: "echo-bloom",
+            config: { usage_profile: { primary_mode: "companion", updated_at: new Date().toISOString() } },
+          },
+        ],
+        speciesBestiary: [
+          { name: "lumen-being", count: 1 },
+          { name: "echo-bloom", count: 1 },
+        ],
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

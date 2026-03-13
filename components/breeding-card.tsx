@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "@/components/i18n-provider";
+import { formatLocalizedDateTime } from "@/lib/i18n/format";
 
 export type Visual = { shape?: string; color?: string; size?: number; glow?: number } | null;
 
@@ -70,6 +72,7 @@ function blendColorHex(a: string | undefined, b: string | undefined): string {
 }
 
 export default function BreedingCard(props: BreedingCardProps) {
+  const { locale, t } = useTranslations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,13 +83,13 @@ export default function BreedingCard(props: BreedingCardProps) {
       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
         <div className="flex items-center justify-between gap-4 mb-3">
           <span className="font-medium text-white">{partner.self_name || "..."}</span>
-          <span className="text-xs text-white/50">Gen {partner.gen_level} · {partner.memory_count} memories</span>
+          <span className="text-xs text-white/50">Gen {partner.gen_level} · {partner.memory_count} {t("breeding.memories")}</span>
         </div>
         <div className="flex justify-around gap-4 py-2">
-          <VisualPreview visual={myVisual as Visual} label="Mine" />
-          <VisualPreview visual={partner.visual as Visual} label="Partner" />
+          <VisualPreview visual={myVisual as Visual} label={t("breeding.mine")} />
+          <VisualPreview visual={partner.visual as Visual} label={t("breeding.partner")} />
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xs text-white/50">Child</span>
+            <span className="text-xs text-white/50">{t("breeding.child")}</span>
             <div
               className="rounded-full border border-white/20"
               style={{
@@ -108,13 +111,13 @@ export default function BreedingCard(props: BreedingCardProps) {
             try {
               await onRequest(partner.id);
             } catch (e) {
-              setError((e as Error).message ?? "Request failed");
+              setError((e as Error).message ?? t("breeding.requestFailed"));
             } finally {
               setLoading(false);
             }
           }}
         >
-          {loading ? "Sending..." : "Send breeding request"}
+          {loading ? t("breeding.sending") : t("breeding.sendRequest")}
         </button>
       </div>
     );
@@ -123,8 +126,8 @@ export default function BreedingCard(props: BreedingCardProps) {
   const { record, partnerName, onAccept, onReject } = props;
   return (
     <div className="bg-white/5 rounded-xl p-4 border border-amber-500/30">
-      <p className="text-sm text-white/80 mb-2">Breeding request from {partnerName ?? "another Gyeol"}</p>
-      <p className="text-xs text-white/50 mb-3">{record.created_at ? new Date(record.created_at).toLocaleString() : ""}</p>
+      <p className="text-sm text-white/80 mb-2">{t("breeding.requestFrom").replace("{name}", partnerName ?? t("breeding.fallbackPartner"))}</p>
+      <p className="text-xs text-white/50 mb-3">{record.created_at ? formatLocalizedDateTime(record.created_at, locale) : ""}</p>
       {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
       <div className="flex gap-2">
         <button
@@ -136,13 +139,13 @@ export default function BreedingCard(props: BreedingCardProps) {
             try {
               await onAccept(record.id);
             } catch (e) {
-              setError((e as Error).message ?? "Accept failed");
+              setError((e as Error).message ?? t("breeding.acceptFailed"));
             } finally {
               setLoading(false);
             }
           }}
         >
-          {loading ? "..." : "Accept"}
+          {loading ? "..." : t("breeding.accept")}
         </button>
         <button
           className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm disabled:opacity-50"
@@ -157,7 +160,7 @@ export default function BreedingCard(props: BreedingCardProps) {
             }
           }}
         >
-          Reject
+          {t("breeding.reject")}
         </button>
       </div>
     </div>

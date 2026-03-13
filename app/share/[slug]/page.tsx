@@ -6,17 +6,8 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
-
-type ShareCardData = {
-  self_name: string;
-  visual: { color?: string; shape?: string } | null;
-  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
-  total_messages: number;
-  vitality: number;
-  gen_level: number;
-  milestones: Array<{ type: string; label: string; at: string; summary?: string }>;
-  week_messages: number;
-};
+import { formatLocalizedDate } from "@/lib/i18n/format";
+import type { ShareCardData } from "@/lib/share/card";
 
 export default function SharePage() {
   const { locale, t } = useTranslations();
@@ -63,7 +54,7 @@ export default function SharePage() {
       <div className="min-h-screen bg-black px-6 py-12 text-white">
         <div className="mx-auto flex max-w-md flex-col items-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center shadow-[0_0_80px_rgba(34,211,238,0.08)]">
           <div className="mb-4 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/55">
-            {locale === "en" ? "shared growth card" : "shared growth card"}
+            {t("sharePage.cardEyebrow")}
           </div>
           <p className="text-base text-white/72">{t("sharePage.notFound")}</p>
           <Link
@@ -82,7 +73,7 @@ export default function SharePage() {
       <div className="min-h-screen bg-black px-6 py-12 text-white">
         <div className="mx-auto flex max-w-md flex-col items-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center shadow-[0_0_80px_rgba(34,211,238,0.08)]">
           <div className="mb-4 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/55">
-            {locale === "en" ? "shared growth card" : "shared growth card"}
+            {t("sharePage.cardEyebrow")}
           </div>
           <p className="text-base text-white/72">{t("sharePage.notFound")}</p>
           <Link
@@ -124,7 +115,6 @@ export default function SharePage() {
   }
 
   const color = data.visual?.color ?? "rgb(34, 211, 238)";
-  const dateLocale = locale === "en" ? "en-US" : "ko-KR";
   const appearance = resolveIdentityAppearance(
     {
       selfName: data.self_name,
@@ -154,7 +144,7 @@ export default function SharePage() {
           <div className="relative mb-5 flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">
-                {locale === "en" ? "manifestation" : "manifestation"}
+                {t("sharePage.manifestation")}
               </p>
               <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
             </div>
@@ -221,7 +211,7 @@ export default function SharePage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{m.label}</p>
                     <p className="text-white/45 text-xs">
-                      {new Date(m.at).toLocaleDateString(dateLocale, { dateStyle: "medium" })}
+                      {formatLocalizedDate(m.at, locale, { dateStyle: "medium" })}
                     </p>
                   </div>
                 </div>

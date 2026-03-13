@@ -5,7 +5,11 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({
+  onLocaleChange,
+}: {
+  onLocaleChange?: (locale: Locale) => void | Promise<void>;
+}) {
   const { locale, setLocale, t } = useTranslations();
   const agentState = useAgentStore((state) => state.agentState);
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
@@ -36,7 +40,11 @@ export function LocaleSwitcher() {
             <button
               key={item}
               type="button"
-              onClick={() => setLocale(item as Locale)}
+              onClick={() => {
+                const nextLocale = item as Locale;
+                setLocale(nextLocale);
+                void onLocaleChange?.(nextLocale);
+              }}
               className="rounded-full px-3 py-1.5 text-sm transition-all duration-200"
               style={
                 active

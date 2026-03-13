@@ -10,10 +10,10 @@
   - crawl source task 기반 라우팅
   - self_model role / identity / long-term goal 축적
 - usage-driven identity 시스템이 연결되었습니다.
-  - usage mode 기반 form 변화
+  - usage mode 기반 존재감 변화
   - 실시간 배경/모션 전환
   - identity별 voice/sound/accent 통일
-  - social/market species curation
+  - social/market presence drift
   - album/constellation evolution timeline
 
 ## 2. QA 우선 확인 시나리오
@@ -76,7 +76,7 @@
 
 1. 장난형 / 친밀형 / 전략형 / 초현실형 성격의 메시지를 각각 몇 번 보내기
 2. `agent_state.config.usage_profile.primary_mode`가 바뀌는지 확인
-3. 홈 / 채팅 / 소셜 / 마켓 / 앨범 / 별자리에서 형상 title, narrative, accent가 함께 바뀌는지 확인
+3. 홈 / 채팅 / 소셜 / 마켓 / 앨범 / 별자리에서 존재감 title, narrative, accent가 함께 바뀌는지 확인
 4. `agent_state.voice_params`, `agent_state.sound_profile`, `config.tone`가 함께 조정되는지 확인
 
 ## 3. 회귀 테스트 체크리스트

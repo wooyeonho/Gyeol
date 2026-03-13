@@ -6,13 +6,69 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
+function NavIcon({ name }: { name: "home" | "activity" | "album" | "social" | "explore" | "settings" }) {
+  const common = "h-5 w-5";
+  switch (name) {
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5.5 9.5V21h13V9.5" />
+        </svg>
+      );
+    case "activity":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M5 6h14" />
+          <path d="M5 12h14" />
+          <path d="M5 18h9" />
+          <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
+          <circle cx="7" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="7" cy="18" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case "album":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <rect x="5" y="4" width="14" height="16" rx="2" />
+          <path d="M9 4v16" />
+          <path d="M12 8c1 1.3 2 2 3 2s2-.7 3-2" />
+        </svg>
+      );
+    case "social":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="8" cy="9" r="3" />
+          <circle cx="16" cy="9" r="3" />
+          <path d="M3.5 19c.9-2.6 3.1-4 5.5-4" />
+          <path d="M15 15c2.4 0 4.6 1.4 5.5 4" />
+          <path d="M9.5 18c.9-1.5 2.3-2.3 4.5-2.3 2.1 0 3.6.8 4.5 2.3" opacity=".55" />
+        </svg>
+      );
+    case "explore":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="8" />
+          <path d="m10 14 5-5-2 6-6 2 3-3Z" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.7 7.7 0 0 0-1.7-1L14.5 3h-5L9 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.7 7.7 0 0 0 1.7 1l.5 3h5l.5-3a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z" />
+        </svg>
+      );
+  }
+}
+
 const TABS = [
-  { path: "/", labelKey: "nav.home", icon: "🏠" },
-  { path: "/activity", labelKey: "nav.activity", icon: "📋" },
-  { path: "/album", labelKey: "nav.album", icon: "🪞" },
-  { path: "/social", labelKey: "nav.social", icon: "👥" },
-  { path: "/explore", labelKey: "nav.explore", icon: "🧭" },
-  { path: "/settings", labelKey: "nav.settings", icon: "⚙️" },
+  { path: "/", labelKey: "nav.home", icon: "home" as const },
+  { path: "/activity", labelKey: "nav.activity", icon: "activity" as const },
+  { path: "/album", labelKey: "nav.album", icon: "album" as const },
+  { path: "/social", labelKey: "nav.social", icon: "social" as const },
+  { path: "/explore", labelKey: "nav.explore", icon: "explore" as const },
+  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
 ];
 
 export function BottomNav() {
@@ -60,7 +116,9 @@ export function BottomNav() {
                   : { color: "rgba(255,255,255,0.4)" }
               }
             >
-              <span className="text-xl">{tab.icon}</span>
+              <span aria-hidden="true">
+                <NavIcon name={tab.icon} />
+              </span>
               <span className="text-[11px]">{t(tab.labelKey)}</span>
             </Link>
           );

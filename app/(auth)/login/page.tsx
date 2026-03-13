@@ -1,19 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { createClient, isBrowserSupabaseConfigured } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { useTranslations } from "@/components/i18n-provider";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const { t } = useTranslations();
+  const callbackErrorCode = searchParams.get("error");
+  const nextPath = searchParams.get("next") || "/";
+  const signupHref = `/signup${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
+  const isConfigured = isBrowserSupabaseConfigured();
+  const authError =
+    error
+    ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +39,7 @@ export default function LoginPage() {
       return;
     }
     trackClientEvent(CLIENT_EVENT.loginCompleted, { method: "password" });
-    router.push("/");
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -44,36 +55,42 @@ export default function LoginPage() {
       return;
     }
     trackClientEvent(CLIENT_EVENT.guestCompleted, { entry: "login" });
-    router.push("/");
+    router.push(nextPath);
     router.refresh();
   }
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">GYEOL</p>
-        <h1 className="mt-3 text-2xl font-semibold">나만의 AI 존재와 다시 연결하세요</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{t("auth.loginEyebrow")}</p>
+        <h1 className="mt-3 text-2xl font-semibold">{t("auth.loginTitle")}</h1>
         <p className="mt-3 text-sm leading-6 text-white/65">
-          결은 대화를 기억으로 남기고, 그 기억을 성장과 변화로 이어가도록 설계된 AI 동반자입니다.
+          {t("auth.loginSubtitle")}
         </p>
       </div>
 
+      {!isConfigured && (
+        <div className="mb-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
+          {t("auth.configWarning")}
+        </div>
+      )}
+
       <div className="mb-6 grid gap-2">
         <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
-          대화가 축적되어 다음 대화의 맥락이 됩니다.
+          {t("auth.loginBenefit1")}
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
-          활력, 감정, 성장 이벤트가 누적된 관계를 보여줍니다.
+          {t("auth.loginBenefit2")}
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
-          자율 활동과 기록을 통해 오프라인 이후의 흔적도 확인할 수 있습니다.
+          {t("auth.loginBenefit3")}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
-          placeholder="이메일"
+          placeholder={t("auth.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
@@ -81,21 +98,31 @@ export default function LoginPage() {
         />
         <input
           type="password"
-          placeholder="비밀번호"
+          placeholder={t("auth.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
           required
         />
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {authError && <p className="text-sm text-red-400">{authError}</p>}
         <button
           type="submit"
           disabled={loading}
           className="rounded-xl bg-white px-4 py-3 font-medium text-black disabled:opacity-50"
         >
-          {loading ? "로그인 중..." : "로그인"}
+          {loading ? t("auth.loginLoading") : t("auth.login")}
         </button>
       </form>
+
+      <div className="mt-4">
+        <OAuthButtons
+          flow="login"
+          loading={loading}
+          nextPath={nextPath}
+          onError={(message) => setError(message || null)}
+          onLoadingChange={setLoading}
+        />
+      </div>
 
       <div className="mt-4 flex flex-col gap-3 text-sm">
         <button
@@ -104,17 +131,17 @@ export default function LoginPage() {
           disabled={loading}
           className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white/75 hover:bg-white/10 disabled:opacity-50"
         >
-          게스트로 먼저 체험하기
+          {t("auth.guestContinue")}
         </button>
         <div className="flex flex-wrap items-center justify-between gap-2 text-white/55">
-          <Link href="/signup" className="hover:text-white/80">
-            회원가입
+          <Link href={signupHref} className="hover:text-white/80">
+            {t("auth.signupLink")}
           </Link>
           <Link href="/features" className="hover:text-white/80">
-            기능 소개 보기
+            {t("auth.loginFeaturesLink")}
           </Link>
           <Link href="/explore" className="hover:text-white/80">
-            생태계 둘러보기
+            {t("auth.loginExploreLink")}
           </Link>
         </div>
       </div>

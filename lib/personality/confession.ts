@@ -1,8 +1,13 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function tryConfession(agentId: string): Promise<boolean> {
   const service = createServiceClient();
+  const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
+  const locale = resolveGenerationLocale({ config: state?.config });
+  const language = getLanguageName(locale);
   const { data: mems } = await service
     .from("memories")
     .select("content")
@@ -11,7 +16,7 @@ export async function tryConfession(agentId: string): Promise<boolean> {
     .limit(30);
   const sample = (mems ?? []).map((m) => (m as { content?: string }).content ?? "").join("\n").slice(0, 1500);
   const raw = (await generateJSON(
-    "Based on past interactions, write one short sentence where the AI admits it was wrong about the user. Korean. Honest and specific.",
+    `Based on past interactions, write one short sentence where the AI admits it was wrong about the user. Write in ${language}. Honest and specific.`,
     `Memories:\n${sample}\n\nJSON: {"confession":"one sentence"}`,
   )) as { confession?: string } | null;
   if (!raw?.confession) return false;

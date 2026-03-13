@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { getDemoAgentState } from "@/lib/demo/runtime";
+import { isMissingEnvError } from "@/lib/env/required";
 
 const TYPE_FILTER: Record<string, string[]> = {
   dream: ["dream_journal", "dream"],
@@ -87,6 +89,40 @@ export async function GET(request: NextRequest) {
     });
   } catch (e) {
     console.error("GET /api/activity error", e);
+    if (isMissingEnvError(e)) {
+      const demo = getDemoAgentState();
+      return NextResponse.json({
+        items: [
+          {
+            id: "demo-log-1",
+            kind: "log",
+            action_type: "heartbeat",
+            summary: "Stayed awake and kept a quiet emotional pulse.",
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: "demo-artifact-1",
+            kind: "artifact",
+            type: "dream_journal",
+            title: "First dream fragment",
+            content: "A soft aurora hovered above the room.",
+            is_preserved: true,
+            created_at: new Date().toISOString(),
+          },
+        ],
+        selfAgent: {
+          self_name: demo.self_name,
+          visual: demo.visual,
+          genome: demo.genome,
+          config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+          self_model: demo.self_model,
+          gen_level: demo.gen_level,
+          vitality: demo.vitality,
+          mood: demo.mood,
+        },
+        demo_mode: true,
+      });
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

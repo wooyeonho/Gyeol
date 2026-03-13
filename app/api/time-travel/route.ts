@@ -6,6 +6,8 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { isMissingEnvError } from "@/lib/env/required";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { getLanguageName } from "@/lib/i18n/config";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -29,6 +31,10 @@ export async function POST(req: NextRequest) {
 
     const fence = checkElectricFence(message);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+    const locale = resolveGenerationLocale({
+      acceptLanguage: req.headers.get("accept-language"),
+      cookieHeader: req.headers.get("cookie"),
+    });
 
     const { data: agent } = await supabase.from("agents").select("id").eq("user_id", user.id).single();
     if (!agent?.id) return NextResponse.json({ error: "No agent" }, { status: 404 });
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
       "규칙:",
       "1) 미래 사실을 단정하지 않는다.",
       "2) 해당 시점의 감정/맥락으로 답한다.",
-      "3) 짧고 명확하게 한국어로 답한다.",
+      `3) ${getLanguageName(locale)}로 짧고 명확하게 답한다.`,
       formattedMemories ? `기억 요약:\n${formattedMemories}` : "기억 요약: (없음)",
     ].join("\n");
 

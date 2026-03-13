@@ -10,6 +10,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
+import { formatLocalizedDate, formatLocalizedTime } from "@/lib/i18n/format";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
@@ -183,7 +184,7 @@ function nextEvolutionHint(totalMessages: number, locale: "ko" | "en") {
 }
 
 function formatHubTime(date: Date, locale: "ko" | "en") {
-  return date.toLocaleTimeString(locale === "en" ? "en-US" : "ko-KR", {
+  return formatLocalizedTime(date, locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -191,7 +192,7 @@ function formatHubTime(date: Date, locale: "ko" | "en") {
 }
 
 function formatHubShortDate(value: string, locale: "ko" | "en") {
-  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
+  return formatLocalizedDate(value, locale, {
     month: "short",
     day: "numeric",
   });
@@ -223,6 +224,9 @@ export function WorldClassHub() {
   const [recentItems, setRecentItems] = useState<HomeSummaryItem[]>([]);
   const [newItemsSinceLastVisit, setNewItemsSinceLastVisit] = useState<HomeSummaryItem[]>([]);
   const [recap, setRecap] = useState<HomeRecap | null>(null);
+  const [showRecentPanel, setShowRecentPanel] = useState(false);
+  const [showGrowthPanel, setShowGrowthPanel] = useState(false);
+  const [showPlanningPanel, setShowPlanningPanel] = useState(false);
   const onboardingVariant = useFirstMessageOnboardingVariant();
 
   useEffect(() => {
@@ -283,7 +287,6 @@ export function WorldClassHub() {
     () => missions.reduce((acc, mission) => acc + (mission.done ? 1 : 0), 0),
     [missions],
   );
-  const completionRate = missions.length === 0 ? 0 : Math.round((completed / missions.length) * 100);
 
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
@@ -517,7 +520,7 @@ export function WorldClassHub() {
               <IdentityPresence appearance={appearance} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">
-                  {locale === "en" ? "current manifestation" : "현재 형상"}
+                  {t("home.currentPresence")}
                 </p>
                 <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
                 <p className="mt-1 text-xs leading-5 text-white/58">{appearance.usageNarrative ?? appearance.subtitle}</p>
@@ -577,35 +580,30 @@ export function WorldClassHub() {
         </div>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">{locale === "en" ? "stored conversations" : "기록된 대화"}</p>
-              <p className="text-xl font-semibold">{sessionMessages}</p>
-            </div>
-            <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">{locale === "en" ? "mission completion" : "미션 달성률"}</p>
-              <p className="text-xl font-semibold">{completionRate}%</p>
-            </div>
-          </div>
-
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "recent change" : "최근 변화"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.growthPulse")}</p>
                 <p className="mt-1 text-sm font-medium text-white">{summary}</p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
                 Gen {genLevel}
               </span>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current mood" : "현재 기분"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.currentMood")}</p>
                 <p className="mt-1 text-sm text-white/82">{mood}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "next evolution point" : "다음 변화 포인트"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.nextEvolution")}</p>
                 <p className="mt-1 text-sm text-white/82">{evolutionHint}</p>
+              </div>
+              <div className="rounded-lg bg-black/25 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.newTraces")}</p>
+                <p className="mt-1 text-sm text-white/82">
+                  {newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit.length : recentItems.length}
+                </p>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -613,22 +611,34 @@ export function WorldClassHub() {
                 href="/activity"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                {locale === "en" ? "View changes in activity" : "활동에서 변화 보기"}
+                {t("home.viewActivity")}
               </Link>
               <Link
                 href="/album"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
               >
-                {locale === "en" ? "View milestones in album" : "앨범에서 마일스톤 보기"}
+                {t("home.viewAlbum")}
               </Link>
+              <button
+                type="button"
+                onClick={() => setShowGrowthPanel((prev) => !prev)}
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+              >
+                {showGrowthPanel ? t("home.hideGrowthDetails") : t("home.openGrowthDetails")}
+              </button>
             </div>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setShowRecentPanel((prev) => !prev)}
+              className="flex w-full items-start justify-between gap-3 text-left"
+            >
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "while you were away" : "당신이 없는 동안"}</p>
-                <p className="mt-1 text-sm font-medium text-white">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.recentPanel")}</p>
+                <p className="mt-1 text-xs text-white/50">{t("home.recentPanelHint")}</p>
+                <p className="mt-2 text-sm font-medium text-white">
                   {newItemsSinceLastVisit.length > 0
                     ? locale === "en"
                       ? `${newItemsSinceLastVisit.length} new traces were recorded.`
@@ -639,108 +649,128 @@ export function WorldClassHub() {
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
                 {locale === "en" ? `${recentItems.length} recent` : `최근 ${recentItems.length}개`}
               </span>
-            </div>
-            <div className="mt-3 space-y-2">
-              {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
-                <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-white/55">{item.kind === "milestone" ? (locale === "en" ? "Milestone" : "마일스톤") : (locale === "en" ? "Activity" : "활동")}</p>
-                    <p className="text-[11px] text-white/40">
-                      {formatHubShortDate(item.created_at, locale)}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-white/82">{item.title}</p>
+            </button>
+
+            {showRecentPanel && (
+              <>
+                <div className="mt-3 space-y-2">
+                  {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
+                    <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-white/55">{item.kind === "milestone" ? (locale === "en" ? "Milestone" : "마일스톤") : (locale === "en" ? "Activity" : "활동")}</p>
+                        <p className="text-[11px] text-white/40">
+                          {formatHubShortDate(item.created_at, locale)}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-sm text-white/82">{item.title}</p>
+                    </div>
+                  ))}
+                  {recentItems.length === 0 && (
+                    <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
+                      {locale === "en"
+                        ? "Once the first activity appears, a recent change summary will show up here."
+                        : "첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다."}
+                    </div>
+                  )}
                 </div>
-              ))}
-              {recentItems.length === 0 && (
-                <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
-                  {locale === "en"
-                    ? "Once the first activity appears, a recent change summary will show up here."
-                    : "첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다."}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href="/activity"
+                    className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                  >
+                    {locale === "en" ? "Open recent activity" : "최근 활동 열기"}
+                  </Link>
+                  <Link
+                    href="/album"
+                    className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                  >
+                    {locale === "en" ? "Open album again" : "앨범 다시 보기"}
+                  </Link>
                 </div>
-              )}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/activity"
-                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-              >
-                {locale === "en" ? "Open recent activity" : "최근 활동 열기"}
-              </Link>
-              <Link
-                href="/album"
-                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-              >
-                {locale === "en" ? "Open album again" : "앨범 다시 보기"}
-              </Link>
-            </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setShowGrowthPanel((prev) => !prev)}
+              className="flex w-full items-start justify-between gap-3 text-left"
+            >
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.retentionLoop")}</p>
-                <p className="mt-1 text-sm font-medium text-white">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.growthPanel")}</p>
+                <p className="mt-1 text-xs text-white/50">{t("home.growthPanelHint")}</p>
+                <p className="mt-2 text-sm font-medium text-white">
                   {recap?.next_action ?? t("home.retentionFallback")}
                 </p>
               </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
                 {locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
               </span>
-            </div>
-            {recap?.premium_locked && (
-              <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
-                <p className="text-xs text-cyan-100/75">PRO RECAP</p>
-                <p className="mt-1 text-sm text-cyan-50">
-                  {locale === "en"
-                    ? "Deeper weekly recaps and longer history summaries open on Pro and above."
-                    : "더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다."}
-                </p>
-                <Link
-                  href="/plans"
-                  className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15"
-                >
-                  {locale === "en" ? "See upgrade plans" : "플랜 업그레이드 보기"}
-                </Link>
-              </div>
+            </button>
+
+            {showGrowthPanel && (
+              <>
+                {recap?.premium_locked && (
+                  <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
+                    <p className="text-xs text-cyan-100/75">PRO RECAP</p>
+                    <p className="mt-1 text-sm text-cyan-50">
+                      {locale === "en"
+                        ? "Deeper weekly recaps and longer history summaries open on Pro and above."
+                        : "더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다."}
+                    </p>
+                    <Link
+                      href="/plans"
+                      className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15"
+                    >
+                      {locale === "en" ? "See upgrade plans" : "플랜 업그레이드 보기"}
+                    </Link>
+                  </div>
+                )}
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.today")}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {locale === "en"
+                        ? `Messages ${recap?.today.user_messages ?? 0} · Activity ${recap?.today.activities ?? 0}`
+                        : `메시지 ${recap?.today.user_messages ?? 0} · 활동 ${recap?.today.activities ?? 0}`}
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">
+                      {recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.thisWeek")}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {locale === "en"
+                        ? `Messages ${recap?.weekly.user_messages ?? 0} · Milestones ${recap?.weekly.milestones ?? 0}`
+                        : `대화 ${recap?.weekly.user_messages ?? 0} · 마일스톤 ${recap?.weekly.milestones ?? 0}`}
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">
+                      {locale === "en" ? `Artifacts ${recap?.weekly.artifacts ?? 0}` : `아티팩트 ${recap?.weekly.artifacts ?? 0}개`}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {recap?.weekly.highlight ?? t("home.weeklyFallback")}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.today")}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {locale === "en"
-                    ? `Messages ${recap?.today.user_messages ?? 0} · Activity ${recap?.today.activities ?? 0}`
-                    : `메시지 ${recap?.today.user_messages ?? 0} · 활동 ${recap?.today.activities ?? 0}`}
-                </p>
-                <p className="mt-1 text-xs text-white/50">
-                  {recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}
-                </p>
-              </div>
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.thisWeek")}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {locale === "en"
-                    ? `Messages ${recap?.weekly.user_messages ?? 0} · Milestones ${recap?.weekly.milestones ?? 0}`
-                    : `대화 ${recap?.weekly.user_messages ?? 0} · 마일스톤 ${recap?.weekly.milestones ?? 0}`}
-                </p>
-                <p className="mt-1 text-xs text-white/50">
-                  {locale === "en" ? `Artifacts ${recap?.weekly.artifacts ?? 0}` : `아티팩트 ${recap?.weekly.artifacts ?? 0}개`}
-                </p>
-              </div>
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {recap?.weekly.highlight ?? t("home.weeklyFallback")}
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setShowPlanningPanel((prev) => !prev)}
+              className="flex w-full items-start justify-between gap-3 text-left"
+            >
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.goalLoop")}</p>
-                <p className="mt-1 text-sm font-medium text-white">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.planningPanel")}</p>
+                <p className="mt-1 text-xs text-white/50">{t("home.planningPanelHint")}</p>
+                <p className="mt-2 text-sm font-medium text-white">
                   {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopSummaryEmpty")}
                 </p>
               </div>
@@ -749,94 +779,99 @@ export function WorldClassHub() {
                   ? `${recap?.goal_loop?.pending_count ?? 0} tasks`
                   : `대기 태스크 ${recap?.goal_loop?.pending_count ?? 0}개`}
               </span>
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current goal" : "현재 목표"}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
-                </p>
-              </div>
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {recap?.goal_loop?.long_term_goal ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
-                </p>
-              </div>
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
-                <p className="mt-1 text-sm text-white/82">
-                  {recap?.goal_loop?.latest_task ??
-                    recap?.goal_loop?.research_focus ??
-                    t("home.goalLoopResearchEmpty")}
-                </p>
-              </div>
-            </div>
-          </div>
+            </button>
 
-          <div className="flex flex-wrap gap-2">
-            {QUICK_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-              >
-                {t(link.labelKey)}
-              </Link>
-            ))}
-          </div>
+            {showPlanningPanel && (
+              <>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current goal" : "현재 목표"}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {recap?.goal_loop?.long_term_goal ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/25 p-3">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
+                    <p className="mt-1 text-sm text-white/82">
+                      {recap?.goal_loop?.latest_task ??
+                        recap?.goal_loop?.research_focus ??
+                        t("home.goalLoopResearchEmpty")}
+                    </p>
+                  </div>
+                </div>
 
-          <div className="rounded-xl border border-white/10 bg-black/35 p-3">
-            <div className="flex gap-2">
-              <label htmlFor="mission-input" className="sr-only">
-                {locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
-              </label>
-              <input
-                id="mission-input"
-                value={draftMission}
-                onChange={(event) => setDraftMission(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addMission();
-                  }
-                }}
-                placeholder={t("home.missionPlaceholder")}
-                className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
-              />
-              <button
-                type="button"
-                onClick={addMission}
-                className="rounded-lg bg-white/10 px-3 text-sm text-white/85 hover:bg-white/20"
-              >
-                {t("home.missionAdd")}
-              </button>
-            </div>
-            <ul className="mt-2 space-y-1.5">
-              {missions.length === 0 && (
-                <li className="text-xs text-white/45">
-                  {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
-                </li>
-              )}
-              {missions.map((mission) => (
-                <li key={mission.id} className="flex items-center gap-2 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => toggleMission(mission.id)}
-                    className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
-                    aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
-                  />
-                  <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeMission(mission.id)}
-                    className="text-xs text-white/40 hover:text-white/70"
-                  >
-                    {t("home.missionDelete")}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/35 p-3">
+                  <div className="flex gap-2">
+                    <label htmlFor="mission-input" className="sr-only">
+                      {locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
+                    </label>
+                    <input
+                      id="mission-input"
+                      value={draftMission}
+                      onChange={(event) => setDraftMission(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addMission();
+                        }
+                      }}
+                      placeholder={t("home.missionPlaceholder")}
+                      className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={addMission}
+                      className="rounded-lg bg-white/10 px-3 text-sm text-white/85 hover:bg-white/20"
+                    >
+                      {t("home.missionAdd")}
+                    </button>
+                  </div>
+                  <ul className="mt-2 space-y-1.5">
+                    {missions.length === 0 && (
+                      <li className="text-xs text-white/45">
+                        {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
+                      </li>
+                    )}
+                    {missions.map((mission) => (
+                      <li key={mission.id} className="flex items-center gap-2 text-sm">
+                        <button
+                          type="button"
+                          onClick={() => toggleMission(mission.id)}
+                          className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
+                          aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
+                        />
+                        <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeMission(mission.id)}
+                          className="text-xs text-white/40 hover:text-white/70"
+                        >
+                          {t("home.missionDelete")}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {QUICK_LINKS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                    >
+                      {t(link.labelKey)}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

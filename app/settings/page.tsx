@@ -7,6 +7,8 @@ import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTranslations } from "@/components/i18n-provider";
+import { type Locale } from "@/lib/i18n/config";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 function InviteSection() {
   const { t } = useTranslations();
@@ -63,7 +65,12 @@ function InviteSection() {
 }
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
-import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
+import {
+  formatPlanTierLabel,
+  formatSubscriptionStatus,
+  type EntitlementKey,
+  type PlanDefinition,
+} from "@/lib/billing/catalog";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
 type AgentState = {
@@ -91,38 +98,12 @@ type BillingData = {
   };
 };
 
-function formatPlanTierLabel(
-  tier: PlanDefinition["tier"] | null | undefined,
-  locale: "ko" | "en"
-) {
-  if (tier === "premium") return locale === "en" ? "Premium" : "Premium";
-  if (tier === "pro") return locale === "en" ? "Pro" : "Pro";
-  return locale === "en" ? "Free" : "Free";
-}
-
-function formatSubscriptionStatus(
-  status: string | null | undefined,
-  locale: "ko" | "en"
-) {
-  if (!status) return locale === "en" ? "Not connected yet" : "아직 연결되지 않음";
-  const normalized = status.toLowerCase();
-  if (normalized === "active") return locale === "en" ? "Active" : "정상 사용 중";
-  if (normalized === "trialing") return locale === "en" ? "Trialing" : "체험 중";
-  if (normalized === "past_due") return locale === "en" ? "Past due" : "결제 확인 필요";
-  if (normalized === "cancelled") return locale === "en" ? "Cancelled" : "해지됨";
-  return status;
-}
-
 function formatLocaleDate(
   value: string | null | undefined,
   locale: "ko" | "en"
 ) {
   if (!value) return null;
-  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatLocalizedDate(value, locale);
 }
 
 function SettingsStatCard({
@@ -153,13 +134,13 @@ function SettingsToggle({
   description,
   enabled,
   onToggle,
-  locale,
+  stateLabel,
 }: {
   label: string;
   description: string;
   enabled: boolean;
   onToggle: () => void;
-  locale: "ko" | "en";
+  stateLabel: string;
 }) {
   return (
     <button
@@ -173,7 +154,7 @@ function SettingsToggle({
       </div>
       <div className="flex items-center gap-3">
         <span className={`text-[11px] uppercase tracking-[0.18em] ${enabled ? "text-cyan-100/80" : "text-white/35"}`}>
-          {enabled ? (locale === "en" ? "live" : "작동 중") : (locale === "en" ? "idle" : "대기")}
+          {stateLabel}
         </span>
         <span
           className={`relative h-7 w-12 rounded-full border transition-colors ${
@@ -264,6 +245,21 @@ export default function SettingsPage() {
     setState({ ...state, channels });
   }
 
+  async function handleLocaleChange(nextLocale: Locale) {
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferred_locale: nextLocale }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+    if (!state) return;
+    const config: AgentConfig = { ...(state.config || {}), preferred_locale: nextLocale };
+    setState({ ...state, config });
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -303,46 +299,31 @@ export default function SettingsPage() {
   const toggleRows = [
     {
       label: t("settings.autonomous"),
-      description:
-        locale === "en"
-          ? "Keeps Gyeol moving, reflecting, and acting between conversations."
-          : "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
+      description: t("settings.autonomousBody"),
       enabled: config.autonomous_enabled !== false,
       onToggle: () => toggleConfig("autonomous_enabled", !config.autonomous_enabled),
     },
     {
       label: t("settings.dream"),
-      description:
-        locale === "en"
-          ? "Allows dream-like synthesis and internal scene generation during quiet cycles."
-          : "조용한 주기 동안 꿈처럼 장면을 합성하고 내부 리플렉션을 이어가게 합니다.",
+      description: t("settings.dreamBody"),
       enabled: Boolean(config.dream_enabled),
       onToggle: () => toggleConfig("dream_enabled", !config.dream_enabled),
     },
     {
       label: t("settings.social"),
-      description:
-        locale === "en"
-          ? "Lets Gyeol notice and react to ecosystem and social signals."
-          : "결이 생태계와 소셜 신호를 감지하고 관계적 반응을 이어가게 합니다.",
+      description: t("settings.socialBody"),
       enabled: config.social_enabled !== false,
       onToggle: () => toggleConfig("social_enabled", !config.social_enabled),
     },
     {
       label: t("settings.performanceMinimal"),
-      description:
-        locale === "en"
-          ? "Uses a lighter visual/runtime path for quieter or lower-power sessions."
-          : "보다 조용하고 가벼운 시각/런타임 경로를 사용해 저전력 세션에 맞춥니다.",
+      description: t("settings.performanceMinimalBody"),
       enabled: Boolean(config.performance_minimal),
       onToggle: () => toggleConfig("performance_minimal", !config.performance_minimal),
     },
     {
       label: t("settings.recapEmail"),
-      description:
-        locale === "en"
-          ? "Sends a periodic recap so the relationship can continue outside the app."
-          : "앱 밖에서도 관계가 이어지도록 주기적인 리캡을 메일로 전달합니다.",
+      description: t("settings.recapEmailBody"),
       enabled: Boolean(state?.channels?.email),
       onToggle: () => toggleRecapEmail(!state?.channels?.email),
     },
@@ -353,13 +334,11 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-4xl space-y-4">
         <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)] sm:p-8">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-            {locale === "en" ? "agent settings" : "agent settings"}
+            {t("settings.eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("settings.title")}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/66">
-            {locale === "en"
-              ? "Tune how Gyeol lives between conversations: memory, autonomy, billing, invitations, and the pace of its world."
-              : "대화 사이에 결이 어떤 속도로 살아가고 반응할지 조정합니다. 자율성, 리캡, 플랜, 초대 흐름을 한 곳에서 정리하세요."}
+            {t("settings.subtitle")}
           </p>
         </header>
         {error && <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
@@ -372,14 +351,12 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "language" : "language"}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.languageEyebrow")}</p>
             <p className="mt-1 text-sm text-white/60">
-              {locale === "en"
-                ? "Switch the shell language without leaving the current session."
-                : "현재 세션을 유지한 채 제품 전체 언어를 바꿀 수 있습니다."}
+              {t("settings.languageBody")}
             </p>
           </div>
-          <LocaleSwitcher />
+          <LocaleSwitcher onLocaleChange={handleLocaleChange} />
         </section>
 
         {showPlansSurface && (
@@ -428,9 +405,7 @@ export default function SettingsPage() {
             <div className="mb-4">
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.entitlements")}</p>
               <p className="mt-1 text-sm text-white/60">
-                {locale === "en"
-                  ? "These are the premium capabilities currently available in this relationship."
-                  : "현재 이 관계에서 열려 있는 프리미엄 능력들입니다."}
+                {t("settings.entitlementsBody")}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -456,11 +431,9 @@ export default function SettingsPage() {
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "en" ? "life engine" : "life engine"}</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.lifeEngineEyebrow")}</p>
             <p className="mt-1 text-sm text-white/60">
-              {locale === "en"
-                ? "Fine-tune how active, social, and lightweight Gyeol should feel in everyday use."
-                : "결이 얼마나 자율적이고, 사회적이고, 가볍게 움직일지 제품 감도에 맞춰 세밀하게 조정합니다."}
+              {t("settings.lifeEngineBody")}
             </p>
           </div>
           <div className="space-y-3">
@@ -471,7 +444,7 @@ export default function SettingsPage() {
                 description={toggle.description}
                 enabled={toggle.enabled}
                 onToggle={toggle.onToggle}
-                locale={locale}
+                stateLabel={toggle.enabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
               />
             ))}
           </div>
@@ -480,9 +453,7 @@ export default function SettingsPage() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.inviteFriends")}</p>
           <p className="mt-1 text-sm text-white/60">
-            {locale === "en"
-              ? "Create a clean invite link you can share when you want someone else to meet Gyeol."
-              : "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요."}
+            {t("settings.inviteBody")}
           </p>
           <InviteSection />
         </section>

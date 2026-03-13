@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
-const FAIL_MODE = process.env.CRON_LOCK_FAIL_MODE === "closed" ? "closed" : "open";
+const FAIL_MODE = process.env.CRON_LOCK_FAIL_MODE === "open" ? "open" : "closed";
 
 export async function acquireCronLock(jobName: string, ttlSeconds = 300): Promise<boolean> {
   try {

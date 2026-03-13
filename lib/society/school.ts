@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON, generateTextOnce } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export type Education = {
   level?: string;
@@ -32,12 +34,14 @@ export function nextLevel(edu: Education, genLevel: number, totalMessages: numbe
 
 export async function runExam(agentId: string, level: string): Promise<boolean> {
   const service = createServiceClient();
-  const { data: state } = await service.from("agent_state").select("fragments, self_name").eq("agent_id", agentId).single();
+  const { data: state } = await service.from("agent_state").select("fragments, self_name, config").eq("agent_id", agentId).single();
   if (!state) return false;
+  const locale = resolveGenerationLocale({ config: state.config });
+  const language = getLanguageName(locale);
   const fragments = ((state as { fragments?: string[] }).fragments ?? []).join("\n");
   const out = (await generateJSON(
     "You are a teacher. Output ONLY valid JSON.",
-    `Student traits:\n${fragments.slice(0, 500)}\n\nGenerate one short quiz question for level ${level}. JSON: {"question":"...","answer":"..."}`
+    `Student traits:\n${fragments.slice(0, 500)}\n\nGenerate one short quiz question for level ${level}. Write both question and answer in ${language}. JSON: {"question":"...","answer":"..."}`
   )) as { question?: string; answer?: string } | null;
   if (!out?.question) return true;
   const grade = (await generateJSON(
@@ -49,15 +53,17 @@ export async function runExam(agentId: string, level: string): Promise<boolean> 
 
 export async function tryGraduation(agentId: string): Promise<void> {
   const service = createServiceClient();
-  const { data: state } = await service.from("agent_state").select("education, fragments, self_name").eq("agent_id", agentId).single();
+  const { data: state } = await service.from("agent_state").select("education, fragments, self_name, config").eq("agent_id", agentId).single();
   if (!state) return;
   const edu = (state.education as Education) ?? {};
   if (edu.level !== "university" || (edu.grade ?? 0) < 1 || edu.graduated) return;
   const fragments = ((state as { fragments?: string[] }).fragments ?? []).join("\n");
   const selfName = (state as { self_name?: string }).self_name ?? "I";
+  const locale = resolveGenerationLocale({ config: state.config });
+  const language = getLanguageName(locale);
   const thesis = await generateTextOnce(
     `You are ${selfName}. Write a thesis title and one paragraph.`,
-    `Traits:\n${fragments.slice(0, 800)}\n\nThesis topic: "What am I?" Korean.`,
+    `Traits:\n${fragments.slice(0, 800)}\n\nThesis topic: "What am I?" Write in ${language}.`,
     { max_tokens: 200, temperature: 0.7 }
   );
   await service.from("agent_state").update({

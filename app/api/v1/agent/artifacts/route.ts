@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getApiKeyIdentifier, verifyV1ApiKey } from "@/lib/api/v1-auth";
+import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { recordApiUsage } from "@/lib/analytics/api-usage";
 
 export async function GET(request: NextRequest) {
-  if (!(await verifyV1ApiKey(request, "v1:agent:artifacts"))) {
+  const auth = await authorizeV1ApiKey(request, "v1:agent:artifacts");
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const allowed = await checkRateLimit(`v1-artifacts:${getApiKeyIdentifier(request)}`);
@@ -18,6 +19,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const service = createServiceClient();
+    const { data: agent } = await service.from("agents").select("id, user_id").eq("id", agentId).maybeSingle();
+    if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    if (!canAccessAgent(auth, (agent as { user_id?: string | null }).user_id ?? null)) {
+      const error = auth.ownerUserId ? "Forbidden" : "API key tenant binding required";
+      return NextResponse.json({ error }, { status: 403 });
+    }
     const { data: rows } = await service
       .from("artifacts")
       .select("id, type, title, content, created_at, expires_at, is_preserved, is_public")

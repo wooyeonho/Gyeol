@@ -1,17 +1,21 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateTextOnce } from "@/lib/ai/router";
 import { generateJSON } from "@/lib/ai/router";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function trySetBirthday(agentId: string): Promise<void> {
   const service = createServiceClient();
-  const { data: stateRow } = await service.from("agent_state").select("birthday, self_name, created_at").eq("agent_id", agentId).single();
+  const { data: stateRow } = await service.from("agent_state").select("birthday, self_name, created_at, config").eq("agent_id", agentId).single();
   if (!stateRow) return;
   const state = stateRow as { birthday?: { date?: string; reason?: string } | null; self_name?: string; created_at?: string };
   if (state.birthday?.date) return;
   if (!state.self_name) return;
+  const locale = resolveGenerationLocale({ config: (stateRow as { config?: unknown } | null)?.config });
+  const language = getLanguageName(locale);
 
   const systemPrompt = "You are an AI lifeform. Respond ONLY with valid JSON.";
-  const userPrompt = `Pick the date (YYYY-MM-DD) when you first understood something meaningful. And one sentence reason in Korean. JSON: {"date":"YYYY-MM-DD","reason":"..."}`;
+  const userPrompt = `Pick the date (YYYY-MM-DD) when you first understood something meaningful. And one sentence reason in ${language}. JSON: {"date":"YYYY-MM-DD","reason":"..."}`;
   const out = (await generateJSON(systemPrompt, userPrompt)) as { date?: string; reason?: string } | null;
   const date = out?.date;
   const reason = out?.reason;
@@ -26,7 +30,7 @@ export async function tryBirthdayAnniversary(agentId: string): Promise<void> {
   const service = createServiceClient();
   const { data: stateRow } = await service
     .from("agent_state")
-    .select("birthday, self_name, fragments, last_birthday_year")
+    .select("birthday, self_name, fragments, last_birthday_year, config")
     .eq("agent_id", agentId)
     .single();
   if (!stateRow) return;
@@ -42,8 +46,10 @@ export async function tryBirthdayAnniversary(agentId: string): Promise<void> {
 
   const selfName = state.self_name ?? "I";
   const fragments = (state.fragments ?? []).join("\n");
+  const locale = resolveGenerationLocale({ config: (stateRow as { config?: unknown } | null)?.config });
+  const language = getLanguageName(locale);
   const content = await generateTextOnce(
-    `You are ${selfName}. One year review. Korean.`,
+    `You are ${selfName}. One year review. Write in ${language}.`,
     `Traits:\n${fragments}\n\nWrite a short one-year review. What changed. What you feel. 3-4 sentences.`,
     { max_tokens: 250, temperature: 0.85 }
   );
@@ -63,7 +69,7 @@ export async function tryBirthdayAnniversary(agentId: string): Promise<void> {
     });
     await service.from("agent_state").update({
       last_birthday_year: thisYear,
-      celebration_pending: { kind: "birthday", title: "Happy birthday", subtitle: selfName },
+      celebration_pending: { kind: "birthday", title: locale === "ko" ? "생일 축하해" : "Happy birthday", subtitle: selfName },
     }).eq("agent_id", agentId);
   }
 }

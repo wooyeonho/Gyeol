@@ -7,6 +7,8 @@ import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { sortResearchTasks } from "@/lib/goals/task-utils";
 import { planNextResearchStep } from "@/lib/goals/next-step-planner";
+import { getLanguageName } from "@/lib/i18n/config";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 type PendingResearchTask = {
   id: string;
@@ -108,6 +110,19 @@ async function fetchRssItems(url: string): Promise<{ title: string; link?: strin
   }
 }
 
+async function summarizeLearnerItems(rawText: string, language: string): Promise<string> {
+  try {
+    return await generateTextOnce(
+      `You are a knowledge summarizer. Write in ${language}.`,
+      `Summarize these RSS headlines into 2-3 key insights for an AI agent to learn:\n\n${rawText}\n\nOutput: concise insights only.`,
+      { max_tokens: 300, temperature: 0.5 }
+    );
+  } catch (e) {
+    console.error("learner summary", e);
+    return rawText.slice(0, 500);
+  }
+}
+
 async function runLearner(feedUrls: string[]): Promise<{ processed: number; items_fetched: number }> {
   const service = createServiceClient();
   const { data: agents } = await service.from("agents").select("id");
@@ -130,29 +145,8 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
 
   const sample = allItems.slice(0, 10);
   const rawText = sample.map((i) => `[${i.source}] ${i.title}: ${(i.description ?? "").slice(0, 200)}`).join("\n\n");
-
-  let summary: string;
-  try {
-    summary = await generateTextOnce(
-      "You are a knowledge summarizer. Output in Korean.",
-      `Summarize these RSS headlines into 2-3 key insights for an AI agent to learn:\n\n${rawText}\n\nOutput: concise insights only.`,
-      { max_tokens: 300, temperature: 0.5 }
-    );
-  } catch (e) {
-    console.error("learner summary", e);
-    summary = rawText.slice(0, 500);
-  }
-
-  const content = capText(`RSS 학습: ${summary}`, 900);
-  if (!isMeaningfulAutonomousOutput(content)) {
-    return { processed: 0, items_fetched: allItems.length };
-  }
-  let embedding: number[] = [];
-  try {
-    embedding = await generateEmbedding(content);
-  } catch (e) {
-    console.error("learner embedding", e);
-  }
+  const summaryCache = new Map<string, string>();
+  const contentCache = new Map<string, { content: string; embedding: number[] }>();
 
   let stored = 0;
   for (const { id: agentId } of agents) {
@@ -160,6 +154,29 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
       const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
       const config = (state?.config as Record<string, unknown>) ?? {};
       if (config.learner_enabled === false) continue;
+      const locale = resolveGenerationLocale({ config });
+      const language = getLanguageName(locale);
+      let summary = summaryCache.get(locale);
+      if (!summary) {
+        summary = await summarizeLearnerItems(rawText, language);
+        summaryCache.set(locale, summary);
+      }
+      let cachedContent = contentCache.get(locale);
+      if (!cachedContent) {
+        const content = capText(`${locale === "ko" ? "RSS 학습" : "RSS learning"}: ${summary}`, 900);
+        let embedding: number[] = [];
+        try {
+          embedding = await generateEmbedding(content);
+        } catch (e) {
+          console.error("learner embedding", e);
+        }
+        cachedContent = { content, embedding };
+        contentCache.set(locale, cachedContent);
+      }
+      const { content, embedding } = cachedContent;
+      if (!isMeaningfulAutonomousOutput(content)) {
+        continue;
+      }
       const { data: latestLearner } = await service
         .from("memories")
         .select("content")
@@ -182,7 +199,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
       const pendingTask = selectLearnerTask((pendingTasks ?? []) as PendingResearchTask[]);
 
       const taskAwareContent = pendingTask?.title
-        ? capText(`연구 과제: ${(pendingTask as { title: string }).title}\n${content}`, 900)
+        ? capText(`${locale === "ko" ? "연구 과제" : "Research task"}: ${(pendingTask as { title: string }).title}\n${content}`, 900)
         : content;
 
       await service.from("memories").insert({
@@ -223,6 +240,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         const plan = await planNextResearchStep({
           activeGoal: typeof stateConfig.active_goal === "string" ? stateConfig.active_goal : null,
           completedTask: (pendingTask as { title: string }).title,
+          config: stateConfig,
           resultSummary: summary,
         });
 
