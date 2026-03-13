@@ -50,17 +50,13 @@ export default function PlansPage() {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
     if (success === "1") {
-      setNotice(
-        locale === "en"
-          ? "Payment completed. Your plan will appear automatically as soon as subscription sync finishes."
-          : "결제가 완료되었습니다. 구독 동기화가 끝나는 대로 플랜이 자동 반영됩니다."
-      );
+      setNotice(t("plans.successNotice"));
       window.history.replaceState({}, "", "/plans");
     } else if (canceled === "1") {
-      setNotice(locale === "en" ? "Payment was canceled." : "결제가 취소되었습니다.");
+      setNotice(t("plans.canceledNotice"));
       window.history.replaceState({}, "", "/plans");
     }
-  }, [locale, searchParams]);
+  }, [searchParams, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +91,7 @@ export default function PlansPage() {
         return;
       }
       if (checkoutRes.status !== 503) {
-        setNotice(locale === "en" ? "Unable to change your plan right now." : "플랜 변경에 실패했습니다.");
+        setNotice(t("plans.changeFailed"));
         return;
       }
 
@@ -107,14 +103,10 @@ export default function PlansPage() {
       const json = await mockRes.json().catch(() => null);
       if (!mockRes.ok) {
         if (mockRes.status === 403) {
-          setNotice(
-            locale === "en"
-              ? "Plan changes are available only in live billing environments. Please connect Stripe to open real checkout."
-              : "플랜 변경은 실결제 환경에서만 열립니다. 운영 환경에서는 Stripe 연동 후 실제 체크아웃만 허용됩니다."
-          );
+          setNotice(t("plans.liveBillingOnly"));
           return;
         }
-        setNotice(locale === "en" ? "Unable to change your plan right now." : "플랜 변경에 실패했습니다.");
+        setNotice(t("plans.changeFailed"));
         return;
       }
       setBilling((json as BillingData | null) ?? null);
@@ -131,10 +123,10 @@ export default function PlansPage() {
       if (res.ok && json?.url) {
         window.location.href = json.url;
       } else {
-        setNotice(locale === "en" ? "Unable to open billing management." : "결제 관리 페이지를 열 수 없습니다.");
+        setNotice(t("plans.openBillingFailed"));
       }
     } catch {
-      setNotice(locale === "en" ? "Unable to open billing management." : "결제 관리 페이지를 열 수 없습니다.");
+      setNotice(t("plans.openBillingFailed"));
     }
   }
 
@@ -145,18 +137,14 @@ export default function PlansPage() {
       const json = await res.json().catch(() => null);
       if (!res.ok) {
         if (res.status === 403) {
-          setNotice(
-            locale === "en"
-              ? "Mock downgrades are disabled in this environment."
-              : "이 환경에서는 mock 플랜 전환이 비활성화되어 있습니다."
-          );
+          setNotice(t("plans.mockDowngradeDisabled"));
           return;
         }
-        setNotice(locale === "en" ? "Unable to switch to the free plan." : "무료 플랜 전환에 실패했습니다.");
+        setNotice(t("plans.switchFreeFailed"));
         return;
       }
       setBilling((json as BillingData | null) ?? null);
-      setNotice(locale === "en" ? "Switched to the free plan." : "무료 플랜으로 전환되었습니다.");
+      setNotice(t("plans.switchedFree"));
     } finally {
       setSubmittingTier(null);
     }
@@ -186,10 +174,10 @@ export default function PlansPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/75">
-              {locale === "en" ? "Core conversation stays open" : "코어 대화는 항상 열어둡니다"}
+              {t("plans.chipCoreOpen")}
             </span>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/75">
-              {locale === "en" ? "Deeper value unlocks with plans" : "더 깊은 가치만 플랜에서 확장합니다"}
+              {t("plans.chipDeeperValue")}
             </span>
           </div>
         </header>
@@ -205,7 +193,7 @@ export default function PlansPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-                  {locale === "en" ? "current subscription" : "현재 구독 상태"}
+                  {t("plans.currentSubscription")}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight">
                   {currentPlanLabel}
@@ -213,7 +201,7 @@ export default function PlansPage() {
                 <p className="mt-2 text-sm text-white/60">{statusLabel}</p>
                 {renewalDate && (
                   <p className="mt-1 text-sm text-white/55">
-                    {locale === "en" ? "Renews on" : "다음 갱신 기준"}: {renewalDate}
+                    {t("plans.renewsOn")}: {renewalDate}
                   </p>
                 )}
               </div>
@@ -224,7 +212,7 @@ export default function PlansPage() {
                     onClick={() => void handleManageBilling()}
                     className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10"
                   >
-                    {locale === "en" ? "Manage billing" : "결제 관리"}
+                    {t("plans.manageBilling")}
                   </button>
                 )}
                 {billing.subscription.provider === "mock" && (
@@ -234,7 +222,7 @@ export default function PlansPage() {
                     disabled={submittingTier === "free"}
                     className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
                   >
-                    {locale === "en" ? "Switch to free" : "무료 플랜으로 전환"}
+                    {t("plans.switchToFree")}
                   </button>
                 )}
               </div>
@@ -305,7 +293,7 @@ export default function PlansPage() {
                       : "border border-white/20 bg-white/5 hover:bg-white/10"
                   }`}
                 >
-                  {submittingTier === plan.tier ? (locale === "en" ? "Processing..." : "처리 중...") : plan.cta}
+                  {submittingTier === plan.tier ? t("plans.processing") : plan.cta}
                 </button>
               )}
             </article>
