@@ -3,6 +3,7 @@ import { useAgentStore } from "@/store/agent-store";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { detectPrimaryUsageModeFromText } from "@/lib/identity/usage-profile";
+import { logWarn } from "@/lib/ops/logger";
 
 interface Message { role: "user" | "assistant"; content: string }
 type MessageMeta = {
@@ -72,7 +73,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                   return { messages: msgs };
                 });
               }
-            } catch {}
+            } catch (error) {
+              logWarn("Chat store skipped malformed SSE delta", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
           }
         }
       }

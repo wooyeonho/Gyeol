@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { assertRequiredEnv } from "@/lib/env/required";
+import { logWarn } from "@/lib/ops/logger";
 
 export async function createClient() {
   return createServerSupabase();
@@ -20,7 +21,14 @@ export async function createServerSupabase() {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            try { cookieStore.set(name, value, options); } catch {}
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              logWarn("Failed to persist Supabase server cookie", {
+                cookie: name,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
           });
         },
       },

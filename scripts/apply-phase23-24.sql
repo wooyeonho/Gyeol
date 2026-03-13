@@ -28,6 +28,6 @@ create index if not exists share_cards_agent_id_idx on share_cards(agent_id);
 
 alter table share_cards enable row level security;
 
--- phase24_retention_ops.sql
+-- phase33_retention_ops.sql
 create index if not exists product_events_created_at_idx
   on product_events(created_at desc);

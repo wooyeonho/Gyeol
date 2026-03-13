@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logWarn } from "@/lib/ops/logger";
 
 /** Vitality stages per vitality-manager.md: melancholy, recall, near-death, will */
 type VitalityStage = "alive" | "melancholy" | "recall" | "near_death" | "will" | "echo";
@@ -51,7 +52,12 @@ export async function processVitality(agentId: string) {
     try {
       const { generateArtifact } = await import("@/lib/artifacts/creator");
       await generateArtifact(agentId, "will");
-    } catch {}
+    } catch (error) {
+      logWarn("Vitality will-stage artifact generation failed", {
+        agentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   // Near-death log

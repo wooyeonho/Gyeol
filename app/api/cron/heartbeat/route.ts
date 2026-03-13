@@ -18,6 +18,7 @@ import { computeIntervalHours, normalizeIntervalRule } from "@/lib/autonomy/inte
 import { planHeartbeatAutonomy } from "@/lib/autonomy/heartbeat-planner";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { logWarn } from "@/lib/ops/logger";
 
 type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
@@ -29,6 +30,22 @@ function getAppBaseUrl(req: NextRequest) {
   if (appUrl) return appUrl.replace(/\/$/, "");
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return req.nextUrl.origin;
+}
+
+async function runOptionalStep(
+  step: string,
+  agentId: string,
+  job: () => Promise<void>
+) {
+  try {
+    await job();
+  } catch (error) {
+    logWarn("Heartbeat optional step failed", {
+      agentId,
+      scope: step,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function triggerAutonomousAction(baseUrl: string, action: "learner" | "crawl", cronSecret: string) {
@@ -89,7 +106,12 @@ export async function GET(req: NextRequest) {
         try {
           const { data } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(5);
           memories = data || [];
-        } catch {}
+        } catch (error) {
+          logWarn("Heartbeat failed to load recent memories", {
+            agentId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
         const { data: recentLogRows } = await db
           .from("autonomous_logs")
           .select("summary")
@@ -249,15 +271,50 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        try { const { processVitality } = await import("@/lib/evolution/vitality"); await processVitality(agentId); } catch {}
-        try { const { processScar } = await import("@/lib/evolution/scars"); await processScar(agentId); } catch {}
-        try { const { checkSelfNaming } = await import("@/lib/personality/naming"); await checkSelfNaming(agentId); } catch {}
-        if (Math.random() < 0.1) { try { const { analyzeMirrorEffect } = await import("@/lib/personality/mirror"); await analyzeMirrorEffect(agentId); } catch {} }
-        if (Math.random() < 0.05) { try { const { checkContradictions } = await import("@/lib/personality/challenger"); await checkContradictions(agentId); } catch {} }
-        try { const { analyzeUserPatterns } = await import("@/lib/personality/observer"); await analyzeUserPatterns(agentId); } catch {}
-        try { const { detectSilence } = await import("@/lib/personality/silence"); await detectSilence(agentId); } catch {}
-        if ((state.subjective_time || 0) % 20 === 0) { try { const { updateSelfModel } = await import("@/lib/personality/self-theory"); await updateSelfModel(agentId); } catch {} }
-        if ((state.subjective_time || 0) % 10 === 0) { try { const { runMemoryPhysics } = await import("@/lib/memory/physics"); await runMemoryPhysics(agentId); } catch {} }
+        await runOptionalStep("processVitality", agentId, async () => {
+          const { processVitality } = await import("@/lib/evolution/vitality");
+          await processVitality(agentId);
+        });
+        await runOptionalStep("processScar", agentId, async () => {
+          const { processScar } = await import("@/lib/evolution/scars");
+          await processScar(agentId);
+        });
+        await runOptionalStep("checkSelfNaming", agentId, async () => {
+          const { checkSelfNaming } = await import("@/lib/personality/naming");
+          await checkSelfNaming(agentId);
+        });
+        if (Math.random() < 0.1) {
+          await runOptionalStep("analyzeMirrorEffect", agentId, async () => {
+            const { analyzeMirrorEffect } = await import("@/lib/personality/mirror");
+            await analyzeMirrorEffect(agentId);
+          });
+        }
+        if (Math.random() < 0.05) {
+          await runOptionalStep("checkContradictions", agentId, async () => {
+            const { checkContradictions } = await import("@/lib/personality/challenger");
+            await checkContradictions(agentId);
+          });
+        }
+        await runOptionalStep("analyzeUserPatterns", agentId, async () => {
+          const { analyzeUserPatterns } = await import("@/lib/personality/observer");
+          await analyzeUserPatterns(agentId);
+        });
+        await runOptionalStep("detectSilence", agentId, async () => {
+          const { detectSilence } = await import("@/lib/personality/silence");
+          await detectSilence(agentId);
+        });
+        if ((state.subjective_time || 0) % 20 === 0) {
+          await runOptionalStep("updateSelfModel", agentId, async () => {
+            const { updateSelfModel } = await import("@/lib/personality/self-theory");
+            await updateSelfModel(agentId);
+          });
+        }
+        if ((state.subjective_time || 0) % 10 === 0) {
+          await runOptionalStep("runMemoryPhysics", agentId, async () => {
+            const { runMemoryPhysics } = await import("@/lib/memory/physics");
+            await runMemoryPhysics(agentId);
+          });
+        }
         if (Math.random() < 0.25) {
           try {
             const userId = (agent as { user_id?: string }).user_id;
@@ -268,7 +325,12 @@ export async function GET(req: NextRequest) {
                 await generateArtifact(agentId);
               }
             }
-          } catch {}
+          } catch (error) {
+            logWarn("Heartbeat artifact generation gate failed", {
+              agentId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
 
         const proactiveChance = computeProactiveChance({

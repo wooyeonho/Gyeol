@@ -149,7 +149,10 @@ export async function crawlSite(
           if (new URL(link).hostname === startDomain && !visited.has(link)) {
             queue.push({ url: link, depth: item.depth + 1 });
           }
-        } catch {}
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`[Crawler] Skip invalid discovered link ${link}: ${msg}`);
+        }
       }
     }
   }

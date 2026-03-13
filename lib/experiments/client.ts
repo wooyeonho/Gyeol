@@ -11,6 +11,7 @@ import {
   type FeatureFlagKey,
   type FirstMessageOnboardingVariant,
 } from "@/lib/experiments/catalog";
+import { logWarn } from "@/lib/ops/logger";
 
 const ASSIGNMENT_PREFIX = "gyeol_experiment_assignment:";
 const ASSIGNMENT_TRACKED_PREFIX = "gyeol_experiment_tracked:";
@@ -29,14 +30,24 @@ function setStoredExperimentVariant(key: ExperimentKey, variant: string) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(`${ASSIGNMENT_PREFIX}${key}`, variant);
-  } catch {}
+  } catch (error) {
+    logWarn("Failed to persist experiment assignment", {
+      experimentKey: key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 function markTracked(key: ExperimentKey) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(`${ASSIGNMENT_TRACKED_PREFIX}${key}`, "1");
-  } catch {}
+  } catch (error) {
+    logWarn("Failed to mark experiment assignment as tracked", {
+      experimentKey: key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 function wasTracked(key: ExperimentKey) {

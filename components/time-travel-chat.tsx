@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "@/components/i18n-provider";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { logWarn } from "@/lib/ops/logger";
 
 type TimeTravelChatProps = {
   targetDate: string;
@@ -68,7 +69,11 @@ export default function TimeTravelChat({ targetDate, onClose }: TimeTravelChatPr
           const j = JSON.parse(data) as { choices?: { delta?: { content?: string } }[] };
           const c = j.choices?.[0]?.delta?.content;
           if (c) full += c;
-        } catch {}
+        } catch (error) {
+          logWarn("TimeTravelChat skipped malformed SSE chunk", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
       setMessages((m) => [...m, { role: "assistant", content: full || "..." }]);
     } catch {

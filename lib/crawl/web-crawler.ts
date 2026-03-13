@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { logWarn } from "@/lib/ops/logger";
 
 export interface CrawledPage {
   url: string;
@@ -136,7 +137,12 @@ export async function crawlSite(
           if (new URL(link).hostname === domain && !visited.has(link)) {
             queue.push({ url: link, depth: item.depth + 1 });
           }
-        } catch {}
+        } catch (error) {
+          logWarn("Crawler skipped invalid discovered link", {
+            link,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     }
   }

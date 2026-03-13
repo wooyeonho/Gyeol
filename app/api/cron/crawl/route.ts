@@ -15,6 +15,7 @@ import { planNextResearchStep } from "@/lib/goals/next-step-planner";
 import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { logWarn } from "@/lib/ops/logger";
 
 type PendingResearchTask = {
   id: string;
@@ -121,7 +122,12 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
         let embedding: number[] = [];
         try {
           embedding = await generateEmbedding(content);
-        } catch {}
+        } catch (error) {
+          logWarn("Crawl content embedding failed", {
+            agentId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
         cachedContent = { content, embedding };
         contentCache.set(locale, cachedContent);
       }
@@ -159,7 +165,13 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
           try {
             const crawled = await crawlSite(url, 4, 1);
             taskPages.push(...crawled);
-          } catch {}
+          } catch (error) {
+            logWarn("Crawl task seed failed", {
+              agentId,
+              url,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
         if (taskPages.length > 0) agentPages = taskPages;
       }
@@ -364,7 +376,12 @@ export async function POST(request: NextRequest) {
           try {
             const crawled = await crawlSite(url, maxPages, depth);
             pages.push(...crawled);
-          } catch {}
+          } catch (error) {
+            logWarn("Crawl POST URL failed", {
+              url,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
       }
     }

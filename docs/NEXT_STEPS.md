@@ -20,7 +20,7 @@ DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supab
 psql "postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres" -f scripts/apply-phase23-24.sql
 ```
 
-**적용 내용**: `provider_customer_id` 컬럼, `share_cards` 테이블
+**적용 내용**: `provider_customer_id` 컬럼, `share_cards` 테이블, `product_events` 최신성 인덱스
 
 ---
 
