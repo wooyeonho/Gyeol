@@ -81,7 +81,7 @@ function toCompareAgent(row: Record<string, unknown>): CompareAgent {
   };
 }
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const supabase = await createClient();
     const {
