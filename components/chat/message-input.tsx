@@ -30,7 +30,7 @@ export function MessageInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSubmit(e);
+      handleSubmitWithFeedback(e);
     }
   };
 

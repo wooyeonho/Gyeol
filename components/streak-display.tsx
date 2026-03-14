@@ -63,7 +63,7 @@ export function StreakDisplay({
 
   return (
     <motion.div
-      className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+      className="relative rounded-2xl border border-white/10 bg-white/[0.04] p-4"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -116,11 +116,14 @@ export function StreakDisplay({
 
       {/* Weekly activity heatmap */}
       <div className="mt-3 flex gap-1">
-        {weeklyActivity.map((active, i) => {
-          const dayLabels = locale === "ko"
-            ? ["월", "화", "수", "목", "금", "토", "일"]
-            : ["M", "T", "W", "T", "F", "S", "S"];
-          const isToday = i === weeklyActivity.length - 1;
+          {weeklyActivity.map((active, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            const dayIndex = d.getDay(); // 0=Sun, 1=Mon, ...
+            const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
+            const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
+            const dayLabel = locale === "ko" ? koLabels[dayIndex] : enLabels[dayIndex];
+            const isToday = i === weeklyActivity.length - 1;
           return (
             <motion.div
               key={i}
@@ -129,7 +132,7 @@ export function StreakDisplay({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
             >
-              <span className="text-[9px] text-white/40">{dayLabels[i]}</span>
+              <span className="text-[9px] text-white/40">{dayLabel}</span>
               <div
                 className={`h-6 w-full rounded-md transition-all ${
                   active
