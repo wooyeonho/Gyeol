@@ -83,7 +83,9 @@
     "timelineEyebrow": "정체성 진화 타임라인",
     "defaultMilestoneBody": "이 지점에서 새로운 정체성 변화가 기록되었습니다.",
     "shareReady": "링크 복사됨",
-    "shareAction": "성장 카드 공유"
+    "shareAction": "성장 카드 공유",
+    "collectionEyebrow": "수집 완성도",
+    "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다"
   },
   "dashboard": {
     "title": "결 공개 대시보드",

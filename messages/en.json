@@ -83,7 +83,9 @@
     "timelineEyebrow": "Identity evolution timeline",
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
-    "shareAction": "Share growth card"
+    "shareAction": "Share growth card",
+    "collectionEyebrow": "Collection",
+    "collectionProgress": "{percent}% of all milestones collected"
   },
   "dashboard": {
     "title": "GYEOL Public Dashboard",
