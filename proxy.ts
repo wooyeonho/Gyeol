@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
     cookieLocale: request.cookies.get(LOCALE_COOKIE_NAME)?.value,
   });
 
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  const response = NextResponse.next({ request: { headers: request.headers } });
 
   // Add locale cookie if missing or mismatched
   if (!request.cookies.has(LOCALE_COOKIE_NAME) || request.cookies.get(LOCALE_COOKIE_NAME)?.value !== locale) {

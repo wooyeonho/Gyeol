@@ -10,16 +10,20 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   } catch (e) {
     console.error("[Embed] Gemini failed:", e);
   }
-  try {
-    const res = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/ai/run/@cf/baai/bge-small-en-v1.5`,
-      { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CF_API_TOKEN}` }, body: JSON.stringify({ text: [text] }) }
-    );
-    if (!res.ok) throw new Error(`CF embed ${res.status}`);
-    const data = await res.json();
-    return data.result?.data?.[0] || [];
-  } catch (e) {
-    console.error("[Embed] CF failed:", e);
+  const cfAccountId = process.env.CF_ACCOUNT_ID;
+  const cfApiToken = process.env.CF_API_TOKEN;
+  if (cfAccountId && cfApiToken) {
+    try {
+      const res = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/baai/bge-small-en-v1.5`,
+        { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfApiToken}` }, body: JSON.stringify({ text: [text] }) }
+      );
+      if (!res.ok) throw new Error(`CF embed ${res.status}`);
+      const data = await res.json();
+      return data.result?.data?.[0] || [];
+    } catch (e) {
+      console.error("[Embed] CF failed:", e);
+    }
   }
   return [];
 }
