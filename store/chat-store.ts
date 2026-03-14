@@ -43,10 +43,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
     }
 
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(50); // Haptic feedback for sending
-    }
-
     set((s) => ({
       messages: [...s.messages, { role: "user", content: message }],
       isStreaming: true,
@@ -61,19 +57,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const reader = res.body?.getReader();
       if (!reader) throw new Error("Missing response stream");
       const decoder = new TextDecoder();
-      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        let newlineIndex;
-
-        while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
-          const line = buffer.slice(0, newlineIndex).trim();
-          buffer = buffer.slice(newlineIndex + 1);
-
+        const text = decoder.decode(value, { stream: true });
+        for (const line of text.split("\n")) {
           if (line.startsWith("data: ") && line !== "data: [DONE]") {
             try {
               const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || "";
@@ -100,9 +89,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         return { messages: msgs };
       });
     } finally {
-      if (typeof navigator !== "undefined" && navigator.vibrate) {
-        navigator.vibrate([30, 50, 30]); // Haptic feedback for completion
-      }
       try {
         await useAgentStore.getState().fetchAgentState({ silent: true });
       } catch (e) {

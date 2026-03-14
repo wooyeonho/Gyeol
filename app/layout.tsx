@@ -39,7 +39,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className={`font-sans bg-black text-white min-h-screen antialiased`}>
+      <body className="bg-black text-white min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
           <DocumentLocaleSync />
           <AnalyticsProvider>{children}</AnalyticsProvider>
