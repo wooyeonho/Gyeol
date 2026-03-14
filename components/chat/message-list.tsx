@@ -3,7 +3,7 @@ import { StarterPrompts } from "./starter-prompts";
 
 const messageVariants = {
   hidden: { opacity: 0, y: 12, scale: 0.96 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
 
 export function MessageList({
