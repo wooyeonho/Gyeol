@@ -170,9 +170,18 @@ export default function ActivityPage() {
           </div>
           );
         })}
-        {items.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/55">
-            {t("activity.empty")}
+        {items.length === 0 && !loading && !error && (
+          <div className="flex flex-col items-center justify-center rounded-[2rem] border border-white/5 bg-white/[0.02] px-6 py-20 text-center shadow-inner">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.03] shadow-[0_0_30px_rgba(255,255,255,0.03)] text-white/20">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <h3 className="mb-2 text-lg font-medium text-white/80">{t("activity.emptyTitle") || "아직 기록된 흔적이 없습니다"}</h3>
+            <p className="text-sm text-white/40 max-w-[260px]">
+              {t("activity.empty") || "결과 첫 대화를 나누고, 세상과 교감하며 기억의 조각을 만들어보세요."}
+            </p>
           </div>
         )}
       </div>

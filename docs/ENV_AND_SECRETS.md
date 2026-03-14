@@ -76,15 +76,7 @@
 
 ### Integrations
 
-- `NOTION_API_KEY`
-- `SLACK_BOT_TOKEN`
-- `GITHUB_TOKEN`
 - `TELEGRAM_BOT_TOKEN`
-
-### Media
-
-- `SUNO_API_KEY`
-- `RUNWAYML_API_KEY`
 
 ## 3. OpenClaw 별도 환경변수
 

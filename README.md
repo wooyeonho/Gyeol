@@ -41,6 +41,14 @@
 ## 설정
 
 1. `.env.example`를 `.env.local`로 복사 후 API 키 입력
+   - **(필수) Vercel 배포 시 없으면 서비스가 동작하지 않는 최소 세트:**
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_ROLE_KEY`
+     - `GROQ_API_KEY` (채팅 핵심)
+     - `GEMINI_API_KEY` (메모리 임베딩)
+     - `CRON_SECRET` (OpenClaw 연동)
+     - `NEXT_PUBLIC_APP_URL`
 2. Supabase SQL Editor에서 마이그레이션 순서대로 실행 (`supabase/migrations/*.sql`)
   - 최소 권장: `phase16_security.sql` + `phase18_quality_hardening.sql` + `phase19_cron_lock.sql` + `phase20_ops_alerts.sql` + `phase21_product_events.sql` + `phase22_billing_scaffold.sql` + `phase24_share_cards.sql` + `phase31_v1_api_tenant_binding.sql` + `phase32_stripe_customer_id.sql` + `phase33_retention_ops.sql`
    - 한 번에 적용: `scripts/apply-phase23-24.sql` (phase23+24만)
