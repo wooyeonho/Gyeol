@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { HomeSummaryItem } from "@/components/world-class-hub";
+import { StreakDisplay } from "@/components/streak-display";
 
 type HomeRecap = {
   goal_loop?: {
@@ -18,6 +19,7 @@ type HomeRecap = {
   streak: {
     days: number;
     today_active: boolean;
+    weekly_activity?: boolean[];
   };
   today: {
     activities: number;
@@ -196,6 +198,17 @@ export function WorldClassHubAside({
             {recap?.streak.days ? "🔥 " : ""}{locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
           </span>
         </button>
+
+        {recap && (
+          <div className="mt-3">
+            <StreakDisplay
+              days={recap.streak.days}
+              todayActive={recap.streak.today_active}
+              weeklyActivity={recap.streak.weekly_activity ?? []}
+              compact
+            />
+          </div>
+        )}
 
         {showGrowthPanel && (
           <>
