@@ -101,12 +101,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
     }
 
-    set((s) => ({
-      messages: [...s.messages, { role: "user", content: message }],
-      isStreaming: true,
-      pendingUsageMode: detectPrimaryUsageModeFromText(message),
-    }));
-    set((s) => ({ messages: [...s.messages, { role: "assistant", content: "" }] }));
+    set((s) => {
+      // Cap message history at 200 to prevent unbounded memory growth
+      const MAX_MESSAGES = 200;
+      const trimmed = s.messages.length >= MAX_MESSAGES
+        ? s.messages.slice(-MAX_MESSAGES + 2)
+        : s.messages;
+      return {
+        messages: [...trimmed, { role: "user" as const, content: message }],
+        isStreaming: true,
+        pendingUsageMode: detectPrimaryUsageModeFromText(message),
+      };
+    });
+    set((s) => ({ messages: [...s.messages, { role: "assistant" as const, content: "" }] }));
 
     await handleStreamResponse(message, set as any, get);
   },
