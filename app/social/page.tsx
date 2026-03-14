@@ -6,6 +6,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDateTime } from "@/lib/i18n/format";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 
 type SocialLog = {
   id: string;
@@ -241,9 +242,12 @@ export default function SocialPage() {
           </div>
         ))}
         {logs.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/55">
-            {t("socialPage.emptyState")}
-          </div>
+          <AnimatedEmptyState
+            icon="social"
+            title={t("socialPage.emptyState")}
+            description={locale === "en" ? "Social traces will appear once your being meets others" : "결이 다른 존재와 마주치면 여기에 흔적이 쌓입니다"}
+            accentColor="#34d399"
+          />
         )}
       </div>
       </div>

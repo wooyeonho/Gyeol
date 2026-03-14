@@ -1,4 +1,10 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
+
+const messageVariants = {
+  hidden: { opacity: 0, y: 12, scale: 0.96 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" } },
+};
 
 export function MessageList({
   messages,
@@ -58,26 +64,45 @@ export function MessageList({
           t={t}
         />
       )}
+      <AnimatePresence initial={false}>
       {messages.map((m, i) => (
-        <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+        <motion.div
+          key={i}
+          className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          variants={messageVariants}
+          initial="hidden"
+          animate="visible"
+          layout
+        >
           {m.role === "user" ? (
-            <div className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%] break-words">
+            <motion.div
+              className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%] break-words"
+              whileTap={{ scale: 0.98 }}
+            >
               {m.content}
-            </div>
+            </motion.div>
           ) : (
-            <div
+            <motion.div
               className="max-w-[80%] rounded-2xl border bg-black/35 px-4 py-2"
               style={{
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
               }}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35 }}
             >
               <p className="whitespace-pre-wrap leading-relaxed break-words">
                 {m.content}
                 {isStreaming && i === messages.length - 1 && (
-                  <span className="animate-pulse ml-1" style={{ color: appearance.palette.primary }}>
+                  <motion.span
+                    className="ml-1 inline-block"
+                    style={{ color: appearance.palette.primary }}
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                  >
                     |
-                  </span>
+                  </motion.span>
                 )}
               </p>
               {!isStreaming && i === messages.length - 1 && !m.error && (
@@ -120,10 +145,11 @@ export function MessageList({
                   </button>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       ))}
+      </AnimatePresence>
       <div ref={bottomRef} />
     </div>
   );

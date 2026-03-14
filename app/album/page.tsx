@@ -10,6 +10,7 @@ import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { ManifestationTimeline } from "@/components/manifestation-timeline";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -95,9 +96,12 @@ export default function AlbumPage() {
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
           </div>
         ) : milestones.length === 0 ? (
-          <div className="rounded-xl bg-white/5 p-6 text-center text-white/50 text-sm">
-            {t("album.empty")}
-          </div>
+          <AnimatedEmptyState
+            icon="album"
+            title={t("album.empty")}
+            description={locale === "en" ? "Start chatting to create your first milestone" : "대화를 시작하면 첫 마일스톤이 생성됩니다"}
+            accentColor="#a78bfa"
+          />
         ) : (
           <>
           <div className="mb-6">

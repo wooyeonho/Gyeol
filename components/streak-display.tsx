@@ -1,0 +1,167 @@
+"use client";
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+type StreakDisplayProps = {
+  days: number;
+  todayActive: boolean;
+  weeklyActivity?: boolean[];
+  locale?: "ko" | "en";
+  compact?: boolean;
+};
+
+export function StreakDisplay({
+  days,
+  todayActive,
+  weeklyActivity = [false, false, false, false, false, false, false],
+  locale = "ko",
+  compact = false,
+}: StreakDisplayProps) {
+  // Derive celebration state purely from props — no effects needed
+  const isMilestone = days > 0 && days % 7 === 0;
+  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+  const showCelebration = isMilestone && !celebrationDismissed;
+
+  const streakColor = days >= 30
+    ? "#f59e0b" // amber for 30+
+    : days >= 7
+      ? "#fb923c" // orange for 7+
+      : days >= 3
+        ? "#fbbf24" // yellow for 3+
+        : "#ffffff40"; // dim for 0-2
+
+  const streakLabel = days === 0
+    ? (locale === "ko" ? "오늘 첫 대화를 시작해보세요" : "Start your first conversation today")
+    : locale === "ko"
+      ? `${days}일 연속`
+      : `${days} day streak`;
+
+  if (compact) {
+    return (
+      <motion.div
+        className="flex items-center gap-1.5"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {days > 0 && (
+          <motion.span
+            className="text-sm"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 3 }}
+          >
+            🔥
+          </motion.span>
+        )}
+        <span className="text-xs font-medium" style={{ color: streakColor }}>
+          {days}
+        </span>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.5 }}
+            transition={{ duration: 0.5 }}
+            onAnimationComplete={() => {
+              setTimeout(() => setCelebrationDismissed(true), 2500);
+            }}
+          >
+            <span className="text-4xl">🎉</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+            {locale === "ko" ? "연속 대화" : "Streak"}
+          </p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <motion.span
+              className="text-2xl font-semibold"
+              style={{ color: streakColor }}
+              key={days}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {days}
+            </motion.span>
+            <span className="text-xs text-white/50">{streakLabel}</span>
+          </div>
+        </div>
+        {days > 0 && (
+          <motion.div
+            className="text-2xl"
+            animate={{ rotate: [0, -10, 10, -5, 5, 0] }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            🔥
+          </motion.div>
+        )}
+      </div>
+
+      {/* Weekly activity heatmap */}
+      <div className="mt-3 flex gap-1">
+        {weeklyActivity.map((active, i) => {
+          const dayLabels = locale === "ko"
+            ? ["월", "화", "수", "목", "금", "토", "일"]
+            : ["M", "T", "W", "T", "F", "S", "S"];
+          const isToday = i === weeklyActivity.length - 1;
+          return (
+            <motion.div
+              key={i}
+              className="flex flex-1 flex-col items-center gap-1"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <span className="text-[9px] text-white/40">{dayLabels[i]}</span>
+              <div
+                className={`h-6 w-full rounded-md transition-all ${
+                  active
+                    ? "shadow-[0_0_8px_rgba(251,191,36,0.3)]"
+                    : ""
+                } ${isToday && !active ? "border border-dashed border-white/20" : ""}`}
+                style={{
+                  background: active
+                    ? `linear-gradient(135deg, ${streakColor}, ${streakColor}88)`
+                    : "rgba(255,255,255,0.05)",
+                }}
+              />
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Streak break warning */}
+      {days > 0 && !todayActive && (
+        <motion.div
+          className="mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ delay: 0.5 }}
+        >
+          <p className="text-xs text-amber-200/80">
+            {locale === "ko"
+              ? `⚠️ 오늘 대화하지 않으면 ${days}일 연속 기록이 끊어집니다!`
+              : `⚠️ Talk today to keep your ${days}-day streak alive!`}
+          </p>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}

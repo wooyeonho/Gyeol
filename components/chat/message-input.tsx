@@ -1,4 +1,6 @@
 import React, { useRef, useEffect } from "react";
+import { motion } from "framer-motion";
+import { haptic, playSound } from "@/lib/micro-interactions";
 
 export function MessageInput({
   input,
@@ -32,8 +34,14 @@ export function MessageInput({
     }
   };
 
+  const handleSubmitWithFeedback = (e: React.FormEvent | React.KeyboardEvent) => {
+    haptic("send");
+    playSound("send");
+    onSubmit(e);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="flex gap-2 w-full max-w-4xl mx-auto">
+    <form onSubmit={handleSubmitWithFeedback} className="flex gap-2 w-full max-w-4xl mx-auto">
       <label htmlFor="chat-input" className="sr-only">
         채팅 입력
       </label>
@@ -52,14 +60,16 @@ export function MessageInput({
           border: `1px solid transparent`,
         }}
       />
-      <button
+      <motion.button
         type="submit"
         disabled={isStreaming || !input.trim()}
-        className="px-6 py-3 rounded-full text-white font-medium disabled:opacity-50 transition-colors hover:brightness-110 active:scale-95"
+        className="px-6 py-3 rounded-full text-white font-medium disabled:opacity-50 transition-colors hover:brightness-110"
         style={{ background: `${appearance.palette.primary}28`, border: `1px solid ${appearance.palette.primary}40` }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.92 }}
       >
         {t("chat.send")}
-      </button>
+      </motion.button>
     </form>
   );
 }

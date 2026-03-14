@@ -44,6 +44,7 @@ type HomeRecap = {
   streak: {
     days: number;
     today_active: boolean;
+    weekly_activity?: boolean[];
   };
   today: {
     activities: number;
