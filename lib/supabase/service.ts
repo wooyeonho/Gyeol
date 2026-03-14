@@ -1,13 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
-import { assertRequiredEnv } from "@/lib/env/required";
+import { hasRequiredEnv } from "@/lib/env/required";
 
 export function createServiceClient() {
-  assertRequiredEnv(
-    ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
-    "Supabase service client"
-  );
+  if (!hasRequiredEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"])) {
+    console.warn("[Supabase] Missing service role env. Returning null.");
+    return null;
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Missing Supabase service role env");
+  if (!url || !key) return null;
   return createClient(url, key);
 }
