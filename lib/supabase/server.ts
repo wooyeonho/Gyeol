@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { hasRequiredEnv } from "@/lib/env/required";
+import { assertRequiredEnv } from "@/lib/env/required";
 import { logWarn } from "@/lib/ops/logger";
 
 export async function createClient() {
@@ -8,10 +8,10 @@ export async function createClient() {
 }
 
 export async function createServerSupabase() {
-  if (!hasRequiredEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"])) {
-    logWarn("Supabase server env missing – returning null");
-    return null;
-  }
+  assertRequiredEnv(
+    ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+    "Supabase server client"
+  );
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,10 +37,10 @@ export async function createServerSupabase() {
 }
 
 export async function createServiceSupabase() {
-  if (!hasRequiredEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"])) {
-    logWarn("Supabase service env missing – returning null");
-    return null;
-  }
+  assertRequiredEnv(
+    ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+    "Supabase service client"
+  );
   const { createClient } = await import("@supabase/supabase-js");
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
