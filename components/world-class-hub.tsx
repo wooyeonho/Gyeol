@@ -14,6 +14,8 @@ import { formatLocalizedDate, formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { WorldClassHubPresenceColumn } from "@/components/home/world-class-hub-presence-column";
 import { WorldClassHubAside } from "@/components/home/world-class-hub-aside";
+import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mission-editor";
+import { WorldClassHubSessionHero } from "@/components/home/world-class-hub-session-hero";
 
 type Mission = {
   id: string;
@@ -347,58 +349,20 @@ export function WorldClassHub() {
   };
 
   const missionElements = (
-    <div className="mt-3 rounded-xl border border-white/10 bg-black/35 p-3">
-      <div className="flex gap-2">
-        <label htmlFor="mission-input" className="sr-only">
-          {locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
-        </label>
-        <input
-          id="mission-input"
-          value={draftMission}
-          onChange={(event) => setDraftMission(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              addMission();
-            }
-          }}
-          placeholder={t("home.missionPlaceholder")}
-          className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
-        />
-        <button
-          type="button"
-          onClick={addMission}
-          className="rounded-lg bg-white/10 px-3 text-sm text-white/85 hover:bg-white/20"
-        >
-          {t("home.missionAdd")}
-        </button>
-      </div>
-      <ul className="mt-2 space-y-1.5">
-        {missions.length === 0 && (
-          <li className="text-xs text-white/45">
-            {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
-          </li>
-        )}
-        {missions.map((mission) => (
-          <li key={mission.id} className="flex items-center gap-2 text-sm">
-            <button
-              type="button"
-              onClick={() => toggleMission(mission.id)}
-              className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
-              aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
-            />
-            <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
-            <button
-              type="button"
-              onClick={() => removeMission(mission.id)}
-              className="text-xs text-white/40 hover:text-white/70"
-            >
-              {t("home.missionDelete")}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <WorldClassHubMissionEditor
+      addLabel={t("home.missionAdd")}
+      draftMission={draftMission}
+      emptyState={isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
+      inputAriaLabel={locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
+      missions={missions}
+      onAdd={addMission}
+      onChangeDraft={setDraftMission}
+      onRemove={removeMission}
+      onToggle={toggleMission}
+      placeholder={t("home.missionPlaceholder")}
+      removeLabel={t("home.missionDelete")}
+      toggleAriaLabel={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
+    />
   );
 
   if (isFirstSession) {
@@ -474,88 +438,56 @@ export function WorldClassHub() {
     <section className="fixed top-14 left-1/2 -translate-x-1/2 z-20 w-[min(920px,calc(100%-1.5rem))] rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl shadow-[0_0_80px_rgba(80,128,255,0.18)]">
       <div className="absolute inset-0 pointer-events-none rounded-2xl aurora-flow opacity-55" />
       <div className="relative space-y-4">
-        <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-                {isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
-              </p>
-              <h2 className="mt-2 text-lg font-semibold">
-                {isFirstSession
-                  ? firstSessionConfig.heading
-                  : locale === "en"
-                    ? `It is time to begin today's conversation with ${selfName}.`
-                    : `${selfName}과 오늘의 대화를 시작할 시간이에요`}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-white/68">
-                {isFirstSession
-                  ? firstSessionConfig.description
-                  : locale === "en"
-                    ? `${selfName} responds on top of the memories already built. A quick note about your condition, concern, or goal is enough to start today's flow.`
-                    : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isStreaming) {
-                    void sendMessage(primaryPrompt, {
-                      experiment_key: EXPERIMENT.firstMessageOnboarding,
-                      experiment_variant: onboardingVariant,
-                      source: "cta",
-                    });
-                  }
-                }}
-                disabled={isStreaming}
-                className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
-              >
-                {isFirstSession ? firstSessionConfig.cta : t("home.continueChat")}
-              </button>
-              <Link
-                href={isFirstSession ? "/features" : "/activity"}
-                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-              >
-                {isFirstSession ? t("home.viewFlow") : t("home.recentTraces")}
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-2 md:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">1. {t("home.firstAction")}</p>
-              <p className="mt-1 text-sm text-white/85">
-                {sessionMessages > 0
-                  ? locale === "en"
-                    ? "The conversation has started. Change now begins to accumulate."
-                    : "대화가 시작되었습니다. 이제 변화가 누적됩니다."
-                  : locale === "en"
-                    ? "Send the first message with one suggested prompt."
-                    : "추천 질문 하나로 첫 메시지를 보내보세요."}
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">2. {t("home.todaysFocus")}</p>
-              <p className="mt-1 text-sm text-white/85">
-                {missions.length > 0
-                  ? locale === "en"
-                    ? "A mission is ready. Keep today's flow moving."
-                    : "미션이 준비되었습니다. 오늘의 흐름을 이어가세요."
-                  : locale === "en"
-                    ? "Even one mission makes the day feel much clearer."
-                    : "미션 1개만 적어도 하루가 훨씬 선명해집니다."}
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">3. {t("home.nextCheck")}</p>
-              <p className="mt-1 text-sm text-white/85">
-                {locale === "en"
-                  ? "Revisit traces, first shifts, and growth milestones in activity and album."
-                  : "활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다."}
-              </p>
-            </div>
-          </div>
-        </div>
+        <WorldClassHubSessionHero
+          ctaLabel={isFirstSession ? firstSessionConfig.cta : t("home.continueChat")}
+          description={
+            isFirstSession
+              ? firstSessionConfig.description
+              : locale === "en"
+                ? `${selfName} responds on top of the memories already built. A quick note about your condition, concern, or goal is enough to start today's flow.`
+                : `${selfName}은 이미 쌓인 기억 위에서 반응합니다. 지금 컨디션, 고민, 목표 중 하나만 꺼내도 충분히 오늘의 흐름이 시작됩니다.`
+          }
+          heading={
+            isFirstSession
+              ? firstSessionConfig.heading
+              : locale === "en"
+                ? `It is time to begin today's conversation with ${selfName}.`
+                : `${selfName}과 오늘의 대화를 시작할 시간이에요`
+          }
+          isStreaming={isStreaming}
+          onPrimaryAction={() => {
+            if (!isStreaming) {
+              void sendMessage(primaryPrompt, {
+                experiment_key: EXPERIMENT.firstMessageOnboarding,
+                experiment_variant: onboardingVariant,
+                source: "cta",
+              });
+            }
+          }}
+          secondaryHref={isFirstSession ? "/features" : "/activity"}
+          secondaryLabel={isFirstSession ? t("home.viewFlow") : t("home.recentTraces")}
+          stepBodies={[
+            sessionMessages > 0
+              ? locale === "en"
+                ? "The conversation has started. Change now begins to accumulate."
+                : "대화가 시작되었습니다. 이제 변화가 누적됩니다."
+              : locale === "en"
+                ? "Send the first message with one suggested prompt."
+                : "추천 질문 하나로 첫 메시지를 보내보세요.",
+            missions.length > 0
+              ? locale === "en"
+                ? "A mission is ready. Keep today's flow moving."
+                : "미션이 준비되었습니다. 오늘의 흐름을 이어가세요."
+              : locale === "en"
+                ? "Even one mission makes the day feel much clearer."
+                : "미션 1개만 적어도 하루가 훨씬 선명해집니다.",
+            locale === "en"
+              ? "Revisit traces, first shifts, and growth milestones in activity and album."
+              : "활동과 앨범에서 결이 남긴 흔적, 첫 변화, 성장 마일스톤을 다시 확인할 수 있습니다.",
+          ]}
+          stepLabels={[t("home.firstAction"), t("home.todaysFocus"), t("home.nextCheck")]}
+          title={isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
+        />
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <WorldClassHubPresenceColumn
