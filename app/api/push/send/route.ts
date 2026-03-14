@@ -43,8 +43,9 @@ export async function POST(req: Request) {
           }
         }, payload);
         sentCount++;
-      } catch (e: any) {
-        if (e.statusCode === 404 || e.statusCode === 410) {
+      } catch (e: unknown) {
+        const statusCode = e instanceof Error && "statusCode" in e ? (e as { statusCode: number }).statusCode : undefined;
+        if (statusCode === 404 || statusCode === 410) {
            await service.from("push_subscriptions").delete().eq("id", sub.id);
         } else {
            console.error("Failed to send push", e);

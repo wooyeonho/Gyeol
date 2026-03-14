@@ -4,7 +4,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function ManifestationTimeline() {
-  const { locale, t } = useTranslations();
+  const { locale } = useTranslations();
   const agentState = useAgentStore((state) => state.agentState);
 
   if (!agentState) return null;
@@ -12,10 +12,10 @@ export function ManifestationTimeline() {
   const appearance = resolveIdentityAppearance(
     {
       selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
-      visual: (agentState?.visual as any) ?? null,
-      genome: (agentState?.genome as any) ?? null,
-      selfModel: (agentState?.self_model as any) ?? null,
-      config: agentState?.config as any,
+      visual: (agentState?.visual as Record<string, unknown>) ?? null,
+      genome: (agentState?.genome as Record<string, unknown>) ?? null,
+      selfModel: (agentState?.self_model as Record<string, unknown>) ?? null,
+      config: agentState?.config as Record<string, unknown>,
       genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
       vitality: typeof agentState?.vitality === "number" ? agentState.vitality : 1,
       mood: typeof agentState?.mood === "string" ? agentState.mood : null,

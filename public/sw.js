@@ -13,7 +13,7 @@ self.addEventListener("push", (event) => {
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
+  } catch (_err) {
     const text = event.data.text();
     event.waitUntil(
       self.registration.showNotification("Gyeol", {
