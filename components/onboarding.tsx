@@ -34,7 +34,7 @@ interface OnboardingProps {
 }
 
 export function Onboarding({ onComplete }: OnboardingProps) {
-  const t = useTranslations();
+  const { t } = useTranslations();
   const [step, setStep] = useState(0);
   const [selectedMode, setSelectedMode] = useState<PersonalityMode>("playful");
 
