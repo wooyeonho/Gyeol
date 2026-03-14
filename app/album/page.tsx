@@ -9,6 +9,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { ManifestationTimeline } from "@/components/manifestation-timeline";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -99,6 +100,9 @@ export default function AlbumPage() {
           </div>
         ) : (
           <>
+          <div className="mb-6">
+            <ManifestationTimeline />
+          </div>
           <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
               {t("album.timelineEyebrow")}

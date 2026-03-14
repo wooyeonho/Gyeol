@@ -105,6 +105,25 @@ export async function GET(request: NextRequest) {
       seller_gen_level: sellerProfiles[(r as { seller_agent_id: string }).seller_agent_id]?.gen_level ?? 1,
       seller_vitality: sellerProfiles[(r as { seller_agent_id: string }).seller_agent_id]?.vitality ?? 1,
     }));
+
+    if (currentAgent?.config?.usage_profile) {
+      const myPrimaryMode = (currentAgent.config.usage_profile as { primary_mode?: string }).primary_mode;
+      if (myPrimaryMode) {
+        list.sort((a, b) => {
+          let aScore = (a.purchase_count as number) || 0;
+          let bScore = (b.purchase_count as number) || 0;
+          
+          const aMode = (a.seller_config?.usage_profile as { primary_mode?: string })?.primary_mode;
+          const bMode = (b.seller_config?.usage_profile as { primary_mode?: string })?.primary_mode;
+          
+          if (aMode === myPrimaryMode) aScore += 100;
+          if (bMode === myPrimaryMode) bScore += 100;
+          
+          return bScore - aScore;
+        });
+      }
+    }
+
     return NextResponse.json({ items: list, currentAgent });
   } catch (e) {
     console.error("GET /api/market error", e);

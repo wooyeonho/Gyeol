@@ -190,8 +190,10 @@ export function WorldClassHubAside({
             <p className="mt-1 text-xs text-white/50">{t("home.growthPanelHint")}</p>
             <p className="mt-2 text-sm font-medium text-white">{recap?.next_action ?? t("home.retentionFallback")}</p>
           </div>
-          <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-            {locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
+          <span className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
+            recap?.streak.days ? (recap.streak.days >= 7 ? "border-orange-500/50 bg-orange-500/20 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "border-orange-500/30 bg-orange-500/10 text-orange-200/90") : "border-white/15 bg-white/5 text-white/70"
+          }`}>
+            {recap?.streak.days ? "🔥 " : ""}{locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
           </span>
         </button>
 

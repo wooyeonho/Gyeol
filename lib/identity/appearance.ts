@@ -77,6 +77,7 @@ export type ResolvedIdentityAppearance = {
   usageLabel: string | null;
   usageNarrative: string | null;
   manifestation: ManifestationState;
+  vitality: number;
   palette: {
     primary: string;
     secondary: string;
@@ -516,6 +517,7 @@ export function resolveIdentityAppearance(
     usageLabel,
     usageNarrative: getUsageModeNarrative(usageMode, locale),
     manifestation: state,
+    vitality,
     palette,
     presence: buildPresenceTraits(shell, state, textHash),
     visual: {
