@@ -408,7 +408,7 @@ export function WorldClassHub() {
             }
           }}
           placeholder={t("home.missionPlaceholder")}
-          className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
+          className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/50 focus:bg-white/10"
         />
         <button
           type="button"
@@ -420,7 +420,7 @@ export function WorldClassHub() {
       </div>
       <ul className="mt-2 space-y-1.5">
         {missions.length === 0 && (
-          <li className="text-xs text-white/45">
+          <li className="text-xs text-white/60">
             {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
           </li>
         )}
@@ -432,11 +432,11 @@ export function WorldClassHub() {
               className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
               aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
             />
-            <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
+            <span className={`flex-1 ${mission.done ? "line-through text-white/60" : "text-white/85"}`}>{mission.title}</span>
             <button
               type="button"
               onClick={() => removeMission(mission.id)}
-              className="text-xs text-white/40 hover:text-white/70"
+              className="text-xs text-white/55 hover:text-white/70"
             >
               {t("home.missionDelete")}
             </button>
@@ -568,7 +568,7 @@ export function WorldClassHub() {
 
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">1. {t("home.firstAction")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">1. {t("home.firstAction")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {sessionMessages > 0
                   ? locale === "en"
@@ -580,7 +580,7 @@ export function WorldClassHub() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">2. {t("home.todaysFocus")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">2. {t("home.todaysFocus")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {missions.length > 0
                   ? locale === "en"
@@ -592,7 +592,7 @@ export function WorldClassHub() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">3. {t("home.nextCheck")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">3. {t("home.nextCheck")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {locale === "en"
                   ? "Revisit traces, first shifts, and growth milestones in activity and album."

@@ -5,7 +5,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { detectPrimaryUsageModeFromText } from "@/lib/identity/usage-profile";
 import { logWarn } from "@/lib/ops/logger";
 
-interface Message { role: "user" | "assistant"; content: string }
+interface Message { role: "user" | "assistant"; content: string; error?: boolean }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -16,6 +16,60 @@ interface ChatStore {
   isStreaming: boolean;
   pendingUsageMode: string | null;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
+  retryLastMessage: () => Promise<void>;
+}
+
+async function handleStreamResponse(
+  message: string,
+  set: (partial: ChatStore | Partial<ChatStore> | ((state: ChatStore) => ChatStore | Partial<ChatStore>), replace?: boolean) => void,
+  get: () => ChatStore
+) {
+  try {
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+    if (!res.ok) throw new Error(`${res.status}`);
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("Missing response stream");
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value, { stream: true });
+      for (const line of text.split("\n")) {
+        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+          try {
+            const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || "";
+            if (content) {
+              set((s) => {
+                const msgs = [...s.messages];
+                msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + content, error: false };
+                return { messages: msgs };
+              });
+            }
+          } catch (error) {
+            logWarn("Chat store skipped malformed SSE delta", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[Chat]", e);
+    set((s) => {
+      const msgs = [...s.messages];
+      msgs[msgs.length - 1] = { role: "assistant", content: "결과 연결이 끊어졌어요.", error: true };
+      return { messages: msgs };
+    });
+  } finally {
+    try {
+      await useAgentStore.getState().fetchAgentState({ silent: true });
+    } catch (e) {
+      console.error("[Chat] agent refresh failed", e);
+    }
+    set({ isStreaming: false, pendingUsageMode: null });
+  }
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -50,51 +104,21 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
     set((s) => ({ messages: [...s.messages, { role: "assistant", content: "" }] }));
 
-    try {
-      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
-      if (!res.ok) throw new Error(`${res.status}`);
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("Missing response stream");
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const text = decoder.decode(value, { stream: true });
-        for (const line of text.split("\n")) {
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
-            try {
-              const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || "";
-              if (content) {
-                set((s) => {
-                  const msgs = [...s.messages];
-                  msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + content };
-                  return { messages: msgs };
-                });
-              }
-            } catch (error) {
-              logWarn("Chat store skipped malformed SSE delta", {
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error("[Chat]", e);
-      set((s) => {
-        const msgs = [...s.messages];
-        msgs[msgs.length - 1] = { role: "assistant", content: "지금은 잠시 쉬고 있어요..." };
-        return { messages: msgs };
-      });
-    } finally {
-      try {
-        await useAgentStore.getState().fetchAgentState({ silent: true });
-      } catch (e) {
-        console.error("[Chat] agent refresh failed", e);
-      }
-      set({ isStreaming: false, pendingUsageMode: null });
-    }
+    await handleStreamResponse(message, set as any, get);
   },
+  retryLastMessage: async () => {
+    const s = get();
+    if (s.isStreaming || s.messages.length < 2) return;
+    const lastAsstMsg = s.messages[s.messages.length - 1];
+    const lastUserMsg = s.messages[s.messages.length - 2];
+    
+    if (lastAsstMsg.role === "assistant" && lastAsstMsg.error && lastUserMsg.role === "user") {
+      set((state) => {
+        const msgs = [...state.messages];
+        msgs[msgs.length - 1] = { role: "assistant", content: "" };
+        return { messages: msgs, isStreaming: true };
+      });
+      await handleStreamResponse(lastUserMsg.content, set as any, get);
+    }
+  }
 }));

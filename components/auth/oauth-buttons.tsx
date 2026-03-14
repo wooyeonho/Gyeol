@@ -87,7 +87,7 @@ export function OAuthButtons({
           <div className="w-full border-t border-white/10" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-[#0b0b0b] px-3 text-xs uppercase tracking-[0.2em] text-white/45">
+          <span className="bg-[#0b0b0b] px-3 text-xs uppercase tracking-[0.2em] text-white/60">
             {t("auth.oauthDivider")}
           </span>
         </div>

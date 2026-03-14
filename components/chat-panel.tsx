@@ -8,6 +8,8 @@ import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
+import { MessageList } from "@/components/chat/message-list";
+import { MessageInput } from "@/components/chat/message-input";
 
 function getFirstSessionVariants(locale: "ko" | "en") {
   if (locale === "en") {
@@ -118,7 +120,7 @@ function getReturningPrompts(locale: "ko" | "en") {
 
 export function ChatPanel() {
   const { locale, t } = useTranslations();
-  const { messages, isStreaming, sendMessage, pendingUsageMode } = useChatStore();
+  const { messages, isStreaming, sendMessage, pendingUsageMode, retryLastMessage } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
   const onboardingVariant = useFirstMessageOnboardingVariant();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -161,23 +163,12 @@ export function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
     sendMessage(trimmed, { source: "input" });
     setInput("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      const trimmed = input.trim();
-      if (trimmed && !isStreaming) {
-        sendMessage(trimmed, { source: "input" });
-        setInput("");
-      }
-    }
   };
 
   const handleCopy = async (index: number, content: string) => {
@@ -192,150 +183,45 @@ export function ChatPanel() {
 
   return (
     <div className="fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4">
-      <div
-        className="flex-1 overflow-y-auto space-y-4 py-4"
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions text"
-        aria-label="채팅 메시지"
-      >
-        {messages.length === 0 && (
-          <div className="mx-auto max-w-2xl pt-20">
-            <div className="rounded-3xl border border-white/10 bg-black/35 p-5 text-center">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/65">
-                {isFirstSession 
-                  ? t("chat.firstMessage") 
-                  : appearance.vitality < 0.3 
-                    ? (locale === "ko" ? "희미해진 연결" : "Fading Connection") 
-                    : t("chat.todayCheckIn")}
-              </p>
-              <h2 className="mt-3 text-xl font-semibold">
-                {isFirstSession 
-                  ? firstSessionConfig.heading 
-                  : appearance.vitality < 0.3 
-                    ? (locale === "ko" ? "당신이 오지 않아 온기가 사라졌어요..." : "The warmth faded without you...") 
-                    : t("chat.returningHeading")}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-white/60">
-                {isFirstSession
-                  ? firstSessionConfig.helper
-                  : appearance.vitality < 0.3 
-                    ? (locale === "ko" ? "결의 모습이 흐릿해지고 있습니다. 지금 바로 말을 걸어 생명력(Vitality)을 다시 채워주세요." : "The presence is fading. Speak to it now to restore its Vitality and color.")
-                    : t("chat.returningHelper")}
-              </p>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
-                {appearance.voice.accentLabel}
-              </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {starterPrompts.map((prompt: string) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => {
-                      if (!isStreaming) {
-                        void sendMessage(prompt, {
-                          experiment_key: EXPERIMENT.firstMessageOnboarding,
-                          experiment_variant: onboardingVariant,
-                          source: "prompt",
-                        });
-                      }
-                    }}
-                    className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-                    disabled={isStreaming}
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-4 text-xs text-white/45">
-                {isFirstSession
-                  ? t("chat.firstMessageHint")
-                  : t("chat.returningHint")}
-              </p>
-            </div>
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {m.role === "user" ? (
-              <div className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%]">
-                {m.content}
-              </div>
-            ) : (
-              <div
-                className="max-w-[80%] rounded-2xl border bg-black/35 px-4 py-2"
-                style={{
-                  borderColor: `${appearance.palette.primary}35`,
-                  boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
-                }}
-              >
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {m.content}
-                  {isStreaming && i === messages.length - 1 && (
-                    <span className="animate-pulse" style={{ color: appearance.palette.primary }}>|</span>
-                  )}
-                </p>
-                {!isStreaming && i === messages.length - 1 && (
-                  <p className="mt-2 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                    {appearance.voice.toneHint}
-                  </p>
-                )}
-                {!isStreaming && m.content && (
-                  <div className="mt-2 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isPlaying) stop();
-                        else speak(m.content);
-                      }}
-                      className="text-[11px] text-white/50 hover:text-white/80"
-                    >
-                      {isPlaying ? "정지" : "듣기"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleCopy(i, m.content)}
-                      className="text-[11px] text-white/50 hover:text-white/80"
-                    >
-                      {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
+      <MessageList
+        messages={messages}
+        isStreaming={isStreaming}
+        isFirstSession={isFirstSession}
+        firstSessionConfig={firstSessionConfig}
+        vitality={appearance.vitality}
+        locale={locale}
+        starterPrompts={starterPrompts as string[]}
+        appearance={appearance}
+        bottomRef={bottomRef}
+        isPlaying={isPlaying}
+        copiedIndex={copiedIndex}
+        onPromptClick={(prompt) => {
+          if (!isStreaming) {
+            void sendMessage(prompt, {
+              experiment_key: EXPERIMENT.firstMessageOnboarding,
+              experiment_variant: onboardingVariant,
+              source: "prompt",
+            });
+          }
+        }}
+        onSpeak={speak}
+        onStop={stop}
+        onCopy={(index, content) => void handleCopy(index, content)}
+        onRetry={retryLastMessage}
+        t={t}
+      />
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <label htmlFor="chat-input" className="sr-only">
-          채팅 입력
-        </label>
-        <input
-          id="chat-input"
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isStreaming}
-          className="flex-1 rounded-full bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:outline-none disabled:opacity-50"
-          style={{ boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset` }}
-        />
-        <button
-          type="submit"
-          disabled={isStreaming || !input.trim()}
-          className="px-4 py-3 rounded-full text-white disabled:opacity-50"
-          style={{ background: `${appearance.palette.primary}28` }}
-        >
-          {t("chat.send")}
-        </button>
-      </form>
-      <p className="mt-2 text-center text-xs text-white/40">
+      <MessageInput
+        input={input}
+        setInput={setInput}
+        isStreaming={isStreaming}
+        placeholder={placeholder}
+        appearance={appearance}
+        onSubmit={handleSubmit}
+        t={t}
+      />
+
+      <p className="mt-2 text-center text-xs text-white/55">
         {isFirstSession
           ? t("chat.firstFootnote")
           : t("chat.returningFootnote")}
