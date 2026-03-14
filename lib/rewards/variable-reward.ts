@@ -38,7 +38,7 @@ const TOTAL_WEIGHT = REWARD_TABLE.reduce((sum, e) => sum + e.weight, 0);
 export function rollReward(streakDays = 0): RewardResult {
   // Streak bonus: each streak day adds a small weight shift toward better tiers
   const streakBonus = Math.min(streakDays * 0.5, 15); // max +15% shift
-  const adjustedTotal = TOTAL_WEIGHT + streakBonus;
+  const adjustedTotal = TOTAL_WEIGHT - streakBonus;
 
   let roll = Math.random() * adjustedTotal;
   // The streak bonus effectively reduces the "none" bucket
