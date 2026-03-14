@@ -4,6 +4,8 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { detectPrimaryUsageModeFromText } from "@/lib/identity/usage-profile";
 import { logWarn } from "@/lib/ops/logger";
+import { rollReward, type RewardResult } from "@/lib/rewards/variable-reward";
+import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface Message { role: "user" | "assistant"; content: string; error?: boolean }
 type MessageMeta = {
@@ -15,6 +17,8 @@ interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
   pendingUsageMode: string | null;
+  lastReward: RewardResult | null;
+  clearReward: () => void;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
   retryLastMessage: () => Promise<void>;
 }
@@ -72,12 +76,28 @@ async function handleStreamResponse(
     } catch (e) {
       console.error("[Chat] agent refresh failed", e);
     }
+    // Roll variable reward on successful completion
+    const lastMsg = get().messages[get().messages.length - 1];
+    if (lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
+      const agentState = useAgentStore.getState().agentState;
+      const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
+      const reward = rollReward(streakDays);
+      if (reward.tier !== "none") {
+        haptic("success");
+        playSound("streak");
+        set({ lastReward: reward });
+      } else {
+        haptic("receive");
+        playSound("receive");
+      }
+    }
     set({ isStreaming: false, pendingUsageMode: null });
   }
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
-  messages: [], isStreaming: false, pendingUsageMode: null,
+  messages: [], isStreaming: false, pendingUsageMode: null, lastReward: null,
+  clearReward: () => set({ lastReward: null }),
   sendMessage: async (message: string, meta) => {
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;

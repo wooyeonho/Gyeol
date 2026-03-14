@@ -221,7 +221,7 @@ export function ChatPanel() {
         t={t}
       />
 
-      <p className="mt-2 text-center text-xs text-white/55">
+      <p className="mt-2 text-center text-xs text-white/60">
         {isFirstSession
           ? t("chat.firstFootnote")
           : t("chat.returningFootnote")}
