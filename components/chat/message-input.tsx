@@ -35,6 +35,10 @@ export function MessageInput({
   };
 
   const handleSubmitWithFeedback = (e: React.FormEvent | React.KeyboardEvent) => {
+    if (!input.trim() || isStreaming) {
+      onSubmit(e);
+      return;
+    }
     haptic("send");
     playSound("send");
     onSubmit(e);

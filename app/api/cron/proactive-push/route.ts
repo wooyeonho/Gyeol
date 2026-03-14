@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { checkCronAuth } from "@/lib/cron-auth";
 
 /**
  * Cron endpoint: sends proactive push notifications to users whose
@@ -7,9 +8,8 @@ import { createServiceClient } from "@/lib/supabase/service";
  *
  * Called via external cron (e.g. Vercel Cron) with Authorization: Bearer CRON_SECRET
  */
-export async function POST(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+export async function POST(req: NextRequest) {
+  if (!checkCronAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
