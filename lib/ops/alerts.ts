@@ -44,13 +44,14 @@ async function sendEmailAlert(args: WriteAlertArgs): Promise<void> {
     ].join("\n");
     await fetch(emailApiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.CRON_SECRET ? { Authorization: `Bearer ${process.env.CRON_SECRET}` } : {})
+      },
       body: JSON.stringify({
-        type: "ops_alert",
         to,
         subject,
-        text,
-        payload: args,
+        body: text,
       }),
     });
   } catch (e) {

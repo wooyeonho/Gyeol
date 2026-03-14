@@ -16,6 +16,7 @@ import { WorldClassHubPresenceColumn } from "@/components/home/world-class-hub-p
 import { WorldClassHubAside } from "@/components/home/world-class-hub-aside";
 import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mission-editor";
 import { WorldClassHubSessionHero } from "@/components/home/world-class-hub-session-hero";
+import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 
 type Mission = {
   id: string;
@@ -124,6 +125,16 @@ function getReturningPrompts(locale: "ko" | "en") {
         "지금 기분에 맞는 음악/활동을 추천해줘.",
         "이번 주 목표를 실행 가능한 태스크로 쪼개줘.",
       ];
+}
+
+function resolveFirstSessionVariant(
+  locale: "ko" | "en",
+  variant: string
+) {
+  const variants = getFirstSessionVariants(locale);
+  return variant === "strategic"
+    ? variants.productivity
+    : variants.identity;
 }
 
 const QUICK_LINKS = [
@@ -301,7 +312,7 @@ export function WorldClassHub() {
   const hour = now.getHours();
   const sessionMessages = Math.max(totalMessages, userMessages);
   const isFirstSession = sessionMessages === 0;
-  const firstSessionConfig = getFirstSessionVariants(locale)[onboardingVariant];
+  const firstSessionConfig = resolveFirstSessionVariant(locale, onboardingVariant);
   const quickPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
   const primaryPrompt = quickPrompts[0];
   const summary = growthSummary(sessionMessages, locale);
@@ -488,6 +499,8 @@ export function WorldClassHub() {
           stepLabels={[t("home.firstAction"), t("home.todaysFocus"), t("home.nextCheck")]}
           title={isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
         />
+
+        <GlobalFeedTicker />
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <WorldClassHubPresenceColumn

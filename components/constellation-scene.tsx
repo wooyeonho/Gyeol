@@ -35,7 +35,7 @@ export default function ConstellationScene({
 }) {
   if (stars.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-white/40 text-sm">
+      <div className="w-full h-full flex items-center justify-center text-white/55 text-sm">
         {emptyLabel}
       </div>
     );

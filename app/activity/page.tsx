@@ -7,6 +7,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 
 type ActivityItem =
   | {
@@ -171,9 +172,12 @@ export default function ActivityPage() {
           );
         })}
         {items.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/55">
-            {t("activity.empty")}
-          </div>
+          <AnimatedEmptyState
+            icon="activity"
+            title={t("activity.empty")}
+            description={locale === "en" ? "Activities will appear as your being evolves" : "결이 진화하면 여기에 활동이 기록됩니다"}
+            accentColor="#f59e0b"
+          />
         )}
       </div>
       </div>
