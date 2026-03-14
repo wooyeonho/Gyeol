@@ -5,21 +5,21 @@ interface LogEntry {
   timestamp: string;
   requestId?: string;
   message: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class StructuredLogger {
-  private baseContext: Record<string, any>;
+  private baseContext: Record<string, unknown>;
 
-  constructor(baseContext: Record<string, any> = {}) {
+  constructor(baseContext: Record<string, unknown> = {}) {
     this.baseContext = baseContext;
   }
 
-  public child(context: Record<string, any>): StructuredLogger {
+  public child(context: Record<string, unknown>): StructuredLogger {
     return new StructuredLogger({ ...this.baseContext, ...context });
   }
 
-  private write(level: LogLevel, message: string, meta: Record<string, any> = {}) {
+  private write(level: LogLevel, message: string, meta: Record<string, unknown> = {}) {
     const entry: LogEntry = {
       level,
       timestamp: new Date().toISOString(),
@@ -50,19 +50,19 @@ class StructuredLogger {
     }
   }
 
-  public debug(message: string, meta?: Record<string, any>) {
+  public debug(message: string, meta?: Record<string, unknown>) {
     this.write('debug', message, meta);
   }
 
-  public info(message: string, meta?: Record<string, any>) {
+  public info(message: string, meta?: Record<string, unknown>) {
     this.write('info', message, meta);
   }
 
-  public warn(message: string, meta?: Record<string, any>) {
+  public warn(message: string, meta?: Record<string, unknown>) {
     this.write('warn', message, meta);
   }
 
-  public error(message: string, meta?: Record<string, any> | Error) {
+  public error(message: string, meta?: Record<string, unknown> | Error) {
     if (meta instanceof Error) {
       this.write('error', message, { error_name: meta.name, error_message: meta.message, stack: meta.stack });
     } else {

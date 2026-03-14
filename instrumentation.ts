@@ -4,7 +4,7 @@ export async function register() {
   // Can be used to run code on server startup
 }
 
-export async function onRequestError(err: Error, request: any, context: any) {
+export async function onRequestError(err: Error, request: { url?: string }, context: { routerKind?: string; isAction?: boolean }) {
   try {
     const errorName = err.name || "Error";
     const errorMessage = err.message || String(err);

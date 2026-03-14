@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
@@ -30,15 +29,15 @@ export async function GET() {
 
     const feed: { id: string; text: string; timestamp: Date }[] = [];
 
-    (logsRes || []).forEach((log: any) => {
+    (logsRes || []).forEach((log: { id: string; summary?: string; created_at: string }) => {
       feed.push({ id: log.id, text: log.summary || "A mysterious autonomous action occurred", timestamp: new Date(log.created_at) });
     });
     
-    (socialRes || []).forEach((log: any) => {
+    (socialRes || []).forEach((log: { id: string; outcome?: string; created_at: string }) => {
       feed.push({ id: `soc-${log.id}`, text: log.outcome || "An encounter happened in the void", timestamp: new Date(log.created_at) });
     });
     
-    (breedingRes || []).forEach((log: any) => {
+    (breedingRes || []).forEach((log: { id: string; status?: string; created_at: string }) => {
       feed.push({ id: `br-${log.id}`, text: "A new form of life emerged from synthesis", timestamp: new Date(log.created_at) });
     });
 
