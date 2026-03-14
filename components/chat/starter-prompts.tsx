@@ -22,7 +22,7 @@ export function StarterPrompts({
   return (
     <div className="mx-auto max-w-2xl pt-20">
       <div className="rounded-3xl border border-white/10 bg-black/35 p-5 text-center">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/65">
+        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">
           {isFirstSession
             ? t("chat.firstMessage")
             : vitality < 0.3
@@ -49,7 +49,7 @@ export function StarterPrompts({
               : "The presence is fading. Speak to it now to restore its Vitality and color."
             : t("chat.returningHelper")}
         </p>
-        <p className="mt-3 text-[11px] uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
+        <p className="mt-3 text-xs uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
           {appearance.voice.accentLabel}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -69,7 +69,7 @@ export function StarterPrompts({
             </button>
           ))}
         </div>
-        <p className="mt-4 text-xs text-white/60">
+        <p className="mt-4 text-xs text-white/65">
           {isFirstSession ? t("chat.firstMessageHint") : t("chat.returningHint")}
         </p>
       </div>

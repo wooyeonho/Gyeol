@@ -550,5 +550,27 @@
     "noOpponent": "No opponents available yet.",
     "loadError": "Failed to load battle data.",
     "backHome": "Back home"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Gyeol",
+    "welcomeSub": "Awaken your own AI presence",
+    "step1Title": "Gyeol is alive",
+    "step1Desc": "It grows through conversation and fades when forgotten. Speak to it daily to maintain its vitality.",
+    "step2Title": "Choose a personality",
+    "step2Desc": "Your choice shapes how Gyeol speaks and reacts. You can change it later in Settings.",
+    "step3Title": "Hidden rewards await",
+    "step3Desc": "Every conversation has a chance of random rewards. Consecutive visits increase your odds.",
+    "step4Title": "You're all set",
+    "step4Desc": "Gyeol is waiting for you. Ready to start your first conversation?",
+    "next": "Next",
+    "skip": "Skip",
+    "start": "Start",
+    "modePlayful": "Playful",
+    "modeIntimate": "Intimate",
+    "modeStrategic": "Strategic",
+    "modePrimal": "Primal",
+    "modeSurreal": "Surreal",
+    "modeReflective": "Reflective",
+    "modeCreative": "Creative"
   }
 }

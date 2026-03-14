@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
 import { useTranslations } from "@/components/i18n-provider";
 import Soundscape from "@/components/soundscape";
+import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
+import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
+import { haptic } from "@/lib/micro-interactions";
+import { Onboarding } from "@/components/onboarding";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -68,11 +72,47 @@ export default function Home() {
     },
     locale
   );
-  const soundProfile = (agentState?.sound_profile as { base_note?: string; tempo?: number; instruments?: string[] } | undefined) ?? {
-    base_note: appearance.sound.baseNote,
-    tempo: appearance.sound.tempo,
-    instruments: appearance.sound.instruments,
-  };
+  // Derive emotion-based sound profile dynamically from agent state
+  const emotionMood = useMemo(() => {
+    const v = typeof agentState?.vitality === "number" ? agentState.vitality : 0.5;
+    const trust = typeof agentState?.intimacy_score === "number" ? agentState.intimacy_score : 0.3;
+    const tone = typeof agentState?.mood === "string"
+      ? (agentState.mood === "joyful" || agentState.mood === "energetic" ? "positive" as const
+        : agentState.mood === "melancholy" ? "negative" as const
+        : "neutral" as const)
+      : null;
+    return deriveEmotionMood(v, trust, tone);
+  }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
+
+  const soundProfile = useMemo(() => {
+    const emotionProfile = getEmotionSoundProfile(emotionMood);
+    return {
+      base_note: emotionProfile.base_note,
+      tempo: emotionProfile.tempo,
+      instruments: emotionProfile.instruments,
+      scale: emotionProfile.scale,
+    };
+  }, [emotionMood]);
+
+  const lastReward = useChatStore((s) => s.lastReward);
+  const clearReward = useChatStore((s) => s.clearReward);
+  const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
+
+  const handleCanvasTap = useCallback(() => {
+    haptic("tap");
+  }, []);
+
+  // Onboarding state — show once per device
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("gyeol_onboarded");
+  });
+
+  const handleOnboardingComplete = useCallback((selectedMode: string) => {
+    localStorage.setItem("gyeol_onboarded", "1");
+    localStorage.setItem("gyeol_personality", selectedMode);
+    setShowOnboarding(false);
+  }, []);
 
   if (loading) {
     return (
@@ -89,7 +129,7 @@ export default function Home() {
             <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-ping" />
           </div>
         </div>
-        <p className="mt-8 text-[10px] uppercase tracking-[0.3em] text-white/30 animate-pulse">
+        <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/50 animate-pulse">
           {locale === "ko" ? "결을 조율하는 중..." : "Awakening Presence..."}
         </p>
       </div>
@@ -97,6 +137,10 @@ export default function Home() {
   }
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <>
@@ -139,6 +183,7 @@ export default function Home() {
             isListening={isStreaming}
             motionBias={appearance.scene.motionBias}
             pulseScale={appearance.scene.pulseScale}
+            onTap={handleCanvasTap}
           />
         )}
       </div>
@@ -150,6 +195,11 @@ export default function Home() {
         soundProfile={soundProfile}
         label={appearance.sound.label}
         accentColor={appearance.palette.primary}
+      />
+      <RewardToast
+        reward={lastReward}
+        locale={locale}
+        onDismiss={handleDismissReward}
       />
       <BottomNav />
     </>

@@ -106,7 +106,7 @@ export function MessageList({
                 )}
               </p>
               {!isStreaming && i === messages.length - 1 && !m.error && (
-                <p className="mt-2 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <p className="mt-2 text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                   {appearance.voice.toneHint}
                 </p>
               )}
@@ -132,14 +132,14 @@ export function MessageList({
                       if (isPlaying) onStop();
                       else onSpeak(m.content);
                     }}
-                    className="text-[11px] text-white/50 hover:text-white/80 transition-colors"
+                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
                   >
                     {isPlaying ? "정지" : "듣기"}
                   </button>
                   <button
                     type="button"
                     onClick={() => onCopy(i, m.content)}
-                    className="text-[11px] text-white/50 hover:text-white/80 transition-colors"
+                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
                   >
                     {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
                   </button>

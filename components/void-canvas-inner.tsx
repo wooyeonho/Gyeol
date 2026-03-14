@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -18,6 +18,7 @@ interface InnerProps {
   opacity?: number;
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
+  onTap?: () => void;
 }
 
 function OrbMaterial({ color, opacity }: { color: string; opacity: number }) {
@@ -182,19 +183,37 @@ function ParticleRing({ count, color, size, motionBias = "gentle" }: { count: nu
   );
 }
 
-function Scene({ shape, color, size, glow, animation, particles, vitality, isListening, opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1 }: InnerProps) {
+function Scene({ shape, color, size, glow, animation, particles, vitality, isListening, opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
-  const pulseScale = (isListening ? 1.1 : 1) * animScale * pulseScaleOverride;
+  const [tapBounce, setTapBounce] = useState(0);
+  const tapDecay = useRef(0);
+
+  useFrame((_, delta) => {
+    if (tapDecay.current > 0) {
+      tapDecay.current = Math.max(0, tapDecay.current - delta * 4);
+      setTapBounce(tapDecay.current);
+    }
+  });
+
+  const handlePointerDown = useCallback(() => {
+    tapDecay.current = 1;
+    setTapBounce(1);
+    onTap?.();
+  }, [onTap]);
+
+  const tapScale = 1 + tapBounce * 0.15;
+  const pulseScale = (isListening ? 1.1 : 1) * animScale * pulseScaleOverride * tapScale;
   const floatSpeed = motionBias === "kinetic" ? 2.2 : motionBias === "mystic" ? 1.1 : 1.5;
   const floatIntensity = motionBias === "kinetic" ? 0.7 : motionBias === "mystic" ? 0.35 : 0.5;
   const rotationIntensity = motionBias === "kinetic" ? 0.3 : motionBias === "mystic" ? 0.12 : 0.2;
+  const tapGlow = glow / 50 + tapBounce * 0.8;
 
   return (
     <>
-      <pointLight color={color} intensity={glow / 50} />
+      <pointLight color={color} intensity={tapGlow} />
       <Float speed={floatSpeed} rotationIntensity={rotationIntensity} floatIntensity={floatIntensity}>
-        <group scale={pulseScale}>
+        <group scale={pulseScale} onPointerDown={handlePointerDown}>
           <CoreShape shape={shape} color={color} size={size} opacity={opacity} />
         </group>
       </Float>
