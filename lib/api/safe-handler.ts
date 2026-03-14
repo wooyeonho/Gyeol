@@ -29,8 +29,9 @@ export function safeHandler(
       const label = options?.label ?? req.url;
       console.error(`[${label}]`, error);
 
-      if (isMissingEnvError(error) && options?.demoFallback) {
-        return options.demoFallback();
+      if (isMissingEnvError(error)) {
+        if (options?.demoFallback) return options.demoFallback();
+        return NextResponse.json({ error: "Service not configured" }, { status: 503 });
       }
 
       return NextResponse.json({ error: "Internal error" }, { status: 500 });
