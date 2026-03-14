@@ -83,7 +83,9 @@
     "timelineEyebrow": "정체성 진화 타임라인",
     "defaultMilestoneBody": "이 지점에서 새로운 정체성 변화가 기록되었습니다.",
     "shareReady": "링크 복사됨",
-    "shareAction": "성장 카드 공유"
+    "shareAction": "성장 카드 공유",
+    "collectionEyebrow": "수집 완성도",
+    "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다"
   },
   "dashboard": {
     "title": "결 공개 대시보드",
@@ -520,5 +522,33 @@
     "nextBody": "가입 과정에 추천 정보가 함께 연결되어 초대가 첫 관계의 출발점으로 이어집니다.",
     "bestFirstStepTitle": "가장 좋은 첫 시작",
     "bestFirstStepBody": "짧은 인사, 지금의 기분, 혹은 오늘 정리하고 싶은 문제 하나만으로도 충분히 시작할 수 있습니다."
+  },
+  "leaderboard": {
+    "eyebrow": "결 랭킹",
+    "title": "리더보드",
+    "subtitle": "가장 깊은 관계를 쌓아가고 있는 결들의 순위입니다.",
+    "tabLevel": "Gen 레벨",
+    "tabMessages": "대화 수",
+    "tabVitality": "활력",
+    "totalAgents": "전체 {count}개의 결",
+    "empty": "아직 결이 없습니다",
+    "loadError": "리더보드를 불러오지 못했습니다."
+  },
+  "compare": {
+    "eyebrow": "AI 대결",
+    "title": "결 대결",
+    "matching": "상대를 찾는 중...",
+    "youWin": "당신이 이겼습니다!",
+    "opponentWins": "상대가 이겼습니다!",
+    "tie": "무승부입니다!",
+    "youWinBody": "당신의 결이 더 깊은 관계를 쌓아왔습니다.",
+    "opponentWinsBody": "상대의 결이 이번에는 앞서 있습니다.",
+    "tieBody": "두 결이 비슷한 깊이를 가지고 있습니다.",
+    "rematch": "다시 대결하기",
+    "viewLeaderboard": "리더보드 보기",
+    "authError": "로그인이 필요합니다.",
+    "noOpponent": "아직 대결할 상대가 없습니다.",
+    "loadError": "대결 정보를 불러오지 못했습니다.",
+    "backHome": "홈으로"
   }
 }

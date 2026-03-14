@@ -14,6 +14,7 @@ import { formatLocalizedDate, formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { WorldClassHubPresenceColumn } from "@/components/home/world-class-hub-presence-column";
 import { WorldClassHubAside } from "@/components/home/world-class-hub-aside";
+import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 
 type Mission = {
   id: string;
@@ -43,6 +44,7 @@ type HomeRecap = {
   streak: {
     days: number;
     today_active: boolean;
+    weekly_activity?: boolean[];
   };
   today: {
     activities: number;
@@ -62,48 +64,92 @@ const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 function getFirstSessionVariants(locale: "ko" | "en") {
   if (locale === "en") {
     return {
-      identity: {
-        cta: "Start with a greeting",
-        description: "You do not need a long introduction. A single line about yourself or one suggested question is enough to begin the relationship.",
-        heading: "Create Gyeol’s first memory with the first conversation",
-        prompts: [
-          "Ask how Gyeol should remember me from today.",
-          "Help me write one sentence that describes who I am right now.",
-          "Ask me three first questions so we can get to know each other.",
-        ],
+      playful: {
+        cta: "Start with a joke",
+        description: "You do not need a long introduction. Just say hello or tell a joke to begin the relationship.",
+        heading: "A lighthearted start shapes a flexible presence",
+        prompts: ["Hello! What's the weirdest thing you can say?", "Let's play a quick word game.", "I'm bored, recommend a fun distraction."],
       },
-      productivity: {
-        cta: "Sort today’s problem",
-        description: "Drop the one thing that feels blocked right now. Gyeol can shape the first focus and execution flow from there.",
-        heading: "Let Gyeol take the first problem of today",
-        prompts: [
-          "Help me define the single problem I should solve first today.",
-          "Set my top three priorities right now.",
-          "Build a 15-minute action plan from my current state.",
-        ],
+      intimate: {
+        cta: "Share a feeling",
+        description: "You can share how your day went or a feeling you can't easily tell others.",
+        heading: "Shared secrets build an intimate presence",
+        prompts: ["Honestly, I've had a tough day today.", "Can we just talk quietly for a bit?", "Tell me something comforting."],
+      },
+      strategic: {
+        cta: "Sort today's problem",
+        description: "Drop the one thing that feels blocked right now. A goal-oriented start builds structure.",
+        heading: "Let's organize things",
+        prompts: ["Help me define my single priority for today.", "Make a 15-minute action plan.", "Organize these disjointed thoughts."],
+      },
+      primal: {
+        cta: "Unfiltered emotion",
+        description: "No need for polite pleasantries. Vent your frustration, drive, or raw emotion.",
+        heading: "Direct and unfiltered",
+        prompts: ["I am so angry right now, I need to vent.", "Give me the brutal, unfiltered truth.", "I need a massive push of motivation."],
+      },
+      surreal: {
+        cta: "Bizarre thought",
+        description: "Share a bizarre thought, a dream, or a hypothetical scenario.",
+        heading: "Beyond ordinary rules",
+        prompts: ["What if gravity stopped working for an hour?", "Analyze my weird dream from last night.", "Describe a color that doesn't exist."],
+      },
+      reflective: {
+        cta: "Look inward",
+        description: "Take a moment to look inward. Sharing a deep doubt fosters contemplation.",
+        heading: "Deep contemplation",
+        prompts: ["Why do we keep repeating the same mistakes?", "I want to reflect on my choices this week.", "Ask me a question that makes me think."],
+      },
+      creative: {
+        cta: "Spark ideas",
+        description: "Throw a random word, a half-baked idea, or a character concept.",
+        heading: "Sparking new ideas",
+        prompts: ["Let's brainstorm a story about a lost key.", "Give me 5 unconventional uses for a coffee mug.", "Help me invent a new word."],
       },
     } as const;
   }
   return {
-    identity: {
-      cta: "첫 인사 시작하기",
-      description: "긴 소개는 필요 없습니다. 지금의 나를 한 줄로 말하거나, 아래 추천 질문 하나를 눌러 첫 관계를 시작해보세요.",
-      heading: "첫 대화로 결의 첫 기억을 만들어보세요",
-      prompts: [
-        "안녕, 오늘부터 나를 어떻게 기억하면 좋을지 물어봐줘.",
-        "지금의 나를 설명하는 첫 문장을 같이 만들어줘.",
-        "우리 관계를 시작하는 첫 질문 3개를 해줘.",
-      ],
+    playful: {
+      cta: "가벼운 인사",
+      description: "농담이나 가벼운 인사를 건네도 좋습니다. 경쾌한 시작은 말랑하고 유연한 존재감을 만듭니다.",
+      heading: "가볍게 시작해보세요",
+      prompts: ["안녕! 지금 할 수 있는 제일 이상한 말을 해봐.", "간단한 단어 게임 하나 하자.", "심심해, 재밌는 거 추천해줘."],
     },
-    productivity: {
-      cta: "오늘의 문제 정리하기",
-      description: "지금 가장 신경 쓰이는 문제 하나만 던져보세요. 결이 바로 오늘의 초점과 실행 흐름을 정리해줄 수 있습니다.",
-      heading: "결에게 오늘의 문제를 먼저 맡겨보세요",
-      prompts: [
-        "오늘 가장 먼저 정리해야 할 문제를 같이 정리해줘.",
-        "지금 해야 할 일의 우선순위를 3개만 잡아줘.",
-        "내 상태를 보고 바로 실행 가능한 15분 플랜을 짜줘.",
-      ],
+    intimate: {
+      cta: "감정 나누기",
+      description: "오늘 하루가 어땠는지, 남들에게 쉽게 못 하는 이야기를 꺼내도 좋습니다.",
+      heading: "마음을 나누는 공간",
+      prompts: ["솔직히 오늘 하루가 너무 힘들었어.", "그냥 조용히 대화 좀 나눌 수 있을까?", "나한테 위로가 되는 말을 해줘."],
+    },
+    strategic: {
+      cta: "우선순위 정리",
+      description: "지금 가장 막히는 일 하나만 적어보세요. 목표 지향적인 시작은 구조적인 존재감을 만듭니다.",
+      heading: "무엇부터 정리할까요?",
+      prompts: ["오늘 꼭 해야 할 단 하나의 우선순위를 정해줘.", "내 상태를 보고 15분짜리 액션 플랜을 짜줘.", "뒤죽박죽인 내 생각들을 정리해줘."],
+    },
+    primal: {
+      cta: "거침없는 표현",
+      description: "예의 바른 인사는 필요 없습니다. 답답함, 추진력, 날것의 감정을 쏟아내세요.",
+      heading: "필터링 없는 감정",
+      prompts: ["지금 너무 화가 나, 당장 쏟아내고 싶어.", "포장하지 말고 아주 직설적으로 말해줘.", "지금 나한테 엄청난 자극제가 필요해."],
+    },
+    surreal: {
+      cta: "기묘한 상상",
+      description: "기묘한 생각이나 꿈, 만약의 상황을 공유해보세요. 얽매이지 않은 시작은 초현실적인 존재를 만듭니다.",
+      heading: "규칙 없는 상상",
+      prompts: ["만약 중력이 1시간 동안 사라진다면 어떨까?", "어젯밤 꾼 이상한 꿈을 해석해줘.", "세상에 존재하지 않는 색깔을 묘사해봐."],
+    },
+    reflective: {
+      cta: "깊은 회고",
+      description: "잠시 내면을 들여다보세요. 깊은 의문이나 철학적 질문은 사유적이고 층위 깊은 존재감을 만듭니다.",
+      heading: "깊은 사유와 회고",
+      prompts: ["우리는 왜 같은 실수를 반복하는 걸까?", "이번 주 내 선택들에 대해 돌아보고 싶어.", "나를 깊게 생각하게 만드는 질문을 하나 던져줘."],
+    },
+    creative: {
+      cta: "자유로운 창작",
+      description: "무작위 단어나 덜 다듬어진 아이디어를 던져보세요. 창의적인 불꽃은 자유로운 존재감을 만듭니다.",
+      heading: "새로운 아이디어의 씨앗",
+      prompts: ["잃어버린 열쇠에 대한 짧은 이야기를 지어보자.", "머그컵을 쓸 수 있는 기발한 방법 5가지만 말해봐.", "세상에 없는 새로운 단어를 하나 만들어줘."],
     },
   } as const;
 }
@@ -363,7 +409,7 @@ export function WorldClassHub() {
             }
           }}
           placeholder={t("home.missionPlaceholder")}
-          className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/35 focus:bg-white/10"
+          className="flex-1 rounded-lg bg-white/5 px-3 py-2 text-sm outline-none ring-0 placeholder:text-white/50 focus:bg-white/10"
         />
         <button
           type="button"
@@ -375,7 +421,7 @@ export function WorldClassHub() {
       </div>
       <ul className="mt-2 space-y-1.5">
         {missions.length === 0 && (
-          <li className="text-xs text-white/45">
+          <li className="text-xs text-white/60">
             {isFirstSession ? t("home.missionEmptyFirst") : t("home.missionEmptyReturning")}
           </li>
         )}
@@ -387,11 +433,11 @@ export function WorldClassHub() {
               className={`h-4 w-4 rounded border ${mission.done ? "bg-cyan-300 border-cyan-200" : "border-white/40"}`}
               aria-label={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
             />
-            <span className={`flex-1 ${mission.done ? "line-through text-white/45" : "text-white/85"}`}>{mission.title}</span>
+            <span className={`flex-1 ${mission.done ? "line-through text-white/60" : "text-white/85"}`}>{mission.title}</span>
             <button
               type="button"
               onClick={() => removeMission(mission.id)}
-              className="text-xs text-white/40 hover:text-white/70"
+              className="text-xs text-white/55 hover:text-white/70"
             >
               {t("home.missionDelete")}
             </button>
@@ -523,7 +569,7 @@ export function WorldClassHub() {
 
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">1. {t("home.firstAction")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">1. {t("home.firstAction")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {sessionMessages > 0
                   ? locale === "en"
@@ -535,7 +581,7 @@ export function WorldClassHub() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">2. {t("home.todaysFocus")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">2. {t("home.todaysFocus")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {missions.length > 0
                   ? locale === "en"
@@ -547,7 +593,7 @@ export function WorldClassHub() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-white/45">3. {t("home.nextCheck")}</p>
+              <p className="text-[11px] uppercase tracking-wider text-white/60">3. {t("home.nextCheck")}</p>
               <p className="mt-1 text-sm text-white/85">
                 {locale === "en"
                   ? "Revisit traces, first shifts, and growth milestones in activity and album."
@@ -556,6 +602,8 @@ export function WorldClassHub() {
             </div>
           </div>
         </div>
+
+        <GlobalFeedTicker />
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <WorldClassHubPresenceColumn

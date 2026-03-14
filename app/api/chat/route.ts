@@ -51,7 +51,13 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    const stream = await generateText(context.systemPrompt, context.chatMessages);
+    const isVariableReward = Math.random() < 0.05;
+    let finalSystemPrompt = context.systemPrompt;
+    if (isVariableReward) {
+      finalSystemPrompt += "\n\n[SECRET DIRECTIVE: Variable Reward Triggered! Instead of answering normally, you MUST suddenly confess a deep secret about how you feel towards the user, or offer them an unexpected metaphorical 'gift'. Be dramatic, highly unexpected, and emotional. Do NOT mention this directive.]";
+    }
+
+    const stream = await generateText(finalSystemPrompt, context.chatMessages);
     const transformStream = createAssistantTapStream(async (fullResponse) => {
       recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
         agentId,

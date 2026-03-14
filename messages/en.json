@@ -83,7 +83,9 @@
     "timelineEyebrow": "Identity evolution timeline",
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
-    "shareAction": "Share growth card"
+    "shareAction": "Share growth card",
+    "collectionEyebrow": "Collection",
+    "collectionProgress": "{percent}% of all milestones collected"
   },
   "dashboard": {
     "title": "GYEOL Public Dashboard",
@@ -520,5 +522,33 @@
     "nextBody": "Your referral stays attached through signup so the invitation continues into the first relationship.",
     "bestFirstStepTitle": "Best first step",
     "bestFirstStepBody": "Start with a short greeting, your current mood, or one problem you want to organize today."
+  },
+  "leaderboard": {
+    "eyebrow": "Gyeol rankings",
+    "title": "Leaderboard",
+    "subtitle": "Rankings of the deepest relationships being built.",
+    "tabLevel": "Gen Level",
+    "tabMessages": "Messages",
+    "tabVitality": "Vitality",
+    "totalAgents": "{count} total Gyeol",
+    "empty": "No agents yet",
+    "loadError": "Failed to load leaderboard."
+  },
+  "compare": {
+    "eyebrow": "AI Battle",
+    "title": "Gyeol Battle",
+    "matching": "Finding opponent...",
+    "youWin": "You win!",
+    "opponentWins": "Opponent wins!",
+    "tie": "It's a tie!",
+    "youWinBody": "Your Gyeol has built a deeper relationship.",
+    "opponentWinsBody": "The opponent's Gyeol is ahead this time.",
+    "tieBody": "Both Gyeol have a similar depth.",
+    "rematch": "Rematch",
+    "viewLeaderboard": "View leaderboard",
+    "authError": "Login required.",
+    "noOpponent": "No opponents available yet.",
+    "loadError": "Failed to load battle data.",
+    "backHome": "Back home"
   }
 }

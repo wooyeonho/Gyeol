@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { HomeSummaryItem } from "@/components/world-class-hub";
+import { StreakDisplay } from "@/components/streak-display";
 
 type HomeRecap = {
   goal_loop?: {
@@ -18,6 +19,7 @@ type HomeRecap = {
   streak: {
     days: number;
     today_active: boolean;
+    weekly_activity?: boolean[];
   };
   today: {
     activities: number;
@@ -97,7 +99,7 @@ export function WorldClassHubAside({
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.growthPulse")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.growthPulse")}</p>
             <p className="mt-1 text-sm font-medium text-white">{summary}</p>
           </div>
           <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
@@ -106,15 +108,15 @@ export function WorldClassHubAside({
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <div className="rounded-lg bg-black/25 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.currentMood")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.currentMood")}</p>
             <p className="mt-1 text-sm text-white/82">{mood}</p>
           </div>
           <div className="rounded-lg bg-black/25 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.nextEvolution")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.nextEvolution")}</p>
             <p className="mt-1 text-sm text-white/82">{evolutionHint}</p>
           </div>
           <div className="rounded-lg bg-black/25 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.newTraces")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.newTraces")}</p>
             <p className="mt-1 text-sm text-white/82">
               {newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit.length : recentItems.length}
             </p>
@@ -136,7 +138,7 @@ export function WorldClassHubAside({
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <button type="button" onClick={toggleRecentPanel} className="flex w-full items-start justify-between gap-3 text-left">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.recentPanel")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.recentPanel")}</p>
             <p className="mt-1 text-xs text-white/50">{t("home.recentPanelHint")}</p>
             <p className="mt-2 text-sm font-medium text-white">
               {newItemsSinceLastVisit.length > 0
@@ -158,7 +160,7 @@ export function WorldClassHubAside({
                 <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-white/55">{item.kind === "milestone" ? (locale === "en" ? "Milestone" : "마일스톤") : (locale === "en" ? "Activity" : "활동")}</p>
-                    <p className="text-[11px] text-white/40">{formatDate(item.created_at)}</p>
+                    <p className="text-[11px] text-white/55">{formatDate(item.created_at)}</p>
                   </div>
                   <p className="mt-1 text-sm text-white/82">{item.title}</p>
                 </div>
@@ -186,14 +188,27 @@ export function WorldClassHubAside({
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <button type="button" onClick={toggleGrowthPanel} className="flex w-full items-start justify-between gap-3 text-left">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.growthPanel")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.growthPanel")}</p>
             <p className="mt-1 text-xs text-white/50">{t("home.growthPanelHint")}</p>
             <p className="mt-2 text-sm font-medium text-white">{recap?.next_action ?? t("home.retentionFallback")}</p>
           </div>
-          <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-            {locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
+          <span className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
+            recap?.streak.days ? (recap.streak.days >= 7 ? "border-orange-500/50 bg-orange-500/20 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "border-orange-500/30 bg-orange-500/10 text-orange-200/90") : "border-white/15 bg-white/5 text-white/70"
+          }`}>
+            {recap?.streak.days ? "🔥 " : ""}{locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
           </span>
         </button>
+
+        {recap && (
+          <div className="mt-3">
+            <StreakDisplay
+              days={recap.streak.days}
+              todayActive={recap.streak.today_active}
+              weeklyActivity={recap.streak.weekly_activity ?? []}
+              compact
+            />
+          </div>
+        )}
 
         {showGrowthPanel && (
           <>
@@ -212,7 +227,7 @@ export function WorldClassHubAside({
             )}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.today")}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.today")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {locale === "en"
                     ? `Messages ${recap?.today.user_messages ?? 0} · Activity ${recap?.today.activities ?? 0}`
@@ -221,7 +236,7 @@ export function WorldClassHubAside({
                 <p className="mt-1 text-xs text-white/50">{recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.thisWeek")}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.thisWeek")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {locale === "en"
                     ? `Messages ${recap?.weekly.user_messages ?? 0} · Milestones ${recap?.weekly.milestones ?? 0}`
@@ -232,7 +247,7 @@ export function WorldClassHubAside({
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.weeklyHighlight")}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.weeklyHighlight")}</p>
                 <p className="mt-1 text-sm text-white/82">{recap?.weekly.highlight ?? t("home.weeklyFallback")}</p>
               </div>
             </div>
@@ -243,7 +258,7 @@ export function WorldClassHubAside({
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <button type="button" onClick={togglePlanningPanel} className="flex w-full items-start justify-between gap-3 text-left">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/45">{t("home.planningPanel")}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.planningPanel")}</p>
             <p className="mt-1 text-xs text-white/50">{t("home.planningPanelHint")}</p>
             <p className="mt-2 text-sm font-medium text-white">
               {recap?.goal_loop?.next_action ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopSummaryEmpty")}
@@ -260,17 +275,17 @@ export function WorldClassHubAside({
           <>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "current goal" : "현재 목표"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "current goal" : "현재 목표"}</p>
                 <p className="mt-1 text-sm text-white/82">{recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.long_term_goal ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.latest_task ??
                     recap?.goal_loop?.research_focus ??

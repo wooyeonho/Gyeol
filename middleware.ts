@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { resolveLocale, LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 
 const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/features", "/plans", "/explore", "/dashboard", "/adopt", "/share", "/invite", "/community", "/privacy", "/terms"];
 
@@ -7,28 +8,59 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublicPath(pathname)) {
-    return NextResponse.next();
-  }
+
+  // Skip static files, API routes, and Next.js internals for both locales and auth
   if (
-    pathname.startsWith("/api/cron") ||
-    pathname.startsWith("/api/v1") ||
-    pathname.startsWith("/api/research") ||
-    pathname.startsWith("/api/email/send")
+    pathname.startsWith("/_next") ||
+    pathname.includes(".") ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
 
+  // Resolve locale
+  const locale = resolveLocale({
+    acceptLanguage: request.headers.get("accept-language"),
+    cookieLocale: request.cookies.get(LOCALE_COOKIE_NAME)?.value,
+  });
+
   const response = NextResponse.next({ request: { headers: request.headers } });
+
+  // Add locale cookie if missing or mismatched
+  if (!request.cookies.has(LOCALE_COOKIE_NAME) || request.cookies.get(LOCALE_COOKIE_NAME)?.value !== locale) {
+    response.cookies.set(LOCALE_COOKIE_NAME, locale, {
+      path: "/",
+      maxAge: 365 * 24 * 60 * 60, // 1 year
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
+
+  // Handle Auth
+  if (isPublicPath(pathname)) {
+    return response;
+  }
+
+  if (
+    pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/api/v1") ||
+    pathname.startsWith("/api/research") ||
+    pathname.startsWith("/api/email/send") ||
+    pathname.startsWith("/api/social/global-feed") ||
+    pathname.startsWith("/api/home/summary")
+  ) {
+    return response;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
     if (process.env.NODE_ENV === "production" && !pathname.startsWith("/api")) {
       return new NextResponse("Service unavailable: auth middleware is not configured", { status: 503 });
     }
-    return NextResponse.next();
+    return response;
   }
 
   const supabase = createServerClient(url, anonKey, {
@@ -60,8 +92,8 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export default proxy;
-
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
