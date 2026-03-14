@@ -49,31 +49,28 @@ export async function checkRateLimit(key: string): Promise<boolean> {
     const currentCount = existing?.request_count ?? 0;
     if (currentCount >= MAX_PER_WINDOW) return false;
 
-    // Upsert: insert a new row or increment request_count on conflict.
-    // The UNIQUE(user_id, window_start) constraint handles deduplication.
-    const { error } = await service.rpc("upsert_rate_limit", {
+    // Atomic upsert via PL/pgSQL RPC — a single INSERT … ON CONFLICT handles
+    // both the first request (insert) and subsequent ones (increment).
+    const { error: rpcError } = await service.rpc("upsert_rate_limit", {
       p_rl_key: key,
       p_user_id: userId,
       p_window_start: windowStart,
     });
 
-    // If the RPC doesn't exist yet, fall back to a two-step approach.
-    if (error) {
-      if (existing) {
-        await service
-          .from("rate_limits")
-          .update({ request_count: currentCount + 1 })
-          .eq("rl_key", key)
-          .eq("user_id", userId)
-          .eq("window_start", windowStart);
-      } else {
-        await service.from("rate_limits").insert({
+    // If the RPC isn't deployed yet, fall back to Supabase .upsert() which
+    // also handles the UNIQUE(rl_key, user_id, window_start) conflict
+    // atomically at the DB level (no client-side TOCTOU race).
+    if (rpcError) {
+      console.warn("[RateLimit] RPC unavailable, using .upsert() fallback:", rpcError.message);
+      await service.from("rate_limits").upsert(
+        {
           rl_key: key,
           user_id: userId,
           window_start: windowStart,
-          request_count: 1,
-        });
-      }
+          request_count: currentCount + 1,
+        },
+        { onConflict: "rl_key,user_id,window_start" }
+      );
     }
 
     return true;
