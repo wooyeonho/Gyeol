@@ -31,12 +31,16 @@ async function handleStreamResponse(
     const reader = res.body?.getReader();
     if (!reader) throw new Error("Missing response stream");
     const decoder = new TextDecoder();
+    let sseBuffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const text = decoder.decode(value, { stream: true });
-      for (const line of text.split("\n")) {
+      sseBuffer += decoder.decode(value, { stream: true });
+      const lines = sseBuffer.split("\n");
+      // Keep the last element — it may be an incomplete line from a TCP chunk boundary.
+      sseBuffer = lines.pop() ?? "";
+      for (const line of lines) {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || "";
