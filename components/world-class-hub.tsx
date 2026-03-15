@@ -17,6 +17,7 @@ import { WorldClassHubAside } from "@/components/home/world-class-hub-aside";
 import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mission-editor";
 import { WorldClassHubSessionHero } from "@/components/home/world-class-hub-session-hero";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
+import { StreakDisplay } from "@/components/streak-display";
 
 type Mission = {
   id: string;
@@ -501,6 +502,15 @@ export function WorldClassHub() {
         />
 
         <GlobalFeedTicker />
+
+        {recap?.streak && (
+          <StreakDisplay
+            days={recap.streak.days}
+            todayActive={recap.streak.today_active}
+            locale={locale}
+            compact={false}
+          />
+        )}
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <WorldClassHubPresenceColumn
