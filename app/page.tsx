@@ -37,6 +37,7 @@ export default function Home() {
   const { locale } = useTranslations();
   const { agentState, loading, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
+  const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
 
@@ -108,9 +109,8 @@ export default function Home() {
     return !localStorage.getItem("gyeol_onboarded");
   });
 
-  const handleOnboardingComplete = useCallback((selectedMode: string) => {
+  const handleOnboardingComplete = useCallback(() => {
     localStorage.setItem("gyeol_onboarded", "1");
-    localStorage.setItem("gyeol_personality", selectedMode);
     setShowOnboarding(false);
   }, []);
 
@@ -137,6 +137,9 @@ export default function Home() {
   }
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
+  const conversationStarted =
+    (typeof agentState?.total_messages === "number" ? agentState.total_messages : 0) > 0 ||
+    messages.some((message) => message.role === "user");
 
   if (showOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
@@ -189,7 +192,7 @@ export default function Home() {
       </div>
       <WorldClassHub />
 
-      <ChatPanel />
+      <ChatPanel navVisible={conversationStarted} />
       <Soundscape
         enabled={!performanceMinimal}
         soundProfile={soundProfile}
@@ -201,7 +204,7 @@ export default function Home() {
         locale={locale}
         onDismiss={handleDismissReward}
       />
-      <BottomNav />
+      {conversationStarted && <BottomNav />}
     </>
   );
 }

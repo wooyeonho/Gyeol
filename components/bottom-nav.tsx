@@ -6,70 +6,61 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
-function NavIcon({ name }: { name: "home" | "activity" | "album" | "social" | "explore" | "settings" }) {
+function NavIcon({ name }: { name: "chat" | "discover" | "profile" }) {
   const common = "h-5 w-5";
   switch (name) {
-    case "home":
+    case "chat":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M3 10.5 12 3l9 7.5" />
-          <path d="M5.5 9.5V21h13V9.5" />
+          <path d="M6 7h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-6l-4 3v-3H6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3Z" />
         </svg>
       );
-    case "activity":
+    case "discover":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M5 6h14" />
-          <path d="M5 12h14" />
-          <path d="M5 18h9" />
-          <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
-          <circle cx="7" cy="12" r="1" fill="currentColor" stroke="none" />
-          <circle cx="7" cy="18" r="1" fill="currentColor" stroke="none" />
+          <rect x="4" y="5" width="7" height="7" rx="1.5" />
+          <rect x="13" y="5" width="7" height="7" rx="1.5" />
+          <rect x="4" y="14" width="7" height="7" rx="1.5" />
+          <rect x="13" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
-    case "album":
+    case "profile":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="5" y="4" width="14" height="16" rx="2" />
-          <path d="M9 4v16" />
-          <path d="M12 8c1 1.3 2 2 3 2s2-.7 3-2" />
-        </svg>
-      );
-    case "social":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="8" cy="9" r="3" />
-          <circle cx="16" cy="9" r="3" />
-          <path d="M3.5 19c.9-2.6 3.1-4 5.5-4" />
-          <path d="M15 15c2.4 0 4.6 1.4 5.5 4" />
-          <path d="M9.5 18c.9-1.5 2.3-2.3 4.5-2.3 2.1 0 3.6.8 4.5 2.3" opacity=".55" />
-        </svg>
-      );
-    case "explore":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="8" />
-          <path d="m10 14 5-5-2 6-6 2 3-3Z" />
-        </svg>
-      );
-    case "settings":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.7 7.7 0 0 0-1.7-1L14.5 3h-5L9 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.7 7.7 0 0 0 1.7 1l.5 3h5l.5-3a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z" />
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20a7 7 0 0 1 14 0" />
         </svg>
       );
   }
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.home", icon: "home" as const },
-  { path: "/activity", labelKey: "nav.activity", icon: "activity" as const },
-  { path: "/album", labelKey: "nav.album", icon: "album" as const },
-  { path: "/social", labelKey: "nav.social", icon: "social" as const },
-  { path: "/explore", labelKey: "nav.explore", icon: "explore" as const },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
+  { path: "/", labelKey: "nav.chat", icon: "chat" as const },
+  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const },
+  { path: "/settings", labelKey: "nav.profile", icon: "profile" as const },
 ];
+
+const DISCOVER_PATHS = new Set([
+  "/discover",
+  "/activity",
+  "/album",
+  "/social",
+  "/explore",
+  "/leaderboard",
+  "/compare",
+  "/adopt",
+  "/market",
+]);
+
+function isTabActive(pathname: string, tabPath: string) {
+  if (tabPath === "/") {
+    return pathname === "/";
+  }
+  if (tabPath === "/discover") {
+    return DISCOVER_PATHS.has(pathname);
+  }
+  return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
+}
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -98,14 +89,15 @@ export function BottomNav() {
       className="fixed bottom-0 left-0 right-0 z-20 border-t bg-black/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
       style={{ borderColor: `${appearance.palette.primary}25` }}
     >
-      <div className="flex justify-around py-3">
+      <div className="mx-auto flex max-w-md justify-around px-3 py-2">
         {TABS.map((tab) => {
-          const isActive = pathname === tab.path || (tab.path !== "/" && pathname.startsWith(tab.path));
+          const isActive = isTabActive(pathname, tab.path);
           return (
             <Link
               key={tab.path}
               href={tab.path}
-              className="flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-2 py-1.5 transition-all duration-200"
+              aria-label={t(tab.labelKey)}
+              className="flex min-h-14 min-w-[96px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               style={
                 isActive
                   ? {
@@ -113,13 +105,13 @@ export function BottomNav() {
                       background: `${appearance.palette.primary}18`,
                       boxShadow: `0 0 0 1px ${appearance.palette.primary}22 inset`,
                     }
-                  : { color: "rgba(255,255,255,0.4)" }
+                  : { color: "rgba(255,255,255,0.75)" }
               }
             >
               <span aria-hidden="true">
                 <NavIcon name={tab.icon} />
               </span>
-              <span className="text-[11px]">{t(tab.labelKey)}</span>
+              <span className="text-sm font-medium">{t(tab.labelKey)}</span>
             </Link>
           );
         })}

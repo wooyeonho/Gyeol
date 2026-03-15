@@ -46,9 +46,9 @@ export function MessageInput({
   };
 
   return (
-    <form onSubmit={handleSubmitWithFeedback} className="flex gap-2 w-full max-w-4xl mx-auto">
+    <form onSubmit={handleSubmitWithFeedback} className="mx-auto flex w-full max-w-4xl gap-3">
       <label htmlFor="chat-input" className="sr-only">
-        채팅 입력
+        {t("chat.inputLabel")}
       </label>
       <input
         id="chat-input"
@@ -59,7 +59,7 @@ export function MessageInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={isStreaming}
-        className="flex-1 rounded-full bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-1 transition-all disabled:opacity-50"
+        className="min-h-12 flex-1 rounded-2xl bg-white/8 px-4 py-3 text-base text-white placeholder-white/72 transition-all focus:outline-none focus:ring-2 disabled:opacity-50"
         style={{
           boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset`,
           border: `1px solid transparent`,
@@ -68,7 +68,7 @@ export function MessageInput({
       <motion.button
         type="submit"
         disabled={isStreaming || !input.trim()}
-        className="px-6 py-3 rounded-full text-white font-medium disabled:opacity-50 transition-colors hover:brightness-110"
+        className="min-h-12 min-w-12 rounded-2xl px-5 text-base font-semibold text-white transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50"
         style={{ background: `${appearance.palette.primary}28`, border: `1px solid ${appearance.palette.primary}40` }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.92 }}

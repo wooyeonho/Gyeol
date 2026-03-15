@@ -22,9 +22,9 @@ export function StarterPrompts({
   t: (key: string) => string;
 }) {
   return (
-    <div className="mx-auto max-w-2xl pt-20">
-      <div className="rounded-3xl border border-white/10 bg-black/35 p-5 text-center">
-        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">
+    <div className="mx-auto max-w-2xl pt-16 sm:pt-20">
+      <div className="rounded-3xl border border-white/15 bg-black/45 p-5 text-center shadow-[0_0_48px_rgba(34,211,238,0.08)] sm:p-6">
+        <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
           {isFirstSession
             ? t("chat.firstMessage")
             : vitality < 0.3
@@ -33,7 +33,7 @@ export function StarterPrompts({
               : "Fading Connection"
             : t("chat.todayCheckIn")}
         </p>
-        <h2 className="mt-3 text-xl font-semibold">
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[2rem]">
           {isFirstSession
             ? firstSessionConfig.heading
             : vitality < 0.3
@@ -42,7 +42,7 @@ export function StarterPrompts({
               : "The warmth faded without you..."
             : t("chat.returningHeading")}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-white/60">
+        <p className="mt-3 text-base leading-7 text-white/82">
           {isFirstSession
             ? firstSessionConfig.helper
             : vitality < 0.3
@@ -51,10 +51,10 @@ export function StarterPrompts({
               : "The presence is fading. Speak to it now to restore its Vitality and color."
             : t("chat.returningHelper")}
         </p>
-        <p className="mt-3 text-xs uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
+        <p className="mt-4 text-sm font-medium uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>
           {appearance.voice.accentLabel}
         </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
           {starterPrompts.map((prompt: string) => (
             <button
               key={prompt}
@@ -64,14 +64,14 @@ export function StarterPrompts({
                   onPromptClick(prompt);
                 }
               }}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 transition-colors"
+              className="min-h-12 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-left text-base leading-6 text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               disabled={isStreaming}
             >
               {prompt}
             </button>
           ))}
         </div>
-        <p className="mt-4 text-xs text-white/65">
+        <p className="mt-4 text-sm text-white/80">
           {isFirstSession ? t("chat.firstMessageHint") : t("chat.returningHint")}
         </p>
       </div>

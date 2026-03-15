@@ -41,7 +41,7 @@
   /* ── Typography scale ── */
   --text-caption: 0.6875rem;
   --text-sm: 0.8125rem;
-  --text-base: 0.9375rem;
+  --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.375rem;
   --text-2xl: 1.75rem;
@@ -98,6 +98,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
 }
 
 @keyframes auroraShift {
@@ -119,4 +122,37 @@ body {
     radial-gradient(circle at 50% 95%, rgba(60, 255, 220, 0.2), transparent 35%);
   background-size: 180% 180%;
   animation: auroraShift 14s ease-in-out infinite;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+  min-height: 3rem;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .aurora-flow {
+    animation: none;
+  }
 }

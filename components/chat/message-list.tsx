@@ -50,7 +50,7 @@ export function MessageList({
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
-      aria-label="채팅 메시지"
+      aria-label={t("chat.logAriaLabel")}
     >
       {messages.length === 0 && (
         <StarterPrompts
@@ -77,14 +77,14 @@ export function MessageList({
         >
           {m.role === "user" ? (
             <motion.div
-              className="bg-white/10 rounded-2xl px-4 py-2 max-w-[80%] break-words"
+              className="max-w-[80%] break-words rounded-2xl bg-white/12 px-4 py-3 text-base leading-7 text-white"
               whileTap={{ scale: 0.98 }}
             >
               {m.content}
             </motion.div>
           ) : (
             <motion.div
-              className="max-w-[80%] rounded-2xl border bg-black/35 px-4 py-2"
+              className="max-w-[80%] rounded-2xl border bg-black/40 px-4 py-3 text-base leading-7"
               style={{
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
@@ -116,7 +116,7 @@ export function MessageList({
                   <button
                     type="button"
                     onClick={onRetry}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-400/10 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-400/20 transition-colors"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-red-400/10 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -133,14 +133,14 @@ export function MessageList({
                       if (isPlaying) onStop();
                       else onSpeak(m.content);
                     }}
-                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
+                    className="min-h-10 rounded-xl px-3 text-sm text-white/78 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   >
                     {isPlaying ? "정지" : "듣기"}
                   </button>
                   <button
                     type="button"
                     onClick={() => onCopy(i, m.content)}
-                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
+                    className="min-h-10 rounded-xl px-3 text-sm text-white/78 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   >
                     {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
                   </button>

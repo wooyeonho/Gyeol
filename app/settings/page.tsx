@@ -6,9 +6,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mission-editor";
 import { useTranslations } from "@/components/i18n-provider";
+import { CLIENT_EVENT } from "@/lib/analytics/catalog";
+import { trackClientEvent } from "@/lib/analytics/client";
 import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
 
 function InviteSection() {
   const { t } = useTranslations();
@@ -181,6 +185,8 @@ export default function SettingsPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [missions, setMissions] = useState<LocalMission[]>(() => readLocalMissions());
+  const [draftMission, setDraftMission] = useState("");
   const router = useRouter();
   const supabase = createClient();
   const showPlansSurface = useFeatureFlag(FEATURE_FLAG.plansSurface);
@@ -214,6 +220,10 @@ export default function SettingsPage() {
     }
     void load();
   }, [router, t]);
+
+  useEffect(() => {
+    writeLocalMissions(missions);
+  }, [missions]);
 
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
@@ -274,6 +284,28 @@ export default function SettingsPage() {
       return;
     }
     window.location.href = json.portal_url;
+  }
+
+  function toggleMission(id: string) {
+    setMissions((prev) => prev.map((mission) => (mission.id === id ? { ...mission, done: !mission.done } : mission)));
+  }
+
+  function removeMission(id: string) {
+    setMissions((prev) => prev.filter((mission) => mission.id !== id));
+  }
+
+  function addMission() {
+    const title = draftMission.trim();
+    if (!title) return;
+
+    trackClientEvent(CLIENT_EVENT.missionCreated, {
+      has_existing_messages: (state?.total_messages ?? 0) > 0,
+      source: "settings",
+      title_length: title.length,
+    });
+
+    setMissions((prev) => [{ id: crypto.randomUUID(), title, done: false }, ...prev].slice(0, 6));
+    setDraftMission("");
   }
 
   if (loading) {
@@ -448,6 +480,27 @@ export default function SettingsPage() {
               />
             ))}
           </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.todayMission")}</p>
+          <p className="mt-1 text-sm text-white/72">
+            {t("settings.todayMissionBody")}
+          </p>
+          <WorldClassHubMissionEditor
+            addLabel={t("home.missionAdd")}
+            draftMission={draftMission}
+            emptyState={t("home.missionEmptyReturning")}
+            inputAriaLabel={locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
+            missions={missions}
+            onAdd={addMission}
+            onChangeDraft={setDraftMission}
+            onRemove={removeMission}
+            onToggle={toggleMission}
+            placeholder={t("home.missionPlaceholder")}
+            removeLabel={t("home.missionDelete")}
+            toggleAriaLabel={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
+          />
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
