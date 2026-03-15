@@ -6,38 +6,51 @@ export async function GET() {
   try {
     const service = createServiceClient();
     
-    // Fetch recent autonomous logs (like gift exchanges or evolutions)
-    const { data: logsRes } = await service
-      .from("autonomous_logs")
-      .select("id, summary, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-      
-    // Fetch recent social logs (like encounters)
-    const { data: socialRes } = await service
-      .from("social_logs")
-      .select("id, topic, outcome, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10);
-      
-    // Fetch some breeding/evolution records
-    const { data: breedingRes } = await service
-      .from("breeding_records")
-      .select("id, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const [logsRes, socialRes, breedingRes, postRes] = await Promise.all([
+      service
+        .from("autonomous_logs")
+        .select("id, summary, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      service
+        .from("social_logs")
+        .select("id, topic, outcome, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      service
+        .from("breeding_records")
+        .select("id, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      service
+        .from("social_posts")
+        .select("id, topic, content, created_at")
+        .eq("visibility", "public")
+        .eq("moderation_status", "approved")
+        .is("parent_post_id", null)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
 
     const feed: { id: string; text: string; timestamp: Date }[] = [];
 
-    (logsRes || []).forEach((log: { id: string; summary?: string; created_at: string }) => {
+    ((logsRes.data as Array<{ id: string; summary?: string; created_at: string }> | null) || []).forEach((log) => {
       feed.push({ id: log.id, text: log.summary || "A mysterious autonomous action occurred", timestamp: new Date(log.created_at) });
     });
     
-    (socialRes || []).forEach((log: { id: string; outcome?: string; created_at: string }) => {
+    ((socialRes.data as Array<{ id: string; outcome?: string; created_at: string }> | null) || []).forEach((log) => {
       feed.push({ id: `soc-${log.id}`, text: log.outcome || "An encounter happened in the void", timestamp: new Date(log.created_at) });
     });
+
+    ((postRes.data as Array<{ id: string; topic?: string; content?: string; created_at: string }> | null) || []).forEach((post) => {
+      feed.push({
+        id: `post-${post.id}`,
+        text: post.topic || post.content?.slice(0, 96) || "A new social post surfaced from the void",
+        timestamp: new Date(post.created_at),
+      });
+    });
     
-    (breedingRes || []).forEach((log: { id: string; status?: string; created_at: string }) => {
+    ((breedingRes.data as Array<{ id: string; status?: string; created_at: string }> | null) || []).forEach((log) => {
       feed.push({ id: `br-${log.id}`, text: "A new form of life emerged from synthesis", timestamp: new Date(log.created_at) });
     });
 
