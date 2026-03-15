@@ -577,5 +577,9 @@
     "modeSurreal": "Surreal",
     "modeReflective": "Reflective",
     "modeCreative": "Creative"
+  },
+  "evolution": {
+    "share": "Share",
+    "close": "Close"
   }
 }

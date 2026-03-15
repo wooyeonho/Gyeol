@@ -155,6 +155,11 @@ export default function Home() {
           level={evolutionEvent.level!}
           mutation={evolutionEvent.mutation}
           onComplete={clearEvolution}
+          selfName={typeof agentState?.self_name === "string" ? agentState.self_name : undefined}
+          primaryColor={appearance.palette.primary}
+          secondaryColor={appearance.palette.secondary}
+          species={(agentState?.genome as { species?: string } | undefined)?.species}
+          shareBaseUrl={typeof window !== "undefined" ? window.location.origin : undefined}
         />
       )}
       <div
