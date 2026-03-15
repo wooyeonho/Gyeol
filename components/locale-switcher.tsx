@@ -1,6 +1,6 @@
 "use client";
 
-import { LOCALES, type Locale } from "@/lib/i18n/config";
+import { LOCALES, LOCALE_DISPLAY_NAMES, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
@@ -58,7 +58,7 @@ export function LocaleSwitcher({
                     }
               }
             >
-              {t(`locale.${item}`)}
+              {LOCALE_DISPLAY_NAMES[item]}
             </button>
           );
         })}
