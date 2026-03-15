@@ -111,14 +111,14 @@ export default function ComparePage() {
           <div className="flex flex-col items-center gap-2">
             <IdentityPresence appearance={myAppearance} size="md" />
             <p className="text-sm font-medium text-white truncate max-w-[120px]">
-              {result.mine.self_name || (locale === "ko" ? "나" : "Me")}
+              {result.mine.self_name || t("compare.me")}
             </p>
           </div>
           <div className="text-2xl font-bold text-white/30">VS</div>
           <div className="flex flex-col items-center gap-2">
             <IdentityPresence appearance={oppAppearance} size="md" />
             <p className="text-sm font-medium text-white truncate max-w-[120px]">
-              {result.opponent.self_name || (locale === "ko" ? "상대" : "Opponent")}
+              {result.opponent.self_name || t("compare.opponent")}
             </p>
           </div>
         </div>

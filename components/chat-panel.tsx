@@ -4,48 +4,31 @@ import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
-import type { Locale } from "@/lib/i18n/config";
+
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 
-function getFirstSessionConfig(locale: Locale) {
-  return locale === "en"
-    ? {
-        heading: "Start in one short message",
-        helper: "Say hello, share how you feel, or ask for help with one problem. Gyeol will learn your tone after the conversation starts.",
-        placeholder: "Say hi or tell Gyeol what you need today",
-        prompts: [
-          "Hi, can you start with three easy questions?",
-          "Help me sort the one thing that feels hardest today.",
-          "I just want a calm conversation for a minute.",
-        ],
-      }
-    : {
-        heading: "짧은 한 문장으로 시작하세요",
-        helper: "인사, 지금 기분, 오늘 정리하고 싶은 문제 하나만 말해도 충분합니다. 결은 대화가 시작된 뒤에 당신의 톤을 배워갑니다.",
-        placeholder: "안녕이라고 말하거나 오늘 필요한 걸 적어보세요",
-        prompts: [
-          "안녕, 시작하기 쉬운 질문 3개만 해줘.",
-          "오늘 가장 막히는 문제 하나만 같이 정리해줘.",
-          "그냥 1분만 차분하게 대화하고 싶어.",
-        ],
-      };
+function getFirstSessionConfig(t: (key: string) => string) {
+  return {
+    heading: t("chat.firstSessionHeading"),
+    helper: t("chat.firstSessionHelper"),
+    placeholder: t("chat.firstSessionPlaceholder"),
+    prompts: [
+      t("chat.firstPrompt1"),
+      t("chat.firstPrompt2"),
+      t("chat.firstPrompt3"),
+    ],
+  };
 }
 
-function getReturningPrompts(locale: Locale) {
-  return locale === "en"
-    ? [
-        "Tell me the one thing I should focus on today.",
-        "Summarize how my mood looks right now.",
-        "Build a short action plan from my current state.",
-      ]
-    : [
-        "오늘 내가 집중해야 할 1가지만 알려줘.",
-        "지금 내 상태를 짧게 정리해줘.",
-        "현재 상태를 바탕으로 짧은 실행 계획을 만들어줘.",
-      ];
+function getReturningPrompts(t: (key: string) => string) {
+  return [
+    t("home.returningPrompt1"),
+    t("home.returningPrompt2"),
+    t("home.returningPrompt3"),
+  ];
 }
 
 export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
@@ -59,8 +42,8 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const isFirstSession = totalMessages === 0 && messages.length === 0;
-  const firstSessionConfig = getFirstSessionConfig(locale);
-  const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(locale);
+  const firstSessionConfig = getFirstSessionConfig(t);
+  const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(t);
   const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");
   const appearance = resolveIdentityAppearance(
     {
@@ -85,7 +68,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     pitch: appearance.voice.pitch,
     speed: appearance.voice.speed,
     tremor: appearance.voice.tremor,
-    lang: locale === "ko" ? "ko-KR" : "en-US",
+    lang: t("chat.langCode"),
   });
 
   useEffect(() => {
@@ -157,3 +140,4 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     </div>
   );
 }
+

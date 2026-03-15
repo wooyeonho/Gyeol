@@ -37,7 +37,7 @@ type AsideProps = {
   completionRate: number;
   formatDate: (value: string) => string;
   genLevel: number;
-  locale: string;
+  locale?: string;
   missionElements: React.ReactNode;
   mood: string;
   newItemsSinceLastVisit: HomeSummaryItem[];
@@ -77,7 +77,7 @@ function PanelToggle({
 export function WorldClassHubAside({
   formatDate,
   genLevel,
-  locale,
+  locale: _locale,
   missionElements,
   mood,
   newItemsSinceLastVisit,
@@ -142,14 +142,12 @@ export function WorldClassHubAside({
             <p className="mt-1 text-xs text-white/50">{t("home.recentPanelHint")}</p>
             <p className="mt-2 text-sm font-medium text-white">
               {newItemsSinceLastVisit.length > 0
-                ? locale === "en"
-                  ? `${newItemsSinceLastVisit.length} new traces were recorded.`
-                  : `${newItemsSinceLastVisit.length}개의 새로운 흔적이 기록되었습니다.`
+                ? t("home.newTracesRecorded").replace("{count}", String(newItemsSinceLastVisit.length))
                 : t("home.recentFallback")}
             </p>
           </div>
           <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-            {locale === "en" ? `${recentItems.length} recent` : `최근 ${recentItems.length}개`}
+            {t("home.recentCount").replace("{count}", String(recentItems.length))}
           </span>
         </button>
 
@@ -159,7 +157,7 @@ export function WorldClassHubAside({
               {(newItemsSinceLastVisit.length > 0 ? newItemsSinceLastVisit : recentItems.slice(0, 3)).map((item) => (
                 <div key={`${item.kind}-${item.id}`} className="rounded-lg bg-black/25 p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-white/55">{item.kind === "milestone" ? (locale === "en" ? "Milestone" : "마일스톤") : (locale === "en" ? "Activity" : "활동")}</p>
+                    <p className="text-xs text-white/55">{item.kind === "milestone" ? t("home.milestone") : t("home.activityLabel")}</p>
                     <p className="text-[11px] text-white/55">{formatDate(item.created_at)}</p>
                   </div>
                   <p className="mt-1 text-sm text-white/82">{item.title}</p>
@@ -167,18 +165,16 @@ export function WorldClassHubAside({
               ))}
               {recentItems.length === 0 && (
                 <div className="rounded-lg bg-black/25 p-3 text-sm text-white/55">
-                  {locale === "en"
-                    ? "Once the first activity appears, a recent change summary will show up here."
-                    : "첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다."}
+                  {t("home.recentEmptyHint")}
                 </div>
               )}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link href="/activity" className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10">
-                {locale === "en" ? "Open recent activity" : "최근 활동 열기"}
+                {t("home.openRecentActivity")}
               </Link>
               <Link href="/album" className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10">
-                {locale === "en" ? "Open album again" : "앨범 다시 보기"}
+                {t("home.openAlbumAgain")}
               </Link>
             </div>
           </>
@@ -195,7 +191,7 @@ export function WorldClassHubAside({
           <span className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
             recap?.streak.days ? (recap.streak.days >= 7 ? "border-orange-500/50 bg-orange-500/20 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "border-orange-500/30 bg-orange-500/10 text-orange-200/90") : "border-white/15 bg-white/5 text-white/70"
           }`}>
-            {recap?.streak.days ? "🔥 " : ""}{locale === "en" ? `streak ${recap?.streak.days ?? 0}` : `연속 ${recap?.streak.days ?? 0}일`}
+            {recap?.streak.days ? "🔥 " : ""}{t("home.streakCount").replace("{count}", String(recap?.streak.days ?? 0))}
           </span>
         </button>
 
@@ -216,12 +212,10 @@ export function WorldClassHubAside({
               <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3">
                 <p className="text-xs text-cyan-100/75">PRO RECAP</p>
                 <p className="mt-1 text-sm text-cyan-50">
-                  {locale === "en"
-                    ? "Deeper weekly recaps and longer history summaries open on Pro and above."
-                    : "더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다."}
+                  {t("home.proRecapBody")}
                 </p>
                 <Link href="/plans" className="mt-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/15">
-                  {locale === "en" ? "See upgrade plans" : "플랜 업그레이드 보기"}
+                  {t("home.seeUpgradePlans")}
                 </Link>
               </div>
             )}
@@ -229,21 +223,17 @@ export function WorldClassHubAside({
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.today")}</p>
                 <p className="mt-1 text-sm text-white/82">
-                  {locale === "en"
-                    ? `Messages ${recap?.today.user_messages ?? 0} · Activity ${recap?.today.activities ?? 0}`
-                    : `메시지 ${recap?.today.user_messages ?? 0} · 활동 ${recap?.today.activities ?? 0}`}
+                  {t("home.todayStats").replace("{messages}", String(recap?.today.user_messages ?? 0)).replace("{activities}", String(recap?.today.activities ?? 0))}
                 </p>
                 <p className="mt-1 text-xs text-white/50">{recap?.streak.today_active ? t("home.todayDone") : t("home.todayEmpty")}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.thisWeek")}</p>
                 <p className="mt-1 text-sm text-white/82">
-                  {locale === "en"
-                    ? `Messages ${recap?.weekly.user_messages ?? 0} · Milestones ${recap?.weekly.milestones ?? 0}`
-                    : `대화 ${recap?.weekly.user_messages ?? 0} · 마일스톤 ${recap?.weekly.milestones ?? 0}`}
+                  {t("home.weekStats").replace("{messages}", String(recap?.weekly.user_messages ?? 0)).replace("{milestones}", String(recap?.weekly.milestones ?? 0))}
                 </p>
                 <p className="mt-1 text-xs text-white/50">
-                  {locale === "en" ? `Artifacts ${recap?.weekly.artifacts ?? 0}` : `아티팩트 ${recap?.weekly.artifacts ?? 0}개`}
+                  {t("home.artifactsCount").replace("{count}", String(recap?.weekly.artifacts ?? 0))}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
@@ -265,9 +255,7 @@ export function WorldClassHubAside({
             </p>
           </div>
           <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white/70">
-            {locale === "en"
-              ? `${recap?.goal_loop?.pending_count ?? 0} tasks`
-              : `대기 태스크 ${recap?.goal_loop?.pending_count ?? 0}개`}
+            {t("home.tasksCount").replace("{count}", String(recap?.goal_loop?.pending_count ?? 0))}
           </span>
         </button>
 
@@ -275,17 +263,17 @@ export function WorldClassHubAside({
           <>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "current goal" : "현재 목표"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.currentGoalLabel")}</p>
                 <p className="mt-1 text-sm text-white/82">{recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}</p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "long-term direction" : "장기 방향"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.longTermDirection")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.long_term_goal ?? recap?.goal_loop?.active_goal ?? t("home.goalLoopCurrentEmpty")}
                 </p>
               </div>
               <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-white/60">{locale === "en" ? "research next" : "추가 조사 포인트"}</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/60">{t("home.researchNext")}</p>
                 <p className="mt-1 text-sm text-white/82">
                   {recap?.goal_loop?.latest_task ??
                     recap?.goal_loop?.research_focus ??

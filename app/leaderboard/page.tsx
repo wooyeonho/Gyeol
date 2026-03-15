@@ -58,16 +58,16 @@ export default function LeaderboardPage() {
       const res = await fetch("/api/share", { method: "POST" });
       const json = await res.json().catch(() => null);
       if (!res.ok || typeof json?.url !== "string") {
-        setShareNotice(locale === "en" ? "Unable to create share card." : "공유 카드를 만들지 못했습니다.");
+        setShareNotice(t("leaderboard.shareCardFailed"));
         return;
       }
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(json.url);
       }
-      setShareNotice(locale === "en" ? "Share card copied." : "공유 카드 링크가 복사되었습니다.");
+      setShareNotice(t("leaderboard.shareCardCopied"));
       setTimeout(() => setShareNotice(null), 2400);
     } catch {
-      setShareNotice(locale === "en" ? "Unable to create share card." : "공유 카드를 만들지 못했습니다.");
+      setShareNotice(t("leaderboard.shareCardFailed"));
     }
   }
 
@@ -79,8 +79,8 @@ export default function LeaderboardPage() {
 
   function getMetricLabel() {
     if (tab === "level") return "Gen";
-    if (tab === "messages") return locale === "ko" ? "대화" : "msgs";
-    return locale === "ko" ? "활력" : "vitality";
+    if (tab === "messages") return t("leaderboard.msgs");
+    return t("leaderboard.vitalityLabel");
   }
 
   if (loading) {
@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
               </div>
             )}
             <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-sm text-fuchsia-100/90">
-              {locale === "en" ? "Top 50 live ranking" : "Top 50 실시간 랭킹"}
+              {t("leaderboard.top50")}
             </div>
           </div>
           {shareNotice && (
@@ -129,29 +129,27 @@ export default function LeaderboardPage() {
 
           <section className="theme-panel rounded-[1.75rem] p-5">
             <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
-              {locale === "en" ? "Social proof" : "소셜 프루프"}
+              {t("leaderboard.socialProof")}
             </p>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-              {locale === "en" ? "Show where your Gyeol stands this week" : "이번 주 내 결의 위치를 보여주세요"}
+              {t("leaderboard.socialProofTitle")}
             </h2>
             <p className="theme-text-subtle mt-3 text-sm leading-6">
-              {locale === "en"
-                ? "Compare with nearby rivals, rematch instantly, and generate a share card when your rank feels worth showing."
-                : "근처 경쟁자와 비교하고, 바로 재대결하고, 자랑할 만한 순위가 되면 공유 카드를 만들어 보세요."}
+              {t("leaderboard.socialProofBody")}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/compare"
                 className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
               >
-                {locale === "en" ? "Compare now" : "지금 비교하기"}
+                {t("leaderboard.compareNow")}
               </Link>
               <button
                 type="button"
                 onClick={() => void handleShareProfile()}
                 className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
               >
-                {locale === "en" ? "Create share card" : "공유 카드 만들기"}
+                {t("leaderboard.createShareCard")}
               </button>
             </div>
           </section>
@@ -184,7 +182,7 @@ export default function LeaderboardPage() {
           <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
             <div className="theme-panel-strong rounded-[1.75rem] p-5">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-100/80">
-                {locale === "en" ? "Your position" : "내 순위"}
+                {t("leaderboard.yourPosition")}
               </p>
               <div className="mt-4 flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black/25 text-2xl font-semibold text-white">
@@ -192,12 +190,10 @@ export default function LeaderboardPage() {
                 </div>
                 <div>
                   <p className="text-lg font-semibold">
-                    {context.self.self_name || (locale === "ko" ? "이름 없는 결" : "Unnamed Gyeol")}
+                    {context.self.self_name || t("leaderboard.unnamedGyeol")}
                   </p>
                   <p className="theme-text-subtle mt-1 text-sm">
-                    {locale === "en"
-                      ? `${getMetricValue(context.self)} ${getMetricLabel()} · keep pushing this week`
-                      : `${getMetricValue(context.self)} ${getMetricLabel()} · 이번 주 더 밀어보세요`}
+                    {`${getMetricValue(context.self)} ${getMetricLabel()} · ${t("leaderboard.keepPushing")}`}
                   </p>
                 </div>
               </div>
@@ -205,7 +201,7 @@ export default function LeaderboardPage() {
 
             <div className="theme-panel rounded-[1.75rem] p-5">
               <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
-                {locale === "en" ? "Nearby rivals" : "근처 경쟁자"}
+                {t("leaderboard.nearbyRivals")}
               </p>
               <div className="mt-4 space-y-3">
                 {context.nearby.map((entry) => {
@@ -233,10 +229,10 @@ export default function LeaderboardPage() {
                       <IdentityPresence appearance={appearance} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
-                          {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
+                          {entry.self_name || t("leaderboard.unnamed")}
                         </p>
                         <p className="theme-text-faint mt-1 text-xs">
-                          Gen {entry.gen_level} · {entry.total_messages} {locale === "ko" ? "대화" : "msgs"}
+                          Gen {entry.gen_level} · {entry.total_messages} {t("leaderboard.conversations")}
                         </p>
                       </div>
                       <div className="text-right">
@@ -257,11 +253,7 @@ export default function LeaderboardPage() {
           <AnimatedEmptyState
             icon="social"
             title={t("leaderboard.empty")}
-            description={
-              locale === "en"
-                ? "No agents found yet. Start growing your Gyeol!"
-                : "아직 결이 없습니다. 첫 대화를 시작해보세요!"
-            }
+            description={t("leaderboard.emptyDesc")}
             accentColor="#22d3ee"
           />
         ) : (
@@ -310,12 +302,12 @@ export default function LeaderboardPage() {
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">
-                      {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
+                      {entry.self_name || t("leaderboard.unnamed")}
                     </p>
                     <div className="theme-text-subtle mt-1 flex items-center gap-3 text-xs">
                       <span style={{ color }}>Gen {entry.gen_level}</span>
                       <span>·</span>
-                      <span>{entry.total_messages} {locale === "ko" ? "대화" : "msgs"}</span>
+                      <span>{entry.total_messages} {t("leaderboard.conversations")}</span>
                       <span>·</span>
                       <span>{Math.round(entry.vitality * 100)}%</span>
                     </div>

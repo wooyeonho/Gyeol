@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
+import { useTranslations } from "@/components/i18n-provider";
 import { formatWeeklyEventCountdown, type WeeklyEventProgress } from "@/lib/engagement/weekly-event";
 
 type WeeklyEventCardProps = {
@@ -17,6 +18,7 @@ export function WeeklyEventCard({
   className = "",
   compact = false,
 }: WeeklyEventCardProps) {
+  const { t } = useTranslations();
   const countdown = formatWeeklyEventCountdown(locale, progress.endsAt);
   const completionRate = Math.min(100, (progress.progress / progress.target) * 100);
 
@@ -25,19 +27,15 @@ export function WeeklyEventCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-300">
-            {locale === "en" ? "Weekly event" : "주간 이벤트"}
+            {t("weeklyEvent.label")}
           </p>
           <h3 className={`mt-2 font-semibold tracking-tight ${compact ? "text-lg" : "text-2xl"}`}>
-            {locale === "en" ? "10 messages unlock a special drop" : "메시지 10개로 특별 보상 해금"}
+            {t("weeklyEvent.title")}
           </h3>
           <p className="theme-text-subtle mt-2 text-sm leading-6">
             {progress.completed
-              ? locale === "en"
-                ? "Completed this week. Keep chatting to stay ahead on the leaderboard."
-                : "이번 주 이벤트를 완료했습니다. 계속 대화해서 리더보드 격차를 벌리세요."
-              : locale === "en"
-                ? "Finish the weekly challenge before the timer ends to claim the special event reward."
-                : "타이머가 끝나기 전에 주간 챌린지를 완료하면 특별 이벤트 보상을 받을 수 있습니다."}
+              ? t("weeklyEvent.completedBody")
+              : t("weeklyEvent.activeBody")}
           </p>
         </div>
         <span className="rounded-full border border-fuchsia-300/25 bg-fuchsia-400/10 px-3 py-2 text-sm text-fuchsia-100/90">
@@ -56,18 +54,12 @@ export function WeeklyEventCard({
 
       <div className="mt-3 flex items-center justify-between gap-3 text-sm">
         <span className="theme-text-muted">
-          {locale === "en"
-            ? `${progress.progress}/${progress.target} messages`
-            : `${progress.progress}/${progress.target}개 메시지`}
+          {t("weeklyEvent.progressLabel").replace("{progress}", String(progress.progress)).replace("{target}", String(progress.target))}
         </span>
         <span className="theme-text-subtle">
           {progress.completed
-            ? locale === "en"
-              ? "Reward claimed"
-              : "보상 획득 완료"
-            : locale === "en"
-              ? `${progress.remaining} left`
-              : `${progress.remaining}개 남음`}
+            ? t("weeklyEvent.rewardClaimed")
+            : t("weeklyEvent.remaining").replace("{count}", String(progress.remaining))}
         </span>
       </div>
     </div>

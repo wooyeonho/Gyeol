@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
+import { useTranslations } from "@/components/i18n-provider";
 import { type RewardResult } from "@/lib/rewards/variable-reward";
 
 type RewardToastProps = {
@@ -12,17 +13,18 @@ type RewardToastProps = {
 };
 
 export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
+  const { t } = useTranslations();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const show = reward !== null && reward.tier !== "none";
   const isJackpot = reward?.tier === "jackpot";
   const rewardLines = reward
     ? [
-        reward.delta.coins ? `+${reward.delta.coins} ${locale === "en" ? "coins" : "코인"}` : null,
-        reward.delta.emoji_dust ? `+${reward.delta.emoji_dust} ${locale === "en" ? "emoji dust" : "이모지 더스트"}` : null,
-        reward.delta.title_shards ? `+${reward.delta.title_shards} ${locale === "en" ? "title shards" : "칭호 조각"}` : null,
-        reward.delta.appearance_shards ? `+${reward.delta.appearance_shards} ${locale === "en" ? "appearance shards" : "외형 조각"}` : null,
-        reward.delta.evolution_points ? `+${reward.delta.evolution_points} ${locale === "en" ? "evolution points" : "진화 포인트"}` : null,
-        reward.delta.streak_freezes ? `+${reward.delta.streak_freezes} ${locale === "en" ? "streak freeze" : "스트릭 프리즈"}` : null,
+        reward.delta.coins ? `+${reward.delta.coins} ${t("rewardToast.coins")}` : null,
+        reward.delta.emoji_dust ? `+${reward.delta.emoji_dust} ${t("rewardToast.emojiDust")}` : null,
+        reward.delta.title_shards ? `+${reward.delta.title_shards} ${t("rewardToast.titleShards")}` : null,
+        reward.delta.appearance_shards ? `+${reward.delta.appearance_shards} ${t("rewardToast.appearanceShards")}` : null,
+        reward.delta.evolution_points ? `+${reward.delta.evolution_points} ${t("rewardToast.evolutionPoints")}` : null,
+        reward.delta.streak_freezes ? `+${reward.delta.streak_freezes} ${t("rewardToast.streakFreeze")}` : null,
       ].filter(Boolean)
     : [];
 
@@ -89,9 +91,7 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
               </p>
               {reward.streakMultiplier > 1 && (
                 <p className="mt-2 text-sm font-medium text-amber-100/95">
-                  {locale === "en"
-                    ? `Streak bonus x${reward.streakMultiplier}`
-                    : `스트릭 보너스 x${reward.streakMultiplier}`}
+                  {`${t("rewardToast.streakBonus")} x${reward.streakMultiplier}`}
                 </p>
               )}
               <div className={`mt-3 flex flex-wrap ${isJackpot ? "justify-center" : ""} gap-2`}>
@@ -106,7 +106,7 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
               </div>
               {reward.guaranteed && reward.source === "message" && (
                 <p className="mt-3 text-xs uppercase tracking-[0.18em] text-white/65">
-                  {locale === "en" ? "Guaranteed drop" : "보장 드롭"}
+                  {t("rewardToast.guaranteedDrop")}
                 </p>
               )}
             </div>

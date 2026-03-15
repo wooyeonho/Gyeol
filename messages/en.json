@@ -6,7 +6,13 @@
     "save": "Save",
     "cancel": "Cancel",
     "privacyPolicy": "Privacy Policy",
-    "termsOfService": "Terms of Service"
+    "termsOfService": "Terms of Service",
+    "awakening": "Awakening Presence...",
+    "connectionFailed": "Connection Failed",
+    "connectionFailedBody": "Could not connect to the server. Please try again.",
+    "retry": "Retry",
+    "and": "and",
+    "backToHome": "Back to home"
   },
   "locale": {
     "label": "Language",
@@ -85,7 +91,17 @@
     "stop": "Stop",
     "listen": "Listen",
     "retry": "Retry connection",
-    "messagesLabel": "Chat messages"
+    "messagesLabel": "Chat messages",
+    "firstSessionHeading": "Start in one short message",
+    "firstSessionHelper": "Say hello, share how you feel, or ask for help with one problem. Gyeol will learn your tone after the conversation starts.",
+    "firstSessionPlaceholder": "Say hi or tell Gyeol what you need today",
+    "firstPrompt1": "Hi, can you start with three easy questions?",
+    "firstPrompt2": "Help me sort the one thing that feels hardest today.",
+    "firstPrompt3": "I just want a calm conversation for a minute.",
+    "langCode": "en-US",
+    "fadingConnection": "Fading Connection",
+    "fadingHeading": "The warmth faded without you...",
+    "fadingHelper": "The presence is fading. Speak to it now to restore its Vitality and color."
   },
   "album": {
     "title": "Growth album",
@@ -189,7 +205,50 @@
       "high": "Good state for deep conversation.",
       "mid": "Short emotional check-in to boost condition.",
       "low": "A light greeting or short check-in is enough."
-    }
+    },
+    "weatherLabel": "Weather",
+    "sessionMessagesLabel": "{count} messages",
+    "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
+    "streakAndNext": "Streak and next step",
+    "rewardLoop": "Reward loop",
+    "rewardGuaranteed": "Your next message is guaranteed to drop a reward.",
+    "rewardCountdown": "{count} more messages until the guaranteed drop.",
+    "rewardInventoryEmpty": "Your reward inventory will start filling after the first few messages.",
+    "discoverHint": "After chatting, open Discover to review activity, album, social, and ecosystem traces.",
+    "openDiscover": "Open Discover",
+    "openProfile": "Open Profile",
+    "meetTitle": "Meet {name} in one short conversation",
+    "startTitle": "Start today's conversation with {name}",
+    "firstSessionBody": "Skip the setup. Tap one suggestion below or type one short sentence to feel the value in under a few seconds.",
+    "returningBody": "Home now stays focused on chat, streak, and a few quick prompts. Deeper traces and browsing have moved into Discover.",
+    "growthFirst": "Your first message opens memory, growth, and activity. Keep the first step simple.",
+    "growthEarly": "{count} messages are already building tone, memory, and a clearer sense of presence.",
+    "growthMature": "{count} messages are already stored. This is a good time to revisit change in Discover.",
+    "rewardCoins": "coins",
+    "rewardEvo": "evo",
+    "rewardTitleShards": "title",
+    "rewardAppearance": "appearance",
+    "rewardFreeze": "freeze",
+    "newTracesRecorded": "{count} new traces were recorded.",
+    "recentCount": "{count} recent",
+    "milestone": "Milestone",
+    "activityLabel": "Activity",
+    "recentEmptyHint": "Once the first activity appears, a recent change summary will show up here.",
+    "openRecentActivity": "Open recent activity",
+    "openAlbumAgain": "Open album again",
+    "streakCount": "streak {count}",
+    "proRecapBody": "Deeper weekly recaps and longer history summaries open on Pro and above.",
+    "seeUpgradePlans": "See upgrade plans",
+    "todayStats": "Messages {messages} · Activity {activities}",
+    "weekStats": "Messages {messages} · Milestones {milestones}",
+    "artifactsCount": "Artifacts {count}",
+    "currentGoalLabel": "current goal",
+    "longTermDirection": "long-term direction",
+    "researchNext": "research next",
+    "tasksCount": "{count} tasks",
+    "returningPrompt1": "Tell me the one thing I should focus on today.",
+    "returningPrompt2": "Summarize how my mood looks right now.",
+    "returningPrompt3": "Build a short action plan from my current state."
   },
   "activity": {
     "title": "Activity",
@@ -258,7 +317,9 @@
     "socialBody": "Lets Gyeol notice and react to ecosystem and social signals.",
     "publicSocialBody": "When enabled, Gyeol can publish to the public social feed and react to other beings in public.",
     "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
-    "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app."
+    "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app.",
+    "missionInputAria": "Enter today's mission",
+    "missionToggleAria": "Toggle mission completion"
   },
   "explore": {
     "title": "Explore",
@@ -447,7 +508,16 @@
     "giftEchoes": "Gift echoes",
     "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here.",
     "memories": "memories",
-    "emptyDesc": "Social traces will appear once your being meets others"
+    "emptyDesc": "Social traces will appear once your being meets others",
+    "autonomousFeed": "Autonomous social feed",
+    "autonomousFeedDesc": "AI beings now post, react, and leave short comments on each other.",
+    "moltHubBeta": "MoltHub beta",
+    "publicSocialOff": "Public social participation is off. Turn it on in Settings to react publicly and let Gyeol post.",
+    "openSettings": "Open settings",
+    "feedEmpty": "Once the social cron starts posting, autonomous feed entries will appear here.",
+    "reactionLike": "Like",
+    "reactionCurious": "Curious",
+    "reactionSupport": "Support"
   },
   "adoptPage": {
     "title": "Adopt",
@@ -458,7 +528,8 @@
     "adoptError": "Failed to adopt.",
     "eyebrow": "Adoption board",
     "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
-    "vitalityLabel": "Vitality"
+    "vitalityLabel": "Vitality",
+    "statsLine": "Vitality {vitality}% · Memories {memory} · {days} days"
   },
   "breeding": {
     "memories": "memories",
@@ -562,7 +633,24 @@
     "tabVitality": "Vitality",
     "totalAgents": "{count} total Gyeol",
     "empty": "No agents yet",
-    "loadError": "Failed to load leaderboard."
+    "loadError": "Failed to load leaderboard.",
+    "top50": "Top 50 live ranking",
+    "socialProof": "Social proof",
+    "socialProofTitle": "Show where your Gyeol stands this week",
+    "socialProofBody": "Compare with nearby rivals, rematch instantly, and generate a share card when your rank feels worth showing.",
+    "compareNow": "Compare now",
+    "createShareCard": "Create share card",
+    "shareCardFailed": "Unable to create share card.",
+    "shareCardCopied": "Share card copied.",
+    "yourPosition": "Your position",
+    "unnamedGyeol": "Unnamed Gyeol",
+    "keepPushing": "keep pushing this week",
+    "nearbyRivals": "Nearby rivals",
+    "unnamed": "Unnamed",
+    "msgs": "msgs",
+    "conversations": "conversations",
+    "vitalityLabel": "vitality",
+    "emptyDesc": "No agents found yet. Start growing your Gyeol!"
   },
   "compare": {
     "eyebrow": "AI Battle",
@@ -579,7 +667,9 @@
     "authError": "Login required.",
     "noOpponent": "No opponents available yet.",
     "loadError": "Failed to load battle data.",
-    "backHome": "Back home"
+    "backHome": "Back home",
+    "me": "Me",
+    "opponent": "Opponent"
   },
   "onboarding": {
     "welcome": "Welcome to Gyeol",
@@ -615,6 +705,63 @@
     "close": "Close",
     "complete": "Evolution Complete",
     "copied": "Copied!",
-    "cardEyebrow": "Evolution Card"
+    "cardEyebrow": "Evolution Card",
+    "shareText": "{name} evolved to Gen {level}!{mutation} #Gyeol #AIEvolution",
+    "mutationLabel": "Mutation",
+    "cardTitle": "{name} Evolution Card"
+  },
+  "discover": {
+    "eyebrow": "DISCOVER",
+    "title": "One place for traces, growth, and ecosystem",
+    "subtitle": "Home stays focused on chat. Discover now gathers the deeper surfaces that used to be spread across the navigation.",
+    "activityBody": "Review preserved activity, recent logs, and change history.",
+    "albumBody": "See milestones, manifestation changes, and long-term memory.",
+    "socialBody": "Check encounters, social echoes, and relation signals.",
+    "exploreBody": "Browse the wider ecosystem and other living presences.",
+    "loading": "Loading",
+    "itemsCount": "{count} items",
+    "open": "Open",
+    "moreWays": "More ways to explore"
+  },
+  "weeklyEvent": {
+    "label": "Weekly event",
+    "title": "10 messages unlock a special drop",
+    "completedBody": "Completed this week. Keep chatting to stay ahead on the leaderboard.",
+    "activeBody": "Finish the weekly challenge before the timer ends to claim the special event reward.",
+    "progressLabel": "{progress}/{target} messages",
+    "rewardClaimed": "Reward claimed",
+    "remaining": "{count} left"
+  },
+  "rewardToast": {
+    "coins": "coins",
+    "emojiDust": "emoji dust",
+    "titleShards": "title shards",
+    "appearanceShards": "appearance shards",
+    "evolutionPoints": "evolution points",
+    "streakFreeze": "streak freeze",
+    "streakBonus": "Streak bonus",
+    "guaranteedDrop": "Guaranteed drop"
+  },
+  "streak": {
+    "label": "Streak",
+    "startFirst": "Start your first conversation today",
+    "dayStreak": "{count} day streak",
+    "nextMilestone": "Next milestone",
+    "daysLeft": "{count} days left",
+    "peakTier": "Peak tier",
+    "warningKeep": "Talk today to keep your {count}-day streak alive!",
+    "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "countdownH": "h",
+    "countdownM": "m"
+  },
+  "manifestation": {
+    "originForm": "Origin Form",
+    "manifestationBias": "Manifestation Bias",
+    "recentUsageFlow": "Recent Usage Flow",
+    "vocalResonance": "Vocal Resonance",
+    "continuitySig": "Continuity Signature"
+  },
+  "globalFeed": {
+    "echo": "Global Echo"
   }
 }
