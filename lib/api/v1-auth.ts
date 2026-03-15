@@ -74,15 +74,19 @@ export async function authorizeV1ApiKey(
     };
   }
 
-  // Backward compatibility: legacy single env key.
+  // Backward compatibility: legacy single env key (timing-safe comparison).
   const envKey = process.env.GYEOL_ENGINE_API_KEY;
-  if (Boolean(envKey) && raw === envKey) {
-    return {
-      id: null,
-      identifier: getApiKeyIdentifier(request),
-      isLegacyEnvKey: true,
-      ownerUserId: null,
-    };
+  if (envKey && envKey.length === raw.length) {
+    const a = Buffer.from(raw);
+    const b = Buffer.from(envKey);
+    if (crypto.timingSafeEqual(a, b)) {
+      return {
+        id: null,
+        identifier: getApiKeyIdentifier(request),
+        isLegacyEnvKey: true,
+        ownerUserId: null,
+      };
+    }
   }
 
   return null;

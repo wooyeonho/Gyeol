@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { Locale } from "@/lib/i18n/config";
 import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
 import { useTranslations } from "@/components/i18n-provider";
-import type { Locale } from "@/lib/i18n/config";
 import { StreakDisplay } from "@/components/streak-display";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { formatLocalizedTime } from "@/lib/i18n/format";

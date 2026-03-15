@@ -33,7 +33,7 @@ async function callEndpoint(config: EngineConfig, job: JobDef): Promise<void> {
 
   try {
     const res = await fetch(url, {
-      method: "GET",
+      method: "POST",
       headers: { ...headers, "Content-Type": "application/json" },
       signal: controller.signal,
     });

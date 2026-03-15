@@ -146,3 +146,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+/** Accept POST from OpenClaw scheduler */
+export const POST = GET;

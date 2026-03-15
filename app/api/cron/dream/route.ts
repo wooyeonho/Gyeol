@@ -100,3 +100,6 @@ export async function GET(req: NextRequest) {
     await releaseCronLock(lockKey);
   }
 }
+
+/** Accept POST from OpenClaw scheduler */
+export const POST = GET;

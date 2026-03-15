@@ -35,7 +35,7 @@ type Visual = {
 
 export default function Home() {
   const { locale } = useTranslations();
-  const { agentState, loading, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
+  const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
@@ -140,6 +140,31 @@ export default function Home() {
         <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/50 animate-pulse">
           {locale === "ko" ? "결을 조율하는 중..." : "Awakening Presence..."}
         </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 px-6">
+        <div className="w-16 h-16 rounded-full border border-red-400/30 bg-red-400/10 flex items-center justify-center mb-6">
+          <span className="text-2xl">&#x26A0;</span>
+        </div>
+        <h2 className="text-lg font-semibold text-white">
+          {locale === "ko" ? "연결에 실패했어요" : "Connection Failed"}
+        </h2>
+        <p className="mt-2 text-sm text-white/60 text-center">
+          {locale === "ko"
+            ? "서버와 연결할 수 없어요. 잠시 후 다시 시도해주세요."
+            : "Could not connect to the server. Please try again."}
+        </p>
+        <button
+          type="button"
+          onClick={() => fetchAgentState()}
+          className="mt-6 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-cyan-400 transition-colors"
+        >
+          {locale === "ko" ? "다시 시도" : "Retry"}
+        </button>
       </div>
     );
   }

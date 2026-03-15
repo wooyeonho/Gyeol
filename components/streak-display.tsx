@@ -21,7 +21,6 @@ export function StreakDisplay({
   locale = "ko",
   compact = false,
 }: StreakDisplayProps) {
-  // Derive celebration state purely from props — no effects needed
   const isMilestone = days > 0 && days % 7 === 0;
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
   const showCelebration = isMilestone && !celebrationDismissed;
@@ -41,12 +40,12 @@ export function StreakDisplay({
   })();
 
   const streakColor = days >= 30
-    ? "#f59e0b" // amber for 30+
+    ? "#f59e0b"
     : days >= 7
-      ? "#fb923c" // orange for 7+
+      ? "#fb923c"
       : days >= 3
-        ? "#fbbf24" // yellow for 3+
-        : "#ffffff40"; // dim for 0-2
+        ? "#fbbf24"
+        : "#ffffff40";
 
   const streakLabel = days === 0
     ? (locale === "ko" ? "오늘 첫 대화를 시작해보세요" : "Start your first conversation today")
@@ -168,16 +167,15 @@ export function StreakDisplay({
         </div>
       </div>
 
-      {/* Weekly activity heatmap */}
       <div className="mt-4 flex gap-1">
-          {weeklyActivity.map((active, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            const dayIndex = d.getDay(); // 0=Sun, 1=Mon, ...
-            const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
-            const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
-            const dayLabel = locale === "ko" ? koLabels[dayIndex] : enLabels[dayIndex];
-            const isToday = i === weeklyActivity.length - 1;
+        {weeklyActivity.map((active, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          const dayIndex = d.getDay();
+          const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
+          const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
+          const dayLabel = locale === "ko" ? koLabels[dayIndex] : enLabels[dayIndex];
+          const isToday = i === weeklyActivity.length - 1;
           return (
             <motion.div
               key={i}
@@ -204,7 +202,6 @@ export function StreakDisplay({
         })}
       </div>
 
-      {/* Streak break warning */}
       {days > 0 && !todayActive && (
         <motion.div
           className="mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2"

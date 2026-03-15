@@ -5,6 +5,11 @@ type BiLocaleText = {
   en: string;
 };
 
+/** Accept any i18n locale string and normalize to internal Locale. */
+function toLocale(raw: string): Locale {
+  return raw === "ko" ? "ko" : "en";
+}
+
 type VisualInput = {
   color?: string | null;
   shape?: string | null;
@@ -498,8 +503,9 @@ function buildPresenceTraits(shell: IdentityFormKey, state: ManifestationState, 
 
 export function resolveIdentityAppearance(
   input: IdentityAppearanceInput,
-  locale: Locale
+  rawLocale: string
 ): ResolvedIdentityAppearance {
+  const locale = toLocale(rawLocale);
   const { state, textHash } = deriveManifestationState(input);
   const shell = selectShell(state, textHash);
   const vitality = clamp(input.vitality ?? 1, 0, 1);

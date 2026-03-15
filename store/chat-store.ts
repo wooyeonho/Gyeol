@@ -101,6 +101,15 @@ async function handleStreamResponse(
         }
       }
     }
+    // After stream ends, check if the assistant message is still empty (all deltas failed to parse)
+    const lastMsgCheck = get().messages[get().messages.length - 1];
+    if (lastMsgCheck && lastMsgCheck.role === "assistant" && !lastMsgCheck.content) {
+      set((s) => {
+        const msgs = [...s.messages];
+        msgs[msgs.length - 1] = { role: "assistant", content: "응답을 처리하지 못했어요.", error: true };
+        return { messages: msgs };
+      });
+    }
   } catch (e) {
     console.error("[Chat]", e);
     set((s) => {

@@ -157,4 +157,3 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     </div>
   );
 }
-

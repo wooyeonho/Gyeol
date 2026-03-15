@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n/config";
 
 type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
 
-const MILESTONE_LABELS: Record<Locale, Record<string, string>> = {
+const MILESTONE_LABELS: Record<string, Record<string, string>> = {
   ko: {
     first_chat: "첫 대화",
     evolution: "진화",
@@ -56,7 +56,7 @@ const MILESTONE_LABELS: Record<Locale, Record<string, string>> = {
   },
 };
 
-const DEFAULT_SELF_NAME: Record<Locale, string> = {
+const DEFAULT_SELF_NAME: Record<string, string> = {
   ko: "결",
   en: "Gyeol",
   ja: "Gyeol",

@@ -33,9 +33,10 @@ describe("runOnce", () => {
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/api/cron/health",
       expect.objectContaining({
-        method: "GET",
+        method: "POST",
         headers: expect.objectContaining({
           Authorization: "Bearer cron-secret",
+          "Content-Type": "application/json",
         }),
       })
     );
@@ -57,9 +58,10 @@ describe("runOnce", () => {
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/api/cron/recap",
       expect.objectContaining({
-        method: "GET",
+        method: "POST",
         headers: expect.objectContaining({
           Authorization: "Bearer cron-secret",
+          "Content-Type": "application/json",
         }),
       })
     );

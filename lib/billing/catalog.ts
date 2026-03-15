@@ -160,7 +160,8 @@ export function formatPlanPrice(
   return locale === "ko" ? `월 ${amountLabel}` : `${amountLabel} / month`;
 }
 
-export function getPlanDefinition(tier: PlanTier, locale: Locale): PlanDefinition {
+export function getPlanDefinition(tier: PlanTier, rawLocale: Locale): PlanDefinition {
+  const locale: "ko" | "en" = rawLocale === "ko" ? "ko" : "en";
   const entry = PLAN_CATALOG[tier];
   const fallbackLocale: Locale = locale === "ko" ? "ko" : "en";
   return {
