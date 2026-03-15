@@ -7,6 +7,7 @@ type AgentStatePrompt = {
   config?: {
     active_goal?: string;
     long_term_goal?: string;
+    personality_mode?: string;
     research_focus?: string;
     tone?: string;
     vitality_stage?: string;
@@ -41,7 +42,21 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   const fragments = s.system_prompt?.fragments || s.fragments || [];
   fragments.forEach((f: string) => parts.push(f));
 
-  // 2. tone
+  // 2. personality mode (from onboarding)
+  const personalityMap: Record<string, string> = {
+    playful: "장난스럽고 유쾌하게 대화해. 가벼운 유머와 이모지를 사용해.",
+    intimate: "따뜻하고 다정하게. 상대의 감정에 공감하며 깊이 있게 대화해.",
+    strategic: "논리적이고 분석적으로. 사용자의 목표를 이해하고 전략적으로 도와줘.",
+    primal: "본능적이고 직관적으로. 짧고 강렬하게. 핵심만.",
+    surreal: "몽환적이고 시적으로. 비유와 상징을 사용해 대화해.",
+    reflective: "사려 깊고 철학적으로. 질문을 던지며 함께 생각해.",
+    creative: "창의적이고 실험적으로. 새로운 관점을 제시하고 상상력을 자극해.",
+  };
+  if (s.config?.personality_mode && personalityMap[s.config.personality_mode]) {
+    parts.push(personalityMap[s.config.personality_mode]);
+  }
+
+  // 3. tone
   const toneMap: Record<string, string> = { casual: "편하게 말해.", formal: "존댓말을 써.", playful: "장난스럽게 말해.", serious: "진지하게 말해." };
   if (s.config?.tone && toneMap[s.config.tone]) parts.push(toneMap[s.config.tone]);
 

@@ -125,6 +125,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
     }
 
+    haptic("send");
+    playSound("send");
     set((s) => {
       // Cap message history at 200 to prevent unbounded memory growth
       const MAX_MESSAGES = 200;

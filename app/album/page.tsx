@@ -104,7 +104,7 @@ export default function AlbumPage() {
           <AnimatedEmptyState
             icon="album"
             title={t("album.empty")}
-            description={locale === "en" ? "Start chatting to create your first milestone" : "대화를 시작하면 첫 마일스톤이 생성됩니다"}
+            description={t("album.emptyDesc")}
             accentColor="#a78bfa"
           />
         ) : (
