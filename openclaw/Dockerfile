@@ -1,15 +1,18 @@
 FROM node:20-slim
 
+# Install curl for HEALTHCHECK
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install --production=false
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src/ src/
 
 RUN npm run build
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 EXPOSE 8000
 
