@@ -580,6 +580,9 @@
   },
   "evolution": {
     "share": "Share",
-    "close": "Close"
+    "close": "Close",
+    "complete": "Evolution Complete",
+    "copied": "Copied!",
+    "cardEyebrow": "Evolution Card"
   }
 }
