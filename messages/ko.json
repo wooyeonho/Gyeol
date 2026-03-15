@@ -577,5 +577,9 @@
     "modeSurreal": "초현실적인",
     "modeReflective": "사색적인",
     "modeCreative": "창의적인"
+  },
+  "evolution": {
+    "share": "자랑하기",
+    "close": "닫기"
   }
 }
