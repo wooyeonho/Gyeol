@@ -67,19 +67,32 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    const { data: claimed, error: claimError } = await service
-      .from("adoption_board")
-      .update({ status: "adopted" })
-      .eq("agent_id", agentId)
-      .eq("status", "available")
-      .select("id")
-      .maybeSingle();
-    if (claimError || !claimed?.id) return NextResponse.json({ error: "Not available" }, { status: 409 });
+    // Atomic adoption: claim board entry + transfer agent in a single DB transaction.
+    // Falls back to two-step approach if RPC not deployed yet.
+    const { data: adopted, error: rpcError } = await service.rpc("adopt_agent", {
+      p_agent_id: agentId,
+      p_new_user_id: user.id,
+    });
 
-    const { error: adoptError } = await service.from("agents").update({ user_id: user.id }).eq("id", agentId);
-    if (adoptError) {
-      await service.from("adoption_board").update({ status: "available" }).eq("id", claimed.id);
-      return NextResponse.json({ error: "Adoption failed" }, { status: 500 });
+    if (rpcError) {
+      // Fallback: two-step with manual rollback (legacy path)
+      console.warn("[Adopt] atomic RPC unavailable, using legacy path:", rpcError.message);
+      const { data: claimed, error: claimError } = await service
+        .from("adoption_board")
+        .update({ status: "adopted" })
+        .eq("agent_id", agentId)
+        .eq("status", "available")
+        .select("id")
+        .maybeSingle();
+      if (claimError || !claimed?.id) return NextResponse.json({ error: "Not available" }, { status: 409 });
+
+      const { error: adoptError } = await service.from("agents").update({ user_id: user.id }).eq("id", agentId);
+      if (adoptError) {
+        await service.from("adoption_board").update({ status: "available" }).eq("id", claimed.id);
+        return NextResponse.json({ error: "Adoption failed" }, { status: 500 });
+      }
+    } else if (!adopted) {
+      return NextResponse.json({ error: "Not available" }, { status: 409 });
     }
     return NextResponse.json({ success: true });
   } catch (e) {

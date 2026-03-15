@@ -6,6 +6,10 @@ import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
+const MAX_SECRETS = 50;
+const MAX_LEXICON = 100;
+const MAX_CONVERSATION_CONTEXT = 4; // Only pass last N messages as context
+
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const lockKey = "cron:social";
@@ -45,15 +49,18 @@ export async function GET(req: NextRequest) {
     const language = getLanguageName(conversationLocale);
 
     for (let turn = 0; turn < turns; turn++) {
+      // Only pass last N messages as context to avoid quadratic token growth
+      const recentContext = conversation.slice(-MAX_CONVERSATION_CONTEXT);
       const aMsg = await generateJSON<{ message?: string }>(
         `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
-        `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"${language} message"}`
+        `${aContext}\nConversation so far: ${JSON.stringify(recentContext)}\nSay something.\nJSON: {"message":"${language} message"}`
       );
       if (aMsg?.message) conversation.push({ speaker: a.agent_id, content: aMsg.message });
 
+      const recentContextB = conversation.slice(-MAX_CONVERSATION_CONTEXT);
       const bMsg = await generateJSON<{ message?: string }>(
         `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
-        `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"${language} message"}`
+        `${bContext}\nConversation so far: ${JSON.stringify(recentContextB)}\nRespond.\nJSON: {"message":"${language} message"}`
       );
       if (bMsg?.message) conversation.push({ speaker: b.agent_id, content: bMsg.message });
     }
@@ -87,6 +94,10 @@ export async function GET(req: NextRequest) {
         const { data: sA } = await db.from("agent_state").select("secrets").eq("agent_id", a.agent_id).single();
         const secrets = (sA?.secrets as { entries?: unknown[] }) ?? {};
         const entries = Array.isArray(secrets.entries) ? secrets.entries : [];
+        // Cap secrets to prevent unbounded growth
+        if (entries.length >= MAX_SECRETS) {
+          entries.splice(0, entries.length - MAX_SECRETS + 1);
+        }
         entries.push({ content: outcome, created_at: new Date().toISOString(), reveal_condition: "when asked directly" });
         await db.from("agent_state").update({ secrets: { ...secrets, entries } }).eq("agent_id", a.agent_id);
       }
@@ -102,6 +113,10 @@ export async function GET(req: NextRequest) {
             const lexicon = (st?.lexicon as { entries?: { word: string; meaning?: string; origin?: string }[] }) ?? { entries: [] };
             const entries = lexicon.entries ?? [];
             if (!entries.some((e) => e.word === langResult.word)) {
+              // Cap lexicon to prevent unbounded growth
+              if (entries.length >= MAX_LEXICON) {
+                entries.splice(0, entries.length - MAX_LEXICON + 1);
+              }
               entries.push({ word: langResult.word, meaning: langResult.meaning ?? "", origin: "social" });
               await db.from("agent_state").update({ lexicon: { entries } }).eq("agent_id", agent.agent_id);
             }

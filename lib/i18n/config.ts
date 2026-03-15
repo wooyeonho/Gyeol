@@ -1,8 +1,48 @@
-export const LOCALES = ["ko", "en"] as const;
+/**
+ * Supported locales for the application.
+ * To add a new language:
+ * 1. Add the locale code here
+ * 2. Create messages/<locale>.json with all translation keys
+ * 3. Add the locale to BUNDLED in lib/i18n/messages.ts
+ * 4. Add display name to LOCALE_DISPLAY_NAMES below
+ *
+ * Priority languages for global expansion:
+ * - Phase 1 (current): ko, en
+ * - Phase 2 (planned): ja, zh, es
+ * - Phase 3 (planned): hi, pt, fr, de, ar
+ */
+export const LOCALES = ["ko", "en", "ja", "zh", "es"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_COOKIE_NAME = "gyeol_locale";
 export const DEFAULT_LOCALE: Locale = "en";
+
+/** Display names for locale switcher UI */
+export const LOCALE_DISPLAY_NAMES: Record<Locale, string> = {
+  ko: "한국어",
+  en: "English",
+  ja: "日本語",
+  zh: "中文",
+  es: "Español",
+};
+
+/** Intl locale tags */
+const INTL_MAP: Record<Locale, string> = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  zh: "zh-CN",
+  es: "es-ES",
+};
+
+/** Language names for AI generation prompts */
+const LANGUAGE_NAMES: Record<Locale, string> = {
+  ko: "Korean",
+  en: "English",
+  ja: "Japanese",
+  zh: "Chinese",
+  es: "Spanish",
+};
 
 export function isValidLocale(value: string): value is Locale {
   return LOCALES.includes(value as Locale);
@@ -18,11 +58,11 @@ export function normalizeLocale(value: string | null | undefined): Locale | null
 }
 
 export function getIntlLocale(locale: Locale): string {
-  return locale === "ko" ? "ko-KR" : "en-US";
+  return INTL_MAP[locale] ?? "en-US";
 }
 
-export function getLanguageName(locale: Locale): "Korean" | "English" {
-  return locale === "ko" ? "Korean" : "English";
+export function getLanguageName(locale: Locale): string {
+  return LANGUAGE_NAMES[locale] ?? "English";
 }
 
 export function getLocaleFromCookieHeader(cookieHeader: string | null | undefined): Locale | null {
