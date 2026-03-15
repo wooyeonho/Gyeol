@@ -50,7 +50,7 @@ async function loadPromptMemories(params: {
       referenceCount: memory.reference_count ?? 0,
     }));
 
-    await Promise.all(
+    await Promise.allSettled(
       memories
         .filter((memory) => memory.id)
         .map((memory) =>

@@ -119,7 +119,7 @@ export function BottomNav() {
               <span aria-hidden="true">
                 <NavIcon name={tab.icon} />
               </span>
-              <span className="text-[11px]">{t(tab.labelKey)}</span>
+              <span className="text-xs">{t(tab.labelKey)}</span>
             </Link>
           );
         })}

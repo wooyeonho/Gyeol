@@ -36,7 +36,7 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
   if (!ready) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" aria-live="polite" aria-label="로딩 중" />
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" aria-live="polite" aria-label="Loading" />
       </div>
     );
   }

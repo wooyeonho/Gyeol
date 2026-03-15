@@ -72,7 +72,11 @@
     "firstFootnote": "One sentence is enough to begin. Starting matters more than length.",
     "returningFootnote": "A short check-in is enough. Gyeol tries to remember even small changes.",
     "responding": "Generating response.",
-    "waiting": "Waiting for response."
+    "waiting": "Waiting for response.",
+    "stop": "Stop",
+    "listen": "Listen",
+    "retry": "Retry connection",
+    "messagesLabel": "Chat messages"
   },
   "album": {
     "title": "Growth album",

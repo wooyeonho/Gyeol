@@ -72,7 +72,11 @@
     "firstFootnote": "첫 시작은 한 문장으로 충분합니다. 중요한 건 길이보다 시작입니다.",
     "returningFootnote": "짧은 체크인도 괜찮습니다. 결은 작은 변화도 기억하려고 합니다.",
     "responding": "응답 생성 중입니다.",
-    "waiting": "응답 대기 중입니다."
+    "waiting": "응답 대기 중입니다.",
+    "stop": "정지",
+    "listen": "듣기",
+    "retry": "다시 연결 시도",
+    "messagesLabel": "채팅 메시지"
   },
   "album": {
     "title": "성장 앨범",
