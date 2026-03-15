@@ -92,14 +92,22 @@ docker run -d \
 
 ## Platform Deployment
 
-### Koyeb
+### Koyeb (Recommended)
 
-1. Create a new service from Docker image or GitHub repo
-2. Set build command: `cd openclaw && npm install && npm run build`
-3. Set run command: `node openclaw/dist/index.js`
-4. Add environment variables: `GYEOL_APP_URL`, `CRON_SECRET`
-5. Set health check path: `/health`
-6. Deploy
+1. **Create service**: Koyeb dashboard → [Create Web Service] → Deployment method: **GitHub** → Select the Gyeol repository
+2. **Builder**: Select **Dockerfile** (not Buildpacks)
+3. **Dockerfile location**: `openclaw/Dockerfile`
+4. **Context directory**: `/openclaw` (critical — without this, Koyeb tries to build the root Next.js app)
+5. **Port**: `8000`
+6. **Environment variables**:
+   - `GYEOL_APP_URL` = your Vercel Gyeol app URL (e.g., `https://gyeol.vercel.app`) — no trailing slash
+   - `CRON_SECRET` = must match the value set in Gyeol's Vercel environment exactly
+   - `PORT` = `8000` (optional but recommended to be explicit)
+   - `CRAWL_URLS`, `CRAWL_MAX_PAGES`, etc. (optional)
+7. **Service name**: `gyeol-openclaw`
+8. Click **Deploy**
+
+**Verify**: After deployment, visit `https://<koyeb-domain>/health` — you should see `{"ok":true,"service":"openclaw-engine",...}`. Check Vercel logs for `[Cron]` entries to confirm jobs are firing.
 
 ### Railway
 
