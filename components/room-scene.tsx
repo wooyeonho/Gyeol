@@ -63,7 +63,7 @@ export default function RoomScene({
 }) {
   if (objects.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-white/55 text-sm">
+      <div className="w-full h-full flex items-center justify-center text-white/40 text-sm">
         {emptyLabel}
       </div>
     );

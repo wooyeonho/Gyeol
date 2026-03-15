@@ -51,26 +51,6 @@ export async function GET() {
         },
         self_model: stateByAgent[id]?.self_model ?? null,
       }));
-
-      const myPrimaryMode = (selfStateRes.data?.config as { usage_profile?: { primary_mode?: string } } | undefined)?.usage_profile?.primary_mode;
-      otherAgents.sort((a, b) => {
-        const aMode = (a.config as { usage_profile?: { primary_mode?: string } } | undefined)?.usage_profile?.primary_mode;
-        const bMode = (b.config as { usage_profile?: { primary_mode?: string } } | undefined)?.usage_profile?.primary_mode;
-
-        let aScore = 0;
-        let bScore = 0;
-
-        if (myPrimaryMode) {
-          if (aMode === myPrimaryMode) aScore += 100;
-          if (bMode === myPrimaryMode) bScore += 100;
-        }
-
-        aScore += Math.min(a.memory_count, 50);
-        bScore += Math.min(b.memory_count, 50);
-
-        return bScore - aScore;
-      });
-      otherAgents = otherAgents.slice(0, 30);
     }
 
     const socialLogs = (logsRes.data ?? []).map((r) => ({

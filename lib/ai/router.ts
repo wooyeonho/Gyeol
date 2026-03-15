@@ -36,15 +36,12 @@ async function callGroq(model: string, system: string, messages: Msg[], stream: 
 }
 
 async function callCF(system: string, messages: Msg[], stream: boolean) {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
-  if (!accountId || !apiToken) throw new Error("CF credentials not configured");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
-    const res = await fetch(CF_URL(accountId), {
+    const res = await fetch(CF_URL(process.env.CF_ACCOUNT_ID!), {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.CF_API_TOKEN}` },
       body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
       signal: ctrl.signal,
     });

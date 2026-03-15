@@ -1,20 +1,10 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { hasRequiredEnv } from "@/lib/env/required";
 
-// IMPORTANT: Next.js only inlines NEXT_PUBLIC_ env vars when accessed as
-// static literals (e.g. process.env.NEXT_PUBLIC_SUPABASE_URL). Dynamic access
-// like process.env[key] is NOT inlined and returns undefined on the client.
-// Therefore we must check these vars with static property access, not via
-// the generic hasRequiredEnv() helper which uses dynamic keys.
-function isValidEnvValue(value: string | undefined): boolean {
-  return typeof value === "string" && value.trim().length > 0 && !value.startsWith("your-");
-}
-
-function isPublicSupabaseConfigured(): boolean {
-  return (
-    isValidEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-    isValidEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-  );
-}
+const REQUIRED_PUBLIC_SUPABASE_ENV = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+];
 
 const NOOP_ERROR = {
   message: "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
@@ -66,7 +56,7 @@ function createNoopSupabaseClient() {
 }
 
 export function createClient() {
-  if (!isPublicSupabaseConfigured()) {
+  if (!hasRequiredEnv(REQUIRED_PUBLIC_SUPABASE_ENV)) {
     if (!warnedMissingEnv) {
       warnedMissingEnv = true;
       console.warn("[Supabase] Missing public env. Running in graceful no-op mode.");
@@ -80,5 +70,5 @@ export function createClient() {
 }
 
 export function isBrowserSupabaseConfigured() {
-  return isPublicSupabaseConfigured();
+  return hasRequiredEnv(REQUIRED_PUBLIC_SUPABASE_ENV);
 }

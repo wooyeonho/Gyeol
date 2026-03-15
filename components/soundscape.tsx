@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type SoundProfile = { base_note?: string; tempo?: number; instruments?: string[]; scale?: string[] };
+type SoundProfile = { base_note?: string; tempo?: number; instruments?: string[] };
 
 export default function Soundscape({
   enabled,
@@ -39,13 +39,12 @@ export default function Soundscape({
             : instrumentKey.includes("pad") || instrumentKey.includes("choir")
               ? new Tone.PolySynth(Tone.Synth).toDestination()
               : new Tone.Synth().toDestination();
-        const scale = soundProfile.scale ?? [baseNote, `${baseNote}`, "E4", "G4", "C5", "G4", "E4", baseNote];
         const seq = new Tone.Sequence(
           (time, note) => {
             if (cancelled) return;
             synth.triggerAttackRelease(note, "8n", time);
           },
-          scale,
+          [baseNote, `${baseNote}`, "E4", "G4", "C5", "G4", "E4", baseNote],
           "4n"
         ).start(0);
         Tone.getTransport().bpm.value = tempo;

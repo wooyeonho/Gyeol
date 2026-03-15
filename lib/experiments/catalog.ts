@@ -17,7 +17,7 @@ export const EXPERIMENT = {
 export type ExperimentKey = (typeof EXPERIMENT)[keyof typeof EXPERIMENT];
 
 export const EXPERIMENT_VARIANTS = {
-  first_message_onboarding: ["playful", "intimate", "strategic", "primal", "surreal", "reflective", "creative"] as const,
+  first_message_onboarding: ["identity", "productivity"] as const,
 } as const;
 
 export type FirstMessageOnboardingVariant =

@@ -13,7 +13,7 @@ export class MissingEnvError extends Error {
 export function missingEnv(required: string[]): string[] {
   return required.filter((key) => {
     const value = process.env[key];
-    return typeof value !== "string" || value.trim().length === 0 || value.startsWith("your-");
+    return typeof value !== "string" || value.trim().length === 0;
   });
 }
 

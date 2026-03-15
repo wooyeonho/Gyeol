@@ -7,7 +7,7 @@ export function LegalFooter() {
   const { t } = useTranslations();
 
   return (
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-white/60">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-white/45">
       <Link href="/privacy" className="hover:text-white/75">
         {t("common.privacyPolicy")}
       </Link>

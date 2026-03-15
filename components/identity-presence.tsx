@@ -22,12 +22,7 @@ export function IdentityPresence({
   const bands = Array.from({ length: appearance.presence.bandCount });
 
   return (
-    <div
-      className={`relative ${sizeClass} shrink-0 transition-all duration-1000`}
-      style={{
-        filter: appearance.vitality < 0.3 ? "grayscale(80%) opacity(60%) blur(1px)" : "none",
-      }}
-    >
+    <div className={`relative ${sizeClass} shrink-0`}>
       <div
         className="absolute inset-0 rounded-full blur-2xl opacity-80"
         style={{ background: `radial-gradient(circle, ${appearance.palette.ring}, transparent 72%)` }}

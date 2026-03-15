@@ -13,9 +13,6 @@ export async function generateMetadata({ params }: ShareLayoutProps): Promise<Me
   const locale = await getRequestLocale();
   const data = await loadShareCardData(createServiceClient(), slug, locale);
   const { title, description } = buildShareCardMetadata(data, locale);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const ogImageUrl = baseUrl ? `${baseUrl}/api/share/${slug}/og` : `/api/share/${slug}/og`;
-
   return {
     title,
     description,
@@ -23,13 +20,11 @@ export async function generateMetadata({ params }: ShareLayoutProps): Promise<Me
       title,
       description,
       type: "website",
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImageUrl],
     },
   };
 }
