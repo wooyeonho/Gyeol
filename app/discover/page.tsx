@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
+import { WeeklyEventCard } from "@/components/weekly-event-card";
+import { useChatStore } from "@/store/chat-store";
 
 type DiscoverCounts = {
   activity: number;
@@ -14,6 +16,7 @@ type DiscoverCounts = {
 
 export default function DiscoverPage() {
   const { locale, t } = useTranslations();
+  const weeklyEventProgress = useChatStore((s) => s.weeklyEventProgress);
   const [counts, setCounts] = useState<DiscoverCounts>({
     activity: 0,
     album: 0,
@@ -124,6 +127,8 @@ export default function DiscoverPage() {
               : "홈은 이제 채팅에 집중합니다. Discover는 이전에 흩어져 있던 깊은 탐색 화면들을 한곳에 모아 보여줍니다."}
           </p>
         </header>
+
+        <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         <section className="grid gap-4 md:grid-cols-2">
           {cards.map((card) => (

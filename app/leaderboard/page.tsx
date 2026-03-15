@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
+import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import type { LeaderboardEntry, LeaderboardResponse } from "@/app/api/leaderboard/route";
+import { useChatStore } from "@/store/chat-store";
 
 type Tab = "level" | "messages" | "vitality";
 
 export default function LeaderboardPage() {
   const { locale, t } = useTranslations();
+  const weeklyEventProgress = useChatStore((s) => s.weeklyEventProgress);
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("level");
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/leaderboard")
@@ -33,11 +38,50 @@ export default function LeaderboardPage() {
         : data.byVitality
     : [];
 
+  const context = useMemo(() => {
+    if (!data) return null;
+    return tab === "level"
+      ? data.contexts.level
+      : tab === "messages"
+        ? data.contexts.messages
+        : data.contexts.vitality;
+  }, [data, tab]);
+
   const tabs: { key: Tab; label: string }[] = [
     { key: "level", label: t("leaderboard.tabLevel") },
     { key: "messages", label: t("leaderboard.tabMessages") },
     { key: "vitality", label: t("leaderboard.tabVitality") },
   ];
+
+  async function handleShareProfile() {
+    try {
+      const res = await fetch("/api/share", { method: "POST" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || typeof json?.url !== "string") {
+        setShareNotice(locale === "en" ? "Unable to create share card." : "공유 카드를 만들지 못했습니다.");
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(json.url);
+      }
+      setShareNotice(locale === "en" ? "Share card copied." : "공유 카드 링크가 복사되었습니다.");
+      setTimeout(() => setShareNotice(null), 2400);
+    } catch {
+      setShareNotice(locale === "en" ? "Unable to create share card." : "공유 카드를 만들지 못했습니다.");
+    }
+  }
+
+  function getMetricValue(entry: LeaderboardEntry) {
+    if (tab === "level") return String(entry.gen_level);
+    if (tab === "messages") return String(entry.total_messages);
+    return `${Math.round(entry.vitality * 100)}%`;
+  }
+
+  function getMetricLabel() {
+    if (tab === "level") return "Gen";
+    if (tab === "messages") return locale === "ko" ? "대화" : "msgs";
+    return locale === "ko" ? "활력" : "vitality";
+  }
 
   if (loading) {
     return (
@@ -49,26 +93,69 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-lg">
-        <header className="mb-6">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
             {t("leaderboard.eyebrow")}
           </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
             {t("leaderboard.title")}
           </h1>
-          <p className="mt-2 text-sm text-white/55">
+          <p className="mt-3 text-base leading-7 text-white/80">
             {t("leaderboard.subtitle")}
           </p>
-          {data && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="text-xs text-white/60">
-                {t("leaderboard.totalAgents").replace("{count}", String(data.totalAgents))}
-              </span>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {data && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-sm text-white/75">
+                  {t("leaderboard.totalAgents").replace("{count}", String(data.totalAgents))}
+                </span>
+              </div>
+            )}
+            <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-sm text-fuchsia-100/90">
+              {locale === "en" ? "Top 50 live ranking" : "Top 50 실시간 랭킹"}
+            </div>
+          </div>
+          {shareNotice && (
+            <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100/90">
+              {shareNotice}
             </div>
           )}
         </header>
+
+        <div className="mb-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
+
+          <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+              {locale === "en" ? "Social proof" : "소셜 프루프"}
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+              {locale === "en" ? "Show where your Gyeol stands this week" : "이번 주 내 결의 위치를 보여주세요"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-white/78">
+              {locale === "en"
+                ? "Compare with nearby rivals, rematch instantly, and generate a share card when your rank feels worth showing."
+                : "근처 경쟁자와 비교하고, 바로 재대결하고, 자랑할 만한 순위가 되면 공유 카드를 만들어 보세요."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href="/compare"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10"
+              >
+                {locale === "en" ? "Compare now" : "지금 비교하기"}
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleShareProfile()}
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10"
+              >
+                {locale === "en" ? "Create share card" : "공유 카드 만들기"}
+              </button>
+            </div>
+          </section>
+        </div>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">
@@ -76,25 +163,96 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="mb-5 flex gap-2">
-          {tabs.map((t) => (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {tabs.map((tabOption) => (
             <button
-              key={t.key}
+              key={tabOption.key}
               type="button"
-              onClick={() => setTab(t.key)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                tab === t.key
+              onClick={() => setTab(tabOption.key)}
+              className={`min-h-12 rounded-full px-4 py-2 text-base font-medium transition-colors ${
+                tab === tabOption.key
                   ? "bg-cyan-500/20 border border-cyan-400/30 text-cyan-200"
-                  : "bg-white/5 border border-white/10 text-white/55 hover:text-white/75"
+                  : "bg-white/5 border border-white/10 text-white/72 hover:text-white"
               }`}
             >
-              {t.label}
+              {tabOption.label}
             </button>
           ))}
         </div>
 
-        {/* Entries */}
+        {context?.self && (
+          <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-[1.75rem] border border-cyan-300/20 bg-cyan-400/[0.08] p-5">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-100/80">
+                {locale === "en" ? "Your position" : "내 순위"}
+              </p>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black/25 text-2xl font-semibold text-white">
+                  #{context.self.rank}
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-white">
+                    {context.self.self_name || (locale === "ko" ? "이름 없는 결" : "Unnamed Gyeol")}
+                  </p>
+                  <p className="mt-1 text-sm text-white/78">
+                    {locale === "en"
+                      ? `${getMetricValue(context.self)} ${getMetricLabel()} · keep pushing this week`
+                      : `${getMetricValue(context.self)} ${getMetricLabel()} · 이번 주 더 밀어보세요`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+                {locale === "en" ? "Nearby rivals" : "근처 경쟁자"}
+              </p>
+              <div className="mt-4 space-y-3">
+                {context.nearby.map((entry) => {
+                  const appearance = resolveIdentityAppearance(
+                    {
+                      selfName: entry.self_name,
+                      visual: entry.visual,
+                      config: entry.config,
+                      genLevel: entry.gen_level,
+                      vitality: entry.vitality,
+                    },
+                    locale,
+                  );
+                  const color = entry.visual?.color ?? appearance.palette.primary;
+                  return (
+                    <div
+                      key={`${entry.rank}-${entry.agent_id}`}
+                      className={`flex items-center gap-3 rounded-2xl border p-3 ${
+                        entry.is_self ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/10 bg-black/25"
+                      }`}
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-sm font-semibold text-white">
+                        #{entry.rank}
+                      </div>
+                      <IdentityPresence appearance={appearance} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white">
+                          {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
+                        </p>
+                        <p className="mt-1 text-xs text-white/65">
+                          Gen {entry.gen_level} · {entry.total_messages} {locale === "ko" ? "대화" : "msgs"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-base font-semibold" style={{ color }}>
+                          {getMetricValue(entry)}
+                        </p>
+                        <p className="text-[11px] text-white/50">{getMetricLabel()}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         {entries.length === 0 ? (
           <AnimatedEmptyState
             icon="social"
@@ -117,22 +275,23 @@ export default function LeaderboardPage() {
                   genLevel: entry.gen_level,
                   vitality: entry.vitality,
                 },
-                locale
+                locale,
               );
               const color = entry.visual?.color ?? appearance.palette.primary;
               const isTop3 = i < 3;
 
               return (
                 <div
-                  key={`${entry.rank}-${entry.self_name}`}
+                  key={`${entry.rank}-${entry.agent_id}`}
                   className={`relative flex items-center gap-4 rounded-2xl border p-4 transition-colors ${
-                    isTop3
-                      ? "border-white/15 bg-gradient-to-r from-white/[0.06] to-transparent"
-                      : "border-white/8 bg-white/[0.03]"
+                    entry.is_self
+                      ? "border-cyan-300/25 bg-cyan-400/10"
+                      : isTop3
+                        ? "border-white/15 bg-gradient-to-r from-white/[0.06] to-transparent"
+                        : "border-white/8 bg-white/[0.03]"
                   }`}
-                  style={isTop3 ? { borderColor: `${color}35` } : undefined}
+                  style={isTop3 && !entry.is_self ? { borderColor: `${color}35` } : undefined}
                 >
-                  {/* Rank badge */}
                   <div
                     className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                       i === 0
@@ -141,7 +300,7 @@ export default function LeaderboardPage() {
                           ? "bg-gray-300/20 text-gray-300"
                           : i === 2
                             ? "bg-orange-400/20 text-orange-300"
-                            : "bg-white/5 text-white/40"
+                            : "bg-white/5 text-white/55"
                     }`}
                   >
                     {entry.rank}
@@ -153,7 +312,7 @@ export default function LeaderboardPage() {
                     <p className="truncate text-sm font-medium text-white">
                       {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
                     </p>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-white/50">
+                    <div className="mt-1 flex items-center gap-3 text-xs text-white/60">
                       <span style={{ color }}>Gen {entry.gen_level}</span>
                       <span>·</span>
                       <span>{entry.total_messages} {locale === "ko" ? "대화" : "msgs"}</span>
@@ -162,21 +321,12 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
 
-                  {/* Highlight stat for active tab */}
                   <div className="text-right">
                     <p className="text-lg font-semibold" style={{ color }}>
-                      {tab === "level"
-                        ? entry.gen_level
-                        : tab === "messages"
-                          ? entry.total_messages
-                          : `${Math.round(entry.vitality * 100)}%`}
+                      {getMetricValue(entry)}
                     </p>
-                    <p className="text-[11px] text-white/40">
-                      {tab === "level"
-                        ? "Gen"
-                        : tab === "messages"
-                          ? locale === "ko" ? "대화" : "msgs"
-                          : locale === "ko" ? "활력" : "vitality"}
+                    <p className="text-[11px] text-white/50">
+                      {getMetricLabel()}
                     </p>
                   </div>
                 </div>

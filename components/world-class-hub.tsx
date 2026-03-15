@@ -7,6 +7,7 @@ import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
 import { useTranslations } from "@/components/i18n-provider";
 import { StreakDisplay } from "@/components/streak-display";
+import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
@@ -78,7 +79,7 @@ export function WorldClassHub() {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
-  const { messages, isStreaming, sendMessage, pendingUsageMode, rewardInventory, rewardProgress } = useChatStore();
+  const { messages, isStreaming, sendMessage, pendingUsageMode, rewardInventory, rewardProgress, weeklyEventProgress } = useChatStore();
 
   const [now, setNow] = useState(new Date());
   const [recap, setRecap] = useState<HomeRecap | null>(null);
@@ -329,6 +330,9 @@ export function WorldClassHub() {
                   </span>
                 )}
               </div>
+            </div>
+            <div className="mt-4">
+              <WeeklyEventCard locale={locale} progress={weeklyEventProgress} compact />
             </div>
             <p className="mt-4 text-sm leading-6 text-white/80">
               {recap?.next_action ??

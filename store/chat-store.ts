@@ -7,6 +7,7 @@ import { logWarn } from "@/lib/ops/logger";
 import {
   applyRewardToInventory,
   createDailyLoginReward,
+  createWeeklyEventReward,
   getRewardProgress,
   hasClaimedDailyLoginBonus,
   markDailyLoginBonusClaimed,
@@ -19,6 +20,14 @@ import {
   writeMessagesSinceReward,
   writeRewardInventory,
 } from "@/lib/rewards/variable-reward";
+import {
+  getWeeklyEventProgress,
+  readWeeklyEventState,
+  registerWeeklyEventMessage,
+  type WeeklyEventProgress,
+  type WeeklyEventState,
+  writeWeeklyEventState,
+} from "@/lib/engagement/weekly-event";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface Message { role: "user" | "assistant"; content: string; error?: boolean }
@@ -38,6 +47,9 @@ interface ChatStore {
   lastReward: RewardResult | null;
   rewardInventory: RewardInventory;
   rewardProgress: RewardProgress;
+  weeklyEvent: WeeklyEventState;
+  weeklyEventProgress: WeeklyEventProgress;
+  pendingWeeklyEventCompletion: boolean;
   clearReward: () => void;
   claimDailyLoginBonus: (streakDays?: number) => void;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
@@ -139,6 +151,19 @@ async function handleStreamResponse(
         haptic("receive");
         playSound("receive");
       }
+
+      if (get().pendingWeeklyEventCompletion) {
+        const weeklyReward = createWeeklyEventReward(streakDays);
+        const nextInventory = applyRewardToInventory(get().rewardInventory, weeklyReward);
+        writeRewardInventory(nextInventory);
+        set({
+          lastReward: weeklyReward,
+          rewardInventory: nextInventory,
+          pendingWeeklyEventCompletion: false,
+        });
+        haptic("jackpot");
+        playSound("jackpot");
+      }
     }
     set({ isStreaming: false, pendingUsageMode: null });
   }
@@ -151,6 +176,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   lastReward: null,
   rewardInventory: readRewardInventory(),
   rewardProgress: getRewardProgress(readMessagesSinceReward(), 0),
+  weeklyEvent: readWeeklyEventState(),
+  weeklyEventProgress: getWeeklyEventProgress(readWeeklyEventState()),
+  pendingWeeklyEventCompletion: false,
   clearReward: () => set({ lastReward: null }),
   claimDailyLoginBonus: (streakDays = 0) => {
     if (hasClaimedDailyLoginBonus()) return;
@@ -191,6 +219,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         source,
       });
     }
+
+    const weeklyEventResult = registerWeeklyEventMessage(get().weeklyEvent);
+    writeWeeklyEventState(weeklyEventResult.state);
+    set({
+      weeklyEvent: weeklyEventResult.state,
+      weeklyEventProgress: getWeeklyEventProgress(weeklyEventResult.state),
+      pendingWeeklyEventCompletion: weeklyEventResult.completedNow,
+    });
 
     set((s) => {
       // Cap message history at 200 to prevent unbounded memory growth

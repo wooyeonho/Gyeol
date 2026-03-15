@@ -8,7 +8,7 @@
  */
 
 export type RewardTier = "none" | "small" | "medium" | "large" | "jackpot";
-export type RewardSource = "message" | "daily_login";
+export type RewardSource = "message" | "daily_login" | "weekly_event";
 
 export type RewardInventory = {
   coins: number;
@@ -289,6 +289,32 @@ export function createDailyLoginReward(streakDays = 0): RewardResult {
     },
     icon: "📅",
     delta: { coins },
+    streakMultiplier,
+    guaranteed: true,
+  };
+}
+
+export function createWeeklyEventReward(streakDays = 0): RewardResult {
+  const streakMultiplier = getStreakRewardMultiplier(streakDays);
+
+  return {
+    tier: "large",
+    source: "weekly_event",
+    label: {
+      ko: "주간 이벤트 완료!",
+      en: "Weekly event complete!",
+    },
+    detail: {
+      ko: "이번 주 메시지 챌린지를 달성해 특별 보상을 받았습니다.",
+      en: "You completed this week's message challenge and unlocked a special drop.",
+    },
+    icon: "🎉",
+    delta: {
+      coins: roundScaledValue(24, streakMultiplier),
+      title_shards: 1,
+      appearance_shards: 1,
+      evolution_points: roundScaledValue(3, streakMultiplier),
+    },
     streakMultiplier,
     guaranteed: true,
   };
