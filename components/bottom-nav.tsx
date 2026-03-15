@@ -86,7 +86,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-20 border-t bg-black/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
+      className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
       style={{ borderColor: `${appearance.palette.primary}25` }}
     >
       <div className="mx-auto flex max-w-md justify-around px-3 py-2">
@@ -101,11 +101,11 @@ export function BottomNav() {
               style={
                 isActive
                   ? {
-                      color: "white",
+                      color: "var(--foreground)",
                       background: `${appearance.palette.primary}18`,
                       boxShadow: `0 0 0 1px ${appearance.palette.primary}22 inset`,
                     }
-                  : { color: "rgba(255,255,255,0.75)" }
+                  : { color: "var(--theme-text-subtle)" }
               }
             >
               <span aria-hidden="true">

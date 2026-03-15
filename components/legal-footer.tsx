@@ -7,11 +7,11 @@ export function LegalFooter() {
   const { t } = useTranslations();
 
   return (
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-white/72">
-      <Link href="/privacy" className="rounded-lg px-2 py-1 hover:text-white">
+    <div className="theme-text-subtle mt-6 flex flex-wrap items-center justify-center gap-4 text-sm">
+      <Link href="/privacy" className="rounded-lg px-2 py-1 hover:text-[color:var(--foreground)]">
         {t("common.privacyPolicy")}
       </Link>
-      <Link href="/terms" className="rounded-lg px-2 py-1 hover:text-white">
+      <Link href="/terms" className="rounded-lg px-2 py-1 hover:text-[color:var(--foreground)]">
         {t("common.termsOfService")}
       </Link>
     </div>

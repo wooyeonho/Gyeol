@@ -62,11 +62,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
+    <div className="theme-panel w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{t("auth.signupEyebrow")}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.signupEyebrow")}</p>
         <h1 className="mt-3 text-2xl font-semibold">{t("auth.signupTitle")}</h1>
-        <p className="mt-3 text-sm leading-6 text-white/65">
+        <p className="theme-text-subtle mt-3 text-sm leading-6">
           {t("auth.signupSubtitle")}
         </p>
       </div>
@@ -78,10 +78,10 @@ export default function SignupPage() {
       )}
 
       <div className="mb-6 grid gap-2">
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
+        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.signupBenefit1")}
         </div>
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
+        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.signupBenefit2")}
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function SignupPage() {
             autoComplete="email"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "signup-auth-error" : undefined}
-            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
             required
           />
         </div>
@@ -117,11 +117,11 @@ export default function SignupPage() {
             autoComplete="new-password"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "signup-auth-error" : undefined}
-            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
             required
           />
         </div>
-        <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/82">
+        <label className="theme-subpanel flex items-start gap-3 rounded-2xl px-4 py-3 text-sm theme-text-muted">
           <input
             type="checkbox"
             checked={acceptedConsent}
@@ -145,7 +145,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-xl bg-white px-4 py-3 text-base font-medium text-black disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50"
         >
           {loading ? t("auth.signupLoading") : t("auth.signupSubmit")}
         </button>
@@ -163,11 +163,11 @@ export default function SignupPage() {
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-white/55">
-        <Link href={loginHref} className="hover:text-white/80">
+      <div className="theme-text-faint mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <Link href={loginHref} className="hover:text-[color:var(--foreground)]">
           {t("auth.loginLink")}
         </Link>
-        <Link href="/features" className="hover:text-white/80">
+        <Link href="/features" className="hover:text-[color:var(--foreground)]">
           {t("auth.loginFeaturesLink")}
         </Link>
       </div>

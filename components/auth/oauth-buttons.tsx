@@ -97,7 +97,7 @@ export function OAuthButtons({
           <div className="w-full border-t border-white/10" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-[#0b0b0b] px-3 text-xs uppercase tracking-[0.2em] text-white/60">
+          <span className="theme-page px-3 text-xs uppercase tracking-[0.2em] theme-text-faint">
             {t("auth.oauthDivider")}
           </span>
         </div>
@@ -110,7 +110,7 @@ export function OAuthButtons({
             onClick={() => void handleOAuth(provider)}
             disabled={loading || disabledProviders.includes(provider)}
             aria-label={t(`auth.oauth.${provider}`)}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 hover:bg-white/10 disabled:opacity-50"
+            className="theme-subpanel flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base theme-text-muted hover:brightness-105 disabled:opacity-50"
           >
             <ProviderIcon provider={provider} />
             {t(`auth.oauth.${provider}`)}

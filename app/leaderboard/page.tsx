@@ -85,30 +85,30 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="theme-page min-h-screen flex items-center justify-center">
         <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
+        <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-300">
             {t("leaderboard.eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">
             {t("leaderboard.title")}
           </h1>
-          <p className="mt-3 text-base leading-7 text-white/80">
+          <p className="theme-text-subtle mt-3 text-base leading-7">
             {t("leaderboard.subtitle")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {data && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2">
+              <div className="theme-subpanel inline-flex items-center gap-2 rounded-full px-3 py-2">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-sm text-white/75">
+                <span className="theme-text-subtle text-sm">
                   {t("leaderboard.totalAgents").replace("{count}", String(data.totalAgents))}
                 </span>
               </div>
@@ -127,14 +127,14 @@ export default function LeaderboardPage() {
         <div className="mb-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
-          <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+          <section className="theme-panel rounded-[1.75rem] p-5">
+            <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
               {locale === "en" ? "Social proof" : "소셜 프루프"}
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">
               {locale === "en" ? "Show where your Gyeol stands this week" : "이번 주 내 결의 위치를 보여주세요"}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-white/78">
+            <p className="theme-text-subtle mt-3 text-sm leading-6">
               {locale === "en"
                 ? "Compare with nearby rivals, rematch instantly, and generate a share card when your rank feels worth showing."
                 : "근처 경쟁자와 비교하고, 바로 재대결하고, 자랑할 만한 순위가 되면 공유 카드를 만들어 보세요."}
@@ -142,14 +142,14 @@ export default function LeaderboardPage() {
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/compare"
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10"
+                className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
               >
                 {locale === "en" ? "Compare now" : "지금 비교하기"}
               </Link>
               <button
                 type="button"
                 onClick={() => void handleShareProfile()}
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10"
+                className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
               >
                 {locale === "en" ? "Create share card" : "공유 카드 만들기"}
               </button>
@@ -172,7 +172,7 @@ export default function LeaderboardPage() {
               className={`min-h-12 rounded-full px-4 py-2 text-base font-medium transition-colors ${
                 tab === tabOption.key
                   ? "bg-cyan-500/20 border border-cyan-400/30 text-cyan-200"
-                  : "bg-white/5 border border-white/10 text-white/72 hover:text-white"
+                  : "theme-subpanel theme-text-subtle hover:brightness-105"
               }`}
             >
               {tabOption.label}
@@ -182,7 +182,7 @@ export default function LeaderboardPage() {
 
         {context?.self && (
           <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-[1.75rem] border border-cyan-300/20 bg-cyan-400/[0.08] p-5">
+            <div className="theme-panel-strong rounded-[1.75rem] p-5">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-100/80">
                 {locale === "en" ? "Your position" : "내 순위"}
               </p>
@@ -191,10 +191,10 @@ export default function LeaderboardPage() {
                   #{context.self.rank}
                 </div>
                 <div>
-                  <p className="text-lg font-semibold text-white">
+                  <p className="text-lg font-semibold">
                     {context.self.self_name || (locale === "ko" ? "이름 없는 결" : "Unnamed Gyeol")}
                   </p>
-                  <p className="mt-1 text-sm text-white/78">
+                  <p className="theme-text-subtle mt-1 text-sm">
                     {locale === "en"
                       ? `${getMetricValue(context.self)} ${getMetricLabel()} · keep pushing this week`
                       : `${getMetricValue(context.self)} ${getMetricLabel()} · 이번 주 더 밀어보세요`}
@@ -203,8 +203,8 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+            <div className="theme-panel rounded-[1.75rem] p-5">
+              <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
                 {locale === "en" ? "Nearby rivals" : "근처 경쟁자"}
               </p>
               <div className="mt-4 space-y-3">
@@ -224,18 +224,18 @@ export default function LeaderboardPage() {
                     <div
                       key={`${entry.rank}-${entry.agent_id}`}
                       className={`flex items-center gap-3 rounded-2xl border p-3 ${
-                        entry.is_self ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/10 bg-black/25"
+                        entry.is_self ? "border-cyan-300/25 bg-cyan-400/10" : "theme-subpanel"
                       }`}
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-sm font-semibold text-white">
+                      <div className="theme-subpanel flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold">
                         #{entry.rank}
                       </div>
                       <IdentityPresence appearance={appearance} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-white">
+                        <p className="truncate text-sm font-medium">
                           {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
                         </p>
-                        <p className="mt-1 text-xs text-white/65">
+                        <p className="theme-text-faint mt-1 text-xs">
                           Gen {entry.gen_level} · {entry.total_messages} {locale === "ko" ? "대화" : "msgs"}
                         </p>
                       </div>
@@ -300,7 +300,7 @@ export default function LeaderboardPage() {
                           ? "bg-gray-300/20 text-gray-300"
                           : i === 2
                             ? "bg-orange-400/20 text-orange-300"
-                            : "bg-white/5 text-white/55"
+                        : "theme-subpanel theme-text-subtle"
                     }`}
                   >
                     {entry.rank}
@@ -309,10 +309,10 @@ export default function LeaderboardPage() {
                   <IdentityPresence appearance={appearance} size="sm" />
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">
+                    <p className="truncate text-sm font-medium">
                       {entry.self_name || (locale === "ko" ? "이름 없음" : "Unnamed")}
                     </p>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-white/60">
+                    <div className="theme-text-subtle mt-1 flex items-center gap-3 text-xs">
                       <span style={{ color }}>Gen {entry.gen_level}</span>
                       <span>·</span>
                       <span>{entry.total_messages} {locale === "ko" ? "대화" : "msgs"}</span>
@@ -325,7 +325,7 @@ export default function LeaderboardPage() {
                     <p className="text-lg font-semibold" style={{ color }}>
                       {getMetricValue(entry)}
                     </p>
-                    <p className="text-[11px] text-white/50">
+                    <p className="theme-text-faint text-[11px]">
                       {getMetricLabel()}
                     </p>
                   </div>

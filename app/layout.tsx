@@ -3,6 +3,7 @@ import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { DocumentLocaleSync } from "@/components/document-locale-sync";
+import { ThemePreferenceSync } from "@/components/theme-preference-sync";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
@@ -44,6 +45,7 @@ export default async function RootLayout({
       <body className="bg-black text-white min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
           <DocumentLocaleSync />
+          <ThemePreferenceSync />
           <WebPushManager />
           <NavigationHub />
           <AnalyticsProvider>{children}</AnalyticsProvider>

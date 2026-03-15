@@ -61,11 +61,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
+    <div className="theme-panel w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{t("auth.loginEyebrow")}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.loginEyebrow")}</p>
         <h1 className="mt-3 text-2xl font-semibold">{t("auth.loginTitle")}</h1>
-        <p className="mt-3 text-sm leading-6 text-white/65">
+        <p className="theme-text-subtle mt-3 text-sm leading-6">
           {t("auth.loginSubtitle")}
         </p>
       </div>
@@ -77,13 +77,13 @@ export default function LoginPage() {
       )}
 
       <div className="mb-6 grid gap-2">
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
+        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit1")}
         </div>
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
+        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit2")}
         </div>
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/75">
+        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit3")}
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
             autoComplete="email"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "login-auth-error" : undefined}
-            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
             required
           />
         </div>
@@ -119,7 +119,7 @@ export default function LoginPage() {
             autoComplete="current-password"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "login-auth-error" : undefined}
-            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
             required
           />
         </div>
@@ -127,7 +127,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-xl bg-white px-4 py-3 text-base font-medium text-black disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50"
         >
           {loading ? t("auth.loginLoading") : t("auth.login")}
         </button>
@@ -148,18 +148,18 @@ export default function LoginPage() {
           type="button"
           onClick={handleGuest}
           disabled={loading}
-          className="min-h-12 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/82 hover:bg-white/10 disabled:opacity-50"
+          className="theme-subpanel min-h-12 rounded-xl px-4 py-3 text-base theme-text-muted hover:brightness-105 disabled:opacity-50"
         >
           {t("auth.guestContinue")}
         </button>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-white/55">
-          <Link href={signupHref} className="hover:text-white/80">
+        <div className="theme-text-faint flex flex-wrap items-center justify-between gap-2">
+          <Link href={signupHref} className="hover:text-[color:var(--foreground)]">
             {t("auth.signupLink")}
           </Link>
-          <Link href="/features" className="hover:text-white/80">
+          <Link href="/features" className="hover:text-[color:var(--foreground)]">
             {t("auth.loginFeaturesLink")}
           </Link>
-          <Link href="/explore" className="hover:text-white/80">
+          <Link href="/explore" className="hover:text-[color:var(--foreground)]">
             {t("auth.loginExploreLink")}
           </Link>
         </div>

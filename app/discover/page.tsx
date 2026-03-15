@@ -112,16 +112,16 @@ export default function DiscoverPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl space-y-4">
-        <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
+        <header className="theme-panel rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-300">
             {locale === "en" ? "DISCOVER" : "DISCOVER"}
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
             {locale === "en" ? "One place for traces, growth, and ecosystem" : "흔적, 성장, 생태계를 한곳에서"}
           </h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-white/82">
+          <p className="theme-text-subtle mt-3 max-w-3xl text-base leading-7">
             {locale === "en"
               ? "Home stays focused on chat. Discover now gathers the deeper surfaces that used to be spread across the navigation."
               : "홈은 이제 채팅에 집중합니다. Discover는 이전에 흩어져 있던 깊은 탐색 화면들을 한곳에 모아 보여줍니다."}
@@ -135,11 +135,11 @@ export default function DiscoverPage() {
             <Link
               key={card.href}
               href={card.href}
-              className="block rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="theme-panel block rounded-[1.75rem] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/65">
+                  <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">
                     {loading
                       ? locale === "en"
                         ? "Loading"
@@ -148,10 +148,10 @@ export default function DiscoverPage() {
                         ? `${card.count} items`
                         : `${card.count}개 항목`}
                   </p>
-                  <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">{card.title}</h2>
-                  <p className="mt-3 text-base leading-7 text-white/80">{card.body}</p>
+                  <h2 className="mt-3 text-2xl font-semibold tracking-tight">{card.title}</h2>
+                  <p className="theme-text-subtle mt-3 text-base leading-7">{card.body}</p>
                 </div>
-                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
+                <span className="theme-subpanel rounded-full px-3 py-2 text-sm theme-text-muted">
                   {locale === "en" ? "Open" : "열기"}
                 </span>
               </div>
@@ -159,20 +159,20 @@ export default function DiscoverPage() {
           ))}
         </section>
 
-        <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5">
-          <p className="text-sm font-medium text-white">
+        <section className="theme-panel rounded-[1.75rem] p-5">
+          <p className="text-sm font-medium">
             {locale === "en" ? "More ways to explore" : "더 둘러볼 수 있는 곳"}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/leaderboard"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {t("leaderboard.title")}
             </Link>
             <Link
               href="/compare"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {t("compare.title")}
             </Link>

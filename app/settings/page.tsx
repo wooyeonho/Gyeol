@@ -13,6 +13,11 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
+import {
+  isThemeMode,
+  type ThemeMode,
+  writeThemePreference,
+} from "@/lib/theme/preferences";
 
 function InviteSection() {
   const { t } = useTranslations();
@@ -44,7 +49,7 @@ function InviteSection() {
           type="button"
           onClick={() => void loadInvite()}
           disabled={loading}
-          className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+          className="theme-subpanel rounded-xl px-4 py-2 text-sm theme-text-muted hover:brightness-105 disabled:opacity-50"
         >
           {loading ? "..." : t("settings.createInvite")}
         </button>
@@ -53,12 +58,12 @@ function InviteSection() {
           <input
             readOnly
             value={url}
-            className="flex-1 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white/80"
+            className="theme-input flex-1 rounded-xl px-3 py-2 text-xs theme-text-muted"
           />
           <button
             type="button"
             onClick={() => void copyUrl()}
-            className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+            className="theme-subpanel rounded-xl px-3 py-2 text-sm theme-text-muted hover:brightness-105"
           >
             {copied ? t("chat.copied") : t("chat.copy")}
           </button>
@@ -121,14 +126,10 @@ function SettingsStatCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 ${
-        accent
-          ? "border-cyan-300/20 bg-cyan-400/[0.08] shadow-[0_0_50px_rgba(34,211,238,0.06)]"
-          : "border-white/10 bg-white/[0.04]"
-      }`}
+      className={`rounded-2xl p-4 ${accent ? "theme-panel-strong shadow-[0_0_50px_rgba(34,211,238,0.06)]" : "theme-panel"}`}
     >
-      <p className={`text-xs uppercase tracking-[0.2em] ${accent ? "text-cyan-100/75" : "text-white/45"}`}>{label}</p>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{value}</p>
+      <p className={`text-xs uppercase tracking-[0.2em] ${accent ? "text-cyan-300" : "theme-text-faint"}`}>{label}</p>
+      <p className="mt-3 text-2xl font-semibold tracking-tight">{value}</p>
     </div>
   );
 }
@@ -150,21 +151,21 @@ function SettingsToggle({
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-left transition-all duration-200 hover:border-cyan-300/20 hover:bg-black/35"
+      className="theme-subpanel flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-4 text-left transition-all duration-200 hover:brightness-105"
     >
       <div>
-        <p className="text-sm font-medium text-white">{label}</p>
-        <p className="mt-1 text-xs leading-5 text-white/50">{description}</p>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="theme-text-faint mt-1 text-xs leading-5">{description}</p>
       </div>
       <div className="flex items-center gap-3">
-        <span className={`text-[11px] uppercase tracking-[0.18em] ${enabled ? "text-cyan-100/80" : "text-white/35"}`}>
+        <span className={`text-[11px] uppercase tracking-[0.18em] ${enabled ? "text-cyan-300" : "theme-text-faint"}`}>
           {stateLabel}
         </span>
         <span
           className={`relative h-7 w-12 rounded-full border transition-colors ${
             enabled
               ? "border-cyan-300/35 bg-cyan-400/30"
-              : "border-white/15 bg-white/10"
+              : "theme-panel"
           }`}
           aria-hidden="true"
         >
@@ -225,6 +226,19 @@ export default function SettingsPage() {
     writeLocalMissions(missions);
   }, [missions]);
 
+  useEffect(() => {
+    const config = (state?.config ?? {}) as AgentConfig;
+    const preferredTheme = isThemeMode(config.preferred_theme) ? config.preferred_theme : null;
+    const highContrast = typeof config.high_contrast_enabled === "boolean" ? config.high_contrast_enabled : null;
+
+    if (preferredTheme || highContrast !== null) {
+      writeThemePreference({
+        mode: preferredTheme ?? "dark",
+        highContrast: highContrast ?? false,
+      });
+    }
+  }, [state?.config]);
+
   async function toggleConfig(key: string, value: boolean) {
     if (!state) return;
     const res = await fetch("/api/settings", {
@@ -270,6 +284,48 @@ export default function SettingsPage() {
     setState({ ...state, config });
   }
 
+  async function handleThemeModeChange(nextTheme: ThemeMode) {
+    if (!state) return;
+
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferred_theme: nextTheme }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+
+    const config: AgentConfig = { ...(state.config || {}), preferred_theme: nextTheme };
+    setState({ ...state, config });
+    writeThemePreference({
+      mode: nextTheme,
+      highContrast: Boolean(config.high_contrast_enabled),
+    });
+  }
+
+  async function handleHighContrastToggle(enabled: boolean) {
+    if (!state) return;
+
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ high_contrast_enabled: enabled }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+
+    const config: AgentConfig = { ...(state.config || {}), high_contrast_enabled: enabled };
+    setState({ ...state, config });
+    writeThemePreference({
+      mode: isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark",
+      highContrast: enabled,
+    });
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -310,13 +366,15 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="theme-page min-h-screen flex items-center justify-center">
         <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
       </div>
     );
   }
 
   const config: AgentConfig = state?.config || {};
+  const preferredTheme: ThemeMode = isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark";
+  const highContrastEnabled = Boolean(config.high_contrast_enabled);
   const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
@@ -362,14 +420,14 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-4xl space-y-4">
-        <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)] sm:p-8">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
+        <header className="theme-panel rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)] sm:p-8">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300">
             {t("settings.eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("settings.title")}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/66">
+          <p className="theme-text-subtle mt-3 max-w-2xl text-sm leading-6">
             {t("settings.subtitle")}
           </p>
         </header>
@@ -381,14 +439,50 @@ export default function SettingsPage() {
           ))}
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="theme-panel rounded-3xl p-4">
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.languageEyebrow")}</p>
-            <p className="mt-1 text-sm text-white/60">
+            <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.languageEyebrow")}</p>
+            <p className="theme-text-subtle mt-1 text-sm">
               {t("settings.languageBody")}
             </p>
           </div>
           <LocaleSwitcher onLocaleChange={handleLocaleChange} />
+        </section>
+
+        <section className="theme-panel rounded-3xl p-5">
+          <div className="mb-4">
+            <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.themeEyebrow")}</p>
+            <p className="theme-text-subtle mt-1 text-sm">
+              {t("settings.themeBody")}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => void handleThemeModeChange("dark")}
+              className={`rounded-2xl px-4 py-4 text-left transition-all ${preferredTheme === "dark" ? "theme-panel-strong ring-2 ring-cyan-400/40" : "theme-subpanel"}`}
+            >
+              <p className="text-sm font-medium">{t("settings.themeDark")}</p>
+              <p className="theme-text-faint mt-1 text-xs">{t("settings.themeDarkBody")}</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleThemeModeChange("light")}
+              className={`rounded-2xl px-4 py-4 text-left transition-all ${preferredTheme === "light" ? "theme-panel-strong ring-2 ring-cyan-400/40" : "theme-subpanel"}`}
+            >
+              <p className="text-sm font-medium">{t("settings.themeLight")}</p>
+              <p className="theme-text-faint mt-1 text-xs">{t("settings.themeLightBody")}</p>
+            </button>
+          </div>
+          <div className="mt-3">
+            <SettingsToggle
+              label={t("settings.highContrast")}
+              description={t("settings.highContrastBody")}
+              enabled={highContrastEnabled}
+              onToggle={() => void handleHighContrastToggle(!highContrastEnabled)}
+              stateLabel={highContrastEnabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
+            />
+          </div>
         </section>
 
         {showPlansSurface && (

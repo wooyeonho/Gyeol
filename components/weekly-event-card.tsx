@@ -20,16 +20,16 @@ export function WeeklyEventCard({
   const completionRate = Math.min(100, (progress.progress / progress.target) * 100);
 
   return (
-    <div className={`rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 ${className}`}>
+    <div className={`theme-panel rounded-[1.75rem] p-4 ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-100/80">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-300">
             {locale === "en" ? "Weekly event" : "주간 이벤트"}
           </p>
-          <h3 className={`mt-2 font-semibold tracking-tight text-white ${compact ? "text-lg" : "text-2xl"}`}>
+          <h3 className={`mt-2 font-semibold tracking-tight ${compact ? "text-lg" : "text-2xl"}`}>
             {locale === "en" ? "10 messages unlock a special drop" : "메시지 10개로 특별 보상 해금"}
           </h3>
-          <p className="mt-2 text-sm leading-6 text-white/78">
+          <p className="theme-text-subtle mt-2 text-sm leading-6">
             {progress.completed
               ? locale === "en"
                 ? "Completed this week. Keep chatting to stay ahead on the leaderboard."
@@ -44,7 +44,7 @@ export function WeeklyEventCard({
         </span>
       </div>
 
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/8">
+      <div className="mt-4 h-3 overflow-hidden rounded-full bg-[color:var(--theme-border-soft)]">
         <motion.div
           className="h-3 rounded-full bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-300"
           initial={{ width: 0 }}
@@ -54,12 +54,12 @@ export function WeeklyEventCard({
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-        <span className="text-white/82">
+        <span className="theme-text-muted">
           {locale === "en"
             ? `${progress.progress}/${progress.target} messages`
             : `${progress.progress}/${progress.target}개 메시지`}
         </span>
-        <span className="text-white/72">
+        <span className="theme-text-subtle">
           {progress.completed
             ? locale === "en"
               ? "Reward claimed"
