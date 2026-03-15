@@ -207,7 +207,7 @@
       "low": "A light greeting or short check-in is enough."
     },
     "weatherLabel": "Weather",
-    "messagesUnit": "messages",
+    "sessionMessagesLabel": "{count} messages",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
     "streakAndNext": "Streak and next step",
     "rewardLoop": "Reward loop",
@@ -728,7 +728,7 @@
     "title": "10 messages unlock a special drop",
     "completedBody": "Completed this week. Keep chatting to stay ahead on the leaderboard.",
     "activeBody": "Finish the weekly challenge before the timer ends to claim the special event reward.",
-    "progressMessages": "messages",
+    "progressLabel": "{progress}/{target} messages",
     "rewardClaimed": "Reward claimed",
     "remaining": "{count} left"
   },

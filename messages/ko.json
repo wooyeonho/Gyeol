@@ -207,7 +207,7 @@
       "low": "가벼운 인사나 짧은 체크인부터 시작해도 충분해요."
     },
     "weatherLabel": "날씨",
-    "messagesUnit": "메시지",
+    "sessionMessagesLabel": "메시지 {count}개",
     "firstSessionHint": "아래 추천 질문 3개 중 하나를 누르거나 입력창에 바로 적어보세요.",
     "streakAndNext": "스트릭과 다음 단계",
     "rewardLoop": "보상 루프",
@@ -728,7 +728,7 @@
     "title": "메시지 10개로 특별 보상 해금",
     "completedBody": "이번 주 이벤트를 완료했습니다. 계속 대화해서 리더보드 격차를 벌리세요.",
     "activeBody": "타이머가 끝나기 전에 주간 챌린지를 완료하면 특별 이벤트 보상을 받을 수 있습니다.",
-    "progressMessages": "개 메시지",
+    "progressLabel": "{progress}/{target}개 메시지",
     "rewardClaimed": "보상 획득 완료",
     "remaining": "{count}개 남음"
   },

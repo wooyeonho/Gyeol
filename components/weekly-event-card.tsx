@@ -54,7 +54,7 @@ export function WeeklyEventCard({
 
       <div className="mt-3 flex items-center justify-between gap-3 text-sm">
         <span className="theme-text-muted">
-          {`${progress.progress}/${progress.target} ${t("weeklyEvent.progressMessages")}`}
+          {t("weeklyEvent.progressLabel").replace("{progress}", String(progress.progress)).replace("{target}", String(progress.target))}
         </span>
         <span className="theme-text-subtle">
           {progress.completed
