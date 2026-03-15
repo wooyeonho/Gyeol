@@ -14,7 +14,7 @@ export function StarterPrompts({
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
   vitality: number;
-  locale: "ko" | "en";
+  locale: string;
   starterPrompts: string[];
   appearance: ResolvedIdentityAppearance;
   isStreaming: boolean;

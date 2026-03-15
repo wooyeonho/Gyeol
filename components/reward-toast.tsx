@@ -6,7 +6,7 @@ import { type RewardResult } from "@/lib/rewards/variable-reward";
 
 type RewardToastProps = {
   reward: RewardResult | null;
-  locale: "ko" | "en";
+  locale: string;
   onDismiss: () => void;
 };
 
@@ -56,7 +56,7 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
               {reward.icon}
             </motion.span>
             <div>
-              <p className="text-sm font-semibold text-white">{reward.label[locale]}</p>
+              <p className="text-sm font-semibold text-white">{reward.label[locale === "ko" ? "ko" : "en"]}</p>
               {reward.coins > 0 && (
                 <p className="text-xs text-white/60">+{reward.coins} coins</p>
               )}

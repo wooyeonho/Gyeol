@@ -8,7 +8,7 @@ import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
 import { WebPushManager } from "@/components/push-manager";
 
-const METADATA_BY_LOCALE: Record<Locale, Pick<Metadata, "title" | "description">> = {
+const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
   ko: {
     title: "결 GYEOL",
     description: "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱",
@@ -19,6 +19,8 @@ const METADATA_BY_LOCALE: Record<Locale, Pick<Metadata, "title" | "description">
   },
 };
 
+const DEFAULT_METADATA: Pick<Metadata, "title" | "description"> = METADATA_BY_LOCALE.en!;
+
 export const viewport = {
   width: "device-width" as const,
   initialScale: 1,
@@ -27,7 +29,7 @@ export const viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
   return {
-    ...METADATA_BY_LOCALE[locale],
+    ...(METADATA_BY_LOCALE[locale] ?? DEFAULT_METADATA),
     manifest: "/manifest.json",
   };
 }

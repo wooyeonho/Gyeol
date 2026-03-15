@@ -135,7 +135,8 @@ export function updateUsageProfile(
   };
 }
 
-export function getUsageModeLabel(mode: UsageMode, locale: "ko" | "en") {
+export function getUsageModeLabel(mode: UsageMode, rawLocale: string) {
+  const locale: "ko" | "en" = rawLocale === "ko" ? "ko" : "en";
   const labels: Record<UsageMode, { ko: string; en: string }> = {
     playful: { ko: "장난형", en: "playful" },
     intimate: { ko: "친밀형", en: "intimate" },
@@ -148,7 +149,8 @@ export function getUsageModeLabel(mode: UsageMode, locale: "ko" | "en") {
   return labels[mode][locale];
 }
 
-export function getUsageModeNarrative(mode: UsageMode, locale: "ko" | "en") {
+export function getUsageModeNarrative(mode: UsageMode, rawLocale: string) {
+  const locale: "ko" | "en" = rawLocale === "ko" ? "ko" : "en";
   const messages: Record<UsageMode, { ko: string; en: string }> = {
     playful: {
       ko: "장난과 애착이 많은 사용이 형상을 더 귀엽고 생명체답게 밀어주고 있습니다.",
