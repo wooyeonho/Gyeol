@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { useTranslations } from "@/components/i18n-provider";
@@ -34,20 +34,27 @@ export function EvolutionCeremony({
   const { locale, t } = useTranslations();
   const [phase, setPhase] = useState<"cinematic" | "card">("cinematic");
   const [copied, setCopied] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleCinematicEnd = useCallback(() => {
+    if (phase !== "cinematic") return;
     haptic("success");
     playSound("levelUp");
     setPhase("card");
-  }, []);
+  }, [phase]);
+
+  // Fallback timeout in case onAnimationComplete doesn't fire (e.g. tab backgrounded)
+  useEffect(() => {
+    if (phase !== "cinematic") return;
+    const fallback = setTimeout(handleCinematicEnd, 5000);
+    return () => clearTimeout(fallback);
+  }, [phase, handleCinematicEnd]);
 
   const shareText = locale === "ko"
     ? `${selfName}이(가) Gen ${level}로 진화했습니다!${mutation ? ` 돌연변이: ${mutation}` : ""} #Gyeol #AI진화`
     : `${selfName} evolved to Gen ${level}!${mutation ? ` Mutation: ${mutation}` : ""} #Gyeol #AIEvolution`;
 
   const shareUrl = shareBaseUrl
-    ? `${shareBaseUrl}/share/evolution?gen=${level}${mutation ? `&mutation=${encodeURIComponent(mutation)}` : ""}`
+    ? `${shareBaseUrl}/share/evolution?gen=${level}${mutation ? `&mutation=${encodeURIComponent(mutation)}` : ""}${selfName !== "GYEOL" ? `&name=${encodeURIComponent(selfName)}` : ""}`
     : typeof window !== "undefined" ? window.location.origin : "";
 
   const handleShare = useCallback(async () => {
@@ -143,7 +150,6 @@ export function EvolutionCeremony({
           >
             {/* Identity Card */}
             <div
-              ref={cardRef}
               className="relative overflow-hidden rounded-3xl border p-6"
               style={{
                 borderColor: `${primaryColor}40`,
@@ -168,7 +174,7 @@ export function EvolutionCeremony({
                     className="text-[10px] uppercase tracking-[0.3em] font-medium"
                     style={{ color: `${primaryColor}cc` }}
                   >
-                    {locale === "ko" ? "진화 완료" : "Evolution Complete"}
+                    {t("evolution.complete")}
                   </span>
                 </div>
 
@@ -270,7 +276,7 @@ export function EvolutionCeremony({
                 }}
               >
                 {copied
-                  ? (locale === "ko" ? "복사됨!" : "Copied!")
+                  ? t("evolution.copied")
                   : t("evolution.share")}
               </button>
               <button

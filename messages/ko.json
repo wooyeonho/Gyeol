@@ -580,6 +580,9 @@
   },
   "evolution": {
     "share": "자랑하기",
-    "close": "닫기"
+    "close": "닫기",
+    "complete": "진화 완료",
+    "copied": "복사됨!",
+    "cardEyebrow": "진화 카드"
   }
 }
