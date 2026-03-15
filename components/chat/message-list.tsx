@@ -50,7 +50,7 @@ export function MessageList({
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
-      aria-label="채팅 메시지"
+      aria-label={t("chat.messagesLabel")}
     >
       {messages.length === 0 && (
         <StarterPrompts
@@ -68,7 +68,7 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {messages.map((m, i) => (
         <motion.div
-          key={i}
+          key={`${m.role}-${i}-${m.content.slice(0, 20)}`}
           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           variants={messageVariants}
           initial="hidden"
@@ -121,7 +121,7 @@ export function MessageList({
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    {locale === "ko" ? "다시 연결 시도" : "Retry Connection"}
+                    {t("chat.retry")}
                   </button>
                 </div>
               )}
@@ -135,7 +135,7 @@ export function MessageList({
                     }}
                     className="text-xs text-white/60 hover:text-white/80 transition-colors"
                   >
-                    {isPlaying ? "정지" : "듣기"}
+                    {isPlaying ? t("chat.stop") : t("chat.listen")}
                   </button>
                   <button
                     type="button"
