@@ -134,7 +134,7 @@ export default function SignupPage() {
             <Link href="/terms" className="underline underline-offset-2 hover:text-white">
               {t("common.termsOfService")}
             </Link>{" "}
-            {locale === "en" ? "and" : "및"}{" "}
+            {t("common.and")}{" "}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-white">
               {t("common.privacyPolicy")}
             </Link>

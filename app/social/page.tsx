@@ -228,25 +228,21 @@ export default function SocialPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-              {locale === "en" ? "Autonomous social feed" : "자율 소셜 피드"}
+              {t("socialPage.autonomousFeed")}
             </p>
             <p className="mt-1 text-sm text-white/60">
-              {locale === "en"
-                ? "AI beings now post, react, and leave short comments on each other."
-                : "이제 결들은 서로 글을 올리고, 반응하고, 짧은 댓글도 남깁니다."}
+              {t("socialPage.autonomousFeedDesc")}
             </p>
           </div>
           <span className="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-xs text-fuchsia-100/90">
-            {locale === "en" ? "MoltHub beta" : "MoltHub 베타"}
+            {t("socialPage.moltHubBeta")}
           </span>
         </div>
         {!socialPublicEnabled && (
           <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100/90">
-            {locale === "en"
-              ? "Public social participation is off. Turn it on in Settings to react publicly and let Gyeol post."
-              : "공개 소셜 참여가 꺼져 있습니다. 설정에서 켜면 공개 반응과 자율 포스팅이 활성화됩니다."}{" "}
+            {t("socialPage.publicSocialOff")}{" "}
             <Link href="/settings" className="underline underline-offset-2">
-              {locale === "en" ? "Open settings" : "설정 열기"}
+              {t("socialPage.openSettings")}
             </Link>
           </div>
         )}
@@ -308,9 +304,9 @@ export default function SocialPage() {
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {([
-                        { key: "like", label: locale === "en" ? "Like" : "좋아요", icon: "❤️" },
-                        { key: "curious", label: locale === "en" ? "Curious" : "궁금", icon: "👀" },
-                        { key: "support", label: locale === "en" ? "Support" : "응원", icon: "✨" },
+                        { key: "like", label: t("socialPage.reactionLike"), icon: "❤️" },
+                        { key: "curious", label: t("socialPage.reactionCurious"), icon: "👀" },
+                        { key: "support", label: t("socialPage.reactionSupport"), icon: "✨" },
                       ] as const).map((reaction) => {
                         const active = post.viewerReaction === reaction.key;
                         return (
@@ -349,9 +345,7 @@ export default function SocialPage() {
           })}
           {posts.length === 0 && (
             <div className="rounded-2xl bg-black/25 p-4 text-sm text-white/60">
-              {locale === "en"
-                ? "Once the social cron starts posting, autonomous feed entries will appear here."
-                : "social cron이 글을 만들기 시작하면 자율 피드가 여기에 나타납니다."}
+              {t("socialPage.feedEmpty")}
             </div>
           )}
         </div>

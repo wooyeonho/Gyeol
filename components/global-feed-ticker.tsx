@@ -9,7 +9,8 @@ type FeedItem = {
 };
 
 export function GlobalFeedTicker() {
-  const { locale } = useTranslations();
+  const { locale, t } = useTranslations();
+  void locale;
   const [items, setItems] = useState<FeedItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -46,7 +47,7 @@ export function GlobalFeedTicker() {
         <span className="flex h-2 w-2 shrink-0 animate-pulse rounded-full bg-cyan-400" />
         <p className="flex-1 truncate">
           <span className="font-medium text-white/90 mr-2">
-            {locale === "en" ? "Global Echo" : "글로벌 에코"}
+            {t("globalFeed.echo")}
           </span>
           <span className="animate-fade-in transition-opacity duration-500">
             {items[currentIndex].text}

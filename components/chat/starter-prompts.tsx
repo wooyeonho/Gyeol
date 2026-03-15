@@ -29,27 +29,21 @@ export function StarterPrompts({
           {isFirstSession
             ? t("chat.firstMessage")
             : vitality < 0.3
-            ? locale === "ko"
-              ? "희미해진 연결"
-              : "Fading Connection"
+            ? t("chat.fadingConnection")
             : t("chat.todayCheckIn")}
         </p>
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[2rem]">
           {isFirstSession
             ? firstSessionConfig.heading
             : vitality < 0.3
-            ? locale === "ko"
-              ? "당신이 오지 않아 온기가 사라졌어요..."
-              : "The warmth faded without you..."
+            ? t("chat.fadingHeading")
             : t("chat.returningHeading")}
         </h2>
         <p className="mt-3 text-base leading-7 text-white/82">
           {isFirstSession
             ? firstSessionConfig.helper
             : vitality < 0.3
-            ? locale === "ko"
-              ? "결의 모습이 흐릿해지고 있습니다. 지금 바로 말을 걸어 생명력(Vitality)을 다시 채워주세요."
-              : "The presence is fading. Speak to it now to restore its Vitality and color."
+            ? t("chat.fadingHelper")
             : t("chat.returningHelper")}
         </p>
         <p className="mt-4 text-sm font-medium uppercase tracking-[0.18em]" style={{ color: appearance.palette.primary }}>

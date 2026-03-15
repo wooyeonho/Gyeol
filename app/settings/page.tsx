@@ -591,7 +591,7 @@ export default function SettingsPage() {
             addLabel={t("home.missionAdd")}
             draftMission={draftMission}
             emptyState={t("home.missionEmptyReturning")}
-            inputAriaLabel={locale === "en" ? "Enter today's mission" : "오늘의 미션 입력"}
+            inputAriaLabel={t("settings.missionInputAria")}
             missions={missions}
             onAdd={addMission}
             onChangeDraft={setDraftMission}
@@ -599,7 +599,7 @@ export default function SettingsPage() {
             onToggle={toggleMission}
             placeholder={t("home.missionPlaceholder")}
             removeLabel={t("home.missionDelete")}
-            toggleAriaLabel={locale === "en" ? "Toggle mission completion" : "미션 완료 토글"}
+            toggleAriaLabel={t("settings.missionToggleAria")}
           />
         </section>
 

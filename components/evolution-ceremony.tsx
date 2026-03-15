@@ -49,9 +49,10 @@ export function EvolutionCeremony({
     return () => clearTimeout(fallback);
   }, [phase, handleCinematicEnd]);
 
-  const shareText = locale === "ko"
-    ? `${selfName}이(가) Gen ${level}로 진화했습니다!${mutation ? ` 돌연변이: ${mutation}` : ""} #Gyeol #AI진화`
-    : `${selfName} evolved to Gen ${level}!${mutation ? ` Mutation: ${mutation}` : ""} #Gyeol #AIEvolution`;
+  const shareText = t("evolution.shareText")
+    .replace("{name}", selfName)
+    .replace("{level}", String(level))
+    .replace("{mutation}", mutation ? ` ${t("evolution.mutationLabel")}: ${mutation}` : "");
 
   const shareUrl = shareBaseUrl
     ? `${shareBaseUrl}/share/evolution?gen=${level}${mutation ? `&mutation=${encodeURIComponent(mutation)}` : ""}${selfName !== "GYEOL" ? `&name=${encodeURIComponent(selfName)}` : ""}`
@@ -64,7 +65,7 @@ export function EvolutionCeremony({
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: locale === "ko" ? `${selfName} 진화 카드` : `${selfName} Evolution Card`,
+          title: t("evolution.cardTitle").replace("{name}", selfName),
           text: shareText,
           url: shareUrl,
         });
@@ -83,7 +84,7 @@ export function EvolutionCeremony({
     } catch {
       // Clipboard API not available
     }
-  }, [locale, selfName, shareText, shareUrl]);
+  }, [t, selfName, shareText, shareUrl]);
 
   const handleClose = useCallback(() => {
     haptic("tap");

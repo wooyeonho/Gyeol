@@ -186,7 +186,7 @@ export default function AlbumPage() {
                       className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
                       style={{ background: `${rarity.color}20`, color: rarity.color }}
                     >
-                      {rarity.label[locale === "ko" ? "ko" : "en"]}
+                      {rarity.label[locale === "ko" ? "ko" : "en"] /* rarity labels are static config, not i18n */}
                     </span>
                   </div>
                   <p className="text-white/50 text-xs mt-0.5">

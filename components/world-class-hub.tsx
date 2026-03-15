@@ -34,18 +34,12 @@ type HomeRecap = {
   };
 };
 
-function getReturningPrompts(locale: Locale) {
-  return locale === "en"
-    ? [
-        "Tell me the one thing I should focus on today.",
-        "Summarize how my mood looks right now.",
-        "Build a short action plan from my current state.",
-      ]
-    : [
-        "오늘 내가 집중해야 할 1가지만 알려줘.",
-        "지금 내 상태를 짧게 정리해줘.",
-        "현재 상태를 바탕으로 짧은 실행 계획을 만들어줘.",
-      ];
+function getReturningPrompts(_locale: Locale, t: (key: string) => string) {
+  return [
+    t("home.returningPrompt1"),
+    t("home.returningPrompt2"),
+    t("home.returningPrompt3"),
+  ];
 }
 
 function formatHubTime(date: Date, locale: Locale) {
@@ -56,24 +50,14 @@ function formatHubTime(date: Date, locale: Locale) {
   });
 }
 
-function getGrowthCopy(totalMessages: number, locale: Locale) {
-  if (locale === "en") {
-    if (totalMessages <= 0) {
-      return "Your first message opens memory, growth, and activity. Keep the first step simple.";
-    }
-    if (totalMessages < 10) {
-      return `${totalMessages} messages are already building tone, memory, and a clearer sense of presence.`;
-    }
-    return `${totalMessages} messages are already stored. This is a good time to revisit change in Discover.`;
-  }
-
+function getGrowthCopy(totalMessages: number, t: (key: string) => string) {
   if (totalMessages <= 0) {
-    return "첫 메시지를 보내면 기억, 성장, 활동이 함께 열립니다. 일단 가볍게 시작해보세요.";
+    return t("home.growthFirst");
   }
   if (totalMessages < 10) {
-    return `${totalMessages}개의 메시지가 이미 쌓여 존재감과 기억의 톤이 만들어지고 있습니다.`;
+    return `${totalMessages} ${t("home.growthEarlySuffix")}`;
   }
-  return `${totalMessages}개의 메시지가 저장되어 있습니다. 이제 Discover에서 변화의 흔적을 다시 볼 수 있습니다.`;
+  return `${totalMessages} ${t("home.growthMatureSuffix")}`;
 }
 
 export function WorldClassHub() {
@@ -135,7 +119,7 @@ export function WorldClassHub() {
   const weather = typeof worldState?.weather?.name === "string" ? worldState.weather.name : "Void";
   const sessionMessages = Math.max(totalMessages, userMessages);
   const isFirstSession = sessionMessages === 0;
-  const quickPrompts = getReturningPrompts(locale);
+  const quickPrompts = getReturningPrompts(locale, t);
   const appearance = resolveIdentityAppearance(
     {
       selfName,
@@ -180,26 +164,18 @@ export function WorldClassHub() {
   const streakDays = recap?.streak.days ?? 0;
   const weeklyActivity = recap?.streak.weekly_activity ?? [];
   const rewardInventoryRows = [
-    rewardInventory.coins ? `${rewardInventory.coins}${locale === "en" ? " coins" : " 코인"}` : null,
-    rewardInventory.evolution_points ? `${rewardInventory.evolution_points}${locale === "en" ? " evo" : " 진화"}` : null,
-    rewardInventory.title_shards ? `${rewardInventory.title_shards}${locale === "en" ? " title" : " 칭호"}` : null,
-    rewardInventory.appearance_shards ? `${rewardInventory.appearance_shards}${locale === "en" ? " appearance" : " 외형"}` : null,
-    rewardInventory.streak_freezes ? `${rewardInventory.streak_freezes}${locale === "en" ? " freeze" : " 프리즈"}` : null,
+    rewardInventory.coins ? `${rewardInventory.coins} ${t("home.rewardCoins")}` : null,
+    rewardInventory.evolution_points ? `${rewardInventory.evolution_points} ${t("home.rewardEvo")}` : null,
+    rewardInventory.title_shards ? `${rewardInventory.title_shards} ${t("home.rewardTitleShards")}` : null,
+    rewardInventory.appearance_shards ? `${rewardInventory.appearance_shards} ${t("home.rewardAppearance")}` : null,
+    rewardInventory.streak_freezes ? `${rewardInventory.streak_freezes} ${t("home.rewardFreeze")}` : null,
   ].filter(Boolean);
   const headerTitle = isFirstSession
-    ? locale === "en"
-      ? `Meet ${selfName} in one short conversation`
-      : `${selfName}과 짧은 대화로 바로 시작하세요`
-    : locale === "en"
-      ? `Start today's conversation with ${selfName}`
-      : `${selfName}과 오늘의 대화를 시작하세요`;
+    ? t("home.meetTitle").replace("{name}", selfName)
+    : t("home.startTitle").replace("{name}", selfName);
   const headerBody = isFirstSession
-    ? locale === "en"
-      ? "Skip the setup. Tap one suggestion below or type one short sentence to feel the value in under a few seconds."
-      : "설정은 건너뛰고 바로 시작하세요. 아래 추천 질문을 누르거나 짧은 한 문장만 보내도 바로 가치를 느낄 수 있습니다."
-    : locale === "en"
-      ? "Home now stays focused on chat, streak, and a few quick prompts. Deeper traces and browsing have moved into Discover."
-      : "이제 홈은 채팅, 스트릭, 짧은 퀵 프롬프트에 집중합니다. 더 자세한 흔적과 탐색은 Discover에서 볼 수 있습니다.";
+    ? t("home.firstSessionBody")
+    : t("home.returningBody");
 
   return (
     <section className="pointer-events-none fixed left-1/2 top-4 z-20 w-[min(720px,calc(100%-1rem))] -translate-x-1/2">
@@ -238,13 +214,13 @@ export function WorldClassHub() {
             {appearance.title}
           </span>
           <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
-            {locale === "en" ? `Weather · ${weather}` : `날씨 · ${weather}`}
+            {`${t("home.weatherLabel")} · ${weather}`}
           </span>
           <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
             Gen {genLevel}
           </span>
           <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
-            {locale === "en" ? `${sessionMessages} messages` : `메시지 ${sessionMessages}개`}
+            {`${sessionMessages} ${t("home.messagesUnit")}`}
           </span>
         </div>
 
@@ -252,13 +228,11 @@ export function WorldClassHub() {
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-sm font-medium text-white">{t("home.currentPresence")}</p>
             <p className="mt-2 text-sm leading-6 text-white/80">
-              {getGrowthCopy(sessionMessages, locale)}
+              {getGrowthCopy(sessionMessages, t)}
             </p>
             {isFirstSession ? (
               <p className="mt-4 text-sm text-white/82">
-                {locale === "en"
-                  ? "Use one of the three suggestions below or type directly into the input."
-                  : "아래 추천 질문 3개 중 하나를 누르거나 입력창에 바로 적어보세요."}
+                {t("home.firstSessionHint")}
               </p>
             ) : (
               <div className="mt-4 flex flex-wrap gap-3">
@@ -283,7 +257,7 @@ export function WorldClassHub() {
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-sm font-medium text-white">
-              {locale === "en" ? "Streak and next step" : "스트릭과 다음 단계"}
+              {t("home.streakAndNext")}
             </p>
             <div className="mt-4">
               <StreakDisplay
@@ -297,16 +271,12 @@ export function WorldClassHub() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {locale === "en" ? "Reward loop" : "보상 루프"}
+                    {t("home.rewardLoop")}
                   </p>
                   <p className="mt-1 text-sm text-white/78">
                     {rewardProgress.messagesUntilGuaranteed <= 0
-                      ? locale === "en"
-                        ? "Your next message is guaranteed to drop a reward."
-                        : "다음 메시지는 보상이 보장됩니다."
-                      : locale === "en"
-                        ? `${rewardProgress.messagesUntilGuaranteed} more messages until the guaranteed drop.`
-                        : `보장 드롭까지 ${rewardProgress.messagesUntilGuaranteed}개 메시지 남았습니다.`}
+                      ? t("home.rewardGuaranteed")
+                      : `${rewardProgress.messagesUntilGuaranteed} ${t("home.rewardCountdownSuffix")}`}
                   </p>
                 </div>
                 <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100/90">
@@ -334,9 +304,7 @@ export function WorldClassHub() {
                   ))
                 ) : (
                   <span className="text-sm text-white/70">
-                    {locale === "en"
-                      ? "Your reward inventory will start filling after the first few messages."
-                      : "몇 번의 대화만 지나면 보상 인벤토리가 채워지기 시작합니다."}
+                    {t("home.rewardInventoryEmpty")}
                   </span>
                 )}
               </div>
@@ -345,23 +313,20 @@ export function WorldClassHub() {
               <WeeklyEventCard locale={locale} progress={weeklyEventProgress} compact />
             </div>
             <p className="mt-4 text-sm leading-6 text-white/80">
-              {recap?.next_action ??
-                (locale === "en"
-                  ? "After chatting, open Discover to review activity, album, social, and ecosystem traces."
-                  : "대화 후에는 Discover에서 활동, 앨범, 소셜, 생태계 흔적을 다시 확인하세요.")}
+              {recap?.next_action ?? t("home.discoverHint")}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/discover"
                 className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
-                {locale === "en" ? "Open Discover" : "Discover 열기"}
+                {t("home.openDiscover")}
               </Link>
               <Link
                 href="/settings"
                 className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
-                {locale === "en" ? "Open Profile" : "Profile 열기"}
+                {t("home.openProfile")}
               </Link>
             </div>
           </div>

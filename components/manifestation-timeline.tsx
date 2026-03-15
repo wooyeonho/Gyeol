@@ -4,7 +4,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function ManifestationTimeline() {
-  const { locale } = useTranslations();
+  const { locale, t } = useTranslations();
   const agentState = useAgentStore((state) => state.agentState);
 
   if (!agentState) return null;
@@ -24,17 +24,17 @@ export function ManifestationTimeline() {
   );
 
   const entries = [
-    { label: locale === "ko" ? "형태의 기원" : "Origin Form", value: appearance.formKey },
-    { label: locale === "ko" ? "발현 방향성" : "Manifestation Bias", value: appearance.chips.join(" · ") },
-    { label: locale === "ko" ? "최근 대화의 흐름" : "Recent Usage Flow", value: appearance.usageNarrative },
-    { label: locale === "ko" ? "목소리 공명" : "Vocal Resonance", value: appearance.voice.accentLabel },
+    { label: t("manifestation.originForm"), value: appearance.formKey },
+    { label: t("manifestation.manifestationBias"), value: appearance.chips.join(" · ") },
+    { label: t("manifestation.recentUsageFlow"), value: appearance.usageNarrative },
+    { label: t("manifestation.vocalResonance"), value: appearance.voice.accentLabel },
   ].filter(e => e.value);
 
   return (
     <Card className="bg-black/40 border-white/10 backdrop-blur-md">
       <CardHeader>
         <CardTitle className="text-sm font-medium tracking-wide" style={{ color: appearance.palette.primary }}>
-          {locale === "ko" ? "존재성의 기록" : "Continuity Signature"}
+          {t("manifestation.continuitySig")}
         </CardTitle>
       </CardHeader>
       <CardContent>

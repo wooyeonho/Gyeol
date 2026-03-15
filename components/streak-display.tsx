@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
+import { useTranslations } from "@/components/i18n-provider";
 
 const STREAK_MILESTONES = [3, 5, 7, 10, 14, 21, 30, 50, 100] as const;
 
@@ -30,13 +31,12 @@ export function StreakDisplay({
   midnight.setHours(24, 0, 0, 0);
   const hoursUntilMidnight = (midnight.getTime() - now.getTime()) / 3600000;
   const showRiskTimer = days > 0 && !todayActive && hoursUntilMidnight <= 4;
+  const { t } = useTranslations();
   const countdownLabel = (() => {
     const totalMinutes = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 60000));
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return locale === "ko"
-      ? `${hours}시간 ${minutes}분`
-      : `${hours}h ${minutes}m`;
+    return `${hours}${t("streak.countdownH")} ${minutes}${t("streak.countdownM")}`;
   })();
 
   const streakColor = days >= 30
@@ -48,10 +48,8 @@ export function StreakDisplay({
         : "#ffffff40";
 
   const streakLabel = days === 0
-    ? (locale === "ko" ? "오늘 첫 대화를 시작해보세요" : "Start your first conversation today")
-    : locale === "ko"
-      ? `${days}일 연속`
-      : `${days} day streak`;
+    ? t("streak.startFirst")
+    : t("streak.dayStreak").replace("{count}", String(days));
 
   if (compact) {
     return (
@@ -104,7 +102,7 @@ export function StreakDisplay({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/60">
-            {locale === "ko" ? "연속 대화" : "Streak"}
+            {t("streak.label")}
           </p>
           <div className="mt-1 flex items-baseline gap-2">
             <motion.span
@@ -133,16 +131,12 @@ export function StreakDisplay({
       <div className="mt-4 rounded-xl border border-white/10 bg-black/25 p-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-white">
-            {locale === "ko" ? "다음 마일스톤" : "Next milestone"}
+            {t("streak.nextMilestone")}
           </p>
           <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-sm text-white/85">
             {nextMilestone
-              ? locale === "ko"
-                ? `${nextMilestone - days}일 남음`
-                : `${nextMilestone - days} days left`
-              : locale === "ko"
-                ? "최고 구간"
-                : "Peak tier"}
+              ? t("streak.daysLeft").replace("{count}", String(nextMilestone - days))
+              : t("streak.peakTier")}
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -174,7 +168,7 @@ export function StreakDisplay({
           const dayIndex = d.getDay();
           const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
           const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
-          const dayLabel = locale === "ko" ? koLabels[dayIndex] : enLabels[dayIndex];
+          const dayLabel = (locale === "ko" ? koLabels : enLabels)[dayIndex];
           const isToday = i === weeklyActivity.length - 1;
           return (
             <motion.div
@@ -210,9 +204,7 @@ export function StreakDisplay({
           transition={{ delay: 0.5 }}
         >
           <p className="text-xs text-amber-200/80">
-            {locale === "ko"
-              ? `⚠️ 오늘 대화하지 않으면 ${days}일 연속 기록이 끊어집니다!`
-              : `⚠️ Talk today to keep your ${days}-day streak alive!`}
+            {`⚠️ ${t("streak.warningKeep").replace("{count}", String(days))}`}
           </p>
         </motion.div>
       )}
@@ -223,9 +215,7 @@ export function StreakDisplay({
           animate={{ opacity: 1, height: "auto" }}
         >
           <p className="text-sm text-red-100/90">
-            {locale === "ko"
-              ? `스트릭 위험! 자정까지 ${countdownLabel} 남았습니다.`
-              : `Streak danger! ${countdownLabel} until midnight.`}
+            {t("streak.dangerTimer").replace("{countdown}", countdownLabel)}
           </p>
         </motion.div>
       )}

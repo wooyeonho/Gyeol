@@ -109,9 +109,10 @@ export default function AdoptPage() {
                     <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
                     <div className="mt-2 text-base font-medium text-white">{item.self_name || t("adoptPage.nameless")}</div>
                     <div className="mt-1 text-sm text-white/68">
-                      {locale === "en"
-                        ? `${t("adoptPage.vitalityLabel")} ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0} · ${item.days_alive ?? 0} ${t("adoptPage.daysAlive")}`
-                        : `${t("adoptPage.vitalityLabel")} ${Math.round((item.vitality ?? 0) * 100)}% · ${t("adoptPage.memoryCount")} ${item.memory_count ?? 0}개 · ${item.days_alive ?? 0}${t("adoptPage.daysAlive")}`}
+                      {t("adoptPage.statsLine")
+                        .replace("{vitality}", String(Math.round((item.vitality ?? 0) * 100)))
+                        .replace("{memory}", String(item.memory_count ?? 0))
+                        .replace("{days}", String(item.days_alive ?? 0))}
                     </div>
                   </div>
                 </div>
