@@ -202,7 +202,8 @@ export function WorldClassHub() {
       : "이제 홈은 채팅, 스트릭, 짧은 퀵 프롬프트에 집중합니다. 더 자세한 흔적과 탐색은 Discover에서 볼 수 있습니다.";
 
   return (
-    <section className="fixed left-1/2 top-4 z-20 w-[min(720px,calc(100%-1rem))] -translate-x-1/2 rounded-[2rem] border border-white/15 bg-black/55 p-4 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl">
+    <section className="pointer-events-none fixed left-1/2 top-4 z-20 w-[min(720px,calc(100%-1rem))] -translate-x-1/2">
+      <div className="pointer-events-auto rounded-[2rem] border border-white/15 bg-black/55 p-4 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl">
       <div className="absolute inset-0 pointer-events-none rounded-[2rem] aurora-flow opacity-45" />
       <div className="relative space-y-4 rounded-[1.5rem] border border-white/10 bg-black/35 p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -365,6 +366,7 @@ export function WorldClassHub() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );
