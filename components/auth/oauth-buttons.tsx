@@ -12,11 +12,12 @@ type OAuthButtonsProps = {
   refCode?: string | null;
   onError?: (message: string) => void;
   onLoadingChange?: (loading: boolean) => void;
+  disabledProviders?: Provider[];
 };
 
-type Provider = "google" | "github";
+type Provider = "google" | "github" | "apple";
 
-const PROVIDERS: Provider[] = ["google", "github"];
+const PROVIDERS: Provider[] = ["google", "github", "apple"];
 
 function ProviderIcon({ provider }: { provider: Provider }) {
   if (provider === "google") {
@@ -26,6 +27,14 @@ function ProviderIcon({ provider }: { provider: Provider }) {
         <path fill="#34A853" d="M12 21c2.6 0 4.8-.9 6.4-2.4l-3.1-2.4c-.9.6-2 .9-3.3.9-2.5 0-4.6-1.7-5.4-4H3.4v2.5A9.7 9.7 0 0 0 12 21z" />
         <path fill="#4A90E2" d="M6.6 13.1A5.8 5.8 0 0 1 6.3 12c0-.4.1-.8.2-1.1V8.4H3.4A9.7 9.7 0 0 0 2.3 12c0 1.5.4 2.9 1.1 4.1l3.2-2.5z" />
         <path fill="#FBBC05" d="M12 6.9c1.4 0 2.7.5 3.7 1.4l2.8-2.8A9.7 9.7 0 0 0 2.3 12h4.2c.7-2.3 2.9-5.1 5.5-5.1z" />
+      </svg>
+    );
+  }
+
+  if (provider === "apple") {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+        <path d="M16.9 12.5c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.7-1.7-3.3-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-3-.7-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.2 9.1.8 1.1 1.7 2.4 2.9 2.3 1.1-.1 1.6-.7 3-.7 1.5 0 1.9.7 3 .7 1.2 0 2-1.1 2.8-2.2.9-1.3 1.3-2.5 1.4-2.6 0 0-2.7-1-2.8-4.1ZM14.7 5.9c.6-.8 1.1-1.8 1-2.9-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-.9 2.9 1 0 2-.5 2.6-1.4Z" />
       </svg>
     );
   }
@@ -54,6 +63,7 @@ export function OAuthButtons({
   refCode,
   onError,
   onLoadingChange,
+  disabledProviders = [],
 }: OAuthButtonsProps) {
   const supabase = createClient();
   const { t } = useTranslations();
@@ -98,8 +108,9 @@ export function OAuthButtons({
             key={provider}
             type="button"
             onClick={() => void handleOAuth(provider)}
-            disabled={loading}
-            className="flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/85 hover:bg-white/10 disabled:opacity-50"
+            disabled={loading || disabledProviders.includes(provider)}
+            aria-label={t(`auth.oauth.${provider}`)}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 hover:bg-white/10 disabled:opacity-50"
           >
             <ProviderIcon provider={provider} />
             {t(`auth.oauth.${provider}`)}

@@ -52,11 +52,15 @@
     "oauthDivider": "또는 소셜 로그인",
     "oauth": {
       "google": "Google로 계속하기",
-      "github": "GitHub로 계속하기"
+      "github": "GitHub로 계속하기",
+      "apple": "Apple로 계속하기"
     },
+    "consentPrefix": "가입을 진행하면",
+    "consentSuffix": "에 동의한 것으로 간주됩니다.",
     "errors": {
       "missing_oauth_code": "소셜 로그인 콜백이 올바르지 않았습니다. 다시 시도해주세요.",
-      "oauth_exchange_failed": "소셜 로그인을 완료하지 못했습니다. 다시 시도해주세요."
+      "oauth_exchange_failed": "소셜 로그인을 완료하지 못했습니다. 다시 시도해주세요.",
+      "consent_required": "이용약관과 개인정보처리방침 동의가 필요합니다."
     },
     "configWarning": "이 환경에는 Supabase가 연결되어 있지 않습니다. 공개 인증 키를 넣기 전까지 비밀번호, 게스트, 소셜 로그인은 미리보기 모드로 동작합니다."
   },

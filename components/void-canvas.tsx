@@ -42,10 +42,18 @@ export function VoidCanvas({
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
   const lowConcurrency = typeof navigator !== "undefined" && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
   const lowMemory = typeof navigator !== "undefined" && "deviceMemory" in navigator && Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4;
+  const saveData =
+    typeof navigator !== "undefined" &&
+    "connection" in navigator &&
+    Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+  const slowNetwork =
+    typeof navigator !== "undefined" &&
+    "connection" in navigator &&
+    /2g|3g/i.test((navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType ?? "");
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory;
+  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory || saveData || slowNetwork;
   const particleCount = reducedVisualMode ? 0 : isMobile ? Math.floor(particles / 2) : particles;
   const effectiveGlow = reducedVisualMode ? Math.min(glow, 35) : glow;
   const effectiveSize = reducedVisualMode ? Math.min(size, 24) : size;

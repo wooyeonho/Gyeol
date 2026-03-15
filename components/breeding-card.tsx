@@ -103,8 +103,9 @@ export default function BreedingCard(props: BreedingCardProps) {
         </div>
         {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
         <button
-          className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm disabled:opacity-50"
+          className="w-full min-h-12 rounded-lg bg-white/10 hover:bg-white/20 text-base disabled:opacity-50"
           disabled={loading}
+          aria-label={t("breeding.sendRequest")}
           onClick={async () => {
             setError(null);
             setLoading(true);
@@ -131,8 +132,9 @@ export default function BreedingCard(props: BreedingCardProps) {
       {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
       <div className="flex gap-2">
         <button
-          className="flex-1 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-sm disabled:opacity-50"
+          className="flex-1 min-h-12 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-base disabled:opacity-50"
           disabled={loading}
+          aria-label={t("breeding.accept")}
           onClick={async () => {
             setError(null);
             setLoading(true);
@@ -148,8 +150,9 @@ export default function BreedingCard(props: BreedingCardProps) {
           {loading ? "..." : t("breeding.accept")}
         </button>
         <button
-          className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm disabled:opacity-50"
+          className="flex-1 min-h-12 rounded-lg bg-white/10 hover:bg-white/20 text-base disabled:opacity-50"
           disabled={loading}
+          aria-label={t("breeding.reject")}
           onClick={async () => {
             setError(null);
             setLoading(true);

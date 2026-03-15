@@ -8,6 +8,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { LegalFooter } from "@/components/legal-footer";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -88,27 +89,45 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="email"
-          placeholder={t("auth.email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
-          required
-        />
-        <input
-          type="password"
-          placeholder={t("auth.password")}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
-          required
-        />
-        {authError && <p className="text-sm text-red-400">{authError}</p>}
+        <div>
+          <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-white/88">
+            {t("auth.email")}
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            placeholder={t("auth.email")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            aria-invalid={Boolean(authError)}
+            aria-describedby={authError ? "login-auth-error" : undefined}
+            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-white/88">
+            {t("auth.password")}
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            placeholder={t("auth.password")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            aria-invalid={Boolean(authError)}
+            aria-describedby={authError ? "login-auth-error" : undefined}
+            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            required
+          />
+        </div>
+        {authError && <p id="login-auth-error" className="text-sm text-red-400" role="alert">{authError}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-white px-4 py-3 font-medium text-black disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-white px-4 py-3 text-base font-medium text-black disabled:opacity-50"
         >
           {loading ? t("auth.loginLoading") : t("auth.login")}
         </button>
@@ -129,7 +148,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleGuest}
           disabled={loading}
-          className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white/75 hover:bg-white/10 disabled:opacity-50"
+          className="min-h-12 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/82 hover:bg-white/10 disabled:opacity-50"
         >
           {t("auth.guestContinue")}
         </button>
@@ -145,6 +164,7 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+      <LegalFooter />
     </div>
   );
 }

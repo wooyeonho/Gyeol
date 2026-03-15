@@ -52,11 +52,15 @@
     "oauthDivider": "or continue with",
     "oauth": {
       "google": "Continue with Google",
-      "github": "Continue with GitHub"
+      "github": "Continue with GitHub",
+      "apple": "Continue with Apple"
     },
+    "consentPrefix": "By continuing, you agree to the",
+    "consentSuffix": ".",
     "errors": {
       "missing_oauth_code": "The social login callback was incomplete. Please try again.",
-      "oauth_exchange_failed": "We could not complete the social login. Please try again."
+      "oauth_exchange_failed": "We could not complete the social login. Please try again.",
+      "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
     "configWarning": "Supabase is not configured in this environment. Password, guest, and social login will stay in preview mode until the public auth keys are added."
   },

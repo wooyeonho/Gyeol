@@ -8,6 +8,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { LegalFooter } from "@/components/legal-footer";
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -16,11 +17,12 @@ export default function SignupPage() {
   const callbackErrorCode = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedConsent, setAcceptedConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
@@ -30,6 +32,10 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!acceptedConsent) {
+      setError(t("auth.errors.consent_required"));
+      return;
+    }
     setLoading(true);
     trackClientEvent(CLIENT_EVENT.signupStarted, { method: "password", ref: refCode ?? undefined });
     const { data, error: err } = await supabase.auth.signUp({ email, password });
@@ -81,27 +87,65 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="email"
-          placeholder={t("auth.email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
-          required
-        />
-        <input
-          type="password"
-          placeholder={t("auth.password")}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white placeholder:text-white/45"
-          required
-        />
-        {authError && <p className="text-sm text-red-400">{authError}</p>}
+        <div>
+          <label htmlFor="signup-email" className="mb-2 block text-sm font-medium text-white/88">
+            {t("auth.email")}
+          </label>
+          <input
+            id="signup-email"
+            type="email"
+            placeholder={t("auth.email")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            aria-invalid={Boolean(authError)}
+            aria-describedby={authError ? "signup-auth-error" : undefined}
+            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="signup-password" className="mb-2 block text-sm font-medium text-white/88">
+            {t("auth.password")}
+          </label>
+          <input
+            id="signup-password"
+            type="password"
+            placeholder={t("auth.password")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            aria-invalid={Boolean(authError)}
+            aria-describedby={authError ? "signup-auth-error" : undefined}
+            className="min-h-12 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white placeholder:text-white/65"
+            required
+          />
+        </div>
+        <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/82">
+          <input
+            type="checkbox"
+            checked={acceptedConsent}
+            onChange={(event) => setAcceptedConsent(event.target.checked)}
+            className="mt-1 h-5 w-5 rounded border-white/20 bg-black"
+            required
+          />
+          <span className="leading-6">
+            {t("auth.consentPrefix")}{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-white">
+              {t("common.termsOfService")}
+            </Link>{" "}
+            {locale === "en" ? "and" : "및"}{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-white">
+              {t("common.privacyPolicy")}
+            </Link>
+            {t("auth.consentSuffix")}
+          </span>
+        </label>
+        {authError && <p id="signup-auth-error" className="text-sm text-red-400" role="alert">{authError}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-white px-4 py-3 font-medium text-black disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-white px-4 py-3 text-base font-medium text-black disabled:opacity-50"
         >
           {loading ? t("auth.signupLoading") : t("auth.signupSubmit")}
         </button>
@@ -115,6 +159,7 @@ export default function SignupPage() {
           refCode={refCode}
           onError={(message) => setError(message || null)}
           onLoadingChange={setLoading}
+          disabledProviders={acceptedConsent ? [] : ["google", "github", "apple"]}
         />
       </div>
 
@@ -126,6 +171,7 @@ export default function SignupPage() {
           {t("auth.loginFeaturesLink")}
         </Link>
       </div>
+      <LegalFooter />
     </div>
   );
 }

@@ -1,18 +1,31 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Menu, X, Home, Compass, User, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 export function NavigationHub() {
   const [isOpen, setIsOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   // A simple command palette / navigation hub structure
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 right-4 z-50 p-2 bg-neutral-900 border border-neutral-800 rounded-full shadow-lg text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+        className="fixed top-4 right-4 z-50 min-h-12 min-w-12 bg-neutral-900 border border-neutral-800 rounded-full shadow-lg text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
         aria-label="Open navigation hub"
       >
         <Menu className="w-5 h-5" />
@@ -25,10 +38,14 @@ export function NavigationHub() {
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Navigation hub">
             <div className="flex items-center p-4 border-b border-neutral-800 bg-neutral-900">
               <Search className="w-5 h-5 text-neutral-500 mr-3" />
+              <label htmlFor="navigation-hub-search" className="sr-only">
+                Search commands or navigate
+              </label>
               <input
+                id="navigation-hub-search"
                 type="text"
                 placeholder="Search commands or navigate..."
                 className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-neutral-500 text-lg"
@@ -36,7 +53,8 @@ export function NavigationHub() {
               />
               <button 
                 onClick={() => setIsOpen(false)}
-                className="p-1 text-neutral-500 hover:text-white transition-colors"
+                className="min-h-10 min-w-10 p-1 text-neutral-500 hover:text-white transition-colors"
+                aria-label="Close navigation hub"
               >
                 <X className="w-5 h-5" />
               </button>
