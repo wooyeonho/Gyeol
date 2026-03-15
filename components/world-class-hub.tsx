@@ -11,6 +11,7 @@ import { EXPERIMENT } from "@/lib/experiments/catalog";
 import { useFirstMessageOnboardingVariant } from "@/lib/experiments/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { formatLocalizedDate, formatLocalizedTime } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/config";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { WorldClassHubPresenceColumn } from "@/components/home/world-class-hub-presence-column";
 import { WorldClassHubAside } from "@/components/home/world-class-hub-aside";
@@ -63,7 +64,8 @@ type HomeRecap = {
 const STORAGE_KEY = "gyeol-worldclass-missions-v1";
 const HOME_LAST_SEEN_KEY = "gyeol-home-last-seen-at";
 
-function getFirstSessionVariants(locale: "ko" | "en") {
+function getFirstSessionVariants(rawLocale: string) {
+  const locale = rawLocale === "ko" ? "ko" : "en" as const;
   if (locale === "en") {
     return {
       identity: {
@@ -112,7 +114,8 @@ function getFirstSessionVariants(locale: "ko" | "en") {
   } as const;
 }
 
-function getReturningPrompts(locale: "ko" | "en") {
+function getReturningPrompts(rawLocale: string) {
+  const locale = rawLocale === "ko" ? "ko" : "en" as const;
   return locale === "en"
     ? [
         "Pick my top three growth points for today.",
@@ -129,7 +132,7 @@ function getReturningPrompts(locale: "ko" | "en") {
 }
 
 function resolveFirstSessionVariant(
-  locale: "ko" | "en",
+  locale: string,
   variant: string
 ) {
   const variants = getFirstSessionVariants(locale);
@@ -159,7 +162,7 @@ function vitalityHintKey(vitality: number): "high" | "mid" | "low" {
   return "low";
 }
 
-function growthSummary(totalMessages: number, locale: "ko" | "en") {
+function growthSummary(totalMessages: number, locale: string) {
   if (locale === "en") {
     if (totalMessages <= 0) {
       return "The first message opens memory, activity, and growth traces at once.";
@@ -190,7 +193,7 @@ function growthSummary(totalMessages: number, locale: "ko" | "en") {
   return `${totalMessages}개의 대화가 축적되었습니다. 이제 결의 성장 흔적을 활동과 앨범에서 함께 회고해보세요.`;
 }
 
-function nextEvolutionHint(totalMessages: number, locale: "ko" | "en") {
+function nextEvolutionHint(totalMessages: number, locale: string) {
   if (totalMessages <= 0) return locale === "en" ? "Send the first message to start the growth loop." : "첫 메시지를 보내면 성장 루프가 시작됩니다.";
   const remainder = totalMessages % 10;
   const toNext = remainder === 0 ? 10 : 10 - remainder;
@@ -198,7 +201,7 @@ function nextEvolutionHint(totalMessages: number, locale: "ko" | "en") {
   return `${toNext}번 더 대화하면 다음 성격 분석 구간에 도달합니다.`;
 }
 
-function formatHubTime(date: Date, locale: "ko" | "en") {
+function formatHubTime(date: Date, locale: Locale) {
   return formatLocalizedTime(date, locale, {
     hour: "2-digit",
     minute: "2-digit",
@@ -206,7 +209,7 @@ function formatHubTime(date: Date, locale: "ko" | "en") {
   });
 }
 
-function formatHubShortDate(value: string, locale: "ko" | "en") {
+function formatHubShortDate(value: string, locale: Locale) {
   return formatLocalizedDate(value, locale, {
     month: "short",
     day: "numeric",

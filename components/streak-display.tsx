@@ -7,7 +7,7 @@ type StreakDisplayProps = {
   days: number;
   todayActive: boolean;
   weeklyActivity?: boolean[];
-  locale?: "ko" | "en";
+  locale?: string;
   compact?: boolean;
 };
 

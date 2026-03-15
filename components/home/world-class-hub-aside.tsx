@@ -37,7 +37,7 @@ type AsideProps = {
   completionRate: number;
   formatDate: (value: string) => string;
   genLevel: number;
-  locale: "ko" | "en";
+  locale: string;
   missionElements: React.ReactNode;
   mood: string;
   newItemsSinceLastVisit: HomeSummaryItem[];

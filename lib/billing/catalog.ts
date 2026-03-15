@@ -9,7 +9,7 @@ export type EntitlementKey =
   | "premium_generation"
   | "priority_beta";
 
-type LocalizedCopy = Record<Locale, string>;
+type LocalizedCopy = { ko: string; en: string };
 
 type PlanCatalogEntry = {
   badge?: Partial<Record<Locale, string>>;
@@ -160,7 +160,8 @@ export function formatPlanPrice(
   return locale === "ko" ? `월 ${amountLabel}` : `${amountLabel} / month`;
 }
 
-export function getPlanDefinition(tier: PlanTier, locale: Locale): PlanDefinition {
+export function getPlanDefinition(tier: PlanTier, rawLocale: Locale): PlanDefinition {
+  const locale: "ko" | "en" = rawLocale === "ko" ? "ko" : "en";
   const entry = PLAN_CATALOG[tier];
   return {
     badge: entry.badge?.[locale],

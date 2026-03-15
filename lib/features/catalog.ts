@@ -220,7 +220,8 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
   },
 ];
 
-export function getLocalizedFeatureCatalog(locale: "ko" | "en"): FeatureItem[] {
+export function getLocalizedFeatureCatalog(rawLocale: string): FeatureItem[] {
+  const locale: "ko" | "en" = rawLocale === "ko" ? "ko" : "en";
   return FEATURE_CATALOG_BASE.map((item) => ({
     id: item.id,
     name: item.name[locale],

@@ -100,7 +100,7 @@ type BillingData = {
 
 function formatLocaleDate(
   value: string | null | undefined,
-  locale: "ko" | "en"
+  locale: Locale
 ) {
   if (!value) return null;
   return formatLocalizedDate(value, locale);
