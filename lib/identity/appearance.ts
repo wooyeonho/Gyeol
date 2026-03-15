@@ -1,4 +1,9 @@
-type Locale = "ko" | "en";
+import type { Locale } from "@/lib/i18n/config";
+
+type BiLocaleText = {
+  ko: string;
+  en: string;
+};
 
 type VisualInput = {
   color?: string | null;
@@ -142,7 +147,7 @@ const USAGE_MODES: UsageMode[] = [
   "creative",
 ];
 
-const AXIS_LABELS: Record<ManifestationAxis, Record<Locale, string>> = {
+const AXIS_LABELS: Record<ManifestationAxis, BiLocaleText> = {
   coherence: { ko: "응집", en: "coherent" },
   warmth: { ko: "온기", en: "warm" },
   ferality: { ko: "야성", en: "untamed" },
@@ -153,7 +158,7 @@ const AXIS_LABELS: Record<ManifestationAxis, Record<Locale, string>> = {
   growth: { ko: "생장", en: "growing" },
 };
 
-const AXIS_NARRATIVES: Record<ManifestationAxis, Record<Locale, string>> = {
+const AXIS_NARRATIVES: Record<ManifestationAxis, BiLocaleText> = {
   coherence: {
     ko: "형체가 더 응집되고 또렷해지고 있습니다.",
     en: "Its form is becoming more coherent and sharply held together.",
@@ -188,7 +193,7 @@ const AXIS_NARRATIVES: Record<ManifestationAxis, Record<Locale, string>> = {
   },
 };
 
-const MODE_LABELS: Record<UsageMode, Record<Locale, string>> = {
+const MODE_LABELS: Record<UsageMode, BiLocaleText> = {
   playful: { ko: "장난이 많은 관계", en: "playful relation" },
   intimate: { ko: "친밀한 관계", en: "intimate relation" },
   strategic: { ko: "정리하는 관계", en: "strategic relation" },
@@ -219,6 +224,10 @@ const SHELL_RADIUS: Record<IdentityFormKey, string> = {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function pickLocalized(copy: BiLocaleText, locale: Locale) {
+  return locale === "ko" ? copy.ko : copy.en;
 }
 
 function getDefaultManifestationState(): ManifestationState {
@@ -362,28 +371,26 @@ function selectShell(state: ManifestationState, textHash: number): IdentityFormK
 
 function buildPresenceTitle(state: ManifestationState, locale: Locale) {
   const [first, second] = getDominantAxes(state);
-  if (locale === "ko") {
-    return `${AXIS_LABELS[first].ko} ${AXIS_LABELS[second].ko} 존재감`;
-  }
-  return `${AXIS_LABELS[first].en} ${AXIS_LABELS[second].en} presence`;
+  return locale === "ko"
+    ? `${AXIS_LABELS[first].ko} ${AXIS_LABELS[second].ko} 존재감`
+    : `${AXIS_LABELS[first].en} ${AXIS_LABELS[second].en} presence`;
 }
 
 function buildPresenceSubtitle(state: ManifestationState, locale: Locale) {
   const [first, second] = getDominantAxes(state);
-  if (locale === "ko") {
-    return `${AXIS_NARRATIVES[first].ko} 동시에 ${AXIS_NARRATIVES[second].ko}`;
-  }
-  return `${AXIS_NARRATIVES[first].en} At the same time, ${AXIS_NARRATIVES[second].en.toLowerCase()}`;
+  return locale === "ko"
+    ? `${AXIS_NARRATIVES[first].ko} 동시에 ${AXIS_NARRATIVES[second].ko}`
+    : `${AXIS_NARRATIVES[first].en} At the same time, ${AXIS_NARRATIVES[second].en.toLowerCase()}`;
 }
 
 function getUsageModeLabel(mode: UsageMode | null | undefined, locale: Locale) {
   if (!mode) return null;
-  return MODE_LABELS[mode][locale];
+  return pickLocalized(MODE_LABELS[mode], locale);
 }
 
 function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Locale) {
   if (!mode) return null;
-  const mapping: Record<UsageMode, Record<Locale, string>> = {
+  const mapping: Record<UsageMode, BiLocaleText> = {
     playful: {
       ko: "가볍고 친근한 상호작용이 이 존재를 더 말랑하고 유연한 방향으로 밀고 있습니다.",
       en: "Playful interaction is making this presence softer and more flexible.",
@@ -413,7 +420,7 @@ function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Local
       en: "Creation and imagination are letting this presence emerge more freely.",
     },
   };
-  return mapping[mode][locale];
+  return pickLocalized(mapping[mode], locale);
 }
 
 function hsl(h: number, s: number, l: number, alpha = 1) {
@@ -503,7 +510,7 @@ export function resolveIdentityAppearance(
   const particles = clamp(Math.round(10 + state.luminosity * 18 + state.growth * 12 + genLevel), 8, 48);
   const glow = clamp(Math.round(42 + state.luminosity * 28 + vitality * 20), 40, 100);
   const dominantAxes = getDominantAxes(state);
-  const chips = dominantAxes.slice(0, 3).map((axis) => AXIS_LABELS[axis][locale]);
+  const chips = dominantAxes.slice(0, 3).map((axis) => pickLocalized(AXIS_LABELS[axis], locale));
   const usageLabel = getUsageModeLabel(usageMode, locale);
   if (usageLabel) chips.unshift(usageLabel);
   if (genLevel > 1) chips.push(`Gen ${genLevel}`);

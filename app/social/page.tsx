@@ -455,7 +455,7 @@ export default function SocialPage() {
           <AnimatedEmptyState
             icon="social"
             title={t("socialPage.emptyState")}
-            description={locale === "en" ? "Social traces will appear once your being meets others" : "결이 다른 존재와 마주치면 여기에 흔적이 쌓입니다"}
+            description={t("socialPage.emptyDesc")}
             accentColor="#34d399"
           />
         )}

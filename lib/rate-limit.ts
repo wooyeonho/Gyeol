@@ -32,12 +32,28 @@ export async function checkRateLimit(key: string): Promise<boolean> {
     const windowStart = currentWindowStart();
     const userId = extractUserId(key);
 
-    // Remove expired entries for this key.
+    // Remove expired entries for this key (fire-and-forget).
     await service.from("rate_limits").delete().eq("rl_key", key).lt("created_at", expiry);
 
-    // Check current request_count for this (rl_key, user_id, window_start) combo.
-    // The schema uses a single-row-per-window design with a `request_count` column
-    // and a UNIQUE(user_id, window_start) constraint.
+    // Atomic check-and-increment: a single RPC that inserts or increments
+    // the counter AND checks against the limit in one statement.
+    // This eliminates the TOCTOU race where separate SELECT + UPSERT
+    // allowed concurrent requests to bypass the limit.
+    const { data: allowed, error: rpcError } = await service.rpc("check_and_increment_rate_limit", {
+      p_rl_key: key,
+      p_user_id: userId,
+      p_window_start: windowStart,
+      p_max_requests: MAX_PER_WINDOW,
+    });
+
+    if (!rpcError) {
+      return Boolean(allowed);
+    }
+
+    // Fallback: if the new RPC isn't deployed yet, use the legacy path.
+    // This has a small TOCTOU window but is better than failing entirely.
+    console.warn("[RateLimit] atomic RPC unavailable, using legacy path:", rpcError.message);
+
     const { data: existing } = await service
       .from("rate_limits")
       .select("request_count")
@@ -49,19 +65,13 @@ export async function checkRateLimit(key: string): Promise<boolean> {
     const currentCount = existing?.request_count ?? 0;
     if (currentCount >= MAX_PER_WINDOW) return false;
 
-    // Atomic upsert via PL/pgSQL RPC — a single INSERT … ON CONFLICT handles
-    // both the first request (insert) and subsequent ones (increment).
-    const { error: rpcError } = await service.rpc("upsert_rate_limit", {
+    const { error: upsertError } = await service.rpc("upsert_rate_limit", {
       p_rl_key: key,
       p_user_id: userId,
       p_window_start: windowStart,
     });
 
-    // If the RPC isn't deployed yet, fall back to Supabase .upsert() which
-    // also handles the UNIQUE(rl_key, user_id, window_start) conflict
-    // atomically at the DB level (no client-side TOCTOU race).
-    if (rpcError) {
-      console.warn("[RateLimit] RPC unavailable, using .upsert() fallback:", rpcError.message);
+    if (upsertError) {
       await service.from("rate_limits").upsert(
         {
           rl_key: key,

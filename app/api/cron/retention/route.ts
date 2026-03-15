@@ -31,7 +31,11 @@ async function runCleanup() {
     });
   }
 
-  await service.from("product_events").delete().in("id", ids);
+  const { error: deleteError } = await service.from("product_events").delete().in("id", ids);
+  if (deleteError) {
+    console.error("[Retention] delete failed", deleteError.message);
+    return NextResponse.json({ error: "Delete failed", detail: deleteError.message }, { status: 500 });
+  }
   return NextResponse.json({
     deleted: ids.length,
     retention_days: retentionDays,

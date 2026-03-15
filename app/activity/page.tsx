@@ -175,7 +175,7 @@ export default function ActivityPage() {
           <AnimatedEmptyState
             icon="activity"
             title={t("activity.empty")}
-            description={locale === "en" ? "Activities will appear as your being evolves" : "결이 진화하면 여기에 활동이 기록됩니다"}
+            description={t("activity.emptyDesc")}
             accentColor="#f59e0b"
           />
         )}

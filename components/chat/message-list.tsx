@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
+import type { Locale } from "@/lib/i18n/config";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
 const messageVariants = {
@@ -31,7 +32,7 @@ export function MessageList({
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
   vitality: number;
-  locale: "ko" | "en";
+  locale: Locale;
   starterPrompts: string[];
   appearance: ResolvedIdentityAppearance;
   bottomRef: React.RefObject<HTMLDivElement | null>;
@@ -68,7 +69,7 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {messages.map((m, i) => (
         <motion.div
-          key={i}
+          key={`${m.role}-${i}-${m.content.slice(0, 20)}`}
           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           variants={messageVariants}
           initial="hidden"
@@ -121,7 +122,7 @@ export function MessageList({
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    {locale === "ko" ? "다시 연결 시도" : "Retry Connection"}
+                    {t("chat.retry")}
                   </button>
                 </div>
               )}
@@ -135,7 +136,7 @@ export function MessageList({
                     }}
                     className="min-h-10 rounded-xl px-3 text-sm text-white/78 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   >
-                    {isPlaying ? "정지" : "듣기"}
+                    {isPlaying ? t("chat.stop") : t("chat.listen")}
                   </button>
                   <button
                     type="button"

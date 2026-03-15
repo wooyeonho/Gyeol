@@ -51,6 +51,10 @@ function isPublicSocialEnabled(agent: SocialAgentState) {
   return (agent.config as Record<string, unknown> | undefined)?.social_public_enabled === true;
 }
 
+const MAX_SECRETS = 50;
+const MAX_LEXICON = 100;
+const MAX_CONVERSATION_CONTEXT = 4; // Only pass last N messages as context
+
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const lockKey = "cron:social";
@@ -80,17 +84,19 @@ export async function GET(req: NextRequest) {
     const conversation: Array<{ speaker: string; content: string }> = [];
 
     for (let turn = 0; turn < turns; turn += 1) {
+      const recentContext = conversation.slice(-MAX_CONVERSATION_CONTEXT);
       const aMsg = await generateJSON<{ message?: string }>(
         `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
-        `${aContext}\nConversation so far: ${JSON.stringify(conversation)}\nSay something.\nJSON: {"message":"${language} message"}`,
+        `${aContext}\nConversation so far: ${JSON.stringify(recentContext)}\nSay something.\nJSON: {"message":"${language} message"}`
       );
       if (aMsg?.message) {
         conversation.push({ speaker: a.agent_id, content: normalizeGeneratedText(aMsg.message, 220, "..." ) });
       }
 
+      const recentContextB = conversation.slice(-MAX_CONVERSATION_CONTEXT);
       const bMsg = await generateJSON<{ message?: string }>(
         `Respond as this being. Keep it short, 1-2 sentences in ${language}. JSON only.`,
-        `${bContext}\nConversation so far: ${JSON.stringify(conversation)}\nRespond.\nJSON: {"message":"${language} message"}`,
+        `${bContext}\nConversation so far: ${JSON.stringify(recentContextB)}\nRespond.\nJSON: {"message":"${language} message"}`
       );
       if (bMsg?.message) {
         conversation.push({ speaker: b.agent_id, content: normalizeGeneratedText(bMsg.message, 220, "...") });
@@ -133,6 +139,9 @@ export async function GET(req: NextRequest) {
       const { data: stateRow } = await db.from("agent_state").select("secrets").eq("agent_id", a.agent_id).single();
       const secrets = (stateRow?.secrets as { entries?: unknown[] }) ?? {};
       const entries = Array.isArray(secrets.entries) ? secrets.entries : [];
+      if (entries.length >= MAX_SECRETS) {
+        entries.splice(0, entries.length - MAX_SECRETS + 1);
+      }
       entries.push({
         content: finalLine,
         created_at: new Date().toISOString(),
@@ -152,6 +161,9 @@ export async function GET(req: NextRequest) {
           const lexicon = (stateRow?.lexicon as { entries?: { word: string; meaning?: string; origin?: string }[] }) ?? { entries: [] };
           const entries = lexicon.entries ?? [];
           if (!entries.some((entry) => entry.word === langResult.word)) {
+            if (entries.length >= MAX_LEXICON) {
+              entries.splice(0, entries.length - MAX_LEXICON + 1);
+            }
             entries.push({ word: langResult.word, meaning: langResult.meaning ?? "", origin: "social" });
             await db.from("agent_state").update({ lexicon: { entries } }).eq("agent_id", agent.agent_id);
           }

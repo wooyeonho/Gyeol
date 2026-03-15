@@ -9,7 +9,7 @@ export type EntitlementKey =
   | "premium_generation"
   | "priority_beta";
 
-type LocalizedCopy = Record<Locale, string>;
+type LocalizedCopy = Partial<Record<Locale, string>>;
 
 type PlanCatalogEntry = {
   badge?: Partial<Record<Locale, string>>;
@@ -162,11 +162,12 @@ export function formatPlanPrice(
 
 export function getPlanDefinition(tier: PlanTier, locale: Locale): PlanDefinition {
   const entry = PLAN_CATALOG[tier];
+  const fallbackLocale: Locale = locale === "ko" ? "ko" : "en";
   return {
-    badge: entry.badge?.[locale],
-    cta: entry.cta[locale],
-    description: entry.description[locale],
-    features: entry.features.map((feature) => feature[locale]),
+    badge: entry.badge?.[locale] ?? entry.badge?.[fallbackLocale],
+    cta: entry.cta[locale] ?? entry.cta[fallbackLocale] ?? "",
+    description: entry.description[locale] ?? entry.description[fallbackLocale] ?? "",
+    features: entry.features.map((feature) => feature[locale] ?? feature[fallbackLocale] ?? ""),
     price: entry.price,
     priceLabel: formatPlanPrice(entry.price, locale),
     tier,

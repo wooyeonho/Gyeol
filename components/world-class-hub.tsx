@@ -6,10 +6,18 @@ import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
 import { useTranslations } from "@/components/i18n-provider";
+import type { Locale } from "@/lib/i18n/config";
 import { StreakDisplay } from "@/components/streak-display";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+
+export type HomeSummaryItem = {
+  id: string;
+  kind: "activity" | "milestone";
+  title: string;
+  created_at: string;
+};
 
 type HomeRecap = {
   next_action: string;
@@ -26,14 +34,7 @@ type HomeRecap = {
   };
 };
 
-export type HomeSummaryItem = {
-  id: string;
-  kind: "activity" | "milestone";
-  title: string;
-  created_at: string;
-};
-
-function getReturningPrompts(locale: "ko" | "en") {
+function getReturningPrompts(locale: Locale) {
   return locale === "en"
     ? [
         "Tell me the one thing I should focus on today.",
@@ -47,7 +48,7 @@ function getReturningPrompts(locale: "ko" | "en") {
       ];
 }
 
-function formatHubTime(date: Date, locale: "ko" | "en") {
+function formatHubTime(date: Date, locale: Locale) {
   return formatLocalizedTime(date, locale, {
     hour: "2-digit",
     minute: "2-digit",
@@ -55,7 +56,7 @@ function formatHubTime(date: Date, locale: "ko" | "en") {
   });
 }
 
-function getGrowthCopy(totalMessages: number, locale: "ko" | "en") {
+function getGrowthCopy(totalMessages: number, locale: Locale) {
   if (locale === "en") {
     if (totalMessages <= 0) {
       return "Your first message opens memory, growth, and activity. Keep the first step simple.";
@@ -79,7 +80,15 @@ export function WorldClassHub() {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
-  const { messages, isStreaming, sendMessage, pendingUsageMode, rewardInventory, rewardProgress, weeklyEventProgress } = useChatStore();
+  const {
+    messages,
+    isStreaming,
+    sendMessage,
+    pendingUsageMode,
+    rewardInventory,
+    rewardProgress,
+    weeklyEventProgress,
+  } = useChatStore();
 
   const [now, setNow] = useState(new Date());
   const [recap, setRecap] = useState<HomeRecap | null>(null);

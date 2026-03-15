@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Locale } from "@/lib/i18n/config";
 
 const STREAK_MILESTONES = [3, 5, 7, 10, 14, 21, 30, 50, 100] as const;
 
@@ -9,7 +10,7 @@ type StreakDisplayProps = {
   days: number;
   todayActive: boolean;
   weeklyActivity?: boolean[];
-  locale?: "ko" | "en";
+  locale?: Locale;
   compact?: boolean;
 };
 

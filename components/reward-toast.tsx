@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Locale } from "@/lib/i18n/config";
 import { type RewardResult } from "@/lib/rewards/variable-reward";
 
 type RewardToastProps = {
   reward: RewardResult | null;
-  locale: "ko" | "en";
+  locale: Locale;
   onDismiss: () => void;
 };
 
@@ -81,10 +82,10 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
             </motion.span>
             <div className={isJackpot ? "mt-4" : ""}>
               <p className={`${isJackpot ? "text-2xl" : "text-base"} font-semibold text-white`}>
-                {reward.label[locale]}
+                {locale === "ko" ? reward.label.ko : reward.label.en}
               </p>
               <p className="mt-2 text-sm leading-6 text-white/82">
-                {reward.detail[locale]}
+                {locale === "ko" ? reward.detail.ko : reward.detail.en}
               </p>
               {reward.streakMultiplier > 1 && (
                 <p className="mt-2 text-sm font-medium text-amber-100/95">

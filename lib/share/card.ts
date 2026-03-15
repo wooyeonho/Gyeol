@@ -24,11 +24,44 @@ const MILESTONE_LABELS: Record<Locale, Record<string, string>> = {
     personality_evolution: "Personality evolution",
     perspective_journal: "Perspective journal",
   },
+  ja: {
+    first_chat: "First conversation",
+    evolution: "Evolution",
+    dream: "First dream",
+    artifact_creation: "First creation",
+    social_encounter: "First social moment",
+    self_naming: "Self naming",
+    personality_evolution: "Personality evolution",
+    perspective_journal: "Perspective journal",
+  },
+  zh: {
+    first_chat: "First conversation",
+    evolution: "Evolution",
+    dream: "First dream",
+    artifact_creation: "First creation",
+    social_encounter: "First social moment",
+    self_naming: "Self naming",
+    personality_evolution: "Personality evolution",
+    perspective_journal: "Perspective journal",
+  },
+  es: {
+    first_chat: "First conversation",
+    evolution: "Evolution",
+    dream: "First dream",
+    artifact_creation: "First creation",
+    social_encounter: "First social moment",
+    self_naming: "Self naming",
+    personality_evolution: "Personality evolution",
+    perspective_journal: "Perspective journal",
+  },
 };
 
 const DEFAULT_SELF_NAME: Record<Locale, string> = {
   ko: "결",
   en: "Gyeol",
+  ja: "Gyeol",
+  zh: "Gyeol",
+  es: "Gyeol",
 };
 
 export type ShareCardData = {

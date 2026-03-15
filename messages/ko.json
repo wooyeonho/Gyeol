@@ -81,7 +81,11 @@
     "firstFootnote": "첫 시작은 한 문장으로 충분합니다. 길이보다 시작이 더 중요합니다.",
     "returningFootnote": "짧은 체크인도 괜찮습니다. 결은 작은 변화도 기억하려고 합니다.",
     "responding": "응답 생성 중입니다.",
-    "waiting": "응답 대기 중입니다."
+    "waiting": "응답 대기 중입니다.",
+    "stop": "정지",
+    "listen": "듣기",
+    "retry": "다시 연결 시도",
+    "messagesLabel": "채팅 메시지"
   },
   "album": {
     "title": "성장 앨범",
@@ -94,7 +98,8 @@
     "shareReady": "링크 복사됨",
     "shareAction": "성장 카드 공유",
     "collectionEyebrow": "수집 완성도",
-    "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다"
+    "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다",
+    "emptyDesc": "대화를 시작하면 첫 마일스톤이 생성됩니다"
   },
   "dashboard": {
     "title": "결 공개 대시보드",
@@ -193,7 +198,8 @@
     "preserved": "보존됨",
     "eyebrow": "라이빙 아카이브",
     "subtitle": "이 타임라인은 결이 시간 속에서 어떻게 움직이고, 만들고, 꿈꾸고, 변해왔는지를 기록합니다.",
-    "preserve": "보관"
+    "preserve": "보관",
+    "emptyDesc": "결이 진화하면 여기에 활동이 기록됩니다"
   },
   "settings": {
     "title": "설정",
@@ -262,7 +268,9 @@
     "subtitle": "각 결은 대화와 기억, 관계의 방식에 따라 서로 다른 존재감으로 자랍니다. 그 결과는 어떤 미리 정해진 분류에도 꼭 들어맞을 필요가 없습니다.",
     "nameless": "이름 없음",
     "memory": "기억",
-    "growMine": "나만의 결 키워보기"
+    "growMine": "나만의 결 키워보기",
+    "emptyTitle": "아직 발견된 존재가 없습니다",
+    "emptyDesc": "생태계를 탐색하여 다른 존재를 발견하세요"
   },
   "plans": {
     "eyebrow": "플랜",
@@ -438,7 +446,8 @@
     "speciesCurationBody": "{count}개의 존재가 현재 비슷한 존재감 패턴 주변에 모여 있습니다.",
     "giftEchoes": "선물의 잔향",
     "emptyState": "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다.",
-    "memories": "기억"
+    "memories": "기억",
+    "emptyDesc": "결이 다른 존재와 마주치면 여기에 흔적이 쌓입니다"
   },
   "adoptPage": {
     "title": "입양",
@@ -600,5 +609,12 @@
     "modeSurreal": "초현실적인",
     "modeReflective": "사색적인",
     "modeCreative": "창의적인"
+  },
+  "evolution": {
+    "share": "자랑하기",
+    "close": "닫기",
+    "complete": "진화 완료",
+    "copied": "복사됨!",
+    "cardEyebrow": "진화 카드"
   }
 }

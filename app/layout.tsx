@@ -18,6 +18,18 @@ const METADATA_BY_LOCALE: Record<Locale, Pick<Metadata, "title" | "description">
     title: "GYEOL",
     description: "An AI companion that turns conversation into memory, growth, and living presence.",
   },
+  ja: {
+    title: "GYEOL",
+    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+  },
+  zh: {
+    title: "GYEOL",
+    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+  },
+  es: {
+    title: "GYEOL",
+    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+  },
 };
 
 export const viewport = {

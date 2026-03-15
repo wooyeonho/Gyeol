@@ -55,6 +55,9 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
     if (isThemeMode(body.preferred_theme)) config.preferred_theme = body.preferred_theme;
     if (typeof body.high_contrast_enabled === "boolean") config.high_contrast_enabled = body.high_contrast_enabled;
+    if (typeof body.personality_mode === "string" && body.personality_mode.trim()) {
+      config.personality_mode = body.personality_mode.trim();
+    }
     if (typeof body.preferred_locale === "string") {
       const preferredLocale = normalizeLocale(body.preferred_locale);
       if (preferredLocale) config.preferred_locale = preferredLocale;

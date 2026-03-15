@@ -33,38 +33,38 @@ export async function POST(req: NextRequest) {
     let sentCount = 0;
 
     for (const agent of agents) {
-      // Check if user chatted today
-      const { count } = await service
-        .from("chats")
-        .select("id", { count: "exact", head: true })
-        .eq("agent_id", agent.agent_id)
-        .eq("role", "user")
-        .gte("created_at", todayStartIso);
-
-      const chattedToday = (count ?? 0) > 0;
-      if (chattedToday) continue; // Already active today, skip
-
-      // Get push subscriptions for this user
-      const { data: subs } = await service
-        .from("push_subscriptions")
-        .select("id, endpoint, p256dh, auth")
-        .eq("user_id", agent.user_id);
-
-      if (!subs || subs.length === 0) continue;
-
-      const name = agent.self_name || "결";
-      const vitalityPct = Math.round((agent.vitality ?? 0) * 100);
-
-      const title = vitalityPct < 20
-        ? `${name}이(가) 많이 약해졌어요...`
-        : `${name}이(가) 당신을 기다리고 있어요`;
-
-      const body = vitalityPct < 20
-        ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
-        : `오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다.`;
-
-      // Use internal push endpoint
       try {
+        // Check if user chatted today
+        const { count } = await service
+          .from("chats")
+          .select("id", { count: "exact", head: true })
+          .eq("agent_id", agent.agent_id)
+          .eq("role", "user")
+          .gte("created_at", todayStartIso);
+
+        const chattedToday = (count ?? 0) > 0;
+        if (chattedToday) continue; // Already active today, skip
+
+        // Get push subscriptions for this user
+        const { data: subs } = await service
+          .from("push_subscriptions")
+          .select("id, endpoint, p256dh, auth")
+          .eq("user_id", agent.user_id);
+
+        if (!subs || subs.length === 0) continue;
+
+        const name = agent.self_name || "결";
+        const vitalityPct = Math.round((agent.vitality ?? 0) * 100);
+
+        const title = vitalityPct < 20
+          ? `${name}이(가) 많이 약해졌어요...`
+          : `${name}이(가) 당신을 기다리고 있어요`;
+
+        const body = vitalityPct < 20
+          ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
+          : `오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다.`;
+
+        // Use internal push endpoint
         const pushRes = await fetch(
           `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/push/send`,
           {
@@ -79,11 +79,13 @@ export async function POST(req: NextRequest) {
               body,
               url: "/",
             }),
+            signal: AbortSignal.timeout(15_000),
           }
         );
         if (pushRes.ok) sentCount++;
-      } catch {
-        // Push failed for this agent, continue with others
+      } catch (err) {
+        console.error(`[ProactivePush] agent ${agent.agent_id} failed:`, err instanceof Error ? err.message : err);
+        // Continue with remaining agents
       }
     }
 

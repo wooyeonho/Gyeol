@@ -22,7 +22,7 @@ interface VoidCanvasProps {
 
 const VoidCanvasInner = dynamic(
   () => import("./void-canvas-inner").then((m) => m.VoidCanvasInner),
-  { ssr: false }
+  { ssr: false },
 );
 
 function CssVoidFallback({

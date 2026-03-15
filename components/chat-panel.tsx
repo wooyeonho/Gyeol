@@ -4,12 +4,13 @@ import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
+import type { Locale } from "@/lib/i18n/config";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 
-function getFirstSessionConfig(locale: "ko" | "en") {
+function getFirstSessionConfig(locale: Locale) {
   return locale === "en"
     ? {
         heading: "Start in one short message",
@@ -33,7 +34,7 @@ function getFirstSessionConfig(locale: "ko" | "en") {
       };
 }
 
-function getReturningPrompts(locale: "ko" | "en") {
+function getReturningPrompts(locale: Locale) {
   return locale === "en"
     ? [
         "Tell me the one thing I should focus on today.",

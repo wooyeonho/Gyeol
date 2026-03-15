@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/config";
+
 export type WeeklyEventState = {
   weekKey: string;
   messageCount: number;
@@ -134,7 +136,7 @@ export function writeWeeklyEventState(state: WeeklyEventState) {
 }
 
 export function formatWeeklyEventCountdown(
-  locale: "ko" | "en",
+  locale: Locale,
   endsAt: string,
   now = new Date(),
 ) {

@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { Locale } from "@/lib/i18n/config";
 import { formatWeeklyEventCountdown, type WeeklyEventProgress } from "@/lib/engagement/weekly-event";
 
 type WeeklyEventCardProps = {
-  locale: "ko" | "en";
+  locale: Locale;
   progress: WeeklyEventProgress;
   className?: string;
   compact?: boolean;

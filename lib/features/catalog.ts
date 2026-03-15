@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/config";
+
 export type FeatureStatus = "ready" | "beta" | "planned";
 export type FeatureCategory = "core" | "growth" | "world" | "creative" | "experimental" | "operations";
 
@@ -220,11 +222,12 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
   },
 ];
 
-export function getLocalizedFeatureCatalog(locale: "ko" | "en"): FeatureItem[] {
+export function getLocalizedFeatureCatalog(locale: Locale): FeatureItem[] {
+  const effectiveLocale = locale === "ko" ? "ko" : "en";
   return FEATURE_CATALOG_BASE.map((item) => ({
     id: item.id,
-    name: item.name[locale],
-    summary: item.summary[locale],
+    name: item.name[effectiveLocale],
+    summary: item.summary[effectiveLocale],
     href: item.href,
     category: item.category,
     status: item.status,

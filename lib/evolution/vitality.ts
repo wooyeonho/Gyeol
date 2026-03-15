@@ -25,7 +25,12 @@ export async function processVitality(agentId: string) {
   const hoursSinceChat = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
   let vitality = state.vitality || 1.0;
 
-  if (hoursSinceChat > 24) vitality = Math.max(0, vitality - 0.01);
+  // Decay proportional to days without chat (0.01 per 24h elapsed)
+  if (hoursSinceChat > 24) {
+    const daysSinceChat = hoursSinceChat / 24;
+    const decay = Math.floor(daysSinceChat) * 0.01;
+    vitality = Math.max(0, vitality - decay);
+  }
 
   const stage = getStage(vitality);
 

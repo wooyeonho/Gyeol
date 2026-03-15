@@ -227,7 +227,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       weeklyEventProgress: getWeeklyEventProgress(weeklyEventResult.state),
       pendingWeeklyEventCompletion: weeklyEventResult.completedNow,
     });
-
+    haptic("send");
+    playSound("send");
     set((s) => {
       // Cap message history at 200 to prevent unbounded memory growth
       const MAX_MESSAGES = 200;

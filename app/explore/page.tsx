@@ -157,8 +157,8 @@ export default function ExplorePage() {
       {agents.length === 0 && (
         <AnimatedEmptyState
           icon="explore"
-          title={locale === "en" ? "No beings discovered yet" : "아직 발견된 존재가 없습니다"}
-          description={locale === "en" ? "Explore the ecosystem to discover other beings" : "생태계를 탐색하여 다른 존재를 발견하세요"}
+          title={t("explore.emptyTitle")}
+          description={t("explore.emptyDesc")}
           accentColor="#38bdf8"
         />
       )}

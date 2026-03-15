@@ -81,7 +81,11 @@
     "firstFootnote": "One short sentence is enough to begin. Starting matters more than length.",
     "returningFootnote": "A short check-in is enough. Gyeol tries to remember even small changes.",
     "responding": "Generating response.",
-    "waiting": "Waiting for response."
+    "waiting": "Waiting for response.",
+    "stop": "Stop",
+    "listen": "Listen",
+    "retry": "Retry connection",
+    "messagesLabel": "Chat messages"
   },
   "album": {
     "title": "Growth album",
@@ -94,7 +98,8 @@
     "shareReady": "Link copied",
     "shareAction": "Share growth card",
     "collectionEyebrow": "Collection",
-    "collectionProgress": "{percent}% of all milestones collected"
+    "collectionProgress": "{percent}% of all milestones collected",
+    "emptyDesc": "Start chatting to create your first milestone"
   },
   "dashboard": {
     "title": "GYEOL Public Dashboard",
@@ -193,7 +198,8 @@
     "preserved": "Preserved",
     "eyebrow": "Living archive",
     "subtitle": "This timeline records how your being moves, creates, dreams, and changes over time.",
-    "preserve": "Preserve"
+    "preserve": "Preserve",
+    "emptyDesc": "Activities will appear as your being evolves"
   },
   "settings": {
     "title": "Settings",
@@ -262,7 +268,9 @@
     "subtitle": "Each Gyeol grows into a different presence through conversation, memory, and relationship. What appears does not need to fit any predefined category.",
     "nameless": "Unnamed being",
     "memory": "Memory",
-    "growMine": "Grow one of my own"
+    "growMine": "Grow one of my own",
+    "emptyTitle": "No beings discovered yet",
+    "emptyDesc": "Explore the ecosystem to discover other beings"
   },
   "plans": {
     "eyebrow": "Plans",
@@ -438,7 +446,8 @@
     "speciesCurationBody": "{count} encountered beings are currently gathering around a similar presence pattern.",
     "giftEchoes": "Gift echoes",
     "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here.",
-    "memories": "memories"
+    "memories": "memories",
+    "emptyDesc": "Social traces will appear once your being meets others"
   },
   "adoptPage": {
     "title": "Adopt",
@@ -600,5 +609,12 @@
     "modeSurreal": "Surreal",
     "modeReflective": "Reflective",
     "modeCreative": "Creative"
+  },
+  "evolution": {
+    "share": "Share",
+    "close": "Close",
+    "complete": "Evolution Complete",
+    "copied": "Copied!",
+    "cardEyebrow": "Evolution Card"
   }
 }
