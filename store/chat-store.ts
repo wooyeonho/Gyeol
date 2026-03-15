@@ -4,7 +4,21 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { detectPrimaryUsageModeFromText } from "@/lib/identity/usage-profile";
 import { logWarn } from "@/lib/ops/logger";
-import { rollReward, type RewardResult } from "@/lib/rewards/variable-reward";
+import {
+  applyRewardToInventory,
+  createDailyLoginReward,
+  getRewardProgress,
+  hasClaimedDailyLoginBonus,
+  markDailyLoginBonusClaimed,
+  readMessagesSinceReward,
+  readRewardInventory,
+  rollReward,
+  type RewardInventory,
+  type RewardProgress,
+  type RewardResult,
+  writeMessagesSinceReward,
+  writeRewardInventory,
+} from "@/lib/rewards/variable-reward";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface Message { role: "user" | "assistant"; content: string; error?: boolean }
@@ -22,9 +36,17 @@ interface ChatStore {
   isStreaming: boolean;
   pendingUsageMode: string | null;
   lastReward: RewardResult | null;
+  rewardInventory: RewardInventory;
+  rewardProgress: RewardProgress;
   clearReward: () => void;
+  claimDailyLoginBonus: (streakDays?: number) => void;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
   retryLastMessage: () => Promise<void>;
+}
+
+function persistRewardState(inventory: RewardInventory, messagesSinceReward: number) {
+  writeRewardInventory(inventory);
+  writeMessagesSinceReward(messagesSinceReward);
 }
 
 async function handleStreamResponse(
@@ -85,12 +107,35 @@ async function handleStreamResponse(
     if (lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
       const agentState = useAgentStore.getState().agentState;
       const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
-      const reward = rollReward(streakDays);
+      const previousMessagesSinceReward = get().rewardProgress.messagesSinceReward;
+      const nextMessagesSinceReward = previousMessagesSinceReward + 1;
+      const guaranteedProgress = getRewardProgress(nextMessagesSinceReward, streakDays);
+      const reward = rollReward(streakDays, {
+        forceReward: guaranteedProgress.messagesUntilGuaranteed === 0,
+        source: "message",
+      });
+
       if (reward.tier !== "none") {
-        haptic("success");
-        playSound("streak");
-        set({ lastReward: reward });
+        const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+        persistRewardState(nextInventory, 0);
+        set({
+          lastReward: reward,
+          rewardInventory: nextInventory,
+          rewardProgress: getRewardProgress(0, streakDays),
+        });
+        if (reward.tier === "jackpot") {
+          haptic("jackpot");
+          playSound("jackpot");
+        } else if (reward.tier === "large") {
+          haptic("success");
+          playSound("streak");
+        } else {
+          haptic("receive");
+          playSound("receive");
+        }
       } else {
+        persistRewardState(get().rewardInventory, nextMessagesSinceReward);
+        set({ rewardProgress: guaranteedProgress });
         haptic("receive");
         playSound("receive");
       }
@@ -100,8 +145,30 @@ async function handleStreamResponse(
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
-  messages: [], isStreaming: false, pendingUsageMode: null, lastReward: null,
+  messages: [],
+  isStreaming: false,
+  pendingUsageMode: null,
+  lastReward: null,
+  rewardInventory: readRewardInventory(),
+  rewardProgress: getRewardProgress(readMessagesSinceReward(), 0),
   clearReward: () => set({ lastReward: null }),
+  claimDailyLoginBonus: (streakDays = 0) => {
+    if (hasClaimedDailyLoginBonus()) return;
+
+    const reward = createDailyLoginReward(streakDays);
+    const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+    writeRewardInventory(nextInventory);
+    markDailyLoginBonusClaimed();
+
+    set((state) => ({
+      lastReward: state.lastReward ?? reward,
+      rewardInventory: nextInventory,
+      rewardProgress: getRewardProgress(state.rewardProgress.messagesSinceReward, streakDays),
+    }));
+
+    haptic("receive");
+    playSound("receive");
+  },
   sendMessage: async (message: string, meta) => {
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;

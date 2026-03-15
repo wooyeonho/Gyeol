@@ -6,7 +6,7 @@
 
 /* ── Haptic feedback ── */
 
-type HapticPattern = "tap" | "success" | "warning" | "send" | "receive";
+type HapticPattern = "tap" | "success" | "warning" | "send" | "receive" | "jackpot";
 
 const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   tap: 10,
@@ -14,6 +14,7 @@ const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   warning: [30, 20, 30, 20, 50],
   send: [8, 15, 8],
   receive: [5, 10, 15],
+  jackpot: [20, 40, 30, 40, 50, 30, 70],
 };
 
 export function haptic(pattern: HapticPattern = "tap") {
@@ -41,7 +42,7 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-type SoundEffect = "send" | "receive" | "streak" | "levelUp" | "error";
+type SoundEffect = "send" | "receive" | "streak" | "levelUp" | "error" | "jackpot";
 
 const SOUND_CONFIGS: Record<SoundEffect, { freq: number; type: OscillatorType; duration: number; gain: number; ramp?: number }> = {
   send: { freq: 660, type: "sine", duration: 0.08, gain: 0.12 },
@@ -49,6 +50,7 @@ const SOUND_CONFIGS: Record<SoundEffect, { freq: number; type: OscillatorType; d
   streak: { freq: 520, type: "triangle", duration: 0.25, gain: 0.15, ramp: 780 },
   levelUp: { freq: 440, type: "sine", duration: 0.4, gain: 0.18, ramp: 880 },
   error: { freq: 200, type: "square", duration: 0.15, gain: 0.08 },
+  jackpot: { freq: 540, type: "triangle", duration: 0.6, gain: 0.2, ramp: 1320 },
 };
 
 export function playSound(effect: SoundEffect) {

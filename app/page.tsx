@@ -40,6 +40,7 @@ export default function Home() {
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
+  const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
 
   useEffect(() => {
     fetchAgentState();
@@ -113,6 +114,13 @@ export default function Home() {
     localStorage.setItem("gyeol_onboarded", "1");
     setShowOnboarding(false);
   }, []);
+
+  useEffect(() => {
+    if (loading || showOnboarding) return;
+
+    const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
+    claimDailyLoginBonus(streakDays);
+  }, [agentState?.streak_days, claimDailyLoginBonus, loading, showOnboarding]);
 
   if (loading) {
     return (

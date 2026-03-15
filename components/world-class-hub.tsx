@@ -6,6 +6,7 @@ import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
 import { useTranslations } from "@/components/i18n-provider";
+import { StreakDisplay } from "@/components/streak-display";
 import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
@@ -77,7 +78,7 @@ export function WorldClassHub() {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
-  const { messages, isStreaming, sendMessage, pendingUsageMode } = useChatStore();
+  const { messages, isStreaming, sendMessage, pendingUsageMode, rewardInventory, rewardProgress } = useChatStore();
 
   const [now, setNow] = useState(new Date());
   const [recap, setRecap] = useState<HomeRecap | null>(null);
@@ -168,6 +169,13 @@ export function WorldClassHub() {
 
   const streakDays = recap?.streak.days ?? 0;
   const weeklyActivity = recap?.streak.weekly_activity ?? [];
+  const rewardInventoryRows = [
+    rewardInventory.coins ? `${rewardInventory.coins}${locale === "en" ? " coins" : " 코인"}` : null,
+    rewardInventory.evolution_points ? `${rewardInventory.evolution_points}${locale === "en" ? " evo" : " 진화"}` : null,
+    rewardInventory.title_shards ? `${rewardInventory.title_shards}${locale === "en" ? " title" : " 칭호"}` : null,
+    rewardInventory.appearance_shards ? `${rewardInventory.appearance_shards}${locale === "en" ? " appearance" : " 외형"}` : null,
+    rewardInventory.streak_freezes ? `${rewardInventory.streak_freezes}${locale === "en" ? " freeze" : " 프리즈"}` : null,
+  ].filter(Boolean);
   const headerTitle = isFirstSession
     ? locale === "en"
       ? `Meet ${selfName} in one short conversation`
@@ -266,41 +274,61 @@ export function WorldClassHub() {
             <p className="text-sm font-medium text-white">
               {locale === "en" ? "Streak and next step" : "스트릭과 다음 단계"}
             </p>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-3xl font-semibold text-white">{streakDays}</p>
-                <p className="text-sm text-white/75">
-                  {locale === "en"
-                    ? streakDays > 0
-                      ? `day streak`
-                      : "start today"
-                    : streakDays > 0
-                      ? "일 연속"
-                      : "오늘 시작"}
-                </p>
-              </div>
-              <span className="rounded-full border border-orange-400/35 bg-orange-400/10 px-3 py-2 text-sm text-orange-100/90">
-                {recap?.streak.today_active
-                  ? locale === "en"
-                    ? "today done"
-                    : "오늘 완료"
-                  : locale === "en"
-                    ? "today pending"
-                    : "오늘 대기"}
-              </span>
+            <div className="mt-4">
+              <StreakDisplay
+                days={streakDays}
+                todayActive={recap?.streak.today_active ?? false}
+                weeklyActivity={weeklyActivity}
+                locale={locale}
+              />
             </div>
-            <div className="mt-4 flex gap-1.5">
-              {Array.from({ length: 7 }).map((_, index) => (
-                <span
-                  key={index}
-                  className="h-3 flex-1 rounded-full"
+            <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {locale === "en" ? "Reward loop" : "보상 루프"}
+                  </p>
+                  <p className="mt-1 text-sm text-white/78">
+                    {rewardProgress.messagesUntilGuaranteed <= 0
+                      ? locale === "en"
+                        ? "Your next message is guaranteed to drop a reward."
+                        : "다음 메시지는 보상이 보장됩니다."
+                      : locale === "en"
+                        ? `${rewardProgress.messagesUntilGuaranteed} more messages until the guaranteed drop.`
+                        : `보장 드롭까지 ${rewardProgress.messagesUntilGuaranteed}개 메시지 남았습니다.`}
+                  </p>
+                </div>
+                <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100/90">
+                  x{rewardProgress.streakMultiplier}
+                </span>
+              </div>
+              <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/8">
+                <div
+                  className="h-3 rounded-full transition-all duration-500"
                   style={{
-                    background: weeklyActivity[index]
-                      ? `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`
-                      : "rgba(255,255,255,0.08)",
+                    width: `${Math.min(100, (rewardProgress.messagesSinceReward / rewardProgress.guaranteedEvery) * 100)}%`,
+                    background: `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`,
                   }}
                 />
-              ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {rewardInventoryRows.length > 0 ? (
+                  rewardInventoryRows.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/85"
+                    >
+                      {item}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-white/70">
+                    {locale === "en"
+                      ? "Your reward inventory will start filling after the first few messages."
+                      : "몇 번의 대화만 지나면 보상 인벤토리가 채워지기 시작합니다."}
+                  </span>
+                )}
+              </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-white/80">
               {recap?.next_action ??
