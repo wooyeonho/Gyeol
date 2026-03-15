@@ -55,9 +55,9 @@ function getGrowthCopy(totalMessages: number, t: (key: string) => string) {
     return t("home.growthFirst");
   }
   if (totalMessages < 10) {
-    return `${totalMessages} ${t("home.growthEarlySuffix")}`;
+    return t("home.growthEarly").replace("{count}", String(totalMessages));
   }
-  return `${totalMessages} ${t("home.growthMatureSuffix")}`;
+  return t("home.growthMature").replace("{count}", String(totalMessages));
 }
 
 export function WorldClassHub() {
@@ -276,7 +276,7 @@ export function WorldClassHub() {
                   <p className="mt-1 text-sm text-white/78">
                     {rewardProgress.messagesUntilGuaranteed <= 0
                       ? t("home.rewardGuaranteed")
-                      : `${rewardProgress.messagesUntilGuaranteed} ${t("home.rewardCountdownSuffix")}`}
+                      : t("home.rewardCountdown").replace("{count}", String(rewardProgress.messagesUntilGuaranteed))}
                   </p>
                 </div>
                 <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100/90">
