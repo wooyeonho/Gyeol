@@ -112,6 +112,12 @@ export default function Home() {
     localStorage.setItem("gyeol_onboarded", "1");
     localStorage.setItem("gyeol_personality", selectedMode);
     setShowOnboarding(false);
+    // Persist personality to agent_state.config on the server
+    fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ personality_mode: selectedMode }),
+    }).catch(() => {/* best-effort — will sync on next settings visit */});
   }, []);
 
   if (loading) {
