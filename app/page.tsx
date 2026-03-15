@@ -174,29 +174,22 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
-        {performanceMinimal ? (
-          <div
-            className="fixed inset-0"
-            style={{ backgroundImage: appearance.scene.backgroundGradient }}
-            aria-hidden="true"
-          />
-        ) : (
-          <VoidCanvas
-            shape={appearance.visual.shape as Visual["shape"]}
-            color={appearance.visual.color}
-            size={Math.min(50, Math.max(10, visual.size ?? 24))}
-            glow={Math.min(100, Math.max(0, appearance.visual.glow))}
-            animation={appearance.visual.animation}
-            particles={appearance.visual.particles}
-            background={appearance.visual.background}
-            vitality={vitality}
-            mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
-            isListening={isStreaming}
-            motionBias={appearance.scene.motionBias}
-            pulseScale={appearance.scene.pulseScale}
-            onTap={handleCanvasTap}
-          />
-        )}
+        <VoidCanvas
+          shape={appearance.visual.shape as Visual["shape"]}
+          color={appearance.visual.color}
+          size={Math.min(50, Math.max(10, visual.size ?? 24))}
+          glow={Math.min(100, Math.max(0, appearance.visual.glow))}
+          animation={appearance.visual.animation}
+          particles={appearance.visual.particles}
+          background={appearance.visual.background}
+          vitality={vitality}
+          mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
+          isListening={isStreaming}
+          motionBias={appearance.scene.motionBias}
+          pulseScale={appearance.scene.pulseScale}
+          onTap={handleCanvasTap}
+          enableThree={!performanceMinimal && conversationStarted}
+        />
       </div>
       <WorldClassHub />
 

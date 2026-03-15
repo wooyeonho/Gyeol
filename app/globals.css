@@ -115,6 +115,42 @@ body {
   }
 }
 
+@keyframes voidOrbit {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.98);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.03);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) scale(0.98);
+  }
+}
+
+@keyframes voidOrbitFast {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.96);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.06);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) scale(0.96);
+  }
+}
+
+@keyframes voidOrbitSlow {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.02);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) scale(1);
+  }
+}
+
 .aurora-flow {
   background:
     radial-gradient(circle at 10% 20%, rgba(90, 155, 255, 0.26), transparent 35%),
