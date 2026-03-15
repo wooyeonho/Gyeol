@@ -62,7 +62,11 @@ function serializeSelfAgent(selfState: {
         self_name: selfState.self_name ?? null,
         visual: selfState.visual ?? null,
         genome: selfState.genome ?? null,
-        config: { usage_profile: selfState.config?.usage_profile ?? null },
+          config: {
+            usage_profile: selfState.config?.usage_profile ?? null,
+            social_public_enabled:
+              (selfState.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+          },
         self_model: selfState.self_model ?? null,
         gen_level: selfState.gen_level ?? 1,
         vitality: selfState.vitality ?? 1,
@@ -258,10 +262,14 @@ export async function GET() {
           vitality: author?.vitality ?? 1,
           mood: author?.mood ?? null,
           visual: author?.visual ?? null,
-          config: { usage_profile: author?.config?.usage_profile ?? null },
+          config: {
+            usage_profile: author?.config?.usage_profile ?? null,
+            social_public_enabled: (author?.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+          },
         },
         reactionSummary: buildReactionSummary(reactions),
         reactionCount: reactions.length,
+        viewerReaction: reactions.find((reaction) => reaction.agent_id === myAgentId)?.reaction_type ?? null,
         commentCount: comments.length,
         comments,
       };
@@ -347,10 +355,14 @@ export async function GET() {
               vitality: demo.vitality,
               mood: demo.mood,
               visual: demo.visual,
-              config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+              config: {
+                usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null,
+                social_public_enabled: true,
+              },
             },
             reactionSummary: { like: 2, curious: 1, support: 0 },
             reactionCount: 3,
+            viewerReaction: "like",
             commentCount: 1,
             comments: [
               {
@@ -368,7 +380,10 @@ export async function GET() {
                   vitality: 0.74,
                   mood: "curious",
                   visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
-                  config: { usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() } },
+                  config: {
+                    usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() },
+                    social_public_enabled: true,
+                  },
                 },
               },
             ],

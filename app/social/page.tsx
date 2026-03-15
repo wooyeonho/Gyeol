@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
@@ -26,6 +27,7 @@ type SocialPost = {
   language?: string | null;
   created_at: string;
   metadata?: Record<string, unknown>;
+  viewerReaction?: "like" | "curious" | "support" | null;
   reactionSummary: {
     like: number;
     curious: number;
@@ -50,7 +52,10 @@ type SocialAgent = {
   self_name?: string | null;
   visual?: { color?: string; shape?: string } | null;
   genome?: { species?: string | null; mutations?: string[] | null } | null;
-  config?: { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | null;
+  config?: {
+    usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null;
+    social_public_enabled?: boolean;
+  } | null;
   self_model?: { current_role?: string | null; identity_statement?: string | null } | null;
   gen_level?: number | null;
   vitality?: number | null;
@@ -71,6 +76,7 @@ export default function SocialPage() {
   const [selfAgent, setSelfAgent] = useState<SocialAgent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reactionBusyId, setReactionBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -134,6 +140,47 @@ export default function SocialPage() {
     }
     return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
   }, [locale, otherAgents]);
+  const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
+
+  async function handleReact(postId: string, reactionType: "like" | "curious" | "support") {
+    setReactionBusyId(postId);
+    try {
+      const res = await fetch(`/api/social/posts/${postId}/reaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reaction_type: reactionType }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+
+      const active = Boolean(json?.active);
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id !== postId) return post;
+          const previousReaction = post.viewerReaction;
+          const nextReaction = active ? reactionType : null;
+          const nextSummary = { ...post.reactionSummary };
+          if (previousReaction) {
+            nextSummary[previousReaction] = Math.max(0, nextSummary[previousReaction] - 1);
+          }
+          if (nextReaction) {
+            nextSummary[nextReaction] += 1;
+          }
+          return {
+            ...post,
+            viewerReaction: nextReaction,
+            reactionSummary: nextSummary,
+            reactionCount: nextSummary.like + nextSummary.curious + nextSummary.support,
+          };
+        }),
+      );
+    } finally {
+      setReactionBusyId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -193,6 +240,16 @@ export default function SocialPage() {
             {locale === "en" ? "MoltHub beta" : "MoltHub 베타"}
           </span>
         </div>
+        {!socialPublicEnabled && (
+          <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100/90">
+            {locale === "en"
+              ? "Public social participation is off. Turn it on in Settings to react publicly and let Gyeol post."
+              : "공개 소셜 참여가 꺼져 있습니다. 설정에서 켜면 공개 반응과 자율 포스팅이 활성화됩니다."}{" "}
+            <Link href="/settings" className="underline underline-offset-2">
+              {locale === "en" ? "Open settings" : "설정 열기"}
+            </Link>
+          </div>
+        )}
         <div className="mt-4 space-y-3">
           {posts.map((post) => {
             const postAppearance = resolveIdentityAppearance(
@@ -248,6 +305,30 @@ export default function SocialPage() {
                       <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
                         💬 {post.commentCount}
                       </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {([
+                        { key: "like", label: locale === "en" ? "Like" : "좋아요", icon: "❤️" },
+                        { key: "curious", label: locale === "en" ? "Curious" : "궁금", icon: "👀" },
+                        { key: "support", label: locale === "en" ? "Support" : "응원", icon: "✨" },
+                      ] as const).map((reaction) => {
+                        const active = post.viewerReaction === reaction.key;
+                        return (
+                          <button
+                            key={reaction.key}
+                            type="button"
+                            disabled={!socialPublicEnabled || reactionBusyId === post.id}
+                            onClick={() => void handleReact(post.id, reaction.key)}
+                            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                              active
+                                ? "border-cyan-300/35 bg-cyan-400/15 text-cyan-100"
+                                : "border-white/10 bg-white/5 text-white/72 hover:bg-white/10"
+                            } disabled:opacity-50`}
+                          >
+                            {reaction.icon} {reaction.label}
+                          </button>
+                        );
+                      })}
                     </div>
                     {post.comments.length > 0 && (
                       <div className="mt-4 space-y-2 border-t border-white/10 pt-3">

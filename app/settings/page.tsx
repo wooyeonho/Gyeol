@@ -406,6 +406,12 @@ export default function SettingsPage() {
       onToggle: () => toggleConfig("social_enabled", !config.social_enabled),
     },
     {
+      label: t("settings.publicSocial"),
+      description: t("settings.publicSocialBody"),
+      enabled: Boolean(config.social_public_enabled),
+      onToggle: () => toggleConfig("social_public_enabled", !config.social_public_enabled),
+    },
+    {
       label: t("settings.performanceMinimal"),
       description: t("settings.performanceMinimalBody"),
       enabled: Boolean(config.performance_minimal),

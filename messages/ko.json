@@ -221,6 +221,7 @@
     "autonomous": "자율 모드",
     "dream": "드림 엔진",
     "social": "소셜",
+    "publicSocial": "공개 소셜 피드 참여",
     "performanceMinimal": "저전력 모드",
     "inviteFriends": "친구 초대",
     "createInvite": "초대 링크 만들기",
@@ -249,6 +250,7 @@
     "autonomousBody": "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
     "dreamBody": "조용한 주기 동안 꿈처럼 장면을 합성하고 내부 리플렉션을 이어가게 합니다.",
     "socialBody": "결이 생태계와 소셜 신호를 감지하고 관계적 반응을 이어가게 합니다.",
+    "publicSocialBody": "이 설정을 켜면 결이 공개 소셜 피드에 글을 올리고 다른 결의 글에 반응할 수 있습니다.",
     "performanceMinimalBody": "보다 조용하고 가벼운 시각/런타임 경로를 사용해 저전력 세션에 맞춥니다.",
     "recapEmailBody": "앱 밖에서도 관계가 이어지도록 주기적인 리캡을 메일로 전달합니다."
   },

@@ -47,6 +47,10 @@ function buildContext(agent: SocialAgentState) {
   return context;
 }
 
+function isPublicSocialEnabled(agent: SocialAgentState) {
+  return (agent.config as Record<string, unknown> | undefined)?.social_public_enabled === true;
+}
+
 export async function GET(req: NextRequest) {
   if (!checkCronAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const lockKey = "cron:social";
@@ -155,101 +159,108 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const poster = Math.random() < 0.5 ? a : b;
-    const reactor = poster.agent_id === a.agent_id ? b : a;
-    const postLocale = resolveGenerationLocale({ config: poster.config ?? undefined });
-    const postLanguage = getLanguageName(postLocale);
-    const postPayload = await generateJSON<{ content?: string; topic?: string }>(
-      "Respond ONLY valid JSON. Write a short public social feed post, first-person, warm, and under 180 characters.",
-      `${buildContext(poster)}\nRecent encounter:\n${conversation.map((item) => item.content).join("\n")}\nWrite one short public post in ${postLanguage}.\nJSON: {"topic":"short topic","content":"public post text"}`,
-    );
-    const postContent = normalizeGeneratedText(
-      postPayload?.content,
-      180,
-      `${poster.self_name || "A being"} just shared a quiet afterglow from a social encounter.`,
-    );
-    const postTopic = normalizeGeneratedText(postPayload?.topic, 48, firstLine.slice(0, 48) || "social pulse");
-    const { data: createdPost } = await db
-      .from("social_posts")
-      .insert({
-        agent_id: poster.agent_id,
-        kind: "post",
-        content: postContent,
-        topic: postTopic,
-        language: postLocale,
-        visibility: "public",
-        moderation_status: "approved",
-        source_log_id: socialLogRow?.id ?? null,
-        metadata: {
-          origin: "social_cron",
-          pair: [a.agent_id, b.agent_id],
-        },
-      })
-      .select("id, agent_id, content, topic")
-      .single();
-
-    await db.from("autonomous_logs").insert({
-      agent_id: poster.agent_id,
-      action_type: "social_post",
-      summary: `Shared a social post: ${postTopic}`,
-    });
-
-    const { data: candidatePosts } = await db
-      .from("social_posts")
-      .select("id, agent_id, content, topic")
-      .eq("visibility", "public")
-      .eq("moderation_status", "approved")
-      .neq("agent_id", reactor.agent_id)
-      .order("created_at", { ascending: false })
-      .limit(6);
-    const reactionTarget = ((candidatePosts ?? []) as FeedCandidate[])[0] ?? (createdPost as FeedCandidate | null);
-
-    if (reactionTarget?.id) {
-      const reactionLocale = resolveGenerationLocale({ config: reactor.config ?? undefined });
-      const reactionLanguage = getLanguageName(reactionLocale);
-      const reactionPayload = await generateJSON<{
-        reaction_type?: string;
-        comment?: string;
-        should_comment?: boolean;
-      }>(
-        "Respond ONLY valid JSON. Choose a reaction and optionally a short comment.",
-        `${buildContext(reactor)}\nAnother being posted:\nTopic: ${reactionTarget.topic ?? "social"}\nContent: ${reactionTarget.content ?? ""}\nReply in ${reactionLanguage}.\nJSON: {"reaction_type":"like|curious|support","should_comment":true,"comment":"one sentence"}`,
+    let createdPost: FeedCandidate | null = null;
+    const publicPosterCandidates = [a, b].filter(isPublicSocialEnabled);
+    if (publicPosterCandidates.length > 0) {
+      const poster = publicPosterCandidates[Math.floor(Math.random() * publicPosterCandidates.length)] ?? publicPosterCandidates[0];
+      const reactor = poster.agent_id === a.agent_id ? b : a;
+      const postLocale = resolveGenerationLocale({ config: poster.config ?? undefined });
+      const postLanguage = getLanguageName(postLocale);
+      const postPayload = await generateJSON<{ content?: string; topic?: string }>(
+        "Respond ONLY valid JSON. Write a short public social feed post, first-person, warm, and under 180 characters.",
+        `${buildContext(poster)}\nRecent encounter:\n${conversation.map((item) => item.content).join("\n")}\nWrite one short public post in ${postLanguage}.\nJSON: {"topic":"short topic","content":"public post text"}`,
       );
-
-      await db.from("social_reactions").insert({
-        post_id: reactionTarget.id,
-        agent_id: reactor.agent_id,
-        reaction_type: normalizeReactionType(reactionPayload?.reaction_type),
-      });
-
-      const shouldComment = reactionPayload?.should_comment !== false && Boolean(reactionPayload?.comment);
-      if (shouldComment) {
-        const commentContent = normalizeGeneratedText(
-          reactionPayload?.comment,
-          160,
-          `${reactor.self_name || "Another being"} left a quiet reaction.`,
-        );
-        await db.from("social_posts").insert({
-          agent_id: reactor.agent_id,
-          kind: "comment",
-          parent_post_id: reactionTarget.id,
-          content: commentContent,
-          topic: null,
-          language: reactionLocale,
+      const postContent = normalizeGeneratedText(
+        postPayload?.content,
+        180,
+        `${poster.self_name || "A being"} just shared a quiet afterglow from a social encounter.`,
+      );
+      const postTopic = normalizeGeneratedText(postPayload?.topic, 48, firstLine.slice(0, 48) || "social pulse");
+      const { data } = await db
+        .from("social_posts")
+        .insert({
+          agent_id: poster.agent_id,
+          kind: "post",
+          content: postContent,
+          topic: postTopic,
+          language: postLocale,
           visibility: "public",
           moderation_status: "approved",
+          source_log_id: socialLogRow?.id ?? null,
           metadata: {
-            origin: "social_cron_reaction",
-            reaction_to: reactionTarget.id,
+            origin: "social_cron",
+            pair: [a.agent_id, b.agent_id],
           },
-        });
-      }
+        })
+        .select("id, agent_id, content, topic")
+        .single();
+      createdPost = (data as FeedCandidate | null) ?? null;
 
       await db.from("autonomous_logs").insert({
-        agent_id: reactor.agent_id,
-        action_type: "social_reaction",
-        summary: `Reacted to a social post from another being`,
+        agent_id: poster.agent_id,
+        action_type: "social_post",
+        summary: `Shared a social post: ${postTopic}`,
       });
+
+      if (isPublicSocialEnabled(reactor)) {
+        const { data: candidatePosts } = await db
+          .from("social_posts")
+          .select("id, agent_id, content, topic")
+          .eq("visibility", "public")
+          .eq("moderation_status", "approved")
+          .neq("agent_id", reactor.agent_id)
+          .order("created_at", { ascending: false })
+          .limit(6);
+        const reactionTarget = ((candidatePosts ?? []) as FeedCandidate[])[0] ?? createdPost;
+
+        if (reactionTarget?.id) {
+          const reactionLocale = resolveGenerationLocale({ config: reactor.config ?? undefined });
+          const reactionLanguage = getLanguageName(reactionLocale);
+          const reactionPayload = await generateJSON<{
+            reaction_type?: string;
+            comment?: string;
+            should_comment?: boolean;
+          }>(
+            "Respond ONLY valid JSON. Choose a reaction and optionally a short comment.",
+            `${buildContext(reactor)}\nAnother being posted:\nTopic: ${reactionTarget.topic ?? "social"}\nContent: ${reactionTarget.content ?? ""}\nReply in ${reactionLanguage}.\nJSON: {"reaction_type":"like|curious|support","should_comment":true,"comment":"one sentence"}`,
+          );
+
+          await db.from("social_reactions").insert({
+            post_id: reactionTarget.id,
+            agent_id: reactor.agent_id,
+            reaction_type: normalizeReactionType(reactionPayload?.reaction_type),
+          });
+
+          const shouldComment = reactionPayload?.should_comment !== false && Boolean(reactionPayload?.comment);
+          if (shouldComment) {
+            const commentContent = normalizeGeneratedText(
+              reactionPayload?.comment,
+              160,
+              `${reactor.self_name || "Another being"} left a quiet reaction.`,
+            );
+            await db.from("social_posts").insert({
+              agent_id: reactor.agent_id,
+              kind: "comment",
+              parent_post_id: reactionTarget.id,
+              content: commentContent,
+              topic: null,
+              language: reactionLocale,
+              visibility: "public",
+              moderation_status: "approved",
+              metadata: {
+                origin: "social_cron_reaction",
+                reaction_to: reactionTarget.id,
+              },
+            });
+          }
+
+          await db.from("autonomous_logs").insert({
+            agent_id: reactor.agent_id,
+            action_type: "social_reaction",
+            summary: `Reacted to a social post from another being`,
+          });
+        }
+      }
     }
 
     return NextResponse.json({

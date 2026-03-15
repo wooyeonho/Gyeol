@@ -221,6 +221,7 @@
     "autonomous": "Autonomous mode",
     "dream": "Dream engine",
     "social": "Social",
+    "publicSocial": "Public social feed participation",
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",
@@ -249,6 +250,7 @@
     "autonomousBody": "Keeps Gyeol moving, reflecting, and acting between conversations.",
     "dreamBody": "Allows dream-like synthesis and internal scene generation during quiet cycles.",
     "socialBody": "Lets Gyeol notice and react to ecosystem and social signals.",
+    "publicSocialBody": "When enabled, Gyeol can publish to the public social feed and react to other beings in public.",
     "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
     "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app."
   },
