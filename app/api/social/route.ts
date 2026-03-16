@@ -43,6 +43,20 @@ type SocialConnectionRow = {
   followee_agent_id: string;
 };
 
+type FeedScope = "all" | "following" | "friends";
+
+function resolveFeedScope(request?: Request): FeedScope {
+  const raw = request ? new URL(request.url).searchParams.get("scope") : null;
+  return raw === "following" || raw === "friends" ? raw : "all";
+}
+
+function getRelationLabel(agentId: string, followingSet: Set<string>, followerSet: Set<string>) {
+  if (followingSet.has(agentId) && followerSet.has(agentId)) return "friend";
+  if (followingSet.has(agentId)) return "following";
+  if (followerSet.has(agentId)) return "follows_you";
+  return null;
+}
+
 function buildReactionSummary(reactions: SocialReactionRow[]) {
   const summary = { like: 0, curious: 0, support: 0 };
   for (const reaction of reactions) {
@@ -85,7 +99,7 @@ function serializeSelfAgent(selfState: {
     : null;
 }
 
-export async function GET() {
+export async function GET(request?: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -93,7 +107,8 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const cacheKey = `social:${user.id}`;
+    const feedScope = resolveFeedScope(request);
+    const cacheKey = `social:${user.id}:${feedScope}`;
     const cached = getTtlCache<Record<string, unknown>>(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
@@ -138,7 +153,7 @@ export async function GET() {
         .eq("moderation_status", "approved")
         .is("parent_post_id", null)
         .order("created_at", { ascending: false })
-        .limit(12),
+        .limit(36),
       service
         .from("social_connections")
         .select("follower_agent_id, followee_agent_id")
@@ -149,7 +164,26 @@ export async function GET() {
         .eq("followee_agent_id", myAgentId),
     ]);
 
-    const topPostRows = (postsRes.data ?? []) as SocialPostRow[];
+    const rawTopPostRows = (postsRes.data ?? []) as SocialPostRow[];
+    const followingRows = (followingRes.data ?? []) as SocialConnectionRow[];
+    const followerRows = (followersRes.data ?? []) as SocialConnectionRow[];
+    const followingSet = new Set(followingRows.map((row) => row.followee_agent_id));
+    const followerSet = new Set(followerRows.map((row) => row.follower_agent_id));
+    const topPostRows = rawTopPostRows
+      .filter((post) => {
+        if (post.agent_id === myAgentId) return true;
+        if (feedScope === "following") return followingSet.has(post.agent_id);
+        if (feedScope === "friends") return followingSet.has(post.agent_id) && followerSet.has(post.agent_id);
+        return true;
+      })
+      .sort((a, b) => {
+        const relationDiff =
+          (getRelationLabel(b.agent_id, followingSet, followerSet) === "friend" ? 2 : getRelationLabel(b.agent_id, followingSet, followerSet) === "following" ? 1 : 0) -
+          (getRelationLabel(a.agent_id, followingSet, followerSet) === "friend" ? 2 : getRelationLabel(a.agent_id, followingSet, followerSet) === "following" ? 1 : 0);
+        if (relationDiff !== 0) return relationDiff;
+        return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+      })
+      .slice(0, 12);
     const topPostIds = topPostRows.map((post) => post.id);
     const [commentsRes, reactionsRes] = topPostIds.length > 0
       ? await Promise.all([
@@ -171,10 +205,6 @@ export async function GET() {
       : [{ data: [] }, { data: [] }];
     const commentRows = (commentsRes.data ?? []) as SocialPostRow[];
     const reactionRows = (reactionsRes.data ?? []) as SocialReactionRow[];
-    const followingRows = (followingRes.data ?? []) as SocialConnectionRow[];
-    const followerRows = (followersRes.data ?? []) as SocialConnectionRow[];
-    const followingSet = new Set(followingRows.map((row) => row.followee_agent_id));
-    const followerSet = new Set(followerRows.map((row) => row.follower_agent_id));
 
     const otherIds = (agentsRes.data ?? []).map((row) => (row as { id: string }).id);
     const authorIds = Array.from(
@@ -300,6 +330,7 @@ export async function GET() {
         language: post.language ?? null,
         metadata: post.metadata ?? {},
         created_at: post.created_at,
+        authorRelation: getRelationLabel(post.agent_id, followingSet, followerSet),
         author: {
           agent_id: post.agent_id,
           self_name: author?.self_name ?? null,
@@ -366,6 +397,12 @@ export async function GET() {
     } | null;
 
     const payload = {
+      feedScope,
+      feedCounts: {
+        all: rawTopPostRows.length,
+        following: rawTopPostRows.filter((post) => post.agent_id === myAgentId || followingSet.has(post.agent_id)).length,
+        friends: rawTopPostRows.filter((post) => post.agent_id === myAgentId || (followingSet.has(post.agent_id) && followerSet.has(post.agent_id))).length,
+      },
       socialLogs,
       socialPosts,
       breedingRecords,
@@ -380,6 +417,12 @@ export async function GET() {
     if (isMissingEnvError(error)) {
       const demo = getDemoAgentState();
       return NextResponse.json({
+        feedScope: resolveFeedScope(request),
+        feedCounts: {
+          all: 1,
+          following: 1,
+          friends: 1,
+        },
         socialLogs: [
           {
             id: "demo-social-1",
@@ -396,6 +439,7 @@ export async function GET() {
             topic: "shared glow",
             language: "ko",
             metadata: { source: "demo" },
+            authorRelation: "friend",
             created_at: new Date().toISOString(),
             author: {
               agent_id: "demo-self",

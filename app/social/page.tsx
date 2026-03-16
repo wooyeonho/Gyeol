@@ -27,6 +27,7 @@ type SocialPost = {
   language?: string | null;
   created_at: string;
   metadata?: Record<string, unknown>;
+  authorRelation?: "friend" | "following" | "follows_you" | null;
   viewerReaction?: "like" | "curious" | "support" | null;
   reactionSummary: {
     like: number;
@@ -48,6 +49,7 @@ type SocialPost = {
   }>;
 };
 
+type FeedScope = "all" | "following" | "friends";
 type SocialAgent = {
   self_name?: string | null;
   visual?: { color?: string; shape?: string } | null;
@@ -92,6 +94,16 @@ export default function SocialPage() {
   const [reportBusyId, setReportBusyId] = useState<string | null>(null);
   const [followBusyId, setFollowBusyId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SocialTab>("feed");
+  const [feedScope, setFeedScope] = useState<FeedScope>("all");
+  const [feedCounts, setFeedCounts] = useState<{ all: number; following: number; friends: number }>({
+    all: 0,
+    following: 0,
+    friends: 0,
+  });
+  const [postDraft, setPostDraft] = useState("");
+  const [postTopic, setPostTopic] = useState("");
+  const [postBusy, setPostBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -108,7 +120,7 @@ export default function SocialPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/social");
+        const res = await fetch(`/api/social?scope=${feedScope}`);
         if (!res.ok) {
           setError(t("socialPage.loadError"));
           setLogs([]);
@@ -120,6 +132,15 @@ export default function SocialPage() {
         setOtherAgents(Array.isArray(json.otherAgents) ? json.otherAgents : []);
         setGiftExchanges(Array.isArray(json.giftExchanges) ? json.giftExchanges : []);
         setSelfAgent((json.selfAgent as SocialAgent | null) ?? null);
+        setFeedCounts(
+          json.feedCounts && typeof json.feedCounts === "object"
+            ? {
+                all: Number((json.feedCounts as Record<string, unknown>).all ?? 0),
+                following: Number((json.feedCounts as Record<string, unknown>).following ?? 0),
+                friends: Number((json.feedCounts as Record<string, unknown>).friends ?? 0),
+              }
+            : { all: 0, following: 0, friends: 0 },
+        );
       } catch {
         setError(t("socialPage.loadError"));
         setLogs([]);
@@ -127,12 +148,13 @@ export default function SocialPage() {
         setOtherAgents([]);
         setGiftExchanges([]);
         setSelfAgent(null);
+        setFeedCounts({ all: 0, following: 0, friends: 0 });
       } finally {
         setLoading(false);
       }
     }
     void load();
-  }, [t]);
+  }, [feedScope, t]);
 
   const appearance = resolveIdentityAppearance(
     {
@@ -333,8 +355,96 @@ export default function SocialPage() {
             : agent,
         ),
       );
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.author.agent_id === agentId
+            ? {
+                ...post,
+                authorRelation: shouldFollow
+                  ? post.authorRelation === "follows_you"
+                    ? "friend"
+                    : "following"
+                  : post.authorRelation === "friend"
+                    ? "follows_you"
+                    : null,
+              }
+            : post,
+        ),
+      );
     } finally {
       setFollowBusyId(null);
+    }
+  }
+
+  async function handleCreatePost() {
+    const content = postDraft.trim();
+    if (!content) return;
+    setPostBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/social/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          topic: postTopic.trim(),
+          language: locale,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+      const post = json?.post as
+        | {
+            id: string;
+            content: string;
+            topic?: string | null;
+            language?: string | null;
+            moderation_status?: string;
+            created_at: string;
+          }
+        | undefined;
+      setPostDraft("");
+      setPostTopic("");
+      if (!post || post.moderation_status !== "approved") {
+        setNotice(t("socialPage.postPending"));
+        return;
+      }
+      setFeedCounts((prev) => ({ ...prev, all: prev.all + 1, following: prev.following + 1, friends: prev.friends + 1 }));
+      setPosts((prev) => [
+        {
+          id: post.id,
+          kind: "post",
+          content: post.content,
+          topic: post.topic ?? null,
+          language: post.language ?? locale,
+          created_at: post.created_at,
+          metadata: { origin: "user_post" },
+          authorRelation: null,
+          viewerReaction: null,
+          reactionSummary: { like: 0, curious: 0, support: 0 },
+          reactionCount: 0,
+          commentCount: 0,
+          author: {
+            agent_id: "self",
+            self_name: selfAgent?.self_name ?? null,
+            gen_level: selfAgent?.gen_level ?? 1,
+            vitality: selfAgent?.vitality ?? 1,
+            mood: selfAgent?.mood ?? null,
+            visual: selfAgent?.visual ?? null,
+            config: selfAgent?.config ?? null,
+            genome: selfAgent?.genome ?? null,
+            self_model: selfAgent?.self_model ?? null,
+          },
+          comments: [],
+        },
+        ...prev,
+      ]);
+      setNotice(t("socialPage.postPublished"));
+    } finally {
+      setPostBusy(false);
     }
   }
 
@@ -491,6 +601,90 @@ export default function SocialPage() {
             </Link>
           </div>
         )}
+        {notice && (
+          <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100/90">
+            {notice}
+          </div>
+        )}
+        {socialPublicEnabled && (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/45">{t("socialPage.composeTitle")}</p>
+                <p className="mt-1 text-sm text-white/60">{t("socialPage.composeBody")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { key: "all" as const, label: t("socialPage.feedAll"), count: feedCounts.all },
+                  { key: "following" as const, label: t("socialPage.feedFollowing"), count: feedCounts.following },
+                  { key: "friends" as const, label: t("socialPage.feedFriends"), count: feedCounts.friends },
+                ]).map((scope) => (
+                  <button
+                    key={scope.key}
+                    type="button"
+                    onClick={() => setFeedScope(scope.key)}
+                    className={`rounded-full border px-3 py-2 text-xs ${
+                      feedScope === scope.key
+                        ? "border-cyan-300/35 bg-cyan-400/15 text-cyan-100"
+                        : "border-white/10 bg-white/5 text-white/72"
+                    }`}
+                  >
+                    {scope.label} · {scope.count}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[0.9fr_2.1fr]">
+              <input
+                type="text"
+                value={postTopic}
+                onChange={(event) => setPostTopic(event.target.value)}
+                placeholder={t("socialPage.composeTopicPlaceholder")}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/35"
+              />
+              <div className="space-y-3">
+                <textarea
+                  value={postDraft}
+                  onChange={(event) => setPostDraft(event.target.value)}
+                  placeholder={t("socialPage.composePlaceholder")}
+                  className="min-h-28 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/35"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={postBusy || !postDraft.trim()}
+                    onClick={() => void handleCreatePost()}
+                    className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 disabled:opacity-50"
+                  >
+                    {t("socialPage.postAction")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {!socialPublicEnabled && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {([
+              { key: "all" as const, label: t("socialPage.feedAll"), count: feedCounts.all },
+              { key: "following" as const, label: t("socialPage.feedFollowing"), count: feedCounts.following },
+              { key: "friends" as const, label: t("socialPage.feedFriends"), count: feedCounts.friends },
+            ]).map((scope) => (
+              <button
+                key={scope.key}
+                type="button"
+                onClick={() => setFeedScope(scope.key)}
+                className={`rounded-full border px-3 py-2 text-xs ${
+                  feedScope === scope.key
+                    ? "border-cyan-300/35 bg-cyan-400/15 text-cyan-100"
+                    : "border-white/10 bg-white/5 text-white/72"
+                }`}
+              >
+                {scope.label} · {scope.count}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mt-4 space-y-3">
           {visiblePosts.map((post) => {
             const postAppearance = resolveIdentityAppearance(
@@ -527,6 +721,18 @@ export default function SocialPage() {
                       <span className="text-xs text-white/45">
                         {formatLocalizedDateTime(post.created_at, locale)}
                       </span>
+                      {post.authorRelation && (
+                        <>
+                          <span className="text-xs text-white/45">·</span>
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/72">
+                            {post.authorRelation === "friend"
+                              ? t("social.friendsTab")
+                              : post.authorRelation === "following"
+                                ? t("social.following")
+                                : t("social.follower")}
+                          </span>
+                        </>
+                      )}
                     </div>
                     {post.topic && (
                       <p className="mt-2 text-xs uppercase tracking-[0.18em]" style={{ color: postAppearance.palette.primary }}>
@@ -626,7 +832,11 @@ export default function SocialPage() {
           })}
           {visiblePosts.length === 0 && (
             <div className="rounded-2xl bg-black/25 p-4 text-sm text-white/60">
-              {t("socialPage.feedEmpty")}
+              {feedScope === "following"
+                ? t("socialPage.feedEmptyFollowing")
+                : feedScope === "friends"
+                  ? t("socialPage.feedEmptyFriends")
+                  : t("socialPage.feedEmpty")}
             </div>
           )}
         </div>
