@@ -789,5 +789,15 @@
   },
   "globalFeed": {
     "echo": "Global Echo"
+  },
+  "voice": {
+    "recording": "Listening...",
+    "transcribing": "Converting to text...",
+    "startRecording": "Start voice input",
+    "stopRecording": "Stop voice input",
+    "listeningPlaceholder": "Speaking...",
+    "micPermissionDenied": "Microphone permission denied",
+    "notSupported": "Voice input is not supported in this browser",
+    "error": "Voice recognition error"
   }
 }

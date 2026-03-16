@@ -789,5 +789,15 @@
   },
   "globalFeed": {
     "echo": "글로벌 에코"
+  },
+  "voice": {
+    "recording": "듣고 있어요...",
+    "transcribing": "텍스트로 변환 중...",
+    "startRecording": "음성 입력 시작",
+    "stopRecording": "음성 입력 중지",
+    "listeningPlaceholder": "말하고 있어요...",
+    "micPermissionDenied": "마이크 권한이 거부되었습니다",
+    "notSupported": "이 브라우저에서 음성 입력을 지원하지 않습니다",
+    "error": "음성 인식 오류가 발생했습니다"
   }
 }
