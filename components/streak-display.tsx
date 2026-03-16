@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getNextMilestone } from "@/lib/rewards/streak-milestones";
 
 type StreakDisplayProps = {
   days: number;
@@ -18,18 +19,18 @@ export function StreakDisplay({
   locale = "ko",
   compact = false,
 }: StreakDisplayProps) {
-  // Derive celebration state purely from props — no effects needed
   const isMilestone = days > 0 && days % 7 === 0;
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
   const showCelebration = isMilestone && !celebrationDismissed;
+  const nextMilestone = getNextMilestone(days);
 
   const streakColor = days >= 30
-    ? "#f59e0b" // amber for 30+
+    ? "#f59e0b"
     : days >= 7
-      ? "#fb923c" // orange for 7+
+      ? "#fb923c"
       : days >= 3
-        ? "#fbbf24" // yellow for 3+
-        : "#ffffff40"; // dim for 0-2
+        ? "#fbbf24"
+        : "#ffffff40";
 
   const streakLabel = days === 0
     ? (locale === "ko" ? "오늘 첫 대화를 시작해보세요" : "Start your first conversation today")
@@ -87,7 +88,7 @@ export function StreakDisplay({
 
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-white/65">
             {locale === "ko" ? "연속 대화" : "Streak"}
           </p>
           <div className="mt-1 flex items-baseline gap-2">
@@ -100,7 +101,7 @@ export function StreakDisplay({
             >
               {days}
             </motion.span>
-            <span className="text-xs text-white/50">{streakLabel}</span>
+            <span className="text-xs text-white/65">{streakLabel}</span>
           </div>
         </div>
         {days > 0 && (
@@ -114,12 +115,36 @@ export function StreakDisplay({
         )}
       </div>
 
+      {/* Next milestone countdown */}
+      {nextMilestone && days > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="h-1.5 flex-1 rounded-full bg-white/10 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: streakColor }}
+              initial={{ width: 0 }}
+              animate={{
+                width: `${Math.min(100, (days / nextMilestone.days) * 100)}%`,
+              }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+          <span className="text-[10px] text-white/45 whitespace-nowrap">
+            {nextMilestone.badge[locale] ?? nextMilestone.badge.en}
+            {" "}
+            {locale === "ko"
+              ? `${nextMilestone.days - days}일 남음`
+              : `${nextMilestone.days - days}d left`}
+          </span>
+        </div>
+      )}
+
       {/* Weekly activity heatmap */}
       <div className="mt-3 flex gap-1">
           {weeklyActivity.map((active, i) => {
             const d = new Date();
             d.setDate(d.getDate() - (6 - i));
-            const dayIndex = d.getDay(); // 0=Sun, 1=Mon, ...
+            const dayIndex = d.getDay();
             const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
             const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
             const dayLabel = locale === "ko" ? koLabels[dayIndex] : enLabels[dayIndex];
@@ -132,7 +157,7 @@ export function StreakDisplay({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
             >
-              <span className="text-[9px] text-white/40">{dayLabel}</span>
+              <span className="text-[10px] text-white/45">{dayLabel}</span>
               <div
                 className={`h-6 w-full rounded-md transition-all ${
                   active

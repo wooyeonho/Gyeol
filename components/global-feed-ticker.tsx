@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 
 type FeedItem = {
@@ -41,17 +42,33 @@ export function GlobalFeedTicker() {
   if (items.length === 0) return null;
 
   return (
-    <div className="w-full mb-4 overflow-hidden rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
+    <div
+      className="w-full mb-4 overflow-hidden rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white/70"
+      role="status"
+      aria-live="polite"
+    >
       <div className="flex items-center gap-3">
-        <span className="flex h-2 w-2 shrink-0 animate-pulse rounded-full bg-cyan-400" />
-        <p className="flex-1 truncate">
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
+        </span>
+        <div className="flex-1 min-w-0">
           <span className="font-medium text-white/90 mr-2">
-            {locale === "en" ? "Global Echo" : "글로벌 에코"}
+            {locale === "en" ? "Live" : "실시간"}
           </span>
-          <span className="animate-fade-in transition-opacity duration-500">
-            {items[currentIndex].text}
-          </span>
-        </p>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={currentIndex}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3 }}
+              className="inline-block"
+            >
+              {items[currentIndex].text}
+            </motion.span>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

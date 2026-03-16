@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { type RewardResult } from "@/lib/rewards/variable-reward";
+import { playSound, haptic } from "@/lib/micro-interactions";
 
 type RewardToastProps = {
   reward: RewardResult | null;
@@ -15,13 +16,23 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
   const show = reward !== null && reward.tier !== "none";
 
   useEffect(() => {
-    if (show) {
-      timerRef.current = setTimeout(() => onDismiss(), 4000);
+    if (show && reward) {
+      // Sound & haptic based on reward tier
+      if (reward.tier === "jackpot" || reward.tier === "large") {
+        playSound("levelUp");
+        haptic("success");
+      } else {
+        playSound("streak");
+        haptic("tap");
+      }
+
+      const duration = reward.tier === "jackpot" ? 6000 : 4000;
+      timerRef.current = setTimeout(() => onDismiss(), duration);
       return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
     }
-  }, [show, onDismiss]);
+  }, [show, reward, onDismiss]);
 
   return (
     <AnimatePresence>
@@ -32,6 +43,8 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          role="status"
+          aria-live="polite"
         >
           <div
             className="flex items-center gap-3 rounded-2xl border px-5 py-3 shadow-lg backdrop-blur-md"
@@ -49,8 +62,8 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
             }}
           >
             <motion.span
-              className="text-2xl"
-              animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.2, 1] }}
+              className={reward.tier === "jackpot" ? "text-4xl" : "text-2xl"}
+              animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.3, 1] }}
               transition={{ duration: 0.6 }}
             >
               {reward.icon}
@@ -58,7 +71,14 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
             <div>
               <p className="text-sm font-semibold text-white">{reward.label[locale]}</p>
               {reward.coins > 0 && (
-                <p className="text-xs text-white/60">+{reward.coins} coins</p>
+                <motion.p
+                  className="text-xs text-white/70"
+                  initial={{ opacity: 0, x: -5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  +{reward.coins} coins
+                </motion.p>
               )}
             </div>
           </div>

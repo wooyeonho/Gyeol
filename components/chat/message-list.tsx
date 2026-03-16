@@ -1,6 +1,8 @@
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
 import { stripMarkdownForDisplay } from "@/lib/sanitize";
+import { haptic, playSound } from "@/lib/micro-interactions";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
 const messageVariants = {
@@ -45,6 +47,19 @@ export function MessageList({
   onRetry: () => void;
   t: (key: string) => string;
 }) {
+  // Play receive feedback when assistant message finishes streaming
+  const prevStreamingRef = useRef(isStreaming);
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming && messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last.role === "assistant" && !last.error) {
+        playSound("receive");
+        haptic("receive");
+      }
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming, messages]);
+
   return (
     <div
       className="flex-1 overflow-y-auto space-y-4 py-4"
@@ -134,14 +149,16 @@ export function MessageList({
                       if (isPlaying) onStop();
                       else onSpeak(m.content);
                     }}
-                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
+                    aria-label={isPlaying ? t("chat.stop") : t("chat.listen")}
+                    className="text-xs text-white/70 hover:text-white/90 transition-colors min-h-[36px] px-2"
                   >
                     {isPlaying ? t("chat.stop") : t("chat.listen")}
                   </button>
                   <button
                     type="button"
                     onClick={() => onCopy(i, m.content)}
-                    className="text-xs text-white/60 hover:text-white/80 transition-colors"
+                    aria-label={copiedIndex === i ? t("chat.copied") : t("chat.copy")}
+                    className="text-xs text-white/70 hover:text-white/90 transition-colors min-h-[36px] px-2"
                   >
                     {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
                   </button>

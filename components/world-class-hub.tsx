@@ -19,6 +19,8 @@ import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mi
 import { WorldClassHubSessionHero } from "@/components/home/world-class-hub-session-hero";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { StreakDisplay } from "@/components/streak-display";
+import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
+import { DailyQuestPanel } from "@/components/daily-quest";
 
 type Mission = {
   id: string;
@@ -471,7 +473,17 @@ export function WorldClassHub() {
           <span className="text-xs text-white/60">
             {t("chat.vitality")} {Math.round(vitality * 100)}%
           </span>
-          <span className="text-xs text-white/40">Gen {genLevel}</span>
+          <div className="hidden sm:flex items-center gap-1.5 min-w-[80px]">
+            <span className="text-xs text-white/40">Gen {genLevel}</span>
+            <div className="h-1 w-12 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400"
+                animate={{ width: `${typeof agentState?.progress === "number" ? agentState.progress : 0}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          </div>
+          <span className="text-xs text-white/40 sm:hidden">Gen {genLevel}</span>
           <button
             type="button"
             onClick={() => setForceExpanded(true)}
@@ -558,6 +570,14 @@ export function WorldClassHub() {
             compact={false}
           />
         )}
+
+        <EvolutionProgressBar
+          genLevel={genLevel}
+          progress={typeof agentState?.progress === "number" ? agentState.progress : 0}
+          locale={locale}
+        />
+
+        <DailyQuestPanel locale={locale} />
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <WorldClassHubPresenceColumn

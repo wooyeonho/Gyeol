@@ -6,6 +6,7 @@ import { DocumentLocaleSync } from "@/components/document-locale-sync";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
+import { PageTransition } from "@/components/page-transition";
 import { WebPushManager } from "@/components/push-manager";
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
@@ -46,7 +47,9 @@ export default async function RootLayout({
           <DocumentLocaleSync />
           <WebPushManager />
           <NavigationHub />
-          <AnalyticsProvider>{children}</AnalyticsProvider>
+          <AnalyticsProvider>
+            <PageTransition>{children}</PageTransition>
+          </AnalyticsProvider>
         </I18nProvider>
       </body>
     </html>

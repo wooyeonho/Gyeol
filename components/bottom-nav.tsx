@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { haptic } from "@/lib/micro-interactions";
 
 function NavIcon({ name }: { name: "home" | "activity" | "album" | "social" | "explore" | "settings" }) {
   const common = "h-5 w-5";
@@ -95,6 +97,8 @@ export function BottomNav() {
 
   return (
     <nav
+      role="navigation"
+      aria-label={locale === "en" ? "Main navigation" : "주요 탐색"}
       className="fixed bottom-0 left-0 right-0 z-20 border-t bg-black/80 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
       style={{ borderColor: `${appearance.palette.primary}25` }}
     >
@@ -105,7 +109,9 @@ export function BottomNav() {
             <Link
               key={tab.path}
               href={tab.path}
-              className="flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-2 py-1.5 transition-all duration-200"
+              onClick={() => haptic("tap")}
+              aria-current={isActive ? "page" : undefined}
+              className="relative flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-2 py-1.5 transition-all duration-200"
               style={
                 isActive
                   ? {
@@ -113,13 +119,21 @@ export function BottomNav() {
                       background: `${appearance.palette.primary}18`,
                       boxShadow: `0 0 0 1px ${appearance.palette.primary}22 inset`,
                     }
-                  : { color: "rgba(255,255,255,0.4)" }
+                  : { color: "rgba(255,255,255,0.6)" }
               }
             >
               <span aria-hidden="true">
                 <NavIcon name={tab.icon} />
               </span>
               <span className="text-xs">{t(tab.labelKey)}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute -bottom-1.5 h-[3px] w-6 rounded-full"
+                  style={{ backgroundColor: appearance.palette.primary }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </Link>
           );
         })}

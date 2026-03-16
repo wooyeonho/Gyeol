@@ -66,7 +66,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 px-6">
       {/* Progress dots */}
-      <div className="absolute top-12 flex gap-2">
+      <div className="absolute top-12 flex gap-2" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-label={`Step ${step + 1} of ${TOTAL_STEPS}`}>
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
@@ -127,13 +127,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <div>
                 <h2 className="text-xl font-semibold">{t("onboarding.step2Title")}</h2>
                 <p className="mt-2 text-sm leading-6 text-white/65">{t("onboarding.step2Desc")}</p>
-                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <div className="mt-5 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Personality mode">
                   {PERSONALITY_MODES.map((mode) => (
                     <button
                       key={mode}
                       type="button"
+                      role="radio"
+                      aria-checked={selectedMode === mode}
                       onClick={() => handleSelectMode(mode)}
-                      className={`rounded-full border px-3 py-1.5 text-xs transition-all ${
+                      className={`rounded-full border px-4 py-2 text-sm transition-all min-h-[44px] ${
                         selectedMode === mode
                           ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-100"
                           : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
