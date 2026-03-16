@@ -45,6 +45,7 @@ interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
   pendingUsageMode: string | null;
+  lastLocale: string | undefined;
   lastReward: RewardResult | null;
   rewardInventory: RewardInventory;
   rewardProgress: RewardProgress;
@@ -184,6 +185,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   isStreaming: false,
   pendingUsageMode: null,
+  lastLocale: undefined,
   lastReward: null,
   rewardInventory: readRewardInventory(),
   rewardProgress: getRewardProgress(readMessagesSinceReward(), 0),
@@ -254,6 +256,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
     set((s) => ({ messages: [...s.messages, { role: "assistant" as const, content: "" }] }));
 
+    set({ lastLocale: meta?.locale });
     await handleStreamResponse(message, set as ChatSetter, get, meta?.locale);
   },
   retryLastMessage: async () => {
@@ -268,7 +271,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         msgs[msgs.length - 1] = { role: "assistant", content: "" };
         return { messages: msgs, isStreaming: true };
       });
-      await handleStreamResponse(lastUserMsg.content, set as ChatSetter, get);
+      await handleStreamResponse(lastUserMsg.content, set as ChatSetter, get, get().lastLocale);
     }
   }
 }));
