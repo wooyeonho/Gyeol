@@ -290,6 +290,16 @@ export async function GET(request?: Request) {
         streak: {
           days: streakDays,
           today_active: todayActive,
+          weekly_activity: (() => {
+            const result: boolean[] = [];
+            const now = new Date();
+            for (let i = 6; i >= 0; i--) {
+              const d = new Date(now.getTime() - i * 86400000);
+              const key = d.toISOString().slice(0, 10);
+              result.push(allActivityDates.some((date) => date.startsWith(key)));
+            }
+            return result;
+          })(),
         },
         today: {
           activities: todayActivities,

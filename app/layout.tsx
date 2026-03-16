@@ -5,6 +5,8 @@ import { AnalyticsProvider } from "@/components/analytics-provider";
 import { DocumentLocaleSync } from "@/components/document-locale-sync";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { type Locale } from "@/lib/i18n/config";
+import { NavigationHub } from "@/components/layout/navigation-hub";
+import { WebPushManager } from "@/components/push-manager";
 
 const METADATA_BY_LOCALE: Record<Locale, Pick<Metadata, "title" | "description">> = {
   ko: {
@@ -42,6 +44,8 @@ export default async function RootLayout({
       <body className="bg-black text-white min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
           <DocumentLocaleSync />
+          <WebPushManager />
+          <NavigationHub />
           <AnalyticsProvider>{children}</AnalyticsProvider>
         </I18nProvider>
       </body>

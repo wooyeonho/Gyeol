@@ -466,16 +466,33 @@ create index if not exists research_tasks_parent_task_id_idx on research_tasks(p
 create table if not exists rate_limits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  rl_key text,
+  rl_key text not null,
   window_start timestamptz not null,
   request_count int not null default 1,
   created_at timestamptz not null default now(),
-  unique (user_id, window_start)
+  unique (rl_key, user_id, window_start)
 );
 
 create index if not exists rate_limits_user_id_idx on rate_limits(user_id, window_start);
 create index if not exists rate_limits_rl_key_created_at_idx on rate_limits(rl_key, created_at desc);
 create index if not exists product_events_created_at_idx on product_events(created_at desc);
+
+-- Atomic upsert: insert or increment request_count in a single statement.
+create or replace function upsert_rate_limit(
+  p_rl_key text,
+  p_user_id uuid,
+  p_window_start timestamptz
+)
+returns void
+language plpgsql
+as $$
+begin
+  insert into rate_limits (rl_key, user_id, window_start, request_count)
+  values (p_rl_key, p_user_id, p_window_start, 1)
+  on conflict (rl_key, user_id, window_start)
+  do update set request_count = rate_limits.request_count + 1;
+end;
+$$;
 
 -- ============================================================
 -- CRON LOCKS & OPS ALERTS

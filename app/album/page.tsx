@@ -9,6 +9,9 @@ import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { ManifestationTimeline } from "@/components/manifestation-timeline";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import { getRarity, getCollectionCompleteness } from "@/lib/album/rarity";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
@@ -22,6 +25,10 @@ export default function AlbumPage() {
   const [shareLoading, setShareLoading] = useState(false);
   const { locale, t } = useTranslations();
   const appearance = resolveIdentityAppearance({ visual, config }, locale);
+  const completeness = useMemo(
+    () => getCollectionCompleteness(milestones.map((m) => m.type)),
+    [milestones]
+  );
 
   useEffect(() => {
     trackClientEvent(CLIENT_EVENT.albumOpened);
@@ -94,11 +101,40 @@ export default function AlbumPage() {
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
           </div>
         ) : milestones.length === 0 ? (
-          <div className="rounded-xl bg-white/5 p-6 text-center text-white/50 text-sm">
-            {t("album.empty")}
-          </div>
+          <AnimatedEmptyState
+            icon="album"
+            title={t("album.empty")}
+            description={t("album.emptyDesc")}
+            accentColor="#a78bfa"
+          />
         ) : (
           <>
+          {/* Collection completeness bar */}
+          <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                {t("album.collectionEyebrow")}
+              </p>
+              <span className="text-xs font-medium" style={{ color: appearance.palette.primary }}>
+                {completeness.collected}/{completeness.total}
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${completeness.percent}%`,
+                  background: `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`,
+                }}
+              />
+            </div>
+            <p className="mt-2 text-[11px] text-white/40">
+              {t("album.collectionProgress").replace("{percent}", String(completeness.percent))}
+            </p>
+          </div>
+          <div className="mb-6">
+            <ManifestationTimeline />
+          </div>
           <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
               {t("album.timelineEyebrow")}
@@ -126,26 +162,41 @@ export default function AlbumPage() {
             </div>
           </div>
           <ul className="space-y-4">
-            {milestones.map((m, i) => (
+            {milestones.map((m, i) => {
+              const rarity = getRarity(m.type);
+              return (
               <li
                 key={`${m.type}-${m.at}`}
-                className="flex gap-4 items-start rounded-xl bg-white/5 p-4 border border-white/10"
+                className="flex gap-4 items-start rounded-xl p-4 border transition-all"
+                style={{
+                  background: rarity.glow,
+                  borderColor: `${rarity.color}30`,
+                }}
               >
                 <div
                   className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-medium"
-                  style={{ background: visual?.color ? `${visual.color}33` : "rgba(255,255,255,0.1)" }}
+                  style={{ background: `${rarity.color}25`, color: rarity.color }}
                 >
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white">{m.label}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-white">{m.label}</p>
+                    <span
+                      className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                      style={{ background: `${rarity.color}20`, color: rarity.color }}
+                    >
+                      {rarity.label[locale]}
+                    </span>
+                  </div>
                   <p className="text-white/50 text-xs mt-0.5">
                     {formatLocalizedDate(m.at, locale, { dateStyle: "medium" })}
                   </p>
                   {m.summary && <p className="text-white/70 text-sm mt-2 truncate">{m.summary}</p>}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
           </>
         )}

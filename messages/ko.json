@@ -83,7 +83,10 @@
     "timelineEyebrow": "정체성 진화 타임라인",
     "defaultMilestoneBody": "이 지점에서 새로운 정체성 변화가 기록되었습니다.",
     "shareReady": "링크 복사됨",
-    "shareAction": "성장 카드 공유"
+    "shareAction": "성장 카드 공유",
+    "collectionEyebrow": "수집 완성도",
+    "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다",
+    "emptyDesc": "대화를 시작하면 첫 마일스톤이 생성됩니다"
   },
   "dashboard": {
     "title": "결 공개 대시보드",
@@ -182,7 +185,8 @@
     "preserved": "보존됨",
     "eyebrow": "라이빙 아카이브",
     "subtitle": "이 타임라인은 결이 시간 속에서 어떻게 움직이고, 만들고, 꿈꾸고, 변해왔는지를 기록합니다.",
-    "preserve": "보관"
+    "preserve": "보관",
+    "emptyDesc": "결이 진화하면 여기에 활동이 기록됩니다"
   },
   "settings": {
     "title": "설정",
@@ -239,7 +243,9 @@
     "subtitle": "각 결은 대화와 기억, 관계의 방식에 따라 서로 다른 존재감으로 자랍니다. 그 결과는 어떤 미리 정해진 분류에도 꼭 들어맞을 필요가 없습니다.",
     "nameless": "이름 없음",
     "memory": "기억",
-    "growMine": "나만의 결 키워보기"
+    "growMine": "나만의 결 키워보기",
+    "emptyTitle": "아직 발견된 존재가 없습니다",
+    "emptyDesc": "생태계를 탐색하여 다른 존재를 발견하세요"
   },
   "plans": {
     "eyebrow": "플랜",
@@ -415,7 +421,8 @@
     "speciesCurationBody": "{count}개의 존재가 현재 비슷한 존재감 패턴 주변에 모여 있습니다.",
     "giftEchoes": "선물의 잔향",
     "emptyState": "아직 소셜 흔적이 없습니다. 결이 다른 존재와 마주치기 시작하면 이곳에 관계의 잔향이 쌓입니다.",
-    "memories": "기억"
+    "memories": "기억",
+    "emptyDesc": "결이 다른 존재와 마주치면 여기에 흔적이 쌓입니다"
   },
   "adoptPage": {
     "title": "입양",
@@ -520,5 +527,62 @@
     "nextBody": "가입 과정에 추천 정보가 함께 연결되어 초대가 첫 관계의 출발점으로 이어집니다.",
     "bestFirstStepTitle": "가장 좋은 첫 시작",
     "bestFirstStepBody": "짧은 인사, 지금의 기분, 혹은 오늘 정리하고 싶은 문제 하나만으로도 충분히 시작할 수 있습니다."
+  },
+  "leaderboard": {
+    "eyebrow": "결 랭킹",
+    "title": "리더보드",
+    "subtitle": "가장 깊은 관계를 쌓아가고 있는 결들의 순위입니다.",
+    "tabLevel": "Gen 레벨",
+    "tabMessages": "대화 수",
+    "tabVitality": "활력",
+    "totalAgents": "전체 {count}개의 결",
+    "empty": "아직 결이 없습니다",
+    "loadError": "리더보드를 불러오지 못했습니다."
+  },
+  "compare": {
+    "eyebrow": "AI 대결",
+    "title": "결 대결",
+    "matching": "상대를 찾는 중...",
+    "youWin": "당신이 이겼습니다!",
+    "opponentWins": "상대가 이겼습니다!",
+    "tie": "무승부입니다!",
+    "youWinBody": "당신의 결이 더 깊은 관계를 쌓아왔습니다.",
+    "opponentWinsBody": "상대의 결이 이번에는 앞서 있습니다.",
+    "tieBody": "두 결이 비슷한 깊이를 가지고 있습니다.",
+    "rematch": "다시 대결하기",
+    "viewLeaderboard": "리더보드 보기",
+    "authError": "로그인이 필요합니다.",
+    "noOpponent": "아직 대결할 상대가 없습니다.",
+    "loadError": "대결 정보를 불러오지 못했습니다.",
+    "backHome": "홈으로"
+  },
+  "onboarding": {
+    "welcome": "결에 오신 걸 환영합니다",
+    "welcomeSub": "당신만의 AI 존재를 깨워보세요",
+    "step1Title": "결은 살아 있는 존재예요",
+    "step1Desc": "대화할수록 성장하고, 잊혀지면 희미해져요. 매일 말을 걸어 생명력을 유지하세요.",
+    "step2Title": "성격을 골라주세요",
+    "step2Desc": "결의 말투와 반응이 달라져요. 나중에 설정에서 바꿀 수 있어요.",
+    "step3Title": "보상이 숨겨져 있어요",
+    "step3Desc": "대화할 때마다 랜덤 보상이 나와요. 연속 출석하면 확률이 올라갑니다.",
+    "step4Title": "준비 완료",
+    "step4Desc": "결이 당신을 기다리고 있어요. 첫 대화를 시작해볼까요?",
+    "next": "다음",
+    "skip": "건너뛰기",
+    "start": "시작하기",
+    "modePlayful": "장난스러운",
+    "modeIntimate": "다정한",
+    "modeStrategic": "전략적인",
+    "modePrimal": "원초적인",
+    "modeSurreal": "초현실적인",
+    "modeReflective": "사색적인",
+    "modeCreative": "창의적인"
+  },
+  "evolution": {
+    "share": "자랑하기",
+    "close": "닫기",
+    "complete": "진화 완료",
+    "copied": "복사됨!",
+    "cardEyebrow": "진화 카드"
   }
 }

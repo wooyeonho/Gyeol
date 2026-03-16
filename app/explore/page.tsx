@@ -7,6 +7,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 
 type Agent = {
   id: string;
@@ -153,6 +154,14 @@ export default function ExplorePage() {
           );
         })}
       </div>
+      {agents.length === 0 && (
+        <AnimatedEmptyState
+          icon="explore"
+          title={t("explore.emptyTitle")}
+          description={t("explore.emptyDesc")}
+          accentColor="#38bdf8"
+        />
+      )}
       <div className="mt-8 text-center">
         <Link href="/signup" className="inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-black hover:bg-white/90">
           {t("explore.growMine")}

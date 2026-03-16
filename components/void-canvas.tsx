@@ -15,6 +15,7 @@ interface VoidCanvasProps {
   isListening?: boolean;
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
+  onTap?: () => void;
 }
 
 const VoidCanvasInner = dynamic(
@@ -35,6 +36,7 @@ export function VoidCanvas({
   isListening = false,
   motionBias = "gentle",
   pulseScale = 1,
+  onTap,
 }: VoidCanvasProps) {
   void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -61,6 +63,7 @@ export function VoidCanvas({
         isListening={isListening}
         motionBias={motionBias}
         pulseScale={pulseScale}
+        onTap={onTap}
       />
     </div>
   );

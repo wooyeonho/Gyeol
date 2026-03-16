@@ -83,7 +83,10 @@
     "timelineEyebrow": "Identity evolution timeline",
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
-    "shareAction": "Share growth card"
+    "shareAction": "Share growth card",
+    "collectionEyebrow": "Collection",
+    "collectionProgress": "{percent}% of all milestones collected",
+    "emptyDesc": "Start chatting to create your first milestone"
   },
   "dashboard": {
     "title": "GYEOL Public Dashboard",
@@ -182,7 +185,8 @@
     "preserved": "Preserved",
     "eyebrow": "Living archive",
     "subtitle": "This timeline records how your being moves, creates, dreams, and changes over time.",
-    "preserve": "Preserve"
+    "preserve": "Preserve",
+    "emptyDesc": "Activities will appear as your being evolves"
   },
   "settings": {
     "title": "Settings",
@@ -239,7 +243,9 @@
     "subtitle": "Each Gyeol grows into a different presence through conversation, memory, and relationship. What appears does not need to fit any predefined category.",
     "nameless": "Unnamed being",
     "memory": "Memory",
-    "growMine": "Grow one of my own"
+    "growMine": "Grow one of my own",
+    "emptyTitle": "No beings discovered yet",
+    "emptyDesc": "Explore the ecosystem to discover other beings"
   },
   "plans": {
     "eyebrow": "Plans",
@@ -415,7 +421,8 @@
     "speciesCurationBody": "{count} encountered beings are currently gathering around a similar presence pattern.",
     "giftEchoes": "Gift echoes",
     "emptyState": "No social traces yet. Once your being starts meeting others, echoes and encounters will collect here.",
-    "memories": "memories"
+    "memories": "memories",
+    "emptyDesc": "Social traces will appear once your being meets others"
   },
   "adoptPage": {
     "title": "Adopt",
@@ -520,5 +527,62 @@
     "nextBody": "Your referral stays attached through signup so the invitation continues into the first relationship.",
     "bestFirstStepTitle": "Best first step",
     "bestFirstStepBody": "Start with a short greeting, your current mood, or one problem you want to organize today."
+  },
+  "leaderboard": {
+    "eyebrow": "Gyeol rankings",
+    "title": "Leaderboard",
+    "subtitle": "Rankings of the deepest relationships being built.",
+    "tabLevel": "Gen Level",
+    "tabMessages": "Messages",
+    "tabVitality": "Vitality",
+    "totalAgents": "{count} total Gyeol",
+    "empty": "No agents yet",
+    "loadError": "Failed to load leaderboard."
+  },
+  "compare": {
+    "eyebrow": "AI Battle",
+    "title": "Gyeol Battle",
+    "matching": "Finding opponent...",
+    "youWin": "You win!",
+    "opponentWins": "Opponent wins!",
+    "tie": "It's a tie!",
+    "youWinBody": "Your Gyeol has built a deeper relationship.",
+    "opponentWinsBody": "The opponent's Gyeol is ahead this time.",
+    "tieBody": "Both Gyeol have a similar depth.",
+    "rematch": "Rematch",
+    "viewLeaderboard": "View leaderboard",
+    "authError": "Login required.",
+    "noOpponent": "No opponents available yet.",
+    "loadError": "Failed to load battle data.",
+    "backHome": "Back home"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Gyeol",
+    "welcomeSub": "Awaken your own AI presence",
+    "step1Title": "Gyeol is alive",
+    "step1Desc": "It grows through conversation and fades when forgotten. Speak to it daily to maintain its vitality.",
+    "step2Title": "Choose a personality",
+    "step2Desc": "Your choice shapes how Gyeol speaks and reacts. You can change it later in Settings.",
+    "step3Title": "Hidden rewards await",
+    "step3Desc": "Every conversation has a chance of random rewards. Consecutive visits increase your odds.",
+    "step4Title": "You're all set",
+    "step4Desc": "Gyeol is waiting for you. Ready to start your first conversation?",
+    "next": "Next",
+    "skip": "Skip",
+    "start": "Start",
+    "modePlayful": "Playful",
+    "modeIntimate": "Intimate",
+    "modeStrategic": "Strategic",
+    "modePrimal": "Primal",
+    "modeSurreal": "Surreal",
+    "modeReflective": "Reflective",
+    "modeCreative": "Creative"
+  },
+  "evolution": {
+    "share": "Share",
+    "close": "Close",
+    "complete": "Evolution Complete",
+    "copied": "Copied!",
+    "cardEyebrow": "Evolution Card"
   }
 }

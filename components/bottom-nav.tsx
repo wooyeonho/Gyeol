@@ -6,69 +6,36 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 
-function NavIcon({ name }: { name: "home" | "activity" | "album" | "social" | "explore" | "settings" }) {
-  const common = "h-5 w-5";
+function NavIcon({ name }: { name: "chat" | "discover" | "profile" }) {
+  const common = "h-6 w-6";
   switch (name) {
-    case "home":
+    case "chat":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M3 10.5 12 3l9 7.5" />
-          <path d="M5.5 9.5V21h13V9.5" />
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
         </svg>
       );
-    case "activity":
+    case "discover":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M5 6h14" />
-          <path d="M5 12h14" />
-          <path d="M5 18h9" />
-          <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
-          <circle cx="7" cy="12" r="1" fill="currentColor" stroke="none" />
-          <circle cx="7" cy="18" r="1" fill="currentColor" stroke="none" />
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
         </svg>
       );
-    case "album":
+    case "profile":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="5" y="4" width="14" height="16" rx="2" />
-          <path d="M9 4v16" />
-          <path d="M12 8c1 1.3 2 2 3 2s2-.7 3-2" />
-        </svg>
-      );
-    case "social":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="8" cy="9" r="3" />
-          <circle cx="16" cy="9" r="3" />
-          <path d="M3.5 19c.9-2.6 3.1-4 5.5-4" />
-          <path d="M15 15c2.4 0 4.6 1.4 5.5 4" />
-          <path d="M9.5 18c.9-1.5 2.3-2.3 4.5-2.3 2.1 0 3.6.8 4.5 2.3" opacity=".55" />
-        </svg>
-      );
-    case "explore":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="8" />
-          <path d="m10 14 5-5-2 6-6 2 3-3Z" />
-        </svg>
-      );
-    case "settings":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.7 7.7 0 0 0-1.7-1L14.5 3h-5L9 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.7 7.7 0 0 0 1.7 1l.5 3h5l.5-3a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z" />
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       );
   }
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.home", icon: "home" as const },
-  { path: "/activity", labelKey: "nav.activity", icon: "activity" as const },
-  { path: "/album", labelKey: "nav.album", icon: "album" as const },
-  { path: "/social", labelKey: "nav.social", icon: "social" as const },
-  { path: "/explore", labelKey: "nav.explore", icon: "explore" as const },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
+  { path: "/", labelKey: "nav.chat", icon: "chat" as const },
+  { path: "/activity", labelKey: "nav.discover", icon: "discover" as const },
+  { path: "/settings", labelKey: "nav.profile", icon: "profile" as const },
 ];
 
 export function BottomNav() {
@@ -105,21 +72,21 @@ export function BottomNav() {
             <Link
               key={tab.path}
               href={tab.path}
-              className="flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-2 py-1.5 transition-all duration-200"
+              className="flex min-w-[72px] flex-col items-center gap-1.5 rounded-2xl px-3 py-2 transition-all duration-200"
               style={
                 isActive
                   ? {
                       color: "white",
-                      background: `${appearance.palette.primary}18`,
-                      boxShadow: `0 0 0 1px ${appearance.palette.primary}22 inset`,
+                      background: `${appearance.palette.primary}25`,
+                      boxShadow: `0 0 0 1px ${appearance.palette.primary}30 inset`,
                     }
                   : { color: "rgba(255,255,255,0.4)" }
               }
             >
-              <span aria-hidden="true">
+              <span aria-hidden="true" className={isActive ? "scale-110 transition-transform" : "scale-100 transition-transform"}>
                 <NavIcon name={tab.icon} />
               </span>
-              <span className="text-[11px]">{t(tab.labelKey)}</span>
+              <span className="text-xs font-medium tracking-wide">{t(tab.labelKey) || tab.icon.charAt(0).toUpperCase() + tab.icon.slice(1)}</span>
             </Link>
           );
         })}

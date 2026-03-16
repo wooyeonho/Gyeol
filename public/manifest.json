@@ -8,6 +8,8 @@
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "social"],
   "icons": [
     {
       "src": "/icons/gyeol.svg",
@@ -15,5 +17,6 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
 import { useTranslations } from "@/components/i18n-provider";
 import Soundscape from "@/components/soundscape";
+import { RewardToast } from "@/components/reward-toast";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
+import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
+import { haptic } from "@/lib/micro-interactions";
+import { Onboarding } from "@/components/onboarding";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -42,8 +47,9 @@ export default function Home() {
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
+  const isLowDevice = useDevicePerformance();
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
-  const performanceMinimal = config.performance_minimal === true;
+  const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
     () => ({
       mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
@@ -66,21 +72,89 @@ export default function Home() {
     },
     locale
   );
-  const soundProfile = (agentState?.sound_profile as { base_note?: string; tempo?: number; instruments?: string[] } | undefined) ?? {
-    base_note: appearance.sound.baseNote,
-    tempo: appearance.sound.tempo,
-    instruments: appearance.sound.instruments,
-  };
+  // Derive emotion-based sound profile dynamically from agent state
+  const emotionMood = useMemo(() => {
+    const v = typeof agentState?.vitality === "number" ? agentState.vitality : 0.5;
+    const trust = typeof agentState?.intimacy_score === "number" ? agentState.intimacy_score : 0.3;
+    const tone = typeof agentState?.mood === "string"
+      ? (agentState.mood === "joyful" || agentState.mood === "energetic" ? "positive" as const
+        : agentState.mood === "melancholy" ? "negative" as const
+        : "neutral" as const)
+      : null;
+    return deriveEmotionMood(v, trust, tone);
+  }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
+
+  const soundProfile = useMemo(() => {
+    const emotionProfile = getEmotionSoundProfile(emotionMood);
+    return {
+      base_note: emotionProfile.base_note,
+      tempo: emotionProfile.tempo,
+      instruments: emotionProfile.instruments,
+      scale: emotionProfile.scale,
+    };
+  }, [emotionMood]);
+
+  const lastReward = useChatStore((s) => s.lastReward);
+  const clearReward = useChatStore((s) => s.clearReward);
+  const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
+
+  const handleCanvasTap = useCallback(() => {
+    haptic("tap");
+  }, []);
+
+  // Onboarding state — show once per device
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("gyeol_onboarded");
+  });
+
+  const handleOnboardingComplete = useCallback(async (selectedMode: string) => {
+    localStorage.setItem("gyeol_onboarded", "1");
+    localStorage.setItem("gyeol_personality", selectedMode);
+
+    // Persist personality to agent_state.config on the server BEFORE dismissing onboarding
+    try {
+      await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usage_profile: { primary_mode: selectedMode } }),
+      });
+      // Force refresh agent state so the next chat request has the updated config
+      await fetchAgentState({ silent: true });
+    } catch {
+      // best-effort fallback
+    } finally {
+      setShowOnboarding(false);
+    }
+  }, [fetchAgentState]);
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 transition-all duration-1000">
+        <div className="relative flex items-center justify-center">
+          <div
+            className="absolute inset-0 rounded-full blur-xl animate-pulse opacity-20"
+            style={{ backgroundColor: appearance.palette.primary }}
+          />
+          <div
+            className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center relative z-10"
+            style={{ boxShadow: `0 0 20px ${appearance.palette.primary}20 inset` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-ping" />
+          </div>
+        </div>
+        <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/50 animate-pulse">
+          {locale === "ko" ? "결을 조율하는 중..." : "Awakening Presence..."}
+        </p>
       </div>
     );
   }
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <>
@@ -89,6 +163,11 @@ export default function Home() {
           level={evolutionEvent.level!}
           mutation={evolutionEvent.mutation}
           onComplete={clearEvolution}
+          selfName={typeof agentState?.self_name === "string" ? agentState.self_name : undefined}
+          primaryColor={appearance.palette.primary}
+          secondaryColor={appearance.palette.secondary}
+          species={(agentState?.genome as { species?: string } | undefined)?.species}
+          shareBaseUrl={typeof window !== "undefined" ? window.location.origin : undefined}
         />
       )}
       <div
@@ -123,6 +202,7 @@ export default function Home() {
             isListening={isStreaming}
             motionBias={appearance.scene.motionBias}
             pulseScale={appearance.scene.pulseScale}
+            onTap={handleCanvasTap}
           />
         )}
       </div>
@@ -134,6 +214,11 @@ export default function Home() {
         soundProfile={soundProfile}
         label={appearance.sound.label}
         accentColor={appearance.palette.primary}
+      />
+      <RewardToast
+        reward={lastReward}
+        locale={locale}
+        onDismiss={handleDismissReward}
       />
       <BottomNav />
     </>

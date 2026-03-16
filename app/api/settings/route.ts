@@ -51,6 +51,16 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
     if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
+
+    // Support onboarding override
+    if (body.usage_profile && typeof body.usage_profile.primary_mode === "string") {
+      config.usage_profile = {
+        ...((config.usage_profile as Record<string, unknown>) || {}),
+        primary_mode: body.usage_profile.primary_mode,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
     if (typeof body.preferred_locale === "string") {
       const preferredLocale = normalizeLocale(body.preferred_locale);
       if (preferredLocale) config.preferred_locale = preferredLocale;
