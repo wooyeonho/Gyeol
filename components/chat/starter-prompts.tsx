@@ -1,11 +1,9 @@
-import type { Locale } from "@/lib/i18n/config";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
 export function StarterPrompts({
   isFirstSession,
   firstSessionConfig,
   vitality,
-  locale,
   starterPrompts,
   appearance,
   isStreaming,
@@ -15,7 +13,6 @@ export function StarterPrompts({
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
   vitality: number;
-  locale: Locale;
   starterPrompts: string[];
   appearance: ResolvedIdentityAppearance;
   isStreaming: boolean;

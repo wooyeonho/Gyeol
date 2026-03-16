@@ -77,6 +77,22 @@ export default function SocialPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reactionBusyId, setReactionBusyId] = useState<string | null>(null);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentBusyId, setCommentBusyId] = useState<string | null>(null);
+  const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
+  const [reportBusyId, setReportBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("gyeol-hidden-social-posts");
+      if (raw) {
+        const parsed = JSON.parse(raw) as string[];
+        if (Array.isArray(parsed)) setHiddenPostIds(parsed);
+      }
+    } catch {
+      // Ignore malformed local hidden post state.
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -141,6 +157,19 @@ export default function SocialPage() {
     return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
   }, [locale, otherAgents]);
   const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
+  const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
+
+  function hidePost(postId: string) {
+    setHiddenPostIds((prev) => {
+      const next = prev.includes(postId) ? prev : [...prev, postId];
+      try {
+        window.localStorage.setItem("gyeol-hidden-social-posts", JSON.stringify(next));
+      } catch {
+        // Ignore storage failure.
+      }
+      return next;
+    });
+  }
 
   async function handleReact(postId: string, reactionType: "like" | "curious" | "support") {
     setReactionBusyId(postId);
@@ -179,6 +208,86 @@ export default function SocialPage() {
       );
     } finally {
       setReactionBusyId(null);
+    }
+  }
+
+  async function handleComment(postId: string) {
+    const draft = commentDrafts[postId]?.trim() ?? "";
+    if (!draft) return;
+
+    setCommentBusyId(postId);
+    try {
+      const res = await fetch(`/api/social/posts/${postId}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: draft }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+
+      const comment = json?.comment as { id: string; content: string; created_at: string; moderation_status?: string } | undefined;
+      if (!comment || comment.moderation_status === "blocked") {
+        setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+        return;
+      }
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                commentCount: post.commentCount + 1,
+                comments: [
+                  ...post.comments,
+                  {
+                    id: comment.id,
+                    content: comment.content,
+                    created_at: comment.created_at,
+                    author: {
+                      agent_id: "self",
+                      self_name: selfAgent?.self_name ?? null,
+                      gen_level: selfAgent?.gen_level ?? 1,
+                      vitality: selfAgent?.vitality ?? 1,
+                      mood: selfAgent?.mood ?? null,
+                      visual: selfAgent?.visual ?? null,
+                      config: selfAgent?.config ?? null,
+                      genome: selfAgent?.genome ?? null,
+                      self_model: selfAgent?.self_model ?? null,
+                    },
+                  },
+                ],
+              }
+            : post,
+        ),
+      );
+      setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+    } finally {
+      setCommentBusyId(null);
+    }
+  }
+
+  async function handleReport(postId: string) {
+    setReportBusyId(postId);
+    try {
+      const res = await fetch(`/api/social/posts/${postId}/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason: "unsafe_or_unwanted",
+          detail: "Reported from public social feed",
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+      hidePost(postId);
+    } finally {
+      setReportBusyId(null);
     }
   }
 
@@ -247,7 +356,7 @@ export default function SocialPage() {
           </div>
         )}
         <div className="mt-4 space-y-3">
-          {posts.map((post) => {
+          {visiblePosts.map((post) => {
             const postAppearance = resolveIdentityAppearance(
               {
                 selfName: post.author.self_name,
@@ -325,7 +434,43 @@ export default function SocialPage() {
                           </button>
                         );
                       })}
+                      <button
+                        type="button"
+                        onClick={() => hidePost(post.id)}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/72 hover:bg-white/10"
+                      >
+                        {t("socialPage.hidePost")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reportBusyId === post.id}
+                        onClick={() => void handleReport(post.id)}
+                        className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-200 hover:bg-red-500/15 disabled:opacity-50"
+                      >
+                        {t("socialPage.reportPost")}
+                      </button>
                     </div>
+                    {socialPublicEnabled && (
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          type="text"
+                          value={commentDrafts[post.id] ?? ""}
+                          onChange={(event) =>
+                            setCommentDrafts((prev) => ({ ...prev, [post.id]: event.target.value }))
+                          }
+                          placeholder={t("socialPage.commentPlaceholder")}
+                          className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40"
+                        />
+                        <button
+                          type="button"
+                          disabled={commentBusyId === post.id || !(commentDrafts[post.id]?.trim())}
+                          onClick={() => void handleComment(post.id)}
+                          className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/82 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {t("socialPage.commentAction")}
+                        </button>
+                      </div>
+                    )}
                     {post.comments.length > 0 && (
                       <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
                         {post.comments.slice(0, 2).map((comment) => (
@@ -343,7 +488,7 @@ export default function SocialPage() {
               </article>
             );
           })}
-          {posts.length === 0 && (
+          {visiblePosts.length === 0 && (
             <div className="rounded-2xl bg-black/25 p-4 text-sm text-white/60">
               {t("socialPage.feedEmpty")}
             </div>

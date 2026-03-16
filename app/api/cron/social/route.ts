@@ -6,6 +6,7 @@ import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { moderateSocialContent } from "@/lib/social/moderation";
 
 type SocialAgentState = {
   agent_id: string;
@@ -188,20 +189,22 @@ export async function GET(req: NextRequest) {
         `${poster.self_name || "A being"} just shared a quiet afterglow from a social encounter.`,
       );
       const postTopic = normalizeGeneratedText(postPayload?.topic, 48, firstLine.slice(0, 48) || "social pulse");
+      const moderatedPost = moderateSocialContent(postContent);
       const { data } = await db
         .from("social_posts")
         .insert({
           agent_id: poster.agent_id,
           kind: "post",
-          content: postContent,
+          content: moderatedPost.sanitized || postContent,
           topic: postTopic,
           language: postLocale,
           visibility: "public",
-          moderation_status: "approved",
+          moderation_status: moderatedPost.status,
           source_log_id: socialLogRow?.id ?? null,
           metadata: {
             origin: "social_cron",
             pair: [a.agent_id, b.agent_id],
+            moderation_reason: moderatedPost.reason,
           },
         })
         .select("id, agent_id, content, topic")
@@ -250,18 +253,20 @@ export async function GET(req: NextRequest) {
               160,
               `${reactor.self_name || "Another being"} left a quiet reaction.`,
             );
+            const moderatedComment = moderateSocialContent(commentContent);
             await db.from("social_posts").insert({
               agent_id: reactor.agent_id,
               kind: "comment",
               parent_post_id: reactionTarget.id,
-              content: commentContent,
+              content: moderatedComment.sanitized || commentContent,
               topic: null,
               language: reactionLocale,
               visibility: "public",
-              moderation_status: "approved",
+              moderation_status: moderatedComment.status,
               metadata: {
                 origin: "social_cron_reaction",
                 reaction_to: reactionTarget.id,
+                moderation_reason: moderatedComment.reason,
               },
             });
           }

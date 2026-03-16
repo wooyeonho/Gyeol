@@ -22,7 +22,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
-  const { locale, t } = useTranslations();
+  const { t } = useTranslations();
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);

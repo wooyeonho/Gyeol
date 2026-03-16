@@ -19,18 +19,19 @@ describe("weekly event helpers", () => {
   });
 
   it("marks completion when target is reached", () => {
-    let state = createEmptyWeeklyEventState(new Date("2026-03-15T00:00:00.000Z"));
+    const now = new Date("2026-03-15T00:00:00.000Z");
+    let state = createEmptyWeeklyEventState(now);
     let completedNow = false;
 
     for (let i = 0; i < 10; i += 1) {
-      const result = registerWeeklyEventMessage(state, new Date("2026-03-15T00:00:00.000Z"));
+      const result = registerWeeklyEventMessage(state, now);
       state = result.state;
       completedNow = result.completedNow;
     }
 
     expect(state.completed).toBe(true);
     expect(completedNow).toBe(true);
-    expect(getWeeklyEventProgress(state).remaining).toBe(0);
+    expect(getWeeklyEventProgress(state, now).remaining).toBe(0);
   });
 
   it("formats countdown labels", () => {

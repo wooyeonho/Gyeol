@@ -58,7 +58,6 @@ export function MessageList({
           isFirstSession={isFirstSession}
           firstSessionConfig={firstSessionConfig}
           vitality={vitality}
-          locale={locale}
           starterPrompts={starterPrompts}
           appearance={appearance}
           isStreaming={isStreaming}

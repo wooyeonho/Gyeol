@@ -96,7 +96,7 @@ export default function DiscoverPage() {
         body: t("discover.exploreBody"),
       },
     ],
-    [counts.activity, counts.album, counts.social, counts.explore, locale, t],
+    [counts.activity, counts.album, counts.social, counts.explore, t],
   );
 
   return (
