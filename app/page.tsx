@@ -266,8 +266,8 @@ export default function Home() {
           enableThree={!performanceMinimal && conversationStarted}
         />
       </div>
-      {/* Hub is now inline, not a fixed overlay — no pointer-events conflict */}
-      <div className="relative z-10">
+      {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
+      <div className="relative z-20">
         <WorldClassHub />
       </div>
 
