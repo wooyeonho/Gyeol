@@ -116,10 +116,25 @@ export default function Home() {
     return !readAgeGateCompleted();
   });
 
-  const handleOnboardingComplete = useCallback(() => {
-    localStorage.setItem("gyeol_onboarded", "1");
-    setShowOnboarding(false);
-  }, []);
+  const handleOnboardingComplete = useCallback(
+    async (personalityMode?: string) => {
+      localStorage.setItem("gyeol_onboarded", "1");
+      setShowOnboarding(false);
+      if (personalityMode) {
+        try {
+          await fetch("/api/settings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ personality_mode: personalityMode }),
+          });
+          await fetchAgentState({ silent: true });
+        } catch {
+          // Best-effort; onboarding should still proceed even if save fails
+        }
+      }
+    },
+    [fetchAgentState],
+  );
 
   const handleAgeGateComplete = useCallback(
     async ({ ageGroup, guardianConsent }: { ageGroup: "under_13" | "teen" | "adult"; guardianConsent: boolean }) => {

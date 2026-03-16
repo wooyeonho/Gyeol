@@ -15,7 +15,9 @@ import { formatLocalizedDate } from "@/lib/i18n/format";
 import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
 import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
 import {
+  isFontSize,
   isThemeMode,
+  type FontSize,
   type ThemeMode,
   writeThemePreference,
 } from "@/lib/theme/preferences";
@@ -327,6 +329,28 @@ export default function SettingsPage() {
     });
   }
 
+  function handleFontSizeChange(nextSize: FontSize) {
+    if (!state) return;
+    const config: AgentConfig = { ...(state.config || {}), font_size: nextSize };
+    setState({ ...state, config });
+    writeThemePreference({
+      mode: isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark",
+      highContrast: Boolean(config.high_contrast_enabled),
+      fontSize: nextSize,
+    });
+  }
+
+  function handleReduceMotionToggle(enabled: boolean) {
+    if (!state) return;
+    const config: AgentConfig = { ...(state.config || {}), reduce_motion: enabled };
+    setState({ ...state, config });
+    writeThemePreference({
+      mode: isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark",
+      highContrast: Boolean(config.high_contrast_enabled),
+      reduceMotion: enabled,
+    });
+  }
+
   async function handleAgeGroupChange(nextAgeGroup: AgeGroup) {
     if (!state) return;
     const guardianConsent = nextAgeGroup === "under_13"
@@ -436,6 +460,8 @@ export default function SettingsPage() {
   const highContrastEnabled = Boolean(config.high_contrast_enabled);
   const ageGroup: AgeGroup = isAgeGroup(config.age_group) ? config.age_group : "adult";
   const guardianConsentEnabled = Boolean(config.guardian_consent);
+  const fontSize: FontSize = isFontSize(config.font_size) ? config.font_size : "medium";
+  const reduceMotionEnabled = Boolean(config.reduce_motion);
   const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
@@ -594,6 +620,52 @@ export default function SettingsPage() {
               stateLabel={highContrastEnabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
             />
           </div>
+        </section>
+
+        {/* Accessibility */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_0_80px_rgba(168,85,247,0.04)]">
+          <div className="mb-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-purple-200/70">{t("accessibility.title")}</p>
+            <p className="mt-1 text-sm text-white/60">{t("accessibility.guide")}</p>
+          </div>
+
+          {/* Font Size Selector */}
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-medium text-white/70">{t("accessibility.fontSizes")}</p>
+            <div className="grid grid-cols-4 gap-2">
+              {(["small", "medium", "large", "xlarge"] as const).map((size) => {
+                const sizeLabels: Record<FontSize, string> = {
+                  small: t("accessibility.fontSmall"),
+                  medium: t("accessibility.fontMedium"),
+                  large: t("accessibility.fontLarge"),
+                  xlarge: t("accessibility.fontXlarge"),
+                };
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => handleFontSizeChange(size)}
+                    className={`rounded-xl px-3 py-3 text-center text-xs transition-all ${
+                      fontSize === size
+                        ? "theme-panel-strong ring-2 ring-purple-400/40"
+                        : "theme-subpanel hover:bg-white/10"
+                    }`}
+                  >
+                    {sizeLabels[size]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Reduce Motion */}
+          <SettingsToggle
+            label={t("accessibility.reduceMotion")}
+            description={t("accessibility.reduceMotionBody")}
+            enabled={reduceMotionEnabled}
+            onToggle={() => handleReduceMotionToggle(!reduceMotionEnabled)}
+            stateLabel={reduceMotionEnabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
+          />
         </section>
 
         {showPlansSurface && (

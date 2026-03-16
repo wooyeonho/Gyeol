@@ -69,6 +69,7 @@ async function loadPromptMemories(params: {
 
 export async function buildChatPromptContext(params: {
   agentId: string;
+  locale?: string;
   message: string;
   reader: DbReader;
   writer: DbWriter;
@@ -125,6 +126,7 @@ export async function buildChatPromptContext(params: {
 
   const systemPrompt = buildSystemPrompt({
     agentState: stateForPrompt,
+    locale: params.locale,
     memories,
     recentChats: chronologicalChats,
     autonomousLogs: logRows.map((log) => ({ content: log.summary })),

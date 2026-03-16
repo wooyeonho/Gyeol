@@ -78,9 +78,11 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   const voiceInput = useVoiceInput({
     language: voiceLangMap[t("chat.langCode")] ?? "ko",
     onTranscript: (text) => {
+      const { isStreaming: currentlyStreaming } = useChatStore.getState();
+      if (currentlyStreaming) return;
       setInput(text);
       // Auto-send voice transcription
-      sendMessage(text, { source: "voice" });
+      sendMessage(text, { source: "voice", locale });
       setInput("");
       pendingAutoSpeakRef.current = true;
     },
@@ -104,7 +106,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    sendMessage(trimmed, { source: "input" });
+    sendMessage(trimmed, { source: "input", locale });
     setInput("");
   };
 
@@ -133,7 +135,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         copiedIndex={copiedIndex}
         onPromptClick={(prompt) => {
           if (!isStreaming) {
-            void sendMessage(prompt, { source: "prompt" });
+            void sendMessage(prompt, { source: "prompt", locale });
           }
         }}
         onSpeak={speak}
