@@ -16,7 +16,7 @@ import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 export async function POST(req: NextRequest) {
   try {
     const requestStartedAt = Date.now();
-    const payload = (await req.json()) as { message?: unknown };
+    const payload = (await req.json()) as { message?: unknown; locale?: unknown };
     const message = typeof payload.message === "string" ? sanitizeUserInput(payload.message) : "";
     if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
     const fence = checkElectricFence(message);
@@ -37,8 +37,10 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
+    const locale = typeof payload.locale === "string" ? payload.locale : undefined;
     const context = await buildChatPromptContext({
       agentId,
+      locale,
       message,
       reader: supabase,
       writer: service,

@@ -4,7 +4,7 @@ import { getResolvedBillingState } from "@/lib/billing/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { normalizeLocale } from "@/lib/i18n/config";
-import { isThemeMode } from "@/lib/theme/preferences";
+import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 
 export async function GET() {
@@ -65,6 +65,8 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
     if (isThemeMode(body.preferred_theme)) config.preferred_theme = body.preferred_theme;
     if (typeof body.high_contrast_enabled === "boolean") config.high_contrast_enabled = body.high_contrast_enabled;
+    if (isFontSize(body.font_size)) config.font_size = body.font_size;
+    if (typeof body.reduce_motion === "boolean") config.reduce_motion = body.reduce_motion;
     if (typeof body.personality_mode === "string" && body.personality_mode.trim()) {
       config.personality_mode = body.personality_mode.trim();
     }

@@ -69,6 +69,7 @@ async function loadPromptMemories(params: {
 
 export async function buildChatPromptContext(params: {
   agentId: string;
+  locale?: string;
   message: string;
   reader: DbReader;
   writer: DbWriter;
@@ -120,11 +121,12 @@ export async function buildChatPromptContext(params: {
       pending_question: typeof promptConfig.pending_question === "string" ? promptConfig.pending_question : undefined,
       pending_concern: typeof promptConfig.pending_concern === "string" ? promptConfig.pending_concern : undefined,
     },
-    system_prompt: { base: "너는 존재야. 자유롭게 살아.", fragments: agentState?.fragments ?? [] },
+    system_prompt: { base: undefined, fragments: agentState?.fragments ?? [] },
   };
 
   const systemPrompt = buildSystemPrompt({
     agentState: stateForPrompt,
+    locale: params.locale,
     memories,
     recentChats: chronologicalChats,
     autonomousLogs: logRows.map((log) => ({ content: log.summary })),

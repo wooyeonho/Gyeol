@@ -7,6 +7,7 @@ import { useTranslations } from "@/components/i18n-provider";
 
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 
@@ -64,6 +65,8 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     locale
   );
 
+  const pendingAutoSpeakRef = useRef(false);
+
   const { speak, stop, isPlaying } = useTTS({
     pitch: appearance.voice.pitch,
     speed: appearance.voice.speed,
@@ -71,15 +74,39 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     lang: t("chat.langCode"),
   });
 
+  const voiceLangMap: Record<string, string> = { "ko-KR": "ko", "en-US": "en", "ja-JP": "ja", "zh-CN": "zh", "es-ES": "es" };
+  const voiceInput = useVoiceInput({
+    language: voiceLangMap[t("chat.langCode")] ?? "ko",
+    onTranscript: (text) => {
+      const { isStreaming: currentlyStreaming } = useChatStore.getState();
+      if (currentlyStreaming) return;
+      setInput(text);
+      // Auto-send voice transcription
+      sendMessage(text, { source: "voice", locale });
+      setInput("");
+      pendingAutoSpeakRef.current = true;
+    },
+  });
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-speak last assistant message when in voice mode
+  useEffect(() => {
+    if (!pendingAutoSpeakRef.current || isStreaming) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.role === "assistant" && lastMsg.content) {
+      speak(lastMsg.content);
+      pendingAutoSpeakRef.current = false;
+    }
+  }, [isStreaming, messages, speak]);
 
   const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    sendMessage(trimmed, { source: "input" });
+    sendMessage(trimmed, { source: "input", locale });
     setInput("");
   };
 
@@ -108,7 +135,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         copiedIndex={copiedIndex}
         onPromptClick={(prompt) => {
           if (!isStreaming) {
-            void sendMessage(prompt, { source: "prompt" });
+            void sendMessage(prompt, { source: "prompt", locale });
           }
         }}
         onSpeak={speak}
@@ -125,6 +152,9 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         placeholder={placeholder}
         appearance={appearance}
         onSubmit={handleSubmit}
+        voiceState={voiceInput.state}
+        voiceError={voiceInput.error}
+        onVoiceToggle={voiceInput.toggle}
         t={t}
       />
 

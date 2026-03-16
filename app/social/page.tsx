@@ -69,6 +69,8 @@ type OtherAgent = SocialAgent & {
   memory_count: number;
 };
 
+type SocialTab = "feed" | "friends" | "dm";
+
 export default function SocialPage() {
   const { locale, t } = useTranslations();
   const [logs, setLogs] = useState<SocialLog[]>([]);
@@ -83,6 +85,7 @@ export default function SocialPage() {
   const [commentBusyId, setCommentBusyId] = useState<string | null>(null);
   const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
   const [reportBusyId, setReportBusyId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<SocialTab>("feed");
 
   useEffect(() => {
     try {
@@ -336,6 +339,88 @@ export default function SocialPage() {
         </div>
       </header>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+
+      {/* Tab navigation */}
+      <div className="mb-4 flex gap-2">
+        {([
+          { key: "feed" as const, label: t("social.feedTab") },
+          { key: "friends" as const, label: t("social.friendsTab") },
+          { key: "dm" as const, label: t("social.dmTab") },
+        ]).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={`rounded-full px-4 py-2 text-sm transition-colors ${
+              activeTab === tab.key
+                ? "border border-cyan-300/35 bg-cyan-400/15 text-cyan-100"
+                : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Friends tab */}
+      {activeTab === "friends" && (
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.friendsTab")}</p>
+          <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
+          {otherAgents.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              {otherAgents.map((agent) => {
+                const friendAppearance = resolveIdentityAppearance(
+                  {
+                    selfName: agent.self_name,
+                    visual: agent.visual,
+                    genome: agent.genome,
+                    config: agent.config,
+                    selfModel: agent.self_model,
+                    genLevel: agent.gen_level ?? 1,
+                    vitality: agent.vitality ?? 1,
+                    mood: agent.mood ?? null,
+                  },
+                  locale,
+                );
+                return (
+                  <div key={agent.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 p-3">
+                    <IdentityPresence appearance={friendAppearance} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white">{agent.self_name || t("adoptPage.nameless")}</p>
+                      <p className="text-xs text-white/55">
+                        Gen {agent.gen_level ?? 1} · {t("socialPage.memories")} {agent.memory_count}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400/60" />
+                      <span className="text-xs text-white/45">{t("social.online")}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl bg-black/25 p-6 text-center text-sm text-white/50">
+              {t("social.noFriends")}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* DM tab */}
+      {activeTab === "dm" && (
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.dmTab")}</p>
+          <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
+          <div className="mt-4 rounded-2xl bg-black/25 p-6 text-center text-sm text-white/50">
+            {t("social.noMessages")}
+          </div>
+        </section>
+      )}
+
+      {/* Feed tab (existing content) */}
+      {activeTab === "feed" && (<>
       <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -602,6 +687,7 @@ export default function SocialPage() {
           />
         )}
       </div>
+      </>)}
       </div>
       <BottomNav />
     </div>

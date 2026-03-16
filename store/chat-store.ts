@@ -34,7 +34,8 @@ interface Message { role: "user" | "assistant"; content: string; error?: boolean
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
-  source?: "input" | "prompt" | "cta";
+  source?: "input" | "prompt" | "cta" | "voice";
+  locale?: string;
 };
 type ChatSetter = (
   partial: ChatStore | Partial<ChatStore> | ((state: ChatStore) => ChatStore | Partial<ChatStore>),
@@ -44,6 +45,7 @@ interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
   pendingUsageMode: string | null;
+  lastLocale: string | undefined;
   lastReward: RewardResult | null;
   rewardInventory: RewardInventory;
   rewardProgress: RewardProgress;
@@ -64,10 +66,11 @@ function persistRewardState(inventory: RewardInventory, messagesSinceReward: num
 async function handleStreamResponse(
   message: string,
   set: (partial: ChatStore | Partial<ChatStore> | ((state: ChatStore) => ChatStore | Partial<ChatStore>), replace?: boolean) => void,
-  get: () => ChatStore
+  get: () => ChatStore,
+  locale?: string
 ) {
   try {
-    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, locale }) });
     if (!res.ok) throw new Error(`${res.status}`);
 
     const reader = res.body?.getReader();
@@ -137,7 +140,8 @@ async function handleStreamResponse(
       });
 
       if (reward.tier !== "none") {
-        const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+        const freshInventory = readRewardInventory();
+        const nextInventory = applyRewardToInventory(freshInventory, reward);
         persistRewardState(nextInventory, 0);
         set({
           lastReward: reward,
@@ -155,7 +159,9 @@ async function handleStreamResponse(
           playSound("receive");
         }
       } else {
-        persistRewardState(get().rewardInventory, nextMessagesSinceReward);
+        const freshInvForPersist = readRewardInventory();
+        persistRewardState(freshInvForPersist, nextMessagesSinceReward);
+        set({ rewardInventory: freshInvForPersist });
         set({ rewardProgress: guaranteedProgress });
         haptic("receive");
         playSound("receive");
@@ -163,7 +169,8 @@ async function handleStreamResponse(
 
       if (get().pendingWeeklyEventCompletion) {
         const weeklyReward = createWeeklyEventReward(streakDays);
-        const nextInventory = applyRewardToInventory(get().rewardInventory, weeklyReward);
+        const freshWeeklyInv = readRewardInventory();
+        const nextInventory = applyRewardToInventory(freshWeeklyInv, weeklyReward);
         writeRewardInventory(nextInventory);
         set({
           lastReward: weeklyReward,
@@ -182,6 +189,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   isStreaming: false,
   pendingUsageMode: null,
+  lastLocale: undefined,
   lastReward: null,
   rewardInventory: readRewardInventory(),
   rewardProgress: getRewardProgress(readMessagesSinceReward(), 0),
@@ -193,7 +201,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     if (hasClaimedDailyLoginBonus()) return;
 
     const reward = createDailyLoginReward(streakDays);
-    const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+    const freshInventory = readRewardInventory();
+    const nextInventory = applyRewardToInventory(freshInventory, reward);
     writeRewardInventory(nextInventory);
     markDailyLoginBonusClaimed();
 
@@ -206,7 +215,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     haptic("receive");
     playSound("receive");
   },
-  sendMessage: async (message: string, meta) => {
+  sendMessage: async (message: string, meta?: MessageMeta) => {
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;
     const persistedMessages =
@@ -252,7 +261,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
     set((s) => ({ messages: [...s.messages, { role: "assistant" as const, content: "" }] }));
 
-    await handleStreamResponse(message, set as ChatSetter, get);
+    set({ lastLocale: meta?.locale });
+    await handleStreamResponse(message, set as ChatSetter, get, meta?.locale);
   },
   retryLastMessage: async () => {
     const s = get();
@@ -266,7 +276,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         msgs[msgs.length - 1] = { role: "assistant", content: "" };
         return { messages: msgs, isStreaming: true };
       });
-      await handleStreamResponse(lastUserMsg.content, set as ChatSetter, get);
+      await handleStreamResponse(lastUserMsg.content, set as ChatSetter, get, get().lastLocale);
     }
   }
 }));
