@@ -266,7 +266,10 @@ export default function Home() {
           enableThree={!performanceMinimal && conversationStarted}
         />
       </div>
-      <WorldClassHub />
+      {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
+      <div className="relative z-20">
+        <WorldClassHub />
+      </div>
 
       <ChatPanel navVisible={conversationStarted} />
       <Soundscape

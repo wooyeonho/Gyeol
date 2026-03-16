@@ -65,7 +65,7 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {messages.map((m, i) => (
         <motion.div
-          key={`${m.role}-${i}-${m.content.slice(0, 20)}`}
+          key={`${m.role}-${i}`}
           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           variants={messageVariants}
           initial="hidden"

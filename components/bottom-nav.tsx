@@ -1,12 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { haptic } from "@/lib/micro-interactions";
 
-function NavIcon({ name }: { name: "chat" | "discover" | "profile" }) {
+function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
   const common = "h-5 w-5";
   switch (name) {
     case "chat":
@@ -24,11 +27,11 @@ function NavIcon({ name }: { name: "chat" | "discover" | "profile" }) {
           <rect x="13" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
-    case "profile":
+    case "settings":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 20a7 7 0 0 1 14 0" />
+          <circle cx="12" cy="12" r="3.5" />
+          <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.6a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0l-1.2-1.2a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1 1 0 0 1-1-1v-1.6a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.6a1 1 0 0 1 1 1v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.6Z" opacity=".35" />
         </svg>
       );
   }
@@ -37,7 +40,7 @@ function NavIcon({ name }: { name: "chat" | "discover" | "profile" }) {
 const TABS = [
   { path: "/", labelKey: "nav.chat", icon: "chat" as const },
   { path: "/discover", labelKey: "nav.discover", icon: "discover" as const },
-  { path: "/settings", labelKey: "nav.profile", icon: "profile" as const },
+  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
 ];
 
 const DISCOVER_PATHS = new Set([
@@ -84,34 +87,48 @@ export function BottomNav() {
     locale
   );
 
+  const activeIndex = useMemo(() => {
+    return TABS.findIndex((tab) => isTabActive(pathname, tab.path));
+  }, [pathname]);
+
   return (
     <nav
-      className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
+      className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       style={{ borderColor: `${appearance.palette.primary}25` }}
     >
-      <div className="mx-auto flex max-w-md justify-around px-3 py-2">
+      <div className="relative mx-auto flex max-w-md justify-around px-3 py-2">
+        {/* Animated active pill indicator */}
+        {activeIndex >= 0 && (
+          <motion.div
+            className="absolute top-2 h-[calc(100%-1rem)] rounded-2xl"
+            style={{
+              background: `${appearance.palette.primary}15`,
+              boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset, 0 0 20px ${appearance.palette.primary}08`,
+              width: `${100 / TABS.length}%`,
+            }}
+            animate={{ left: `${(activeIndex / TABS.length) * 100}%` }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          />
+        )}
         {TABS.map((tab) => {
           const isActive = isTabActive(pathname, tab.path);
           return (
             <Link
               key={tab.path}
               href={tab.path}
+              onClick={() => haptic("tap")}
               aria-label={t(tab.labelKey)}
-              className="flex min-h-14 min-w-[96px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              style={
-                isActive
-                  ? {
-                      color: "var(--foreground)",
-                      background: `${appearance.palette.primary}18`,
-                      boxShadow: `0 0 0 1px ${appearance.palette.primary}22 inset`,
-                    }
-                  : { color: "var(--theme-text-subtle)" }
-              }
+              className="relative z-10 flex min-h-14 min-w-[96px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              style={{ color: isActive ? "var(--foreground)" : "var(--theme-text-subtle)" }}
             >
-              <span aria-hidden="true">
+              <motion.span
+                aria-hidden="true"
+                animate={{ scale: isActive ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              >
                 <NavIcon name={tab.icon} />
-              </span>
-              <span className="text-sm font-medium">{t(tab.labelKey)}</span>
+              </motion.span>
+              <span className={`text-xs font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-60"}`}>{t(tab.labelKey)}</span>
             </Link>
           );
         })}

@@ -65,8 +65,6 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     locale
   );
 
-  const pendingAutoSpeakRef = useRef(false);
-
   const { speak, stop, isPlaying } = useTTS({
     pitch: appearance.voice.pitch,
     speed: appearance.voice.speed,
@@ -81,26 +79,12 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
       const { isStreaming: currentlyStreaming } = useChatStore.getState();
       if (currentlyStreaming) return;
       setInput(text);
-      // Auto-send voice transcription
-      sendMessage(text, { source: "voice", locale });
-      setInput("");
-      pendingAutoSpeakRef.current = true;
     },
   });
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Auto-speak last assistant message when in voice mode
-  useEffect(() => {
-    if (!pendingAutoSpeakRef.current || isStreaming) return;
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.role === "assistant" && lastMsg.content) {
-      speak(lastMsg.content);
-      pendingAutoSpeakRef.current = false;
-    }
-  }, [isStreaming, messages, speak]);
+    bottomRef.current?.scrollIntoView({ behavior: isStreaming ? "auto" : "smooth", block: "end" });
+  }, [isStreaming, messages]);
 
   const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
@@ -121,9 +105,9 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   };
 
   return (
-    <div className={`fixed inset-0 z-10 px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
+    <div className={`pointer-events-none fixed inset-0 z-10 px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
       <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col pt-20">
-        <div className="min-h-0 flex-1">
+        <div className="pointer-events-auto min-h-0 flex-1 overflow-hidden">
           <MessageList
             messages={messages}
             isStreaming={isStreaming}
@@ -148,7 +132,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
           />
         </div>
 
-        <div className="shrink-0 pt-3">
+        <div className="pointer-events-auto shrink-0 pt-3">
           <MessageInput
             input={input}
             setInput={setInput}

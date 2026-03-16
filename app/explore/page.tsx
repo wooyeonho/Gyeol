@@ -8,6 +8,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import { BottomNav } from "@/components/bottom-nav";
 
 type Agent = {
   id: string;
@@ -162,12 +163,16 @@ export default function ExplorePage() {
           accentColor="#38bdf8"
         />
       )}
-      <div className="mt-8 text-center">
-        <Link href="/signup" className="inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-black hover:bg-white/90">
-          {t("explore.growMine")}
+      <div className="mt-8 flex flex-wrap justify-center gap-3 text-center">
+        <Link href="/adopt" className="inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-black hover:bg-white/90">
+          {t("adoptPage.title")}
+        </Link>
+        <Link href="/social" className="inline-block rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-white hover:bg-white/10">
+          {t("socialPage.title")}
         </Link>
       </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

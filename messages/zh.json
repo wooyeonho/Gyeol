@@ -12,7 +12,9 @@
     "connectionFailedBody": "无法连接到服务器，请稍后再试。",
     "retry": "重试",
     "and": "和",
-    "backToHome": "返回首页"
+    "backToHome": "返回首页",
+    "close": "关闭",
+    "openMenu": "打开菜单"
   },
   "locale": {
     "label": "语言",
@@ -228,6 +230,7 @@
     "weatherLabel": "Weather",
     "sessionMessagesLabel": "{count} messages",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
+    "streakDaysShort": "{count}天连续",
     "streakAndNext": "Streak and next step",
     "rewardLoop": "Reward loop",
     "rewardGuaranteed": "Your next message is guaranteed to drop a reward.",

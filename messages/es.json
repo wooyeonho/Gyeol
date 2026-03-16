@@ -12,7 +12,9 @@
     "connectionFailedBody": "No se pudo conectar al servidor. Inténtalo de nuevo más tarde.",
     "retry": "Reintentar",
     "and": "y",
-    "backToHome": "Volver al inicio"
+    "backToHome": "Volver al inicio",
+    "close": "Cerrar",
+    "openMenu": "Abrir menú"
   },
   "locale": {
     "label": "Idioma",
@@ -228,6 +230,7 @@
     "weatherLabel": "Weather",
     "sessionMessagesLabel": "{count} messages",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
+    "streakDaysShort": "{count}d racha",
     "streakAndNext": "Streak and next step",
     "rewardLoop": "Reward loop",
     "rewardGuaranteed": "Your next message is guaranteed to drop a reward.",

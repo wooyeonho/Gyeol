@@ -55,7 +55,7 @@ export function MessageInput({
   onVoiceToggle: () => void;
   t: (key: string) => string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isStreaming && inputRef.current) {
@@ -63,12 +63,19 @@ export function MessageInput({
     }
   }, [isStreaming]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmitWithFeedback(e);
     }
   };
+
+  useEffect(() => {
+    const element = inputRef.current;
+    if (!element) return;
+    element.style.height = "0px";
+    element.style.height = `${Math.min(element.scrollHeight, 180)}px`;
+  }, [input]);
 
   const handleSubmitWithFeedback = (e: React.FormEvent | React.KeyboardEvent) => {
     if (!input.trim() || isStreaming) {
@@ -101,7 +108,7 @@ export function MessageInput({
           <span className="text-xs text-white/50">{t("voice.transcribing")}</span>
         </div>
       )}
-      <form onSubmit={handleSubmitWithFeedback} className="flex gap-2">
+      <form onSubmit={handleSubmitWithFeedback} className="flex items-end gap-2">
         <label htmlFor="chat-input" className="sr-only">
           {t("chat.inputLabel")}
         </label>
@@ -132,16 +139,16 @@ export function MessageInput({
           )}
         </motion.button>
 
-        <input
+        <textarea
           id="chat-input"
           ref={inputRef}
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? t("voice.listeningPlaceholder") : placeholder}
           disabled={isStreaming || isRecording}
-          className="min-h-12 flex-1 rounded-2xl bg-white/8 px-4 py-3 text-base text-white placeholder-white/72 transition-all focus:outline-none focus:ring-2 disabled:opacity-50"
+          rows={1}
+          className="min-h-12 max-h-[180px] flex-1 resize-none overflow-y-auto rounded-2xl bg-white/8 px-4 py-3 text-base leading-6 text-white placeholder-white/72 transition-all focus:outline-none focus:ring-2 disabled:opacity-50"
           style={{
             boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset`,
             border: `1px solid transparent`,

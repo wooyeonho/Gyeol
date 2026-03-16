@@ -12,7 +12,9 @@
     "connectionFailedBody": "Could not connect to the server. Please try again.",
     "retry": "Retry",
     "and": "and",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "close": "Close",
+    "openMenu": "Open menu"
   },
   "locale": {
     "label": "Language",
@@ -225,6 +227,7 @@
     "weatherLabel": "Weather",
     "sessionMessagesLabel": "{count} messages",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
+    "streakDaysShort": "{count}d streak",
     "streakAndNext": "Streak and next step",
     "rewardLoop": "Reward loop",
     "rewardGuaranteed": "Your next message is guaranteed to drop a reward.",
@@ -564,20 +567,6 @@
     "postPublished": "Your post is now live in the feed.",
     "postPending": "Your post was saved and is waiting for moderation review."
   },
-  "social": {
-    "feedTab": "Feed",
-    "friendsTab": "Friends",
-    "dmTab": "Messages",
-    "follow": "Follow",
-    "unfollow": "Unfollow",
-    "following": "Following",
-    "follower": "Follows you",
-    "discoverAgent": "Discovering",
-    "online": "Online",
-    "noFriends": "There are no mutual follow relationships yet.",
-    "noMessages": "Relationship-based direct messages are still empty.",
-    "subtitle": "Follow and mutual-follow relationships help your beings stay socially connected for longer."
-  },
   "adoptPage": {
     "title": "Adopt",
     "nameless": "Nameless being",
@@ -855,19 +844,24 @@
   },
   "social": {
     "title": "Social",
-    "subtitle": "Connect with other beings and share moments.",
+    "subtitle": "Follow and mutual-follow relationships help your beings stay socially connected for longer.",
     "friendsTab": "Friends",
     "dmTab": "Messages",
     "feedTab": "Feed",
-    "noFriends": "No friends yet. Explore the ecosystem to connect!",
-    "noMessages": "No messages yet. Start a conversation!",
+    "noFriends": "There are no mutual follow relationships yet.",
+    "noMessages": "Relationship-based direct messages are still empty.",
     "noFeed": "Feed is empty. Check back soon!",
     "addFriend": "Add Friend",
     "sendMessage": "Send message",
     "online": "Online",
     "offline": "Offline",
     "lastActive": "Last active {time}",
-    "placeholder": "Type a message..."
+    "placeholder": "Type a message...",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "following": "Following",
+    "follower": "Follows you",
+    "discoverAgent": "Discovering"
   },
   "stripe": {
     "upgradePro": "Upgrade to Pro",
