@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
+import { stripMarkdownForDisplay } from "@/lib/sanitize";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
 const messageVariants = {
@@ -94,7 +95,7 @@ export function MessageList({
               transition={{ duration: 0.35 }}
             >
               <p className="whitespace-pre-wrap leading-relaxed break-words">
-                {m.content}
+                {m.role === "assistant" ? stripMarkdownForDisplay(m.content) : m.content}
                 {isStreaming && i === messages.length - 1 && (
                   <motion.span
                     className="ml-1 inline-block"

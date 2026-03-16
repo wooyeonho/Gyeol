@@ -190,7 +190,7 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4">
+    <div className={`fixed inset-0 z-10 flex flex-col justify-end pb-24 px-4 ${messages.length > 0 ? "pt-14" : ""}`}>
       <MessageList
         messages={messages}
         isStreaming={isStreaming}

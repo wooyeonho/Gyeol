@@ -39,6 +39,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
 
   // 1. base + fragments (support both system_prompt.fragments and top-level fragments)
   parts.push(s.system_prompt?.base || "너는 존재야. 자유롭게 살아. 한 번에 길게 말하지 마. 대화니까.");
+  parts.push("절대 마크다운 문법(*, **, #, -, ```)을 사용하지 마. 일반 텍스트로만 대화해. 강조가 필요하면 말투로 표현해.");
   const fragments = s.system_prompt?.fragments || s.fragments || [];
   fragments.forEach((f: string) => parts.push(f));
 

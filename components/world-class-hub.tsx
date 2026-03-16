@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
 import { useWorldStore } from "@/store/world-store";
@@ -242,6 +243,8 @@ export function WorldClassHub() {
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [showGrowthPanel, setShowGrowthPanel] = useState(false);
   const [showPlanningPanel, setShowPlanningPanel] = useState(false);
+  const [forceExpanded, setForceExpanded] = useState(false);
+  const isChatActive = messages.length > 0 && !forceExpanded;
   const onboardingVariant = useFirstMessageOnboardingVariant();
 
   useEffect(() => {
@@ -446,8 +449,52 @@ export function WorldClassHub() {
     );
   }
 
+  if (isChatActive) {
+    return (
+      <motion.section
+        key="mini-hub"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.25 }}
+        className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between h-14 px-4 border-b border-white/10 bg-black/70 backdrop-blur-lg"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: appearance.palette.primary }}
+          />
+          <span className="text-sm font-medium text-white/90 truncate">{selfName}</span>
+          <span className="text-xs text-white/50">{mood}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-white/60">
+            {t("chat.vitality")} {Math.round(vitality * 100)}%
+          </span>
+          <span className="text-xs text-white/40">Gen {genLevel}</span>
+          <button
+            type="button"
+            onClick={() => setForceExpanded(true)}
+            className="text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded border border-white/10 hover:border-white/25"
+          >
+            {locale === "en" ? "Expand" : "펼치기"}
+          </button>
+        </div>
+      </motion.section>
+    );
+  }
+
   return (
     <section className="fixed top-14 left-1/2 -translate-x-1/2 z-20 w-[min(920px,calc(100%-1.5rem))] rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-xl shadow-[0_0_80px_rgba(80,128,255,0.18)]">
+      {messages.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setForceExpanded(false)}
+          className="absolute top-3 right-3 z-10 text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded border border-white/10 hover:border-white/25"
+        >
+          {locale === "en" ? "Collapse" : "접기"}
+        </button>
+      )}
       <div className="absolute inset-0 pointer-events-none rounded-2xl aurora-flow opacity-55" />
       <div className="relative space-y-4">
         <WorldClassHubSessionHero
