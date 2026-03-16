@@ -6,7 +6,7 @@ import { type RewardResult } from "@/lib/rewards/variable-reward";
 
 type RewardToastProps = {
   reward: RewardResult | null;
-  locale: "ko" | "en";
+  locale: string;
   onDismiss: () => void;
 };
 

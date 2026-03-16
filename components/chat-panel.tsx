@@ -11,7 +11,7 @@ import { useTTS } from "@/hooks/use-tts";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
 
-function getFirstSessionVariants(locale: "ko" | "en") {
+function getFirstSessionVariants(locale: string) {
   if (locale === "en") {
     return {
       playful: {
@@ -104,7 +104,7 @@ function getFirstSessionVariants(locale: "ko" | "en") {
   } as const;
 }
 
-function getReturningPrompts(locale: "ko" | "en") {
+function getReturningPrompts(locale: string) {
   return locale === "en"
     ? [
         "Tell me the one thing I should focus on today.",
@@ -119,7 +119,7 @@ function getReturningPrompts(locale: "ko" | "en") {
 }
 
 function resolveFirstSessionVariant(
-  locale: "ko" | "en",
+  locale: string,
   variant: string
 ) {
   const variants = getFirstSessionVariants(locale);

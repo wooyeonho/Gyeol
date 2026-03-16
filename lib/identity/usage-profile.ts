@@ -135,8 +135,8 @@ export function updateUsageProfile(
   };
 }
 
-export function getUsageModeLabel(mode: UsageMode, locale: "ko" | "en") {
-  const labels: Record<UsageMode, { ko: string; en: string }> = {
+export function getUsageModeLabel(mode: UsageMode, locale: string) {
+  const labels: Record<UsageMode, Record<string, string>> = {
     playful: { ko: "장난형", en: "playful" },
     intimate: { ko: "친밀형", en: "intimate" },
     strategic: { ko: "전략형", en: "strategic" },
@@ -148,8 +148,8 @@ export function getUsageModeLabel(mode: UsageMode, locale: "ko" | "en") {
   return labels[mode][locale];
 }
 
-export function getUsageModeNarrative(mode: UsageMode, locale: "ko" | "en") {
-  const messages: Record<UsageMode, { ko: string; en: string }> = {
+export function getUsageModeNarrative(mode: UsageMode, locale: string) {
+  const messages: Record<UsageMode, Record<string, string>> = {
     playful: {
       ko: "장난과 애착이 많은 사용이 형상을 더 귀엽고 생명체답게 밀어주고 있습니다.",
       en: "Playful and affectionate use is pushing the form toward something softer and more creature-like.",

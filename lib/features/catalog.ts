@@ -11,14 +11,8 @@ export type FeatureItem = {
 };
 
 type FeatureCatalogEntry = Omit<FeatureItem, "name" | "summary"> & {
-  name: {
-    ko: string;
-    en: string;
-  };
-  summary: {
-    ko: string;
-    en: string;
-  };
+  name: Record<string, string>;
+  summary: Record<string, string>;
 };
 
 const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
@@ -220,7 +214,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
   },
 ];
 
-export function getLocalizedFeatureCatalog(locale: "ko" | "en"): FeatureItem[] {
+export function getLocalizedFeatureCatalog(locale: string): FeatureItem[] {
   return FEATURE_CATALOG_BASE.map((item) => ({
     id: item.id,
     name: item.name[locale],

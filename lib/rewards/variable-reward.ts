@@ -11,13 +11,13 @@ export type RewardTier = "none" | "small" | "medium" | "large" | "jackpot";
 
 export type RewardResult = {
   tier: RewardTier;
-  label: { ko: string; en: string };
+  label: Record<string, string>;
   coins: number;
   /** Visual emoji shown in toast */
   icon: string;
 };
 
-type RewardTableEntry = { tier: RewardTier; weight: number; coins: number; icon: string; label: { ko: string; en: string } };
+type RewardTableEntry = { tier: RewardTier; weight: number; coins: number; icon: string; label: Record<string, string> };
 
 const REWARD_TABLE: RewardTableEntry[] = [
   { tier: "none", weight: 40, coins: 0, icon: "", label: { ko: "", en: "" } },

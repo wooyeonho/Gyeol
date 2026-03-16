@@ -9,7 +9,7 @@ export type EntitlementKey =
   | "premium_generation"
   | "priority_beta";
 
-type LocalizedCopy = Record<Locale, string>;
+type LocalizedCopy = Record<string, string>;
 
 type PlanCatalogEntry = {
   badge?: Partial<Record<Locale, string>>;

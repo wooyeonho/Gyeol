@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n/config";
 
 type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
 
-const MILESTONE_LABELS: Record<Locale, Record<string, string>> = {
+const MILESTONE_LABELS: Partial<Record<Locale, Record<string, string>>> = {
   ko: {
     first_chat: "첫 대화",
     evolution: "진화",
@@ -26,7 +26,7 @@ const MILESTONE_LABELS: Record<Locale, Record<string, string>> = {
   },
 };
 
-const DEFAULT_SELF_NAME: Record<Locale, string> = {
+const DEFAULT_SELF_NAME: Partial<Record<Locale, string>> = {
   ko: "결",
   en: "Gyeol",
 };
@@ -63,7 +63,7 @@ export async function loadShareCardData(
     db.from("autonomous_logs").select("action_type, summary, created_at").eq("agent_id", agentId).order("created_at", { ascending: true }),
   ]);
 
-  const localizedLabels = MILESTONE_LABELS[locale];
+  const localizedLabels = MILESTONE_LABELS[locale] ?? MILESTONE_LABELS["en"]!;
   const milestones: { type: string; label: string; at: string; summary?: string }[] = [];
 
   if ((firstChat as { created_at?: string } | null)?.created_at) {
@@ -109,7 +109,7 @@ export async function loadShareCardData(
   const weekMessages = (weekChats ?? []).filter((row: { role?: string }) => row.role === "user").length;
 
   return {
-    self_name: stateData?.self_name ?? DEFAULT_SELF_NAME[locale],
+    self_name: stateData?.self_name ?? DEFAULT_SELF_NAME[locale] ?? DEFAULT_SELF_NAME["en"] ?? "Gyeol",
     visual: stateData?.visual ?? null,
     total_messages: stateData?.total_messages ?? 0,
     vitality: stateData?.vitality ?? 1,

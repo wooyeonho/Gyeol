@@ -9,7 +9,7 @@ export type RarityTier = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 export type RarityMeta = {
   tier: RarityTier;
-  label: { ko: string; en: string };
+  label: Record<string, string>;
   color: string;
   glow: string;
 };

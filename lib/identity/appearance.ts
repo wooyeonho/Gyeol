@@ -1,4 +1,4 @@
-type Locale = "ko" | "en";
+import type { Locale } from "@/lib/i18n/config";
 
 type VisualInput = {
   color?: string | null;
@@ -142,7 +142,7 @@ const USAGE_MODES: UsageMode[] = [
   "creative",
 ];
 
-const AXIS_LABELS: Record<ManifestationAxis, Record<Locale, string>> = {
+const AXIS_LABELS: Record<ManifestationAxis, Record<string, string>> = {
   coherence: { ko: "응집", en: "coherent" },
   warmth: { ko: "온기", en: "warm" },
   ferality: { ko: "야성", en: "untamed" },
@@ -153,7 +153,7 @@ const AXIS_LABELS: Record<ManifestationAxis, Record<Locale, string>> = {
   growth: { ko: "생장", en: "growing" },
 };
 
-const AXIS_NARRATIVES: Record<ManifestationAxis, Record<Locale, string>> = {
+const AXIS_NARRATIVES: Record<ManifestationAxis, Record<string, string>> = {
   coherence: {
     ko: "형체가 더 응집되고 또렷해지고 있습니다.",
     en: "Its form is becoming more coherent and sharply held together.",
@@ -188,7 +188,7 @@ const AXIS_NARRATIVES: Record<ManifestationAxis, Record<Locale, string>> = {
   },
 };
 
-const MODE_LABELS: Record<UsageMode, Record<Locale, string>> = {
+const MODE_LABELS: Record<UsageMode, Record<string, string>> = {
   playful: { ko: "장난이 많은 관계", en: "playful relation" },
   intimate: { ko: "친밀한 관계", en: "intimate relation" },
   strategic: { ko: "정리하는 관계", en: "strategic relation" },
@@ -383,7 +383,7 @@ function getUsageModeLabel(mode: UsageMode | null | undefined, locale: Locale) {
 
 function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Locale) {
   if (!mode) return null;
-  const mapping: Record<UsageMode, Record<Locale, string>> = {
+  const mapping: Record<UsageMode, Record<string, string>> = {
     playful: {
       ko: "가볍고 친근한 상호작용이 이 존재를 더 말랑하고 유연한 방향으로 밀고 있습니다.",
       en: "Playful interaction is making this presence softer and more flexible.",
