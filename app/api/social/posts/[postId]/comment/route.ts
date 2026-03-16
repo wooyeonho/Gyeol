@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { moderateSocialContent } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
+import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 
 export async function POST(
   req: NextRequest,
@@ -65,6 +66,8 @@ export async function POST(
       })
       .select("id, content, moderation_status, created_at")
       .single();
+
+    clearTtlCacheByPrefix("social:");
 
     return NextResponse.json({
       ok: true,

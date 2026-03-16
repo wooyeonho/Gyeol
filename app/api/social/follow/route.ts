@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: "follower_agent_id,followee_agent_id" },
     );
+    clearTtlCacheByPrefix("social:");
+    clearTtlCacheByPrefix("leaderboard:");
 
     return NextResponse.json({ ok: true, following: true, target_agent_id: targetAgentId });
   } catch (error) {
@@ -62,6 +65,8 @@ export async function DELETE(req: NextRequest) {
       .delete()
       .eq("follower_agent_id", agentId)
       .eq("followee_agent_id", targetAgentId);
+    clearTtlCacheByPrefix("social:");
+    clearTtlCacheByPrefix("leaderboard:");
 
     return NextResponse.json({ ok: true, following: false, target_agent_id: targetAgentId });
   } catch (error) {

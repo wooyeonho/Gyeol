@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 
 const REPORT_THRESHOLD_FOR_PENDING = 3;
 
@@ -59,6 +60,7 @@ export async function POST(
         .update({ moderation_status: "pending" })
         .eq("id", postId);
     }
+    clearTtlCacheByPrefix("social:");
 
     return NextResponse.json({
       ok: true,

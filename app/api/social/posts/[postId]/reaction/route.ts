@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
+import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 
 const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
 
@@ -62,6 +63,7 @@ export async function POST(
       existingReaction && existingReaction.reaction_type === reactionType ? existingReaction : null;
     if (matchingReaction?.id) {
       await service.from("social_reactions").delete().eq("id", matchingReaction.id);
+      clearTtlCacheByPrefix("social:");
       return NextResponse.json({ ok: true, active: false, reaction_type: null });
     }
 
@@ -73,6 +75,7 @@ export async function POST(
       },
       { onConflict: "post_id,agent_id" },
     );
+    clearTtlCacheByPrefix("social:");
 
     return NextResponse.json({ ok: true, active: true, reaction_type: reactionType });
   } catch (error) {

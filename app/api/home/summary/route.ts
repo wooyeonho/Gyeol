@@ -7,6 +7,7 @@ import { buildTaskNextAction, sortResearchTasks } from "@/lib/goals/task-utils";
 import { getDemoHomeSummary } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveLocale } from "@/lib/i18n/config";
+import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 
 type SummaryItem = {
   id: string;
@@ -99,6 +100,12 @@ export async function GET(request?: Request) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const cacheKey = `home-summary:${user.id}`;
+    const cached = getTtlCache<Record<string, unknown>>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -266,7 +273,7 @@ export async function GET(request?: Request) {
     } | null;
     const config = state?.config ?? {};
 
-    return NextResponse.json({
+    const payload = {
       recent_items: recentItems,
       recap: {
         goal_loop: {
@@ -326,7 +333,9 @@ export async function GET(request?: Request) {
         total_messages: state?.total_messages ?? 0,
         vitality: state?.vitality ?? 1,
       },
-    });
+    };
+    setTtlCache(cacheKey, payload, 20_000);
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("GET /api/home/summary error", error);
     if (isMissingEnvError(error)) {

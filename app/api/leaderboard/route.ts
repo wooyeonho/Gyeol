@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 
 export type LeaderboardEntry = {
   rank: number;
@@ -93,6 +94,11 @@ export async function GET() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    const cacheKey = `leaderboard:${user?.id ?? "guest"}`;
+    const cached = getTtlCache<LeaderboardResponse>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const service = createServiceClient();
     const selfAgentId = user ? (await ensurePrimaryAgent(service, user.id)).agentId : null;
@@ -152,6 +158,7 @@ export async function GET() {
       },
     };
 
+    setTtlCache(cacheKey, response, 20_000);
     return NextResponse.json(response);
   } catch (e) {
     console.error("GET /api/leaderboard error", e);

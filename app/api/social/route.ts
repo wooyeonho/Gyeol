@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 
 type AgentSnapshot = {
   agent_id: string;
@@ -91,6 +92,12 @@ export async function GET() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const cacheKey = `social:${user.id}`;
+    const cached = getTtlCache<Record<string, unknown>>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const service = createServiceClient();
     const { agentId: myAgentId } = await ensurePrimaryAgent(service, user.id);
@@ -358,14 +365,16 @@ export async function GET() {
       mood?: string | null;
     } | null;
 
-    return NextResponse.json({
+    const payload = {
       socialLogs,
       socialPosts,
       breedingRecords,
       otherAgents,
       giftExchanges,
       selfAgent: serializeSelfAgent(selfState),
-    });
+    };
+    setTtlCache(cacheKey, payload, 15_000);
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("GET /api/social error", error);
     if (isMissingEnvError(error)) {

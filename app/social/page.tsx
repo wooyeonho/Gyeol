@@ -171,6 +171,11 @@ export default function SocialPage() {
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
   const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
   const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
+  const socialStats = [
+    { label: t("social.feedTab"), value: visiblePosts.length },
+    { label: t("social.friendsTab"), value: mutualAgents.length },
+    { label: t("socialPage.encounteredForms"), value: otherAgents.length },
+  ];
 
   function hidePost(postId: string) {
     setHiddenPostIds((prev) => {
@@ -369,6 +374,13 @@ export default function SocialPage() {
                 >
                   {chip}
                 </span>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {socialStats.map((item) => (
+                <div key={item.label} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/72">
+                  <span className="text-white/42">{item.label}</span> · <span className="font-medium text-white">{item.value}</span>
+                </div>
               ))}
             </div>
           </div>

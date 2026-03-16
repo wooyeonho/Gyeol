@@ -53,6 +53,13 @@ export default function LeaderboardPage() {
     { key: "messages", label: t("leaderboard.tabMessages") },
     { key: "vitality", label: t("leaderboard.tabVitality") },
   ];
+  const relationshipStats = useMemo(() => {
+    const source = data?.byLevel ?? [];
+    return {
+      following: source.filter((entry) => entry.is_following).length,
+      mutual: source.filter((entry) => entry.is_mutual).length,
+    };
+  }, [data]);
 
   async function handleShareProfile() {
     try {
@@ -162,6 +169,14 @@ export default function LeaderboardPage() {
             )}
             <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-sm text-fuchsia-100/90">
               {t("leaderboard.top50")}
+            </div>
+            <div className="theme-subpanel inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm">
+              <span className="theme-text-subtle">{t("social.following")}</span>
+              <span className="font-medium text-white">{relationshipStats.following}</span>
+            </div>
+            <div className="theme-subpanel inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm">
+              <span className="theme-text-subtle">{t("social.friendsTab")}</span>
+              <span className="font-medium text-white">{relationshipStats.mutual}</span>
             </div>
           </div>
           {shareNotice && (
