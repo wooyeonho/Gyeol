@@ -19,7 +19,7 @@ const MODELS = [
   { name: "llama-4-maverick-17b-128e-instruct", timeout: 20000 },
 ];
 
-async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 500, temp = 0.9) {
+async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 500, temp = 0.7) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
@@ -84,7 +84,7 @@ export async function generateText(systemPrompt: string, messages: Msg[]): Promi
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
   const maxTokens = opts?.max_tokens ?? 500;
-  const temp = opts?.temperature ?? 0.9;
+  const temp = opts?.temperature ?? 0.7;
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
