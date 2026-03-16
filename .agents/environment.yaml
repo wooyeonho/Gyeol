@@ -1,0 +1,17 @@
+# Gyeol App Environment Configuration
+version: 1
+
+setup:
+  - npm install
+
+maintenance:
+  - npm install
+
+build:
+  - npx next build
+
+dev:
+  - npx next dev -p 3000
+
+lint:
+  - npx next lint
