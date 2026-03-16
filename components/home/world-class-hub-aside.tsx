@@ -77,7 +77,7 @@ function PanelToggle({
 export function WorldClassHubAside({
   formatDate,
   genLevel,
-  locale: _locale,
+  locale,
   missionElements,
   mood,
   newItemsSinceLastVisit,
@@ -94,6 +94,7 @@ export function WorldClassHubAside({
   toggleRecentPanel,
   evolutionHint,
 }: AsideProps) {
+  void locale;
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
