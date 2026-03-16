@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
 import { useAgentStore } from "@/store/agent-store";
 import { useChatStore } from "@/store/chat-store";
@@ -11,6 +12,7 @@ import { StreakDisplay } from "@/components/streak-display";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { haptic } from "@/lib/micro-interactions";
 
 export type HomeSummaryItem = {
   id: string;
@@ -60,6 +62,24 @@ function getGrowthCopy(totalMessages: number, t: (key: string) => string) {
   return t("home.growthMature").replace("{count}", String(totalMessages));
 }
 
+function ChevronIcon({ expanded, className }: { expanded: boolean; className?: string }) {
+  return (
+    <motion.svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      animate={{ rotate: expanded ? 180 : 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+    >
+      <path d="M6 9l6 6 6-6" />
+    </motion.svg>
+  );
+}
+
 export function WorldClassHub() {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
@@ -76,6 +96,16 @@ export function WorldClassHub() {
 
   const [now, setNow] = useState(new Date());
   const [recap, setRecap] = useState<HomeRecap | null>(null);
+  // Start collapsed if messages exist; expand if empty
+  const hasMessages = messages.length > 0;
+  const [expanded, setExpanded] = useState(() => !hasMessages);
+  const [wasEmpty, setWasEmpty] = useState(() => !hasMessages);
+
+  // Collapse once first message arrives (transition from empty → non-empty)
+  if (hasMessages && wasEmpty) {
+    setWasEmpty(false);
+    setExpanded(false);
+  }
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -177,162 +207,214 @@ export function WorldClassHub() {
     ? t("home.firstSessionBody")
     : t("home.returningBody");
 
+  const toggleExpanded = useCallback(() => {
+    haptic("tap");
+    setExpanded((prev) => !prev);
+  }, []);
+
   return (
-    <section className="pointer-events-none fixed left-1/2 top-4 z-20 w-[min(720px,calc(100%-1rem))] -translate-x-1/2">
-      <div className="pointer-events-auto rounded-[2rem] border border-white/15 bg-black/55 p-4 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl">
-      <div className="absolute inset-0 pointer-events-none rounded-[2rem] aurora-flow opacity-45" />
-      <div className="relative space-y-4 rounded-[1.5rem] border border-white/10 bg-black/35 p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
-              {isFirstSession ? t("home.firstMinute") : t("home.todaysStart")}
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-[2rem]">
-              {headerTitle}
-            </h2>
-            <p className="mt-3 text-base leading-7 text-white/82">
-              {headerBody}
-            </p>
-          </div>
-          <div className="min-w-[170px] rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm font-medium text-white">{t("home.currentVitality")}</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{Math.round(vitality * 100)}%</p>
-            <p className="mt-2 text-sm text-white/82">{appearance.title}</p>
-            <p className="mt-1 text-sm text-white/72">{formatHubTime(now, locale)}</p>
-          </div>
-        </div>
+    <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
+      <motion.section
+        className="overflow-hidden rounded-[2rem] border border-white/15 bg-black/55 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl"
+        layout
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="absolute inset-0 pointer-events-none rounded-[2rem] aurora-flow opacity-45" />
 
-        <div className="flex flex-wrap gap-2">
-          <span
-            className="rounded-full border px-3 py-2 text-sm"
-            style={{
-              borderColor: `${appearance.palette.primary}35`,
-              background: `${appearance.palette.primary}14`,
-              color: "rgba(255,255,255,0.9)",
-            }}
-          >
-            {appearance.title}
-          </span>
-          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
-            {`${t("home.weatherLabel")} · ${weather}`}
-          </span>
-          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
-            Gen {genLevel}
-          </span>
-          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85">
-            {t("home.sessionMessagesLabel").replace("{count}", String(sessionMessages))}
-          </span>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm font-medium text-white">{t("home.currentPresence")}</p>
-            <p className="mt-2 text-sm leading-6 text-white/80">
-              {getGrowthCopy(sessionMessages, t)}
-            </p>
-            {isFirstSession ? (
-              <p className="mt-4 text-sm text-white/82">
-                {t("home.firstSessionHint")}
-              </p>
-            ) : (
-              <div className="mt-4 flex flex-wrap gap-3">
-                {quickPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => {
-                      if (!isStreaming) {
-                        void sendMessage(prompt, { source: "prompt", locale });
-                      }
-                    }}
-                    disabled={isStreaming}
-                    className="min-h-12 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-left text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm font-medium text-white">
-              {t("home.streakAndNext")}
-            </p>
-            <div className="mt-4">
-              <StreakDisplay
-                days={streakDays}
-                todayActive={recap?.streak.today_active ?? false}
-                weeklyActivity={weeklyActivity}
-                locale={locale}
+        {/* Collapsed header — always visible */}
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          className="relative flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/40"
+          aria-expanded={expanded}
+          aria-controls="hub-details"
+        >
+          {/* Vitality ring */}
+          <div className="relative flex-shrink-0">
+            <svg width="44" height="44" viewBox="0 0 44 44" className="drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">
+              <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+              <circle
+                cx="22"
+                cy="22"
+                r="19"
+                fill="none"
+                stroke={appearance.palette.primary}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray={`${vitality * 119.38} 119.38`}
+                transform="rotate(-90 22 22)"
+                className="transition-all duration-700"
               />
-            </div>
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {t("home.rewardLoop")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/78">
-                    {rewardProgress.messagesUntilGuaranteed <= 0
-                      ? t("home.rewardGuaranteed")
-                      : t("home.rewardCountdown").replace("{count}", String(rewardProgress.messagesUntilGuaranteed))}
-                  </p>
-                </div>
-                <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100/90">
-                  x{rewardProgress.streakMultiplier}
-                </span>
-              </div>
-              <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/8">
-                <div
-                  className="h-3 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (rewardProgress.messagesSinceReward / rewardProgress.guaranteedEvery) * 100)}%`,
-                    background: `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`,
-                  }}
-                />
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {rewardInventoryRows.length > 0 ? (
-                  rewardInventoryRows.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/85"
-                    >
-                      {item}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-white/70">
-                    {t("home.rewardInventoryEmpty")}
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+              {Math.round(vitality * 100)}
+            </span>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">{headerTitle}</p>
+            <div className="mt-0.5 flex items-center gap-2 text-xs text-white/60">
+              <span>Gen {genLevel}</span>
+              <span className="h-1 w-1 rounded-full bg-white/30" />
+              <span>{weather}</span>
+              <span className="h-1 w-1 rounded-full bg-white/30" />
+              <span>{formatHubTime(now, locale)}</span>
+              {streakDays > 0 && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/30" />
+                  <span className="text-amber-300">
+                    {t("home.streakDaysShort").replace("{count}", String(streakDays))}
                   </span>
-                )}
-              </div>
-            </div>
-            <div className="mt-4">
-              <WeeklyEventCard locale={locale} progress={weeklyEventProgress} compact />
-            </div>
-            <p className="mt-4 text-sm leading-6 text-white/80">
-              {recap?.next_action ?? t("home.discoverHint")}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/discover"
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              >
-                {t("home.openDiscover")}
-              </Link>
-              <Link
-                href="/settings"
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white/88 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              >
-                {t("home.openProfile")}
-              </Link>
+                </>
+              )}
             </div>
           </div>
-        </div>
-      </div>
-      </div>
-    </section>
+
+          <ChevronIcon expanded={expanded} className="h-5 w-5 flex-shrink-0 text-white/50" />
+        </button>
+
+        {/* Expanded details */}
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              id="hub-details"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-4 border-t border-white/10 px-5 pb-5 pt-4">
+                <p className="text-sm leading-6 text-white/82">{headerBody}</p>
+
+                {/* Status pills */}
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className="rounded-full border px-3 py-1.5 text-xs font-medium"
+                    style={{
+                      borderColor: `${appearance.palette.primary}35`,
+                      background: `${appearance.palette.primary}14`,
+                      color: "rgba(255,255,255,0.9)",
+                    }}
+                  >
+                    {appearance.title}
+                  </span>
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85">
+                    {`${t("home.weatherLabel")} \u00b7 ${weather}`}
+                  </span>
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85">
+                    {t("home.sessionMessagesLabel").replace("{count}", String(sessionMessages))}
+                  </span>
+                </div>
+
+                {/* Growth + prompts */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-sm font-medium text-white">{t("home.currentPresence")}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/80">
+                    {getGrowthCopy(sessionMessages, t)}
+                  </p>
+                  {isFirstSession ? (
+                    <p className="mt-3 text-sm text-white/82">
+                      {t("home.firstSessionHint")}
+                    </p>
+                  ) : (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {quickPrompts.map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          onClick={() => {
+                            if (!isStreaming) {
+                              void sendMessage(prompt, { source: "prompt", locale });
+                            }
+                          }}
+                          disabled={isStreaming}
+                          className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-sm text-white/88 transition-all hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Streak + rewards */}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-medium text-white">{t("home.streakAndNext")}</p>
+                    <div className="mt-3">
+                      <StreakDisplay
+                        days={streakDays}
+                        todayActive={recap?.streak.today_active ?? false}
+                        weeklyActivity={weeklyActivity}
+                        locale={locale}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-medium text-white">{t("home.rewardLoop")}</p>
+                    <p className="mt-1 text-xs text-white/65">
+                      {rewardProgress.messagesUntilGuaranteed <= 0
+                        ? t("home.rewardGuaranteed")
+                        : t("home.rewardCountdown").replace("{count}", String(rewardProgress.messagesUntilGuaranteed))}
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/8">
+                        <motion.div
+                          className="h-2 rounded-full"
+                          style={{
+                            background: `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`,
+                          }}
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${Math.min(100, (rewardProgress.messagesSinceReward / rewardProgress.guaranteedEvery) * 100)}%`,
+                          }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                        />
+                      </div>
+                      <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-1 text-xs font-medium text-cyan-100/90">
+                        x{rewardProgress.streakMultiplier}
+                      </span>
+                    </div>
+                    {rewardInventoryRows.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {rewardInventoryRows.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-white/85"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <WeeklyEventCard locale={locale} progress={weeklyEventProgress} compact />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick links */}
+                <div className="flex gap-2">
+                  <Link
+                    href="/discover"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/88 transition-all hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                  >
+                    {t("home.openDiscover")}
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/88 transition-all hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                  >
+                    {t("home.openProfile")}
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.section>
+    </div>
   );
 }
