@@ -76,12 +76,36 @@ type ProductOpsData = {
   };
 };
 
+type SocialOpsData = {
+  checked_at: string;
+  queue: Array<{
+    post_id: string;
+    content: string;
+    topic: string | null;
+    moderation_status: string;
+    visibility: string;
+    created_at: string;
+    report_count: number;
+    latest_reported_at: string;
+    reports: Array<{
+      id: string;
+      reason: string;
+      detail: string | null;
+      status: string;
+      created_at: string;
+      reporter_name: string | null;
+    }>;
+  }>;
+};
+
 export default function OpsPage() {
   const { locale, t } = useTranslations();
   const [data, setData] = useState<OpsData | null>(null);
   const [productData, setProductData] = useState<ProductOpsData | null>(null);
+  const [socialData, setSocialData] = useState<SocialOpsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,11 +126,20 @@ export default function OpsPage() {
         }
         return res.json();
       }),
+      fetch("/api/ops/social").then(async (res) => {
+        if (!res.ok) {
+          if (res.status === 401) throw new Error(t("ops.authRequired"));
+          if (res.status === 403) throw new Error(t("ops.adminOnly"));
+          throw new Error(t("ops.productLoadError"));
+        }
+        return res.json();
+      }),
     ])
-      .then(([readiness, product]) => {
+      .then(([readiness, product, social]) => {
         if (!cancelled) {
           setData(readiness as OpsData);
           setProductData(product as ProductOpsData);
+          setSocialData(social as SocialOpsData);
         }
       })
       .catch((nextError: Error) => {
@@ -120,6 +153,32 @@ export default function OpsPage() {
       cancelled = true;
     };
   }, [t]);
+
+  async function handleModeration(postId: string, action: "approve" | "dismiss" | "block") {
+    setModerationBusyId(postId);
+    try {
+      const res = await fetch("/api/ops/social", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_id: postId, action }),
+      });
+      if (!res.ok) {
+        throw new Error(t("ops.productLoadError"));
+      }
+      setSocialData((prev) =>
+        prev
+          ? {
+              ...prev,
+              queue: prev.queue.filter((item) => item.post_id !== postId),
+            }
+          : prev,
+      );
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : t("ops.productLoadError"));
+    } finally {
+      setModerationBusyId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black text-white pt-16 pb-28 px-4">
@@ -353,6 +412,76 @@ export default function OpsPage() {
                   </div>
                 </section>
               </>
+            )}
+
+            {socialData && (
+              <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-white/50 uppercase tracking-wider">{t("ops.socialModeration")}</p>
+                  <span className="text-xs text-white/40">
+                    {formatLocalizedDateTime(socialData.checked_at, locale)}
+                  </span>
+                </div>
+                {socialData.queue.length === 0 ? (
+                  <p className="text-sm text-emerald-300">{t("ops.noSocialQueue")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {socialData.queue.map((item) => (
+                      <div key={item.post_id} className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-white">{item.topic || t("socialPage.fallbackTopic")}</p>
+                            <p className="mt-1 text-xs text-white/50">
+                              {t("ops.reportCount").replace("{count}", String(item.report_count))} · {formatLocalizedDateTime(item.latest_reported_at, locale)}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-xs text-amber-100/90">
+                            {item.moderation_status}
+                          </span>
+                        </div>
+                        <p className="mt-3 whitespace-pre-wrap text-sm text-white/78">{item.content}</p>
+                        <div className="mt-3 space-y-2">
+                          {item.reports.map((report) => (
+                            <div key={report.id} className="rounded-lg border border-white/10 px-3 py-2 text-sm">
+                              <p className="text-white/82">{report.reason}</p>
+                              {report.detail && <p className="mt-1 text-white/60">{report.detail}</p>}
+                              <p className="mt-1 text-xs text-white/45">
+                                {(report.reporter_name || "unknown")} · {formatLocalizedDateTime(report.created_at, locale)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={moderationBusyId === item.post_id}
+                            onClick={() => void handleModeration(item.post_id, "approve")}
+                            className="rounded-full border border-emerald-300/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 disabled:opacity-50"
+                          >
+                            {t("ops.approvePost")}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={moderationBusyId === item.post_id}
+                            onClick={() => void handleModeration(item.post_id, "dismiss")}
+                            className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/80 disabled:opacity-50"
+                          >
+                            {t("ops.dismissReport")}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={moderationBusyId === item.post_id}
+                            onClick={() => void handleModeration(item.post_id, "block")}
+                            className="rounded-full border border-red-300/25 bg-red-500/10 px-3 py-2 text-sm text-red-200 disabled:opacity-50"
+                          >
+                            {t("ops.blockPost")}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
             <div className="text-center">
               <Link href="/dashboard" className="text-sm text-white/60 hover:text-white/80">

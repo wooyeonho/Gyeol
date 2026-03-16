@@ -444,7 +444,13 @@
     "assigned": "Assigned",
     "topPaths7d": "Top paths (7d)",
     "noPageViews": "No page views have been aggregated yet.",
-    "backDashboard": "Back to dashboard"
+    "backDashboard": "Back to dashboard",
+    "socialModeration": "Social moderation queue",
+    "noSocialQueue": "There are no public social reports waiting for review.",
+    "reportCount": "{count} reports",
+    "approvePost": "Approve",
+    "dismissReport": "Dismiss",
+    "blockPost": "Block"
   },
   "featuresPage": {
     "eyebrow": "GYEOL introduction",

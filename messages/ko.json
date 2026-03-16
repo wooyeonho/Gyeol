@@ -444,7 +444,13 @@
     "assigned": "배정",
     "topPaths7d": "주요 경로 (7일)",
     "noPageViews": "아직 집계된 페이지 뷰가 없습니다.",
-    "backDashboard": "대시보드로 돌아가기"
+    "backDashboard": "대시보드로 돌아가기",
+    "socialModeration": "소셜 moderation 큐",
+    "noSocialQueue": "현재 처리할 공개 소셜 신고가 없습니다.",
+    "reportCount": "신고 {count}건",
+    "approvePost": "승인",
+    "dismissReport": "기각",
+    "blockPost": "차단"
   },
   "featuresPage": {
     "eyebrow": "결 GYEOL 소개",
