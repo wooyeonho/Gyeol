@@ -536,6 +536,15 @@ export default function SettingsPage() {
       onToggle: () => toggleRecapEmail(!state?.channels?.email),
     },
   ];
+  const sectionLinks = [
+    { href: "#settings-language", label: t("settings.languageEyebrow") },
+    { href: "#settings-safety", label: t("settings.ageGateTitle") },
+    { href: "#settings-theme", label: t("settings.themeEyebrow") },
+    { href: "#settings-accessibility", label: t("accessibility.title") },
+    { href: "#settings-plan", label: t("settings.currentPlan") },
+    { href: "#settings-automation", label: t("settings.lifeEngineEyebrow") },
+    { href: "#settings-mission", label: t("settings.todayMission") },
+  ];
 
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
@@ -558,6 +567,21 @@ export default function SettingsPage() {
         </section>
 
         <section className="theme-panel rounded-3xl p-4">
+          <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.quickSections")}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sectionLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="theme-subpanel inline-flex min-h-10 items-center rounded-full px-3 py-2 text-sm theme-text-muted transition-colors hover:brightness-105"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section id="settings-language" className="theme-panel scroll-mt-24 rounded-3xl p-4">
           <div className="mb-3">
             <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.languageEyebrow")}</p>
             <p className="theme-text-subtle mt-1 text-sm">
@@ -567,7 +591,7 @@ export default function SettingsPage() {
           <LocaleSwitcher onLocaleChange={handleLocaleChange} />
         </section>
 
-        <section className="theme-panel rounded-3xl p-5">
+        <section id="settings-safety" className="theme-panel scroll-mt-24 rounded-3xl p-5">
           <div className="mb-4">
             <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.ageGateTitle")}</p>
             <p className="theme-text-subtle mt-1 text-sm">
@@ -608,7 +632,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="theme-panel rounded-3xl p-5">
+        <section id="settings-theme" className="theme-panel scroll-mt-24 rounded-3xl p-5">
           <div className="mb-4">
             <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.themeEyebrow")}</p>
             <p className="theme-text-subtle mt-1 text-sm">
@@ -645,7 +669,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Accessibility */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_0_80px_rgba(168,85,247,0.04)]">
+        <section id="settings-accessibility" className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_0_80px_rgba(168,85,247,0.04)] scroll-mt-24">
           <div className="mb-4">
             <p className="text-[11px] uppercase tracking-[0.24em] text-purple-200/70">{t("accessibility.title")}</p>
             <p className="mt-1 text-sm text-white/60">{t("accessibility.guide")}</p>
@@ -691,7 +715,7 @@ export default function SettingsPage() {
         </section>
 
         {showPlansSurface && (
-          <section className="rounded-3xl border border-cyan-300/20 bg-cyan-400/[0.08] p-5 shadow-[0_0_70px_rgba(34,211,238,0.05)]">
+          <section id="settings-plan" className="rounded-3xl border border-cyan-300/20 bg-cyan-400/[0.08] p-5 shadow-[0_0_70px_rgba(34,211,238,0.05)] scroll-mt-24">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="max-w-2xl">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/75">{t("settings.currentPlan")}</p>
@@ -732,7 +756,7 @@ export default function SettingsPage() {
         )}
 
         {billing && (
-          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 scroll-mt-24">
             <div className="mb-4">
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.entitlements")}</p>
               <p className="mt-1 text-sm text-white/60">
@@ -760,7 +784,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <section id="settings-automation" className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 scroll-mt-24">
           <div className="mb-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.lifeEngineEyebrow")}</p>
             <p className="mt-1 text-sm text-white/60">
@@ -781,7 +805,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <section id="settings-mission" className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 scroll-mt-24">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("settings.todayMission")}</p>
           <p className="mt-1 text-sm text-white/72">
             {t("settings.todayMissionBody")}
