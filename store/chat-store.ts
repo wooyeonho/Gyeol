@@ -34,7 +34,7 @@ interface Message { role: "user" | "assistant"; content: string; error?: boolean
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
-  source?: "input" | "prompt" | "cta";
+  source?: "input" | "prompt" | "cta" | "voice";
 };
 type ChatSetter = (
   partial: ChatStore | Partial<ChatStore> | ((state: ChatStore) => ChatStore | Partial<ChatStore>),
