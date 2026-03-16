@@ -44,7 +44,7 @@ export function MessageList({
 }) {
   return (
     <div
-      className="flex-1 overflow-y-auto space-y-4 py-4"
+      className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 pr-1"
       role="log"
       aria-live="polite"
       aria-relevant="additions text"

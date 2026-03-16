@@ -121,51 +121,57 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   };
 
   return (
-    <div className={`fixed inset-0 z-10 flex flex-col justify-end px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
-      <MessageList
-        messages={messages}
-        isStreaming={isStreaming}
-        isFirstSession={isFirstSession}
-        firstSessionConfig={firstSessionConfig}
-        vitality={appearance.vitality}
-        starterPrompts={starterPrompts as string[]}
-        appearance={appearance}
-        bottomRef={bottomRef}
-        isPlaying={isPlaying}
-        copiedIndex={copiedIndex}
-        onPromptClick={(prompt) => {
-          if (!isStreaming) {
-            void sendMessage(prompt, { source: "prompt", locale });
-          }
-        }}
-        onSpeak={speak}
-        onStop={stop}
-        onCopy={(index, content) => void handleCopy(index, content)}
-        onRetry={retryLastMessage}
-        t={t}
-      />
+    <div className={`fixed inset-0 z-10 px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
+      <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col pt-20">
+        <div className="min-h-0 flex-1">
+          <MessageList
+            messages={messages}
+            isStreaming={isStreaming}
+            isFirstSession={isFirstSession}
+            firstSessionConfig={firstSessionConfig}
+            vitality={appearance.vitality}
+            starterPrompts={starterPrompts as string[]}
+            appearance={appearance}
+            bottomRef={bottomRef}
+            isPlaying={isPlaying}
+            copiedIndex={copiedIndex}
+            onPromptClick={(prompt) => {
+              if (!isStreaming) {
+                void sendMessage(prompt, { source: "prompt", locale });
+              }
+            }}
+            onSpeak={speak}
+            onStop={stop}
+            onCopy={(index, content) => void handleCopy(index, content)}
+            onRetry={retryLastMessage}
+            t={t}
+          />
+        </div>
 
-      <MessageInput
-        input={input}
-        setInput={setInput}
-        isStreaming={isStreaming}
-        placeholder={placeholder}
-        appearance={appearance}
-        onSubmit={handleSubmit}
-        voiceState={voiceInput.state}
-        voiceError={voiceInput.error}
-        onVoiceToggle={voiceInput.toggle}
-        t={t}
-      />
+        <div className="shrink-0 pt-3">
+          <MessageInput
+            input={input}
+            setInput={setInput}
+            isStreaming={isStreaming}
+            placeholder={placeholder}
+            appearance={appearance}
+            onSubmit={handleSubmit}
+            voiceState={voiceInput.state}
+            voiceError={voiceInput.error}
+            onVoiceToggle={voiceInput.toggle}
+            t={t}
+          />
 
-      <p className="mt-2 text-center text-sm text-white/78">
-        {isFirstSession
-          ? t("chat.firstFootnote")
-          : t("chat.returningFootnote")}
-      </p>
-      <p className="sr-only" aria-live="polite">
-        {isStreaming ? t("chat.responding") : t("chat.waiting")}
-      </p>
+          <p className="mt-2 text-center text-sm text-white/78">
+            {isFirstSession
+              ? t("chat.firstFootnote")
+              : t("chat.returningFootnote")}
+          </p>
+          <p className="sr-only" aria-live="polite">
+            {isStreaming ? t("chat.responding") : t("chat.waiting")}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
