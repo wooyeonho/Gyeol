@@ -140,7 +140,8 @@ async function handleStreamResponse(
       });
 
       if (reward.tier !== "none") {
-        const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+        const freshInventory = readRewardInventory();
+        const nextInventory = applyRewardToInventory(freshInventory, reward);
         persistRewardState(nextInventory, 0);
         set({
           lastReward: reward,
@@ -158,7 +159,9 @@ async function handleStreamResponse(
           playSound("receive");
         }
       } else {
-        persistRewardState(get().rewardInventory, nextMessagesSinceReward);
+        const freshInvForPersist = readRewardInventory();
+        persistRewardState(freshInvForPersist, nextMessagesSinceReward);
+        set({ rewardInventory: freshInvForPersist });
         set({ rewardProgress: guaranteedProgress });
         haptic("receive");
         playSound("receive");
@@ -166,7 +169,8 @@ async function handleStreamResponse(
 
       if (get().pendingWeeklyEventCompletion) {
         const weeklyReward = createWeeklyEventReward(streakDays);
-        const nextInventory = applyRewardToInventory(get().rewardInventory, weeklyReward);
+        const freshWeeklyInv = readRewardInventory();
+        const nextInventory = applyRewardToInventory(freshWeeklyInv, weeklyReward);
         writeRewardInventory(nextInventory);
         set({
           lastReward: weeklyReward,
@@ -197,7 +201,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     if (hasClaimedDailyLoginBonus()) return;
 
     const reward = createDailyLoginReward(streakDays);
-    const nextInventory = applyRewardToInventory(get().rewardInventory, reward);
+    const freshInventory = readRewardInventory();
+    const nextInventory = applyRewardToInventory(freshInventory, reward);
     writeRewardInventory(nextInventory);
     markDailyLoginBonusClaimed();
 
