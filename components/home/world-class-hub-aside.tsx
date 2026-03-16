@@ -77,7 +77,7 @@ function PanelToggle({
 export function WorldClassHubAside({
   formatDate,
   genLevel,
-  locale,
+  locale: _locale,
   missionElements,
   mood,
   newItemsSinceLastVisit,

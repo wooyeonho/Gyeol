@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { canUsePublicSocial } from "@/lib/safety/age-gate";
 
 const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
 
@@ -33,7 +34,7 @@ export async function POST(
       .eq("agent_id", agentId)
       .single();
     const config = (stateRow?.config as Record<string, unknown> | undefined) ?? {};
-    if (config.social_public_enabled !== true) {
+    if (!canUsePublicSocial(config)) {
       return NextResponse.json({ error: "Public social participation disabled" }, { status: 403 });
     }
 

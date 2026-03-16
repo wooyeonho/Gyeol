@@ -13,7 +13,7 @@ type AgentSnapshot = {
   mood?: string | null;
   visual?: unknown;
   genome?: unknown;
-  config?: { usage_profile?: unknown } | null;
+  config?: Record<string, unknown> | null;
   self_model?: unknown;
 };
 
@@ -51,7 +51,7 @@ function serializeSelfAgent(selfState: {
   self_name?: string | null;
   visual?: unknown;
   genome?: unknown;
-  config?: { usage_profile?: unknown } | null;
+  config?: Record<string, unknown> | null;
   self_model?: unknown;
   gen_level?: number | null;
   vitality?: number | null;
@@ -62,11 +62,15 @@ function serializeSelfAgent(selfState: {
         self_name: selfState.self_name ?? null,
         visual: selfState.visual ?? null,
         genome: selfState.genome ?? null,
-          config: {
-            usage_profile: selfState.config?.usage_profile ?? null,
-            social_public_enabled:
-              (selfState.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
-          },
+        config: {
+          usage_profile: selfState.config?.usage_profile ?? null,
+          social_public_enabled:
+            (selfState.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+          age_group:
+            (selfState.config as Record<string, unknown> | undefined)?.age_group ?? null,
+          guardian_consent:
+            (selfState.config as Record<string, unknown> | undefined)?.guardian_consent ?? false,
+        },
         self_model: selfState.self_model ?? null,
         gen_level: selfState.gen_level ?? 1,
         vitality: selfState.vitality ?? 1,
@@ -197,6 +201,9 @@ export async function GET() {
         genome: stateByAgent[id]?.genome ?? null,
         config: {
           usage_profile: (stateByAgent[id]?.config as { usage_profile?: unknown } | undefined)?.usage_profile ?? null,
+          social_public_enabled: (stateByAgent[id]?.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+          age_group: (stateByAgent[id]?.config as Record<string, unknown> | undefined)?.age_group ?? null,
+          guardian_consent: (stateByAgent[id]?.config as Record<string, unknown> | undefined)?.guardian_consent ?? false,
         },
         self_model: stateByAgent[id]?.self_model ?? null,
       }));
@@ -241,7 +248,12 @@ export async function GET() {
               vitality: commentAuthor?.vitality ?? 1,
               mood: commentAuthor?.mood ?? null,
               visual: commentAuthor?.visual ?? null,
-              config: { usage_profile: commentAuthor?.config?.usage_profile ?? null },
+              config: {
+                usage_profile: commentAuthor?.config?.usage_profile ?? null,
+                social_public_enabled: (commentAuthor?.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+                age_group: (commentAuthor?.config as Record<string, unknown> | undefined)?.age_group ?? null,
+                guardian_consent: (commentAuthor?.config as Record<string, unknown> | undefined)?.guardian_consent ?? false,
+              },
             },
           };
         });
@@ -265,6 +277,8 @@ export async function GET() {
           config: {
             usage_profile: author?.config?.usage_profile ?? null,
             social_public_enabled: (author?.config as Record<string, unknown> | undefined)?.social_public_enabled ?? false,
+            age_group: (author?.config as Record<string, unknown> | undefined)?.age_group ?? null,
+            guardian_consent: (author?.config as Record<string, unknown> | undefined)?.guardian_consent ?? false,
           },
         },
         reactionSummary: buildReactionSummary(reactions),
@@ -311,7 +325,7 @@ export async function GET() {
       self_name?: string | null;
       visual?: unknown;
       genome?: unknown;
-      config?: { usage_profile?: unknown } | null;
+      config?: Record<string, unknown> | null;
       self_model?: unknown;
       gen_level?: number | null;
       vitality?: number | null;
@@ -358,6 +372,8 @@ export async function GET() {
               config: {
                 usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null,
                 social_public_enabled: true,
+                age_group: "adult",
+                guardian_consent: false,
               },
             },
             reactionSummary: { like: 2, curious: 1, support: 0 },
@@ -383,6 +399,8 @@ export async function GET() {
                   config: {
                     usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() },
                     social_public_enabled: true,
+                    age_group: "adult",
+                    guardian_consent: false,
                   },
                 },
               },
@@ -398,7 +416,12 @@ export async function GET() {
             memory_count: 18,
             visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
             genome: { species: "echo-bloom" },
-            config: { usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() } },
+            config: {
+              usage_profile: { primary_mode: "social", updated_at: new Date().toISOString() },
+              social_public_enabled: true,
+              age_group: "adult",
+              guardian_consent: false,
+            },
             self_model: { current_role: "listener" },
           },
         ],
@@ -413,7 +436,12 @@ export async function GET() {
           self_name: demo.self_name,
           visual: demo.visual,
           genome: demo.genome,
-          config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+          config: {
+            usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null,
+            social_public_enabled: true,
+            age_group: "adult",
+            guardian_consent: false,
+          },
           self_model: demo.self_model,
           gen_level: demo.gen_level,
           vitality: demo.vitality,

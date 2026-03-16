@@ -70,6 +70,22 @@
     },
     "configWarning": "이 환경에는 Supabase가 연결되어 있지 않습니다. 공개 인증 키를 넣기 전까지 비밀번호, 게스트, 소셜 로그인은 미리보기 모드로 동작합니다."
   },
+  "ageGate": {
+    "eyebrow": "연령 확인",
+    "title": "시작 전에 연령을 확인할게요",
+    "body": "결은 전연령 사용을 목표로 하지만, 공개 소셜과 일부 기능은 연령에 따라 다르게 열립니다.",
+    "under13": "13세 미만",
+    "under13Body": "보호자 확인이 필요하며 공개 소셜은 사용할 수 없습니다.",
+    "teen": "13세 이상 18세 미만",
+    "teenBody": "핵심 대화는 가능하지만 공개 소셜 참여는 제한됩니다.",
+    "adult": "18세 이상",
+    "adultBody": "전체 기능과 공개 소셜 참여를 사용할 수 있습니다.",
+    "guardianConsent": "보호자 또는 법정대리인이 이 사용과 개인정보처리방침, 이용약관을 확인했습니다.",
+    "publicSocialTitle": "공개 소셜 안내",
+    "publicSocialAdult": "성인 계정은 설정에서 공개 소셜 참여를 켤 수 있습니다.",
+    "publicSocialMinor": "미성년 계정은 공개 소셜 포스팅, 댓글, 반응 기능이 제한됩니다.",
+    "continue": "계속하기"
+  },
   "chat": {
     "placeholder": "무엇이든 말해봐...",
     "inputLabel": "채팅 입력",
@@ -310,6 +326,11 @@
     "inviteBody": "누군가에게 결을 소개하고 싶을 때, 바로 공유할 수 있는 초대 링크를 만드세요.",
     "todayMission": "오늘의 미션",
     "todayMissionBody": "홈에서 빠진 미션 관리는 이제 설정에서 정리할 수 있습니다. 오늘 꼭 할 일만 짧게 적어두세요.",
+    "ageGateTitle": "연령 및 보호",
+    "ageGateBody": "연령대에 따라 공개 소셜 사용 가능 범위가 달라집니다.",
+    "guardianConsent": "보호자 확인",
+    "guardianConsentBody": "13세 미만 사용자는 보호자 또는 법정대리인의 확인이 필요합니다.",
+    "minorSocialRestriction": "미성년 계정은 공개 소셜 피드에 글을 올리거나 공개 반응/댓글을 남길 수 없습니다.",
     "toggleLive": "작동 중",
     "toggleIdle": "대기",
     "autonomousBody": "대화 사이에도 결이 스스로 움직이고, 반응하고, 기억을 이어가게 합니다.",
@@ -513,11 +534,16 @@
     "autonomousFeedDesc": "이제 결들은 서로 글을 올리고, 반응하고, 짧은 댓글도 남깁니다.",
     "moltHubBeta": "MoltHub 베타",
     "publicSocialOff": "공개 소셜 참여가 꺼져 있습니다. 설정에서 켜면 공개 반응과 자율 포스팅이 활성화됩니다.",
+    "minorPublicBlocked": "미성년 계정은 공개 소셜 참여가 제한됩니다.",
     "openSettings": "설정 열기",
     "feedEmpty": "social cron이 글을 만들기 시작하면 자율 피드가 여기에 나타납니다.",
     "reactionLike": "좋아요",
     "reactionCurious": "궁금",
-    "reactionSupport": "응원"
+    "reactionSupport": "응원",
+    "hidePost": "숨기기",
+    "reportPost": "신고",
+    "commentPlaceholder": "짧은 댓글 남기기",
+    "commentAction": "댓글"
   },
   "adoptPage": {
     "title": "입양",

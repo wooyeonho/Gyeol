@@ -13,6 +13,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
+import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
 import {
   isThemeMode,
   type ThemeMode,
@@ -326,6 +327,64 @@ export default function SettingsPage() {
     });
   }
 
+  async function handleAgeGroupChange(nextAgeGroup: AgeGroup) {
+    if (!state) return;
+    const guardianConsent = nextAgeGroup === "under_13"
+      ? Boolean((state.config as AgentConfig | undefined)?.guardian_consent)
+      : false;
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        age_group: nextAgeGroup,
+        guardian_consent: guardianConsent,
+        social_public_enabled: nextAgeGroup === "adult"
+          ? Boolean((state.config as AgentConfig | undefined)?.social_public_enabled)
+          : false,
+      }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+    const config: AgentConfig = {
+      ...(state.config || {}),
+      age_group: nextAgeGroup,
+      guardian_consent: guardianConsent,
+      social_public_enabled: nextAgeGroup === "adult"
+        ? Boolean((state.config as AgentConfig | undefined)?.social_public_enabled)
+        : false,
+    };
+    setState({ ...state, config });
+  }
+
+  async function handleGuardianConsentToggle(enabled: boolean) {
+    if (!state) return;
+    const ageGroup = isAgeGroup((state.config as AgentConfig | undefined)?.age_group)
+      ? ((state.config as AgentConfig).age_group as AgeGroup)
+      : "under_13";
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        age_group: ageGroup,
+        guardian_consent: enabled,
+        social_public_enabled: false,
+      }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+    const config: AgentConfig = {
+      ...(state.config || {}),
+      age_group: ageGroup,
+      guardian_consent: enabled,
+      social_public_enabled: false,
+    };
+    setState({ ...state, config });
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -375,6 +434,8 @@ export default function SettingsPage() {
   const config: AgentConfig = state?.config || {};
   const preferredTheme: ThemeMode = isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark";
   const highContrastEnabled = Boolean(config.high_contrast_enabled);
+  const ageGroup: AgeGroup = isAgeGroup(config.age_group) ? config.age_group : "adult";
+  const guardianConsentEnabled = Boolean(config.guardian_consent);
   const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
@@ -408,8 +469,11 @@ export default function SettingsPage() {
     {
       label: t("settings.publicSocial"),
       description: t("settings.publicSocialBody"),
-      enabled: Boolean(config.social_public_enabled),
-      onToggle: () => toggleConfig("social_public_enabled", !config.social_public_enabled),
+      enabled: !isMinorAgeGroup(ageGroup) && Boolean(config.social_public_enabled),
+      onToggle: () => {
+        if (isMinorAgeGroup(ageGroup)) return;
+        void toggleConfig("social_public_enabled", !config.social_public_enabled);
+      },
     },
     {
       label: t("settings.performanceMinimal"),
@@ -453,6 +517,47 @@ export default function SettingsPage() {
             </p>
           </div>
           <LocaleSwitcher onLocaleChange={handleLocaleChange} />
+        </section>
+
+        <section className="theme-panel rounded-3xl p-5">
+          <div className="mb-4">
+            <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">{t("settings.ageGateTitle")}</p>
+            <p className="theme-text-subtle mt-1 text-sm">
+              {t("settings.ageGateBody")}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {([
+              { key: "under_13", label: t("ageGate.under13") },
+              { key: "teen", label: t("ageGate.teen") },
+              { key: "adult", label: t("ageGate.adult") },
+            ] as const).map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => void handleAgeGroupChange(option.key)}
+                className={`rounded-2xl px-4 py-4 text-left transition-all ${ageGroup === option.key ? "theme-panel-strong ring-2 ring-cyan-400/40" : "theme-subpanel"}`}
+              >
+                <p className="text-sm font-medium">{option.label}</p>
+              </button>
+            ))}
+          </div>
+          {ageGroup === "under_13" && (
+            <div className="mt-3">
+              <SettingsToggle
+                label={t("settings.guardianConsent")}
+                description={t("settings.guardianConsentBody")}
+                enabled={guardianConsentEnabled}
+                onToggle={() => void handleGuardianConsentToggle(!guardianConsentEnabled)}
+                stateLabel={guardianConsentEnabled ? t("settings.toggleLive") : t("settings.toggleIdle")}
+              />
+            </div>
+          )}
+          {isMinorAgeGroup(ageGroup) && (
+            <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
+              {t("settings.minorSocialRestriction")}
+            </div>
+          )}
         </section>
 
         <section className="theme-panel rounded-3xl p-5">

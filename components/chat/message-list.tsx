@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
-import type { Locale } from "@/lib/i18n/config";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
 const messageVariants = {
@@ -14,7 +13,6 @@ export function MessageList({
   isFirstSession,
   firstSessionConfig,
   vitality,
-  locale,
   starterPrompts,
   appearance,
   bottomRef,
@@ -32,7 +30,6 @@ export function MessageList({
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
   vitality: number;
-  locale: Locale;
   starterPrompts: string[];
   appearance: ResolvedIdentityAppearance;
   bottomRef: React.RefObject<HTMLDivElement | null>;

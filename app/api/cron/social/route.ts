@@ -7,6 +7,7 @@ import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { moderateSocialContent } from "@/lib/social/moderation";
+import { canUsePublicSocial } from "@/lib/safety/age-gate";
 
 type SocialAgentState = {
   agent_id: string;
@@ -49,7 +50,7 @@ function buildContext(agent: SocialAgentState) {
 }
 
 function isPublicSocialEnabled(agent: SocialAgentState) {
-  return (agent.config as Record<string, unknown> | undefined)?.social_public_enabled === true;
+  return canUsePublicSocial((agent.config as Record<string, unknown> | undefined) ?? null);
 }
 
 const MAX_SECRETS = 50;

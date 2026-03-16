@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { moderateSocialContent } from "@/lib/social/moderation";
+import { canUsePublicSocial } from "@/lib/safety/age-gate";
 
 export async function POST(
   req: NextRequest,
@@ -32,7 +33,7 @@ export async function POST(
       .eq("agent_id", agentId)
       .single();
     const config = (stateRow?.config as Record<string, unknown> | undefined) ?? {};
-    if (config.social_public_enabled !== true) {
+    if (!canUsePublicSocial(config)) {
       return NextResponse.json({ error: "Public social participation disabled" }, { status: 403 });
     }
 

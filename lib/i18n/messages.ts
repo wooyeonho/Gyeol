@@ -1,6 +1,9 @@
 import type { Locale } from "./config";
 import ko from "../../messages/ko.json";
 import en from "../../messages/en.json";
+import ja from "../../messages/ja.json";
+import zh from "../../messages/zh.json";
+import es from "../../messages/es.json";
 
 type Messages = Record<string, unknown>;
 
@@ -16,9 +19,9 @@ type Messages = Record<string, unknown>;
 const BUNDLED: Partial<Record<Locale, Messages>> = {
   ko: ko as Messages,
   en: en as Messages,
-  // ja: (await import("../../messages/ja.json")).default — add when ready
-  // zh: (await import("../../messages/zh.json")).default — add when ready
-  // es: (await import("../../messages/es.json")).default — add when ready
+  ja: ja as Messages,
+  zh: zh as Messages,
+  es: es as Messages,
 };
 
 export async function loadMessages(locale: Locale): Promise<Messages> {

@@ -38,7 +38,7 @@ describe("/api/social/posts/[postId]/reaction contract", () => {
               eq: () => ({
                 single: async () => ({
                   data: {
-                    config: { social_public_enabled: true },
+                    config: { social_public_enabled: true, age_group: "adult" },
                   },
                 }),
               }),

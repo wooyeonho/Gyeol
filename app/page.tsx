@@ -11,7 +11,9 @@ import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { haptic } from "@/lib/micro-interactions";
+import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
+import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -109,11 +111,37 @@ export default function Home() {
     if (typeof window === "undefined") return false;
     return !localStorage.getItem("gyeol_onboarded");
   });
+  const [showAgeGate, setShowAgeGate] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !readAgeGateCompleted();
+  });
 
   const handleOnboardingComplete = useCallback(() => {
     localStorage.setItem("gyeol_onboarded", "1");
     setShowOnboarding(false);
   }, []);
+
+  const handleAgeGateComplete = useCallback(
+    async ({ ageGroup, guardianConsent }: { ageGroup: "under_13" | "teen" | "adult"; guardianConsent: boolean }) => {
+      markAgeGateCompleted();
+      setShowAgeGate(false);
+      try {
+        await fetch("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            age_group: ageGroup,
+            guardian_consent: guardianConsent,
+            social_public_enabled: ageGroup === "adult",
+          }),
+        });
+        await fetchAgentState({ silent: true });
+      } catch {
+        // Best-effort only; local gate completion should still proceed.
+      }
+    },
+    [fetchAgentState],
+  );
 
   useEffect(() => {
     if (loading || showOnboarding) return;
@@ -171,6 +199,10 @@ export default function Home() {
   const conversationStarted =
     (typeof agentState?.total_messages === "number" ? agentState.total_messages : 0) > 0 ||
     messages.some((message) => message.role === "user");
+
+  if (showAgeGate) {
+    return <AgeGate onComplete={handleAgeGateComplete} />;
+  }
 
   if (showOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;

@@ -101,7 +101,6 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         isFirstSession={isFirstSession}
         firstSessionConfig={firstSessionConfig}
         vitality={appearance.vitality}
-        locale={locale}
         starterPrompts={starterPrompts as string[]}
         appearance={appearance}
         bottomRef={bottomRef}

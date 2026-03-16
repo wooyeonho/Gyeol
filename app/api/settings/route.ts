@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { normalizeLocale } from "@/lib/i18n/config";
 import { isThemeMode } from "@/lib/theme/preferences";
+import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 
 export async function GET() {
   try {
@@ -50,7 +51,16 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.autonomous_enabled === "boolean") config.autonomous_enabled = body.autonomous_enabled;
     if (typeof body.dream_enabled === "boolean") config.dream_enabled = body.dream_enabled;
     if (typeof body.social_enabled === "boolean") config.social_enabled = body.social_enabled;
-    if (typeof body.social_public_enabled === "boolean") config.social_public_enabled = body.social_public_enabled;
+    if (isAgeGroup(body.age_group)) config.age_group = body.age_group;
+    if (typeof body.guardian_consent === "boolean") config.guardian_consent = body.guardian_consent;
+    const effectiveAgeGroup = isAgeGroup(body.age_group)
+      ? body.age_group
+      : (isAgeGroup(config.age_group) ? config.age_group : null);
+    if (typeof body.social_public_enabled === "boolean") {
+      config.social_public_enabled = !isMinorAgeGroup(effectiveAgeGroup) && body.social_public_enabled;
+    } else if (isMinorAgeGroup(effectiveAgeGroup)) {
+      config.social_public_enabled = false;
+    }
     if (typeof body.allow_cross_message === "boolean") config.allow_cross_message = body.allow_cross_message;
     if (typeof body.performance_minimal === "boolean") config.performance_minimal = body.performance_minimal;
     if (isThemeMode(body.preferred_theme)) config.preferred_theme = body.preferred_theme;

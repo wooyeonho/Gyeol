@@ -55,6 +55,8 @@ type SocialAgent = {
   config?: {
     usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null;
     social_public_enabled?: boolean;
+    age_group?: string | null;
+    guardian_consent?: boolean;
   } | null;
   self_model?: { current_role?: string | null; identity_statement?: string | null } | null;
   gen_level?: number | null;
@@ -157,6 +159,7 @@ export default function SocialPage() {
     return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
   }, [locale, otherAgents]);
   const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
+  const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
   const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
 
   function hidePost(postId: string) {
@@ -349,7 +352,7 @@ export default function SocialPage() {
         </div>
         {!socialPublicEnabled && (
           <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100/90">
-            {t("socialPage.publicSocialOff")}{" "}
+            {isMinor ? t("socialPage.minorPublicBlocked") : t("socialPage.publicSocialOff")}{" "}
             <Link href="/settings" className="underline underline-offset-2">
               {t("socialPage.openSettings")}
             </Link>
