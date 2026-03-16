@@ -266,7 +266,10 @@ export default function Home() {
           enableThree={!performanceMinimal && conversationStarted}
         />
       </div>
-      <WorldClassHub />
+      {/* Hub is now inline, not a fixed overlay — no pointer-events conflict */}
+      <div className="relative z-10">
+        <WorldClassHub />
+      </div>
 
       <ChatPanel navVisible={conversationStarted} />
       <Soundscape
