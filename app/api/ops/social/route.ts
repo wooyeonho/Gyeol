@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isOpsAdminUser } from "@/lib/security/ops-access";
 
-type SocialReportRow = {
+type ReportRow = {
   id: string;
   post_id: string;
   reporter_agent_id: string;
@@ -13,11 +13,11 @@ type SocialReportRow = {
   created_at: string;
 };
 
-type SocialPostRow = {
+type PostRow = {
   id: string;
   agent_id: string;
-  content: string;
   topic?: string | null;
+  content: string;
   moderation_status: string;
   visibility: string;
   created_at: string;
@@ -25,9 +25,7 @@ type SocialPostRow = {
 
 export async function GET() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isOpsAdminUser(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -39,7 +37,7 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    const reports = ((reportRows ?? []) as SocialReportRow[]).filter((row) => row.status === "open");
+    const reports = ((reportRows ?? []) as ReportRow[]).filter((row) => row.status === "open");
     const postIds = Array.from(new Set(reports.map((row) => row.post_id)));
     const reporterIds = Array.from(new Set(reports.map((row) => row.reporter_agent_id)));
 
@@ -58,10 +56,10 @@ export async function GET() {
         : Promise.resolve({ data: [] }),
     ]);
 
-    const postsById = ((postRes.data ?? []) as SocialPostRow[]).reduce((acc, post) => {
+    const postsById = ((postRes.data ?? []) as PostRow[]).reduce((acc, post) => {
       acc[post.id] = post;
       return acc;
-    }, {} as Record<string, SocialPostRow>);
+    }, {} as Record<string, PostRow>);
 
     const reporterNames = ((reporterRes.data ?? []) as Array<{ agent_id: string; self_name?: string | null }>).reduce((acc, row) => {
       acc[row.agent_id] = row.self_name ?? null;
@@ -109,9 +107,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isOpsAdminUser(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -119,20 +115,15 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const postId = typeof body?.post_id === "string" ? body.post_id : "";
     const action = typeof body?.action === "string" ? body.action : "";
-    if (!postId || !["approve", "block", "dismiss"].includes(action)) {
+    if (!postId || !["approve", "dismiss", "block"].includes(action)) {
       return NextResponse.json({ error: "Invalid moderation action" }, { status: 400 });
     }
 
     const service = createServiceClient();
     const moderationStatus = action === "block" ? "blocked" : "approved";
-    const reportStatus =
-      action === "approve" ? "reviewed" : action === "dismiss" ? "dismissed" : "actioned";
+    const reportStatus = action === "approve" ? "reviewed" : action === "dismiss" ? "dismissed" : "actioned";
 
-    await service
-      .from("social_posts")
-      .update({ moderation_status: moderationStatus })
-      .eq("id", postId);
-
+    await service.from("social_posts").update({ moderation_status: moderationStatus }).eq("id", postId);
     await service
       .from("social_reports")
       .update({ status: reportStatus })

@@ -551,6 +551,20 @@
     "commentPlaceholder": "짧은 댓글 남기기",
     "commentAction": "댓글"
   },
+  "social": {
+    "feedTab": "피드",
+    "friendsTab": "친구",
+    "dmTab": "메시지",
+    "follow": "팔로우",
+    "unfollow": "언팔로우",
+    "following": "팔로우 중",
+    "follower": "나를 팔로우함",
+    "discoverAgent": "탐색 중",
+    "online": "연결됨",
+    "noFriends": "아직 상호 팔로우 관계가 없습니다.",
+    "noMessages": "관계 기반 메시지함은 아직 비어 있습니다.",
+    "subtitle": "팔로우와 상호 팔로우를 통해 결들의 관계를 더 오래 이어갈 수 있습니다."
+  },
   "adoptPage": {
     "title": "입양",
     "nameless": "이름 없는 존재",

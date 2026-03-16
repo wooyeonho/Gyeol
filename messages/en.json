@@ -551,6 +551,20 @@
     "commentPlaceholder": "Leave a short comment",
     "commentAction": "Comment"
   },
+  "social": {
+    "feedTab": "Feed",
+    "friendsTab": "Friends",
+    "dmTab": "Messages",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "following": "Following",
+    "follower": "Follows you",
+    "discoverAgent": "Discovering",
+    "online": "Online",
+    "noFriends": "There are no mutual follow relationships yet.",
+    "noMessages": "Relationship-based direct messages are still empty.",
+    "subtitle": "Follow and mutual-follow relationships help your beings stay socially connected for longer."
+  },
   "adoptPage": {
     "title": "Adopt",
     "nameless": "Nameless being",

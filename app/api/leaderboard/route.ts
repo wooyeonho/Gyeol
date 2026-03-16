@@ -13,6 +13,9 @@ export type LeaderboardEntry = {
   visual: { color?: string; shape?: string } | null;
   config: { usage_profile?: { primary_mode?: string | null } | null } | null;
   is_self?: boolean;
+  is_following?: boolean;
+  is_followed_by?: boolean;
+  is_mutual?: boolean;
 };
 
 export type LeaderboardContext = {
@@ -45,6 +48,10 @@ type AgentRow = {
 function mapRows(
   rows: AgentRow[],
   selfAgentId?: string | null,
+  relationSets?: {
+    following: Set<string>;
+    followers: Set<string>;
+  },
 ): LeaderboardEntry[] {
   return rows.map((r, i) => ({
     rank: i + 1,
@@ -56,6 +63,9 @@ function mapRows(
     visual: (r.visual as LeaderboardEntry["visual"]) ?? null,
     config: (r.config as LeaderboardEntry["config"]) ?? null,
     is_self: Boolean(selfAgentId && r.agent_id === selfAgentId),
+    is_following: Boolean(relationSets?.following.has(r.agent_id ?? "")),
+    is_followed_by: Boolean(relationSets?.followers.has(r.agent_id ?? "")),
+    is_mutual: Boolean(relationSets?.following.has(r.agent_id ?? "") && relationSets?.followers.has(r.agent_id ?? "")),
   }));
 }
 
@@ -87,15 +97,25 @@ export async function GET() {
     const service = createServiceClient();
     const selfAgentId = user ? (await ensurePrimaryAgent(service, user.id)).agentId : null;
 
-    const [rowsResult, countResult] = await Promise.all([
+    const [rowsResult, countResult, followingRes, followersRes] = await Promise.all([
       service
         .from("agent_state")
         .select("agent_id, self_name, gen_level, vitality, total_messages, visual, config")
         .limit(1000),
       service.from("agent_state").select("agent_id", { count: "exact", head: true }),
+      selfAgentId
+        ? service.from("social_connections").select("followee_agent_id").eq("follower_agent_id", selfAgentId)
+        : Promise.resolve({ data: [] }),
+      selfAgentId
+        ? service.from("social_connections").select("follower_agent_id").eq("followee_agent_id", selfAgentId)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const rows = (rowsResult.data ?? []) as AgentRow[];
+    const relationSets = {
+      following: new Set(((followingRes.data ?? []) as Array<{ followee_agent_id: string }>).map((row) => row.followee_agent_id)),
+      followers: new Set(((followersRes.data ?? []) as Array<{ follower_agent_id: string }>).map((row) => row.follower_agent_id)),
+    };
     const byLevelAll = mapRows(
       [...rows].sort((a, b) => {
         const genDiff = Number(b.gen_level ?? 1) - Number(a.gen_level ?? 1);
@@ -103,10 +123,12 @@ export async function GET() {
         return Number(b.total_messages ?? 0) - Number(a.total_messages ?? 0);
       }),
       selfAgentId,
+      relationSets,
     );
     const byMessagesAll = mapRows(
       [...rows].sort((a, b) => Number(b.total_messages ?? 0) - Number(a.total_messages ?? 0)),
       selfAgentId,
+      relationSets,
     );
     const byVitalityAll = mapRows(
       [...rows].sort((a, b) => {
@@ -115,6 +137,7 @@ export async function GET() {
         return Number(b.gen_level ?? 1) - Number(a.gen_level ?? 1);
       }),
       selfAgentId,
+      relationSets,
     );
 
     const response: LeaderboardResponse = {

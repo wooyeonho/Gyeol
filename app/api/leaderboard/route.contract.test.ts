@@ -49,6 +49,18 @@ describe("/api/leaderboard contract", () => {
             },
           };
         }
+        if (table === "social_connections") {
+          return {
+            select: () => ({
+              eq: (_field: string, value: string) =>
+                Promise.resolve({
+                  data: value === "agent-2"
+                    ? [{ followee_agent_id: "agent-1" }]
+                    : [{ follower_agent_id: "agent-1" }],
+                }),
+            }),
+          };
+        }
         throw new Error(`unexpected table: ${table}`);
       },
     });

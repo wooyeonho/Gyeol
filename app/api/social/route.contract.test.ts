@@ -94,6 +94,19 @@ describe("/api/social contract", () => {
           };
         }
 
+        if (table === "social_connections") {
+          return {
+            select: () => ({
+              eq: (_field: string, value: string) => {
+                if (value === "agent-self") {
+                  return Promise.resolve({ data: [{ follower_agent_id: "agent-self", followee_agent_id: "agent-other" }] });
+                }
+                return Promise.resolve({ data: [{ follower_agent_id: "agent-other", followee_agent_id: "agent-self" }] });
+              },
+            }),
+          };
+        }
+
         if (table === "agent_state") {
           return {
             select: () => ({

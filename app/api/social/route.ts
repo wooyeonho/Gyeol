@@ -37,6 +37,11 @@ type SocialReactionRow = {
   created_at?: string;
 };
 
+type SocialConnectionRow = {
+  follower_agent_id: string;
+  followee_agent_id: string;
+};
+
 function buildReactionSummary(reactions: SocialReactionRow[]) {
   const summary = { like: 0, curious: 0, support: 0 };
   for (const reaction of reactions) {
@@ -93,7 +98,7 @@ export async function GET() {
       return NextResponse.json({ socialLogs: [], socialPosts: [], breedingRecords: [], otherAgents: [] });
     }
 
-    const [logsRes, breedingRes, agentsRes, giftRes, selfStateRes, postsRes] = await Promise.all([
+    const [logsRes, breedingRes, agentsRes, giftRes, selfStateRes, postsRes, followingRes, followersRes] = await Promise.all([
       service
         .from("social_logs")
         .select("id, agent_a_id, agent_b_id, topic, conversation, message, outcome, created_at")
@@ -127,6 +132,14 @@ export async function GET() {
         .is("parent_post_id", null)
         .order("created_at", { ascending: false })
         .limit(12),
+      service
+        .from("social_connections")
+        .select("follower_agent_id, followee_agent_id")
+        .eq("follower_agent_id", myAgentId),
+      service
+        .from("social_connections")
+        .select("follower_agent_id, followee_agent_id")
+        .eq("followee_agent_id", myAgentId),
     ]);
 
     const topPostRows = (postsRes.data ?? []) as SocialPostRow[];
@@ -151,6 +164,10 @@ export async function GET() {
       : [{ data: [] }, { data: [] }];
     const commentRows = (commentsRes.data ?? []) as SocialPostRow[];
     const reactionRows = (reactionsRes.data ?? []) as SocialReactionRow[];
+    const followingRows = (followingRes.data ?? []) as SocialConnectionRow[];
+    const followerRows = (followersRes.data ?? []) as SocialConnectionRow[];
+    const followingSet = new Set(followingRows.map((row) => row.followee_agent_id));
+    const followerSet = new Set(followerRows.map((row) => row.follower_agent_id));
 
     const otherIds = (agentsRes.data ?? []).map((row) => (row as { id: string }).id);
     const authorIds = Array.from(
@@ -206,6 +223,11 @@ export async function GET() {
           guardian_consent: (stateByAgent[id]?.config as Record<string, unknown> | undefined)?.guardian_consent ?? false,
         },
         self_model: stateByAgent[id]?.self_model ?? null,
+        follower_count: followerRows.filter((row) => row.followee_agent_id === id).length,
+        following_count: followingRows.filter((row) => row.follower_agent_id === id).length,
+        is_following: followingSet.has(id),
+        is_followed_by: followerSet.has(id),
+        is_mutual: followingSet.has(id) && followerSet.has(id),
       }));
 
       const myPrimaryMode =
@@ -222,6 +244,10 @@ export async function GET() {
         }
         aScore += Math.min(a.memory_count, 50);
         bScore += Math.min(b.memory_count, 50);
+        if ((a as { is_mutual?: boolean }).is_mutual) aScore += 80;
+        if ((b as { is_mutual?: boolean }).is_mutual) bScore += 80;
+        if ((a as { is_following?: boolean }).is_following) aScore += 40;
+        if ((b as { is_following?: boolean }).is_following) bScore += 40;
         return bScore - aScore;
       });
       otherAgents = otherAgents.slice(0, 30);

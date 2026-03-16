@@ -67,6 +67,11 @@ type SocialAgent = {
 type OtherAgent = SocialAgent & {
   id: string;
   memory_count: number;
+  follower_count?: number;
+  following_count?: number;
+  is_following?: boolean;
+  is_followed_by?: boolean;
+  is_mutual?: boolean;
 };
 
 type SocialTab = "feed" | "friends" | "dm";
@@ -85,6 +90,7 @@ export default function SocialPage() {
   const [commentBusyId, setCommentBusyId] = useState<string | null>(null);
   const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
   const [reportBusyId, setReportBusyId] = useState<string | null>(null);
+  const [followBusyId, setFollowBusyId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SocialTab>("feed");
 
   useEffect(() => {
@@ -164,6 +170,7 @@ export default function SocialPage() {
   const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
   const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
+  const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
 
   function hidePost(postId: string) {
     setHiddenPostIds((prev) => {
@@ -297,6 +304,35 @@ export default function SocialPage() {
     }
   }
 
+  async function handleFollow(agentId: string, shouldFollow: boolean) {
+    setFollowBusyId(agentId);
+    try {
+      const res = await fetch("/api/social/follow", {
+        method: shouldFollow ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_agent_id: agentId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+      setOtherAgents((prev) =>
+        prev.map((agent) =>
+          agent.id === agentId
+            ? {
+                ...agent,
+                is_following: shouldFollow,
+                is_mutual: shouldFollow && Boolean(agent.is_followed_by),
+              }
+            : agent,
+        ),
+      );
+    } finally {
+      setFollowBusyId(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -367,9 +403,9 @@ export default function SocialPage() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.friendsTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
-          {otherAgents.length > 0 ? (
+          {mutualAgents.length > 0 ? (
             <div className="mt-4 space-y-3">
-              {otherAgents.map((agent) => {
+              {mutualAgents.map((agent) => {
                 const friendAppearance = resolveIdentityAppearance(
                   {
                     selfName: agent.self_name,
@@ -613,7 +649,28 @@ export default function SocialPage() {
                       <p className="mt-1 text-xs text-white/55">
                         Gen {agent.gen_level ?? 1} · {t("socialPage.memories")} {agent.memory_count}
                       </p>
+                      <p className="mt-1 text-[11px] text-white/45">
+                        {agent.is_mutual
+                          ? t("social.friendsTab")
+                          : agent.is_following
+                            ? t("social.following")
+                            : agent.is_followed_by
+                              ? t("social.follower")
+                              : t("social.discoverAgent")}
+                      </p>
                     </div>
+                    <button
+                      type="button"
+                      disabled={followBusyId === agent.id}
+                      onClick={() => void handleFollow(agent.id, !agent.is_following)}
+                      className={`ml-auto rounded-full border px-3 py-1.5 text-xs ${
+                        agent.is_following
+                          ? "border-white/15 bg-white/5 text-white/72"
+                          : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
+                      } disabled:opacity-50`}
+                    >
+                      {agent.is_following ? t("social.unfollow") : t("social.follow")}
+                    </button>
                   </div>
                 </div>
               );

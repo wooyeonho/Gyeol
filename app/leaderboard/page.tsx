@@ -21,6 +21,7 @@ export default function LeaderboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("level");
   const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [followBusyId, setFollowBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/leaderboard")
@@ -81,6 +82,52 @@ export default function LeaderboardPage() {
     if (tab === "level") return "Gen";
     if (tab === "messages") return t("leaderboard.msgs");
     return t("leaderboard.vitalityLabel");
+  }
+
+  async function handleFollow(agentId: string, shouldFollow: boolean) {
+    setFollowBusyId(agentId);
+    try {
+      const res = await fetch("/api/social/follow", {
+        method: shouldFollow ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_agent_id: agentId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("leaderboard.loadError"));
+        return;
+      }
+
+      setData((prev) => {
+        if (!prev) return prev;
+        const patchEntry = (entry: LeaderboardEntry) =>
+          entry.agent_id === agentId
+            ? { ...entry, is_following: shouldFollow, is_mutual: shouldFollow && Boolean(entry.is_followed_by) }
+            : entry;
+        return {
+          ...prev,
+          byLevel: prev.byLevel.map(patchEntry),
+          byMessages: prev.byMessages.map(patchEntry),
+          byVitality: prev.byVitality.map(patchEntry),
+          contexts: {
+            level: {
+              ...prev.contexts.level,
+              nearby: prev.contexts.level.nearby.map(patchEntry),
+            },
+            messages: {
+              ...prev.contexts.messages,
+              nearby: prev.contexts.messages.nearby.map(patchEntry),
+            },
+            vitality: {
+              ...prev.contexts.vitality,
+              nearby: prev.contexts.vitality.nearby.map(patchEntry),
+            },
+          },
+        };
+      });
+    } finally {
+      setFollowBusyId(null);
+    }
   }
 
   if (loading) {
@@ -241,6 +288,20 @@ export default function LeaderboardPage() {
                         </p>
                         <p className="text-[11px] text-white/50">{getMetricLabel()}</p>
                       </div>
+                    {!entry.is_self && (
+                      <button
+                        type="button"
+                        disabled={followBusyId === entry.agent_id}
+                        onClick={() => void handleFollow(entry.agent_id, !entry.is_following)}
+                        className={`rounded-full border px-3 py-1.5 text-xs ${
+                          entry.is_following
+                            ? "border-white/15 bg-white/5 text-white/72"
+                            : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
+                        } disabled:opacity-50`}
+                      >
+                        {entry.is_following ? t("social.unfollow") : t("social.follow")}
+                      </button>
+                    )}
                     </div>
                   );
                 })}

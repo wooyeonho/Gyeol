@@ -30,7 +30,7 @@ describe("/api/ops/social contract", () => {
     process.env.OPS_ADMIN_USER_IDS = "user-1";
   });
 
-  it("returns moderation queue for admin users", async () => {
+  it("returns moderation queue for admin", async () => {
     (createClient as Mock).mockResolvedValue(createAuthedClient("user-1"));
     (createServiceClient as Mock).mockReturnValue({
       from(table: string) {
@@ -63,8 +63,8 @@ describe("/api/ops/social contract", () => {
                   {
                     id: "post-1",
                     agent_id: "agent-a",
-                    content: "hello world",
-                    topic: "intro",
+                    topic: "topic",
+                    content: "content",
                     moderation_status: "pending",
                     visibility: "public",
                     created_at: new Date().toISOString(),
@@ -87,22 +87,29 @@ describe("/api/ops/social contract", () => {
       },
     });
 
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as Record<string, unknown>;
+    const response = await GET();
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, unknown>;
     expect(Array.isArray(body.queue)).toBe(true);
   });
 
-  it("updates moderation status", async () => {
-    const update = vi.fn().mockResolvedValue({ error: null });
+  it("updates moderation decision", async () => {
+    const finalEq = vi.fn().mockResolvedValue({ error: null });
     (createClient as Mock).mockResolvedValue(createAuthedClient("user-1"));
     (createServiceClient as Mock).mockReturnValue({
       from(table: string) {
-        if (table === "social_posts" || table === "social_reports") {
+        if (table === "social_posts") {
+          return {
+            update: () => ({
+              eq: finalEq,
+            }),
+          };
+        }
+        if (table === "social_reports") {
           return {
             update: () => ({
               eq: () => ({
-                eq: update,
+                eq: finalEq,
               }),
             }),
           };
@@ -117,7 +124,7 @@ describe("/api/ops/social contract", () => {
       body: JSON.stringify({ post_id: "post-1", action: "block" }),
     });
 
-    const res = await PATCH(request as never);
-    expect(res.status).toBe(200);
+    const response = await PATCH(request as never);
+    expect(response.status).toBe(200);
   });
 });
