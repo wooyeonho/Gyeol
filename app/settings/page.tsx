@@ -329,8 +329,19 @@ export default function SettingsPage() {
     });
   }
 
-  function handleFontSizeChange(nextSize: FontSize) {
+  async function handleFontSizeChange(nextSize: FontSize) {
     if (!state) return;
+
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ font_size: nextSize }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+
     const config: AgentConfig = { ...(state.config || {}), font_size: nextSize };
     setState({ ...state, config });
     writeThemePreference({
@@ -340,8 +351,19 @@ export default function SettingsPage() {
     });
   }
 
-  function handleReduceMotionToggle(enabled: boolean) {
+  async function handleReduceMotionToggle(enabled: boolean) {
     if (!state) return;
+
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reduce_motion: enabled }),
+    });
+    if (!res.ok) {
+      setError(t("settings.configError"));
+      return;
+    }
+
     const config: AgentConfig = { ...(state.config || {}), reduce_motion: enabled };
     setState({ ...state, config });
     writeThemePreference({
