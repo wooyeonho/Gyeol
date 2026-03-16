@@ -20,10 +20,10 @@ export type RewardResult = {
 type RewardTableEntry = { tier: RewardTier; weight: number; coins: number; icon: string; label: Record<string, string> };
 
 const REWARD_TABLE: RewardTableEntry[] = [
-  { tier: "none", weight: 5, coins: 0, icon: "", label: { ko: "", en: "" } },
-  { tier: "small", weight: 50, coins: 5, icon: "✨", label: { ko: "작은 보상", en: "Small reward" } },
-  { tier: "medium", weight: 28, coins: 15, icon: "🎁", label: { ko: "보상 상자", en: "Reward box" } },
-  { tier: "large", weight: 12, coins: 40, icon: "💎", label: { ko: "희귀 보상", en: "Rare reward" } },
+  { tier: "none", weight: 15, coins: 0, icon: "", label: { ko: "", en: "" } },
+  { tier: "small", weight: 45, coins: 5, icon: "✨", label: { ko: "작은 보상", en: "Small reward" } },
+  { tier: "medium", weight: 25, coins: 15, icon: "🎁", label: { ko: "보상 상자", en: "Reward box" } },
+  { tier: "large", weight: 10, coins: 40, icon: "💎", label: { ko: "희귀 보상", en: "Rare reward" } },
   { tier: "jackpot", weight: 5, coins: 100, icon: "🏆", label: { ko: "잭팟!", en: "Jackpot!" } },
 ];
 
