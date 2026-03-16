@@ -4,8 +4,11 @@ import { useEffect } from "react";
 import { useAgentStore } from "@/store/agent-store";
 import {
   applyThemePreferenceToDocument,
+  isFontSize,
   isThemeMode,
+  readStoredFontSize,
   readStoredHighContrast,
+  readStoredReduceMotion,
   readStoredThemeMode,
   THEME_CHANGE_EVENT,
   writeThemePreference,
@@ -20,6 +23,8 @@ export function ThemePreferenceSync() {
       applyThemePreferenceToDocument({
         mode: readStoredThemeMode(),
         highContrast: readStoredHighContrast(),
+        fontSize: readStoredFontSize(),
+        reduceMotion: readStoredReduceMotion(),
       });
     };
 
@@ -46,16 +51,28 @@ export function ThemePreferenceSync() {
 
     const storedMode = readStoredThemeMode();
     const storedHighContrast = readStoredHighContrast();
+    const storedFontSize = readStoredFontSize();
+    const storedReduceMotion = readStoredReduceMotion();
     const nextMode = isThemeMode(config.preferred_theme) ? config.preferred_theme : storedMode;
     const nextHighContrast =
       typeof config.high_contrast_enabled === "boolean"
         ? config.high_contrast_enabled
         : storedHighContrast;
+    const nextFontSize = isFontSize(config.font_size) ? config.font_size : storedFontSize;
+    const nextReduceMotion =
+      typeof config.reduce_motion === "boolean" ? config.reduce_motion : storedReduceMotion;
 
-    if (nextMode !== storedMode || nextHighContrast !== storedHighContrast) {
+    if (
+      nextMode !== storedMode ||
+      nextHighContrast !== storedHighContrast ||
+      nextFontSize !== storedFontSize ||
+      nextReduceMotion !== storedReduceMotion
+    ) {
       writeThemePreference({
         mode: nextMode,
         highContrast: nextHighContrast,
+        fontSize: nextFontSize,
+        reduceMotion: nextReduceMotion,
       });
       return;
     }
@@ -63,6 +80,8 @@ export function ThemePreferenceSync() {
     applyThemePreferenceToDocument({
       mode: nextMode,
       highContrast: nextHighContrast,
+      fontSize: nextFontSize,
+      reduceMotion: nextReduceMotion,
     });
   }, [config]);
 
