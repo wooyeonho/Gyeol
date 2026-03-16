@@ -885,7 +885,8 @@
     "setAsAvatar": "아바타로 설정",
     "history": "생성 기록",
     "noHistory": "아직 생성 기록이 없습니다.",
-    "credits": "남은 크레딧: {count}개"
+    "credits": "남은 크레딧: {count}개",
+    "unavailable": "이미지 생성 화면은 열려 있지만, 실제 생성 provider 워크플로우는 아직 준비 중입니다."
   },
   "accessibility": {
     "title": "접근성",

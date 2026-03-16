@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -15,6 +15,8 @@ type AuthGuardProps = {
  */
 export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -22,16 +24,26 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
     fetch("/api/auth/me")
       .then((r) => {
         if (!cancelled && r.status === 401) {
-          router.replace(redirectTo);
+          const next = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+          const target = redirectTo.includes("?")
+            ? `${redirectTo}&next=${encodeURIComponent(next)}`
+            : `${redirectTo}?next=${encodeURIComponent(next)}`;
+          router.replace(target);
           return;
         }
         if (!cancelled) setReady(true);
       })
       .catch(() => {
-        if (!cancelled) router.replace(redirectTo);
+        if (!cancelled) {
+          const next = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+          const target = redirectTo.includes("?")
+            ? `${redirectTo}&next=${encodeURIComponent(next)}`
+            : `${redirectTo}?next=${encodeURIComponent(next)}`;
+          router.replace(target);
+        }
       });
     return () => { cancelled = true; };
-  }, [router, redirectTo]);
+  }, [pathname, redirectTo, router, searchParams]);
 
   if (!ready) {
     return (

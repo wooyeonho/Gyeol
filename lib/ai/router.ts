@@ -14,12 +14,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const MODELS = [
-  { name: "llama-3.1-8b-instant", timeout: 10000 },
-  { name: "llama-4-scout-17b-16e-instruct", timeout: 15000 },
   { name: "llama-4-maverick-17b-128e-instruct", timeout: 20000 },
+  { name: "llama-4-scout-17b-16e-instruct", timeout: 15000 },
+  { name: "llama-3.1-8b-instant", timeout: 10000 },
 ];
 
-async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 500, temp = 0.7) {
+async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
@@ -64,6 +64,14 @@ function fallbackStream(text: string): ReadableStream {
   });
 }
 
+function getFallbackText(systemPrompt: string) {
+  if (systemPrompt.includes("日本語")) return "いま少しだけ整えています。少ししてからもう一度話しかけてください。";
+  if (systemPrompt.includes("中文")) return "我现在需要短暂整理一下，请稍后再试一次。";
+  if (systemPrompt.includes("español")) return "Necesito un momento para reorganizarme. Inténtalo de nuevo enseguida.";
+  if (systemPrompt.includes("English")) return "I need a short reset right now. Please try again in a moment.";
+  return "지금은 잠시 정리 중이에요. 조금 후에 다시 말해줘.";
+}
+
 export async function generateText(systemPrompt: string, messages: Msg[]): Promise<ReadableStream> {
   for (const m of MODELS) {
     try {
@@ -78,7 +86,7 @@ export async function generateText(systemPrompt: string, messages: Msg[]): Promi
     return res.body!;
   } catch (e) { console.error("[AI] CF failed:", e); }
   console.log("[AI] All models failed, using fallback");
-  return fallbackStream("지금은 잠시 쉬고 있어요... 조금 후에 다시 말해줘.");
+  return fallbackStream(getFallbackText(systemPrompt));
 }
 
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {

@@ -52,15 +52,48 @@ export default function ComparePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+      <div className="theme-page min-h-screen px-4 pb-24 pt-20">
         <div className="mx-auto max-w-lg text-center">
           <p className="text-white/60 mb-4">{error}</p>
-          <Link
-            href="/"
-            className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
-          >
-            {t("compare.backHome")}
-          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            {error === t("compare.authError") ? (
+              <Link
+                href="/login?next=%2Fcompare"
+                className="rounded-full bg-cyan-400/15 px-5 py-2 text-sm font-medium text-cyan-100"
+              >
+                {t("auth.login")}
+              </Link>
+            ) : error === t("compare.noOpponent") ? (
+              <>
+                <Link
+                  href="/explore"
+                  className="rounded-full bg-cyan-400/15 px-5 py-2 text-sm font-medium text-cyan-100"
+                >
+                  {t("explore.title")}
+                </Link>
+                <Link
+                  href="/leaderboard"
+                  className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
+                >
+                  {t("leaderboard.title")}
+                </Link>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={loadMatch}
+                className="rounded-full bg-cyan-400/15 px-5 py-2 text-sm font-medium text-cyan-100"
+              >
+                {t("common.retry")}
+              </button>
+            )}
+            <Link
+              href="/"
+              className="rounded-full bg-white/10 px-5 py-2 text-sm font-medium text-white"
+            >
+              {t("compare.backHome")}
+            </Link>
+          </div>
         </div>
         <BottomNav />
       </div>
@@ -95,7 +128,7 @@ export default function ComparePage() {
   const oppColor = result.opponent.visual?.color ?? oppAppearance.palette.primary;
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-lg">
         <header className="mb-6 text-center">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">

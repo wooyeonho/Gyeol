@@ -16,6 +16,7 @@ export function MessageList({
   starterPrompts,
   appearance,
   bottomRef,
+  isHydratingHistory,
   isPlaying,
   copiedIndex,
   onPromptClick,
@@ -25,7 +26,7 @@ export function MessageList({
   onRetry,
   t,
 }: {
-  messages: Array<{ role: string; content: string; error?: boolean }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -33,6 +34,7 @@ export function MessageList({
   starterPrompts: string[];
   appearance: ResolvedIdentityAppearance;
   bottomRef: React.RefObject<HTMLDivElement | null>;
+  isHydratingHistory?: boolean;
   isPlaying: boolean;
   copiedIndex: number | null;
   onPromptClick: (prompt: string) => void;
@@ -50,7 +52,12 @@ export function MessageList({
       aria-relevant="additions text"
       aria-label={t("chat.logAriaLabel")}
     >
-      {messages.length === 0 && (
+      {isHydratingHistory && (
+        <div className="rounded-3xl border border-white/10 bg-black/30 px-5 py-6 text-sm text-white/55">
+          {t("common.loading")}
+        </div>
+      )}
+      {!isHydratingHistory && messages.length === 0 && (
         <StarterPrompts
           isFirstSession={isFirstSession}
           firstSessionConfig={firstSessionConfig}
@@ -65,7 +72,7 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {messages.map((m, i) => (
         <motion.div
-          key={`${m.role}-${i}`}
+          key={m.id ?? `${m.role}-${i}`}
           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           variants={messageVariants}
           initial="hidden"

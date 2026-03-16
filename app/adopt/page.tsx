@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 
 type BoardItem = {
   agent_id: string;
@@ -68,9 +69,9 @@ export default function AdoptPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl">
-      <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+      <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
         <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
           {t("adoptPage.eyebrow")}
         </p>
@@ -100,7 +101,7 @@ export default function AdoptPage() {
           return (
             <div
               key={item.agent_id}
-              className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15"
+              className="theme-panel rounded-[1.75rem] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -145,6 +146,16 @@ export default function AdoptPage() {
           );
         })}
       </div>
+      {items.length === 0 && (
+        <div className="mt-6">
+          <AnimatedEmptyState
+            icon="explore"
+            title={t("explore.emptyTitle")}
+            description={t("explore.emptyDesc")}
+            accentColor="#67e8f9"
+          />
+        </div>
+      )}
       </div>
       <BottomNav />
     </div>

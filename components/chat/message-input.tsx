@@ -42,6 +42,7 @@ export function MessageInput({
   voiceState,
   voiceError,
   onVoiceToggle,
+  onStopStreaming,
   t,
 }: {
   input: string;
@@ -53,6 +54,7 @@ export function MessageInput({
   voiceState: VoiceInputState;
   voiceError: string | null;
   onVoiceToggle: () => void;
+  onStopStreaming: () => void;
   t: (key: string) => string;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -120,7 +122,7 @@ export function MessageInput({
             haptic("tap");
             onVoiceToggle();
           }}
-          disabled={isStreaming || isTranscribing}
+          disabled={isTranscribing}
           className="min-h-12 min-w-12 flex-shrink-0 rounded-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-40"
           style={{
             background: isRecording ? "rgba(239,68,68,0.25)" : `${appearance.palette.primary}15`,
@@ -146,7 +148,7 @@ export function MessageInput({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? t("voice.listeningPlaceholder") : placeholder}
-          disabled={isStreaming || isRecording}
+          disabled={isRecording}
           rows={1}
           className="min-h-12 max-h-[180px] flex-1 resize-none overflow-y-auto rounded-2xl bg-white/8 px-4 py-3 text-base leading-6 text-white placeholder-white/72 transition-all focus:outline-none focus:ring-2 disabled:opacity-50"
           style={{
@@ -155,10 +157,21 @@ export function MessageInput({
           }}
         />
 
-        {showSendButton ? (
+        {isStreaming ? (
+          <motion.button
+            type="button"
+            onClick={onStopStreaming}
+            className="min-h-12 min-w-12 rounded-2xl px-4 text-base font-semibold text-white transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            style={{ background: "rgba(239,68,68,0.22)", border: "1px solid rgba(239,68,68,0.38)" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+          >
+            {t("chat.stop")}
+          </motion.button>
+        ) : showSendButton ? (
           <motion.button
             type="submit"
-            disabled={isStreaming || !input.trim()}
+            disabled={!input.trim()}
             className="min-h-12 min-w-12 rounded-2xl px-5 text-base font-semibold text-white transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50"
             style={{ background: `${appearance.palette.primary}28`, border: `1px solid ${appearance.palette.primary}40` }}
             whileHover={{ scale: 1.05 }}

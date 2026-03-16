@@ -193,6 +193,7 @@ export default function SocialPage() {
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
   const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
   const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
+  const recentConversationLogs = logs.slice(0, 6);
   const socialStats = [
     { label: t("social.feedTab"), value: visiblePosts.length },
     { label: t("social.friendsTab"), value: mutualAgents.length },
@@ -525,6 +526,24 @@ export default function SocialPage() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.friendsTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("feed");
+                setFeedScope("friends");
+              }}
+              className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100"
+            >
+              {t("socialPage.feedFriends")}
+            </button>
+            <Link
+              href="/compare"
+              className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/78"
+            >
+              {t("leaderboard.compareNow")}
+            </Link>
+          </div>
           {mutualAgents.length > 0 ? (
             <div className="mt-4 space-y-3">
               {mutualAgents.map((agent) => {
@@ -571,9 +590,51 @@ export default function SocialPage() {
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.dmTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
-          <div className="mt-4 rounded-2xl bg-black/25 p-6 text-center text-sm text-white/50">
-            {t("social.noMessages")}
-          </div>
+          {recentConversationLogs.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              {recentConversationLogs.map((log) => (
+                <div key={log.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white">{log.topic || t("socialPage.fallbackTopic")}</p>
+                      <p className="mt-1 text-xs text-white/45">{formatLocalizedDateTime(log.created_at, locale)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link
+                        href="/"
+                        onClick={() => {
+                          try {
+                            window.localStorage.setItem(
+                              "gyeol-chat-draft",
+                              `${t("socialPage.fallbackTopic")}: ${log.topic || t("socialPage.fallbackTopic")}`,
+                            );
+                          } catch {
+                            // Ignore storage failure.
+                          }
+                        }}
+                        className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78"
+                      >
+                        {t("nav.chat")}
+                      </Link>
+                      <Link
+                        href="/compare"
+                        className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100"
+                      >
+                        {t("leaderboard.compareNow")}
+                      </Link>
+                    </div>
+                  </div>
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/72">
+                    {log.content || log.conversation || log.message || log.outcome || t("socialPage.emptyContent")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl bg-black/25 p-6 text-center text-sm text-white/50">
+              {t("social.noMessages")}
+            </div>
+          )}
         </section>
       )}
 

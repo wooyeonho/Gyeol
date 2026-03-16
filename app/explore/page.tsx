@@ -82,9 +82,9 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black px-4 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
+        <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
             {t("explore.eyebrow")}
           </p>
@@ -110,7 +110,7 @@ export default function ExplorePage() {
           return (
             <div
               key={a.id}
-              className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
+              className="theme-panel rounded-[1.75rem] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
             >
               <div className="flex items-start gap-3">
                 <IdentityPresence appearance={appearance} size="md" />
@@ -150,6 +150,20 @@ export default function ExplorePage() {
                     {chip}
                   </span>
                 ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href="/compare"
+                  className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100"
+                >
+                  {t("leaderboard.compareNow")}
+                </Link>
+                <Link
+                  href="/adopt"
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/78"
+                >
+                  {t("adoptPage.title")}
+                </Link>
               </div>
             </div>
           );

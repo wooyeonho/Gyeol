@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 
@@ -16,13 +17,31 @@ export default function GeneratePage() {
   const { t } = useTranslations();
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [available, setAvailable] = useState(false);
   const [history, setHistory] = useState<GenerationRecord[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [mode, setMode] = useState<"avatar" | "image">("avatar");
 
+  useEffect(() => {
+    async function loadStatus() {
+      try {
+        const res = await fetch("/api/generate");
+        if (!res.ok) return;
+        const json = await res.json().catch(() => null);
+        setAvailable(Boolean(json?.available));
+        if (!json?.available) {
+          setNotice(t("generation.unavailable"));
+        }
+      } catch {
+        setAvailable(false);
+      }
+    }
+    void loadStatus();
+  }, [t]);
+
   async function handleGenerate() {
     const trimmed = prompt.trim();
-    if (!trimmed || generating) return;
+    if (!trimmed || generating || !available) return;
 
     setGenerating(true);
     setNotice(null);
@@ -67,9 +86,9 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-3xl space-y-4">
-        <header className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(168,85,247,0.05)]">
+        <header className="theme-panel rounded-[2rem] p-6 shadow-[0_0_80px_rgba(168,85,247,0.05)]">
           <p className="text-[11px] uppercase tracking-[0.24em] text-purple-200/70">AI Generation</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("generation.title")}</h1>
           <p className="mt-3 text-sm leading-6 text-white/66">{t("generation.subtitle")}</p>
@@ -108,7 +127,7 @@ export default function GeneratePage() {
         </div>
 
         {/* Prompt input */}
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <div className="theme-panel rounded-3xl p-5">
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -119,7 +138,7 @@ export default function GeneratePage() {
           <button
             type="button"
             onClick={() => void handleGenerate()}
-            disabled={generating || !prompt.trim()}
+            disabled={generating || !prompt.trim() || !available}
             className="mt-3 w-full rounded-xl border border-purple-400/50 bg-purple-500/20 px-4 py-3 text-sm font-medium text-white hover:bg-purple-500/30 disabled:opacity-50"
           >
             {generating
@@ -128,10 +147,26 @@ export default function GeneratePage() {
               ? t("generation.generateAvatar")
               : t("generation.generateImage")}
           </button>
+          {!available && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/discover"
+                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/82"
+              >
+                {t("discover.title")}
+              </Link>
+              <Link
+                href="/social"
+                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/82"
+              >
+                {t("socialPage.title")}
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Generation history */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <section className="theme-panel rounded-3xl p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("generation.history")}</p>
           {history.length > 0 ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -161,7 +196,7 @@ export default function GeneratePage() {
                       >
                         {t("generation.downloadImage")}
                       </button>
-                      {record.type === "avatar" && (
+                      {available && record.type === "avatar" && (
                         <button
                           type="button"
                           className="rounded-lg border border-purple-300/20 bg-purple-400/10 px-3 py-1.5 text-xs text-purple-200 hover:bg-purple-400/15"

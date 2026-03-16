@@ -203,7 +203,7 @@ export default function SettingsPage() {
           fetch("/api/billing/me"),
         ]);
         if (settingsRes.status === 401) {
-          router.push("/login");
+          router.push("/login?next=%2Fsettings");
           return;
         }
         if (!settingsRes.ok) {

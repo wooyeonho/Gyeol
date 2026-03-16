@@ -885,7 +885,8 @@
     "setAsAvatar": "Set as Avatar",
     "history": "Generation History",
     "noHistory": "No generations yet.",
-    "credits": "{count} credits remaining"
+    "credits": "{count} credits remaining",
+    "unavailable": "Image generation is visible here, but the real provider workflow is not ready yet."
   },
   "accessibility": {
     "title": "Accessibility",

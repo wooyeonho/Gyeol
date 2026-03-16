@@ -8,7 +8,6 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
-import { LegalFooter } from "@/components/legal-footer";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -164,7 +163,6 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
-      <LegalFooter />
     </div>
   );
 }

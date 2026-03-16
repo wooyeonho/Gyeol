@@ -10,6 +10,7 @@ import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTranslations } from "@/components/i18n-provider";
 import { readRewardInventory, type RewardInventory } from "@/lib/rewards/variable-reward";
+import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import {
   SHOP_CATALOG,
   canAfford,
@@ -178,10 +179,10 @@ export default function MarketPage() {
   const inv = inventory ?? { coins: 0, emoji_dust: 0, title_shards: 0, appearance_shards: 0, evolution_points: 0, streak_freezes: 0 };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-24 px-4">
+    <div className="theme-page min-h-screen pt-20 pb-24 px-4">
       <div className="mx-auto max-w-5xl">
       {/* Header */}
-      <div className="mb-4 flex items-start justify-between gap-3 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+      <div className="theme-panel mb-4 flex items-start justify-between gap-3 rounded-[2rem] p-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">{t("marketPage.eyebrow")}</p>
           <h1 className="mt-2 text-xl font-semibold">{t("marketPage.title")}</h1>
@@ -282,6 +283,14 @@ export default function MarketPage() {
               </div>
             );
           })}
+          {SHOP_CATALOG.length === 0 && (
+            <AnimatedEmptyState
+              icon="explore"
+              title={t("shop.empty")}
+              description={t("shop.insufficientResources")}
+              accentColor="#f59e0b"
+            />
+          )}
         </div>
       )}
 
@@ -361,6 +370,14 @@ export default function MarketPage() {
               </div>
             ))}
           </div>
+          {items.length === 0 && (
+            <AnimatedEmptyState
+              icon="explore"
+              title={t("shop.empty")}
+              description={t("marketPage.subtitle")}
+              accentColor="#f59e0b"
+            />
+          )}
         </>
       )}
       </div>

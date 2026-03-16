@@ -1,6 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+function getGenerationStatus() {
+  const providerKey = process.env.OPENAI_API_KEY || process.env.REPLICATE_API_TOKEN;
+  return {
+    providerAvailable: Boolean(providerKey),
+    integrationReady: false,
+  };
+}
+
+export async function GET() {
+  const status = getGenerationStatus();
+  return NextResponse.json({
+    available: status.providerAvailable && status.integrationReady,
+    providerAvailable: status.providerAvailable,
+    integrationReady: status.integrationReady,
+  });
+}
+
 /**
  * POST /api/generate
  * Placeholder generation endpoint. Returns a stub response when no generation
@@ -25,9 +42,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    // Check for generation provider
-    const providerKey = process.env.OPENAI_API_KEY || process.env.REPLICATE_API_TOKEN;
-    if (!providerKey) {
+    const status = getGenerationStatus();
+    if (!status.providerAvailable) {
       return NextResponse.json(
         {
           error: "No generation provider configured. Set OPENAI_API_KEY or REPLICATE_API_TOKEN.",
@@ -39,8 +55,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Placeholder: When provider is configured, call the generation API here.
-    // For now return a structured response indicating the generation was queued.
+    if (!status.integrationReady) {
+      return NextResponse.json(
+        {
+          error: "Generation is not ready yet. The page is visible, but the provider workflow is still being finalized.",
+          url: null,
+          prompt,
+          type,
+        },
+        { status: 503 },
+      );
+    }
+
     return NextResponse.json({
       url: null,
       prompt,

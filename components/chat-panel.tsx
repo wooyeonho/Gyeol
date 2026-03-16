@@ -34,10 +34,26 @@ function getReturningPrompts(t: (key: string) => string) {
 
 export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   const { locale, t } = useTranslations();
-  const { messages, isStreaming, sendMessage, pendingUsageMode, retryLastMessage } = useChatStore();
+  const {
+    messages,
+    isStreaming,
+    sendMessage,
+    pendingUsageMode,
+    retryLastMessage,
+    hydrateRecentMessages,
+    historyLoaded,
+    stopStreaming,
+  } = useChatStore();
   const agentState = useAgentStore((state) => state.agentState);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return window.localStorage.getItem("gyeol-chat-draft") ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
@@ -86,6 +102,38 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     bottomRef.current?.scrollIntoView({ behavior: isStreaming ? "auto" : "smooth", block: "end" });
   }, [isStreaming, messages]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.removeItem("gyeol-chat-draft");
+    } catch {
+      // Ignore storage failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (historyLoaded || messages.length > 0 || totalMessages === 0) return;
+    let cancelled = false;
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/chat/history");
+        const json = await res.json().catch(() => ({ messages: [] }));
+        if (!cancelled) {
+          hydrateRecentMessages(
+            Array.isArray(json.messages)
+              ? (json.messages as Array<{ id?: string; role: "user" | "assistant"; content: string; error?: boolean }>)
+              : [],
+          );
+        }
+      } catch {
+        if (!cancelled) hydrateRecentMessages([]);
+      }
+    }
+    void loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [historyLoaded, hydrateRecentMessages, messages.length, totalMessages]);
+
   const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
@@ -117,6 +165,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             starterPrompts={starterPrompts as string[]}
             appearance={appearance}
             bottomRef={bottomRef}
+            isHydratingHistory={!historyLoaded && totalMessages > 0 && messages.length === 0}
             isPlaying={isPlaying}
             copiedIndex={copiedIndex}
             onPromptClick={(prompt) => {
@@ -143,6 +192,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             voiceState={voiceInput.state}
             voiceError={voiceInput.error}
             onVoiceToggle={voiceInput.toggle}
+            onStopStreaming={stopStreaming}
             t={t}
           />
 

@@ -30,7 +30,7 @@ import {
 } from "@/lib/engagement/weekly-event";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { role: "user" | "assistant"; content: string; error?: boolean }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -44,6 +44,8 @@ type ChatSetter = (
 interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
+  abortController: AbortController | null;
+  historyLoaded: boolean;
   pendingUsageMode: string | null;
   lastLocale: string | undefined;
   lastReward: RewardResult | null;
@@ -54,8 +56,56 @@ interface ChatStore {
   pendingWeeklyEventCompletion: boolean;
   clearReward: () => void;
   claimDailyLoginBonus: (streakDays?: number) => void;
+  hydrateRecentMessages: (messages: Message[]) => void;
+  stopStreaming: () => void;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
   retryLastMessage: () => Promise<void>;
+}
+
+function createMessage(role: "user" | "assistant", content: string, error = false): Message {
+  return {
+    id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    content,
+    error,
+  };
+}
+
+function getLocaleText(locale: string | undefined) {
+  const normalized = locale?.toLowerCase() ?? "ko";
+  if (normalized.startsWith("en")) {
+    return {
+      parseError: "I couldn't process the response.",
+      streamError: "The response stream was interrupted.",
+      stopped: "Stopped.",
+    };
+  }
+  if (normalized.startsWith("ja")) {
+    return {
+      parseError: "応答を処理できませんでした。",
+      streamError: "応答ストリームが中断されました。",
+      stopped: "停止しました。",
+    };
+  }
+  if (normalized.startsWith("zh")) {
+    return {
+      parseError: "无法处理响应。",
+      streamError: "响应流已中断。",
+      stopped: "已停止。",
+    };
+  }
+  if (normalized.startsWith("es")) {
+    return {
+      parseError: "No pude procesar la respuesta.",
+      streamError: "La transmisión de respuesta se interrumpió.",
+      stopped: "Detenido.",
+    };
+  }
+  return {
+    parseError: "응답을 처리하지 못했어요.",
+    streamError: "결과 연결이 끊어졌어요.",
+    stopped: "응답을 멈췄어요.",
+  };
 }
 
 function persistRewardState(inventory: RewardInventory, messagesSinceReward: number) {
@@ -69,8 +119,16 @@ async function handleStreamResponse(
   get: () => ChatStore,
   locale?: string
 ) {
+  const copy = getLocaleText(locale);
+  let aborted = false;
   try {
-    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, locale }) });
+    const controller = get().abortController;
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, locale }),
+      signal: controller?.signal,
+    });
     if (!res.ok) throw new Error(`${res.status}`);
 
     const reader = res.body?.getReader();
@@ -109,15 +167,35 @@ async function handleStreamResponse(
     if (lastMsgCheck && lastMsgCheck.role === "assistant" && !lastMsgCheck.content) {
       set((s) => {
         const msgs = [...s.messages];
-        msgs[msgs.length - 1] = { role: "assistant", content: "응답을 처리하지 못했어요.", error: true };
+        msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: copy.parseError, error: true };
         return { messages: msgs };
       });
     }
   } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      aborted = true;
+      set((s) => {
+        const msgs = [...s.messages];
+        const last = msgs[msgs.length - 1];
+        if (!last || last.role !== "assistant") {
+          return { isStreaming: false, pendingUsageMode: null, abortController: null };
+        }
+        if (!last.content.trim()) {
+          msgs.pop();
+        }
+        return {
+          messages: msgs,
+          isStreaming: false,
+          pendingUsageMode: null,
+          abortController: null,
+        };
+      });
+      return;
+    }
     console.error("[Chat]", e);
     set((s) => {
       const msgs = [...s.messages];
-      msgs[msgs.length - 1] = { role: "assistant", content: "결과 연결이 끊어졌어요.", error: true };
+      msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: copy.streamError, error: true };
       return { messages: msgs };
     });
   } finally {
@@ -128,7 +206,7 @@ async function handleStreamResponse(
     }
     // Roll variable reward on successful completion
     const lastMsg = get().messages[get().messages.length - 1];
-    if (lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
+    if (!aborted && lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
       const agentState = useAgentStore.getState().agentState;
       const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
       const previousMessagesSinceReward = get().rewardProgress.messagesSinceReward;
@@ -181,13 +259,15 @@ async function handleStreamResponse(
         playSound("jackpot");
       }
     }
-    set({ isStreaming: false, pendingUsageMode: null });
+    set({ isStreaming: false, pendingUsageMode: null, abortController: null });
   }
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   isStreaming: false,
+  abortController: null,
+  historyLoaded: false,
   pendingUsageMode: null,
   lastLocale: undefined,
   lastReward: null,
@@ -197,6 +277,30 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   weeklyEventProgress: getWeeklyEventProgress(readWeeklyEventState()),
   pendingWeeklyEventCompletion: false,
   clearReward: () => set({ lastReward: null }),
+  hydrateRecentMessages: (messages) =>
+    set((state) => ({
+      messages: state.messages.length > 0 ? state.messages : messages,
+      historyLoaded: true,
+    })),
+  stopStreaming: () => {
+    const controller = get().abortController;
+    controller?.abort();
+    const locale = get().lastLocale;
+    const copy = getLocaleText(locale);
+    set((state) => {
+      const msgs = [...state.messages];
+      const last = msgs[msgs.length - 1];
+      if (last?.role === "assistant" && !last.content.trim()) {
+        msgs[msgs.length - 1] = { ...last, content: copy.stopped, error: false };
+      }
+      return {
+        messages: msgs,
+        isStreaming: false,
+        pendingUsageMode: null,
+        abortController: null,
+      };
+    });
+  },
   claimDailyLoginBonus: (streakDays = 0) => {
     if (hasClaimedDailyLoginBonus()) return;
 
@@ -216,6 +320,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     playSound("receive");
   },
   sendMessage: async (message: string, meta?: MessageMeta) => {
+    if (get().isStreaming) return;
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;
     const persistedMessages =
@@ -253,13 +358,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const trimmed = s.messages.length >= MAX_MESSAGES
         ? s.messages.slice(-MAX_MESSAGES + 2)
         : s.messages;
+      const controller = new AbortController();
       return {
-        messages: [...trimmed, { role: "user" as const, content: message }],
+        messages: [...trimmed, createMessage("user", message)],
         isStreaming: true,
+        abortController: controller,
         pendingUsageMode: detectPrimaryUsageModeFromText(message),
       };
     });
-    set((s) => ({ messages: [...s.messages, { role: "assistant" as const, content: "" }] }));
+    set((s) => ({ messages: [...s.messages, createMessage("assistant", "")] }));
 
     set({ lastLocale: meta?.locale });
     await handleStreamResponse(message, set as ChatSetter, get, meta?.locale);
@@ -273,8 +380,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     if (lastAsstMsg.role === "assistant" && lastAsstMsg.error && lastUserMsg.role === "user") {
       set((state) => {
         const msgs = [...state.messages];
-        msgs[msgs.length - 1] = { role: "assistant", content: "" };
-        return { messages: msgs, isStreaming: true };
+        const controller = new AbortController();
+        msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: "", error: false };
+        return { messages: msgs, isStreaming: true, abortController: controller };
       });
       await handleStreamResponse(lastUserMsg.content, set as ChatSetter, get, get().lastLocale);
     }
