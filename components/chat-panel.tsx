@@ -121,7 +121,8 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   };
 
   return (
-    <div className={`fixed inset-0 z-10 flex flex-col justify-end px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
+    <div className={`pointer-events-none fixed inset-0 z-10 flex flex-col justify-end px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
+      <div className="pointer-events-auto flex-1 overflow-hidden">
       <MessageList
         messages={messages}
         isStreaming={isStreaming}
@@ -144,7 +145,9 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         onRetry={retryLastMessage}
         t={t}
       />
+      </div>
 
+      <div className="pointer-events-auto">
       <MessageInput
         input={input}
         setInput={setInput}
@@ -157,8 +160,9 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         onVoiceToggle={voiceInput.toggle}
         t={t}
       />
+      </div>
 
-      <p className="mt-2 text-center text-sm text-white/78">
+      <p className="pointer-events-auto mt-2 text-center text-sm text-white/78">
         {isFirstSession
           ? t("chat.firstFootnote")
           : t("chat.returningFootnote")}

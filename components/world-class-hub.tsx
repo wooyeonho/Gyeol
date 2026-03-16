@@ -263,7 +263,7 @@ export function WorldClassHub() {
                 <>
                   <span className="h-1 w-1 rounded-full bg-white/30" />
                   <span className="text-amber-300">
-                    {streakDays}d streak
+                    {t("home.streakDaysShort").replace("{count}", String(streakDays))}
                   </span>
                 </>
               )}
