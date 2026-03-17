@@ -24,6 +24,13 @@
     "zh": "中国語",
     "es": "スペイン語"
   },
+  "creature": {
+    "sleeping": "眠っています",
+    "drowsy": "うとうとしています",
+    "awake": "起きています",
+    "breathingLabel": "呼吸中",
+    "eyeTracking": "視線追跡中"
+  },
   "nav": {
     "home": "Home",
     "activity": "Activity",

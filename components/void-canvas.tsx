@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import type { CreatureActivity } from "@/hooks/use-creature-state";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -18,6 +19,14 @@ interface VoidCanvasProps {
   pulseScale?: number;
   onTap?: () => void;
   enableThree?: boolean;
+  /** Creature breathing phase 0..1 */
+  breathPhase?: number;
+  /** Creature activity state */
+  creatureActivity?: CreatureActivity;
+  /** Excitement pulse 0..1 */
+  excitePulse?: number;
+  /** Normalized pointer for eye tracking */
+  pointerNorm?: { x: number; y: number };
 }
 
 const VoidCanvasInner = dynamic(
@@ -137,6 +146,10 @@ export function VoidCanvas({
   pulseScale = 1,
   onTap,
   enableThree = false,
+  breathPhase,
+  creatureActivity,
+  excitePulse,
+  pointerNorm,
 }: VoidCanvasProps) {
   void mood;
   const isMobile = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -208,6 +221,10 @@ export function VoidCanvas({
           motionBias={motionBias}
           pulseScale={pulseScale}
           onTap={onTap}
+          breathPhase={breathPhase}
+          creatureActivity={creatureActivity}
+          excitePulse={excitePulse}
+          pointerNorm={pointerNorm}
         />
       ) : (
         <CssVoidFallback

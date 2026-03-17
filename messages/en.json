@@ -21,6 +21,13 @@
     "ko": "Korean",
     "en": "English"
   },
+  "creature": {
+    "sleeping": "Sleeping",
+    "drowsy": "Drowsy",
+    "awake": "Awake",
+    "breathingLabel": "Breathing",
+    "eyeTracking": "Eye tracking"
+  },
   "nav": {
     "home": "Home",
     "activity": "Activity",

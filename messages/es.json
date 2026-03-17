@@ -24,6 +24,13 @@
     "zh": "Chino",
     "es": "Español"
   },
+  "creature": {
+    "sleeping": "Durmiendo",
+    "drowsy": "Somnoliento",
+    "awake": "Despierto",
+    "breathingLabel": "Respirando",
+    "eyeTracking": "Seguimiento ocular"
+  },
   "nav": {
     "home": "Home",
     "activity": "Activity",
