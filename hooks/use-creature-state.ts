@@ -19,6 +19,8 @@ export type CreatureState = {
   idleSeconds: number;
   /** Normalized pointer position {x,y} in [-1,1] range relative to viewport center */
   pointerNorm: { x: number; y: number };
+  /** Micro-tremor offset for organic jitter — tiny random displacement */
+  microTremor: { x: number; y: number };
 };
 
 const DROWSY_AFTER_S = 30;
@@ -45,6 +47,7 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     excitePulse: 0,
     idleSeconds: 0,
     pointerNorm: { x: 0, y: 0 },
+    microTremor: { x: 0, y: 0 },
   });
 
   const lastInteractionRef = useRef(0);
@@ -52,6 +55,9 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
   const prevTimeRef = useRef(0);
   const breathAccumRef = useRef(0);
   const exciteRef = useRef(0);
+  const tremorRef = useRef({ x: 0, y: 0 });
+  const tremorTargetRef = useRef({ x: 0, y: 0 });
+  const tremorTimerRef = useRef(0);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSetStateRef = useRef(0);
   const SET_STATE_INTERVAL = 66; // ~15fps — throttle React re-renders
@@ -147,6 +153,22 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
         exciteRef.current = Math.max(0, exciteRef.current - dt * 2.5);
       }
 
+      // Micro-tremor — tiny organic jitter that makes the creature feel alive
+      tremorTimerRef.current -= dt;
+      if (tremorTimerRef.current <= 0) {
+        const intensity = activity === "sleeping" ? 0.002 : activity === "drowsy" ? 0.005 : 0.008;
+        tremorTargetRef.current = {
+          x: (Math.random() - 0.5) * 2 * intensity,
+          y: (Math.random() - 0.5) * 2 * intensity,
+        };
+        tremorTimerRef.current = 0.15 + Math.random() * 0.35; // retarget every 150-500ms
+      }
+      // Smooth lerp toward target
+      tremorRef.current = {
+        x: tremorRef.current.x + (tremorTargetRef.current.x - tremorRef.current.x) * 0.12,
+        y: tremorRef.current.y + (tremorTargetRef.current.y - tremorRef.current.y) * 0.12,
+      };
+
       // Throttle setState to ~15fps to avoid re-rendering the entire tree every frame.
       // Exception: activity changes are always flushed immediately.
       const now = time;
@@ -163,6 +185,7 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
           idleSeconds: Math.floor(idleSec),
           excitePulse: exciteRef.current,
           pointerNorm: pointerNormRef.current,
+          microTremor: { ...tremorRef.current },
         }));
       } else {
         // Still flush if activity changed (low frequency, important for UI)
