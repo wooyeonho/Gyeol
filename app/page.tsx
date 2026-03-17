@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
@@ -44,8 +44,9 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
-  const hydrateRecentMessages = useChatStore((s) => s.hydrateRecentMessages);
-  const [greetingInjected, setGreetingInjected] = useState(false);
+  const injectGreeting = useChatStore((s) => s.injectGreeting);
+  const historyLoaded = useChatStore((s) => s.historyLoaded);
+  const greetingInjectedRef = useRef(false);
 
   useEffect(() => {
     fetchAgentState();
@@ -54,22 +55,35 @@ export default function Home() {
 
   const handleGreetingReady = useCallback(
     (greeting: string) => {
-      if (greetingInjected || !greeting) return;
-      setGreetingInjected(true);
-      // Inject the proactive greeting as the first assistant message
-      const currentMessages = useChatStore.getState().messages;
-      if (currentMessages.length === 0 || (currentMessages.length > 0 && currentMessages[0].role !== "assistant")) {
-        hydrateRecentMessages([
-          {
-            id: `greeting-${Date.now()}`,
-            role: "assistant" as const,
-            content: greeting,
-          },
-          ...currentMessages,
-        ]);
+      if (greetingInjectedRef.current || !greeting) return;
+
+      // Wait for chat history to load before injecting the greeting
+      const checkAndInject = () => {
+        if (!useChatStore.getState().historyLoaded) {
+          requestAnimationFrame(checkAndInject);
+          return;
+        }
+        if (greetingInjectedRef.current) return;
+        greetingInjectedRef.current = true;
+        injectGreeting({
+          id: `greeting-${Date.now()}`,
+          role: "assistant" as const,
+          content: greeting,
+        });
+      };
+
+      if (historyLoaded) {
+        greetingInjectedRef.current = true;
+        injectGreeting({
+          id: `greeting-${Date.now()}`,
+          role: "assistant" as const,
+          content: greeting,
+        });
+      } else {
+        requestAnimationFrame(checkAndInject);
       }
     },
-    [greetingInjected, hydrateRecentMessages],
+    [historyLoaded, injectGreeting],
   );
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
