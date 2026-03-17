@@ -21,6 +21,13 @@
     "ko": "한국어",
     "en": "영어"
   },
+  "creature": {
+    "sleeping": "잠든 상태",
+    "drowsy": "졸린 상태",
+    "awake": "깨어 있는 상태",
+    "breathingLabel": "호흡 중",
+    "eyeTracking": "시선 추적 중"
+  },
   "nav": {
     "home": "홈",
     "activity": "활동",

@@ -329,6 +329,12 @@ body {
   animation: fadeSlideIn 0.4s var(--ease-out-expo) both;
 }
 
+/* ── Creature breathing animation ── */
+@keyframes creatureBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
 /* ── Streak fire pulse ── */
 @keyframes firePulse {
   0%, 100% { transform: scale(1); filter: brightness(1); }

@@ -9,11 +9,14 @@ import { useTranslations } from "@/components/i18n-provider";
 import Soundscape from "@/components/soundscape";
 import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
+import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
+import { getCircadianTint } from "@/lib/circadian";
 import { haptic } from "@/lib/micro-interactions";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
 import { LivingFeed } from "@/components/living-feed";
+import { CreatureStatusIndicator } from "@/components/creature-status";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
@@ -86,6 +89,8 @@ export default function Home() {
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
   const isLowDevice = useDevicePerformance();
+  const creature = useCreatureState(vitality, isStreaming);
+  const circadian = useMemo(() => getCircadianTint(), []);
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
@@ -138,7 +143,8 @@ export default function Home() {
 
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
-  }, []);
+    creature.excite();
+  }, [creature]);
 
   // Onboarding state — show once per device
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -275,6 +281,11 @@ export default function Home() {
         className="fixed inset-0 z-0 transition-[background] duration-700"
         style={{ backgroundImage: appearance.scene.backgroundGradient }}
       >
+        {/* Circadian time-of-day tint overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
+          style={{ backgroundImage: circadian.overlay }}
+        />
         <div
           className="pointer-events-none absolute inset-0 opacity-90 transition-all duration-700"
           style={{
@@ -298,11 +309,17 @@ export default function Home() {
           pulseScale={appearance.scene.pulseScale}
           onTap={handleCanvasTap}
           enableThree={!performanceMinimal && conversationStarted}
+          breathPhase={creature.state.breathPhase}
+          creatureActivity={creature.state.activity}
+          excitePulse={creature.state.excitePulse}
+          pointerNorm={creature.state.pointerNorm}
         />
       </div>
       {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
       <div className="relative z-20">
         <WorldClassHub />
+        {/* Creature status: sleeping/drowsy indicator */}
+        <CreatureStatusIndicator activity={creature.state.activity} />
         {/* Living Feed: shows autonomous activity while user was away */}
         <div className="mt-2">
           <LivingFeed onGreetingReady={handleGreetingReady} />
