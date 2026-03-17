@@ -57,9 +57,13 @@ export default function Home() {
     (greeting: string) => {
       if (greetingInjectedRef.current || !greeting) return;
 
-      // Wait for chat history to load before injecting the greeting
+      // Wait for chat history to load before injecting the greeting.
+      // Cap at 3s to prevent unbounded rAF loop (e.g. new users where historyLoaded stays false).
+      const startTime = Date.now();
+      const MAX_WAIT_MS = 3000;
       const checkAndInject = () => {
-        if (!useChatStore.getState().historyLoaded) {
+        const elapsed = Date.now() - startTime;
+        if (!useChatStore.getState().historyLoaded && elapsed < MAX_WAIT_MS) {
           requestAnimationFrame(checkAndInject);
           return;
         }
