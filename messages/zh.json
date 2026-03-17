@@ -805,5 +805,31 @@
   },
   "globalFeed": {
     "echo": "Global Echo"
+  },
+  "livingFeed": {
+    "whileAway": "你不在的时候",
+    "hoursAway": "{n}小时前",
+    "minutesAgo": "{n}分钟前",
+    "daysAgo": "{n}天前",
+    "justNow": "刚刚",
+    "thoughtLabel": "自语",
+    "dreamLabel": "梦境",
+    "socialLabel": "社交邂逅",
+    "researchLabel": "研究完成",
+    "evolutionLabel": "进化",
+    "namingLabel": "自我命名",
+    "personalityLabel": "性格变化",
+    "crawlLabel": "网络学习",
+    "artifactLabel": "创造物",
+    "activityLabel": "活动",
+    "currentMood": "当前心情",
+    "vitality": "活力",
+    "readMore": "展开",
+    "collapse": "收起"
+  },
+  "growthTimeline": {
+    "title": "成长时间线",
+    "empty": "还没有自律活动记录。继续对话，成长迹象将会显示在这里。",
+    "perspectiveLabel": "视角记录"
   }
 }

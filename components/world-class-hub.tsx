@@ -146,6 +146,7 @@ export function WorldClassHub() {
   const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
+  const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
   const weather = typeof worldState?.weather?.name === "string" ? worldState.weather.name : "Void";
   const sessionMessages = Math.max(totalMessages, userMessages);
   const isFirstSession = sessionMessages === 0;
@@ -257,6 +258,12 @@ export function WorldClassHub() {
               <span>Gen {genLevel}</span>
               <span className="h-1 w-1 rounded-full bg-white/30" />
               <span>{weather}</span>
+              {mood && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/30" />
+                  <span className="text-purple-300/80">{mood}</span>
+                </>
+              )}
               <span className="h-1 w-1 rounded-full bg-white/30" />
               <span>{formatHubTime(now, locale)}</span>
               {streakDays > 0 && (
@@ -302,8 +309,16 @@ export function WorldClassHub() {
                   <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85">
                     {`${t("home.weatherLabel")} \u00b7 ${weather}`}
                   </span>
+                  {mood && (
+                    <span className="rounded-full border border-purple-400/25 bg-purple-400/10 px-3 py-1.5 text-xs text-purple-200/90">
+                      {`${t("home.currentMood")} \u00b7 ${mood}`}
+                    </span>
+                  )}
                   <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85">
                     {t("home.sessionMessagesLabel").replace("{count}", String(sessionMessages))}
+                  </span>
+                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1.5 text-xs text-cyan-200/85">
+                    {`${t("home.currentVitality")} \u00b7 ${Math.round(vitality * 100)}%`}
                   </span>
                 </div>
 

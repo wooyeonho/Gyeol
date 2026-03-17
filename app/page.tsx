@@ -13,6 +13,7 @@ import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emot
 import { haptic } from "@/lib/micro-interactions";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
+import { LivingFeed } from "@/components/living-feed";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
@@ -43,11 +44,33 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
+  const hydrateRecentMessages = useChatStore((s) => s.hydrateRecentMessages);
+  const [greetingInjected, setGreetingInjected] = useState(false);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  const handleGreetingReady = useCallback(
+    (greeting: string) => {
+      if (greetingInjected || !greeting) return;
+      setGreetingInjected(true);
+      // Inject the proactive greeting as the first assistant message
+      const currentMessages = useChatStore.getState().messages;
+      if (currentMessages.length === 0 || (currentMessages.length > 0 && currentMessages[0].role !== "assistant")) {
+        hydrateRecentMessages([
+          {
+            id: `greeting-${Date.now()}`,
+            role: "assistant" as const,
+            content: greeting,
+          },
+          ...currentMessages,
+        ]);
+      }
+    },
+    [greetingInjected, hydrateRecentMessages],
+  );
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
@@ -269,6 +292,10 @@ export default function Home() {
       {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
       <div className="relative z-20">
         <WorldClassHub />
+        {/* Living Feed: shows autonomous activity while user was away */}
+        <div className="mt-2">
+          <LivingFeed onGreetingReady={handleGreetingReady} />
+        </div>
       </div>
 
       <ChatPanel navVisible={conversationStarted} />

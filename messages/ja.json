@@ -805,5 +805,31 @@
   },
   "globalFeed": {
     "echo": "Global Echo"
+  },
+  "livingFeed": {
+    "whileAway": "あなたがいない間に",
+    "hoursAway": "{n}時間前",
+    "minutesAgo": "{n}分前",
+    "daysAgo": "{n}日前",
+    "justNow": "たった今",
+    "thoughtLabel": "独り言",
+    "dreamLabel": "夢",
+    "socialLabel": "出会い",
+    "researchLabel": "調査完了",
+    "evolutionLabel": "進化",
+    "namingLabel": "自己命名",
+    "personalityLabel": "性格変化",
+    "crawlLabel": "ウェブ学習",
+    "artifactLabel": "創造物",
+    "activityLabel": "活動",
+    "currentMood": "現在の気分",
+    "vitality": "活力",
+    "readMore": "もっと見る",
+    "collapse": "閉じる"
+  },
+  "growthTimeline": {
+    "title": "成長タイムライン",
+    "empty": "まだ自律活動の記録がありません。会話を続けると成長の跡がここに表示されます。",
+    "perspectiveLabel": "視点記録"
   }
 }

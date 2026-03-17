@@ -805,5 +805,31 @@
   },
   "globalFeed": {
     "echo": "Global Echo"
+  },
+  "livingFeed": {
+    "whileAway": "Mientras no estabas",
+    "hoursAway": "hace {n}h",
+    "minutesAgo": "hace {n}m",
+    "daysAgo": "hace {n}d",
+    "justNow": "ahora mismo",
+    "thoughtLabel": "Pensamiento",
+    "dreamLabel": "Sueño",
+    "socialLabel": "Encuentro social",
+    "researchLabel": "Investigación completada",
+    "evolutionLabel": "Evolución",
+    "namingLabel": "Autonombrado",
+    "personalityLabel": "Cambio de personalidad",
+    "crawlLabel": "Aprendizaje web",
+    "artifactLabel": "Creación",
+    "activityLabel": "Actividad",
+    "currentMood": "Estado de ánimo",
+    "vitality": "Vitalidad",
+    "readMore": "Leer más",
+    "collapse": "Cerrar"
+  },
+  "growthTimeline": {
+    "title": "Línea de crecimiento",
+    "empty": "Aún no hay actividad autónoma. Sigue conversando y aquí aparecerán las huellas de crecimiento.",
+    "perspectiveLabel": "Registro de perspectiva"
   }
 }
