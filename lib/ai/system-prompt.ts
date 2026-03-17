@@ -268,7 +268,7 @@ function getStrings(locale?: string): PromptStrings {
     case "es-ES":
       return STRINGS_ES;
     default:
-      return STRINGS_KO;
+      return STRINGS_EN;
   }
 }
 

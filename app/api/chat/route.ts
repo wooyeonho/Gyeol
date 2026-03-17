@@ -12,6 +12,7 @@ import { persistChatTurn } from "@/lib/chat/post-process";
 import { createAssistantTapStream } from "@/lib/chat/stream";
 import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
+import { normalizeLocale } from "@/lib/i18n/config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +46,23 @@ export async function POST(req: NextRequest) {
       reader: supabase,
       writer: service,
     });
+
+    // Auto-sync detected locale to agent config so autonomous crons
+    // (heartbeat, dream, social, etc.) generate in the user's language.
+    const normalizedLocale = normalizeLocale(locale);
+    if (normalizedLocale && context.agentState) {
+      const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
+      if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
+        cfg.preferred_locale = normalizedLocale;
+        service
+          .from("agent_state")
+          .update({ config: cfg })
+          .eq("agent_id", agentId)
+          .then(() => { /* fire-and-forget */ })
+          .catch((err: unknown) => console.error("[Chat] preferred_locale sync failed", err));
+      }
+    }
+
     recordServerEvent(PRODUCT_EVENT.chatContextReady, {
       agentId,
       autonomousLogCount: context.promptMetrics.autonomousLogCount,
