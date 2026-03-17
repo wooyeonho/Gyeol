@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https:",
             "font-src 'self' data: https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline'",
       "worker-src 'self' blob:",
       "connect-src 'self' https: ws: wss:",
       "media-src 'self' data: blob:",
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=(), microphone=(self), geolocation=()",
           },
           {
             key: "Strict-Transport-Security",

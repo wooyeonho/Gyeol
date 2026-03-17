@@ -20,15 +20,15 @@ const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "descr
   },
   ja: {
     title: "GYEOL",
-    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+    description: "会話を記憶、成長、生きた存在に変えるAIコンパニオン。",
   },
   zh: {
     title: "GYEOL",
-    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+    description: "将对话转化为记忆、成长和活生生的存在的AI伙伴。",
   },
   es: {
     title: "GYEOL",
-    description: "An AI companion that turns conversation into memory, growth, and living presence.",
+    description: "Un compañero de IA que convierte la conversación en memoria, crecimiento y presencia viva.",
   },
 };
 

@@ -1,19 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
 import { BottomNav } from "@/components/bottom-nav";
-import { LocaleSwitcher } from "@/components/locale-switcher";
 import { WorldClassHubMissionEditor } from "@/components/home/world-class-hub-mission-editor";
 import { useTranslations } from "@/components/i18n-provider";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
+import {
+  formatPlanTierLabel,
+  formatSubscriptionStatus,
+  type EntitlementKey,
+  type PlanDefinition,
+} from "@/lib/billing/catalog";
+import { FEATURE_FLAG } from "@/lib/experiments/catalog";
+import { useFeatureFlag } from "@/lib/experiments/client";
+import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
 import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
-import { readLocalMissions, type LocalMission, writeLocalMissions } from "@/lib/home/local-missions";
 import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
+import { createClient } from "@/lib/supabase/client";
 import {
   isFontSize,
   isThemeMode,
@@ -75,14 +84,6 @@ function InviteSection() {
     </div>
   );
 }
-import { FEATURE_FLAG } from "@/lib/experiments/catalog";
-import { useFeatureFlag } from "@/lib/experiments/client";
-import {
-  formatPlanTierLabel,
-  formatSubscriptionStatus,
-  type EntitlementKey,
-  type PlanDefinition,
-} from "@/lib/billing/catalog";
 
 type AgentConfig = Record<string, boolean | string | number | null | undefined>;
 type AgentState = {
@@ -153,7 +154,16 @@ function SettingsToggle({
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
       onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
       className="theme-subpanel flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-4 text-left transition-all duration-200 hover:brightness-105"
     >
       <div>

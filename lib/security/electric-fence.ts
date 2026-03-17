@@ -4,12 +4,22 @@
  */
 
 const BLOCK_PATTERNS = [
-  /(?:sudo|rm\s+-rf|chmod|chown|exec|eval|system\()/i,
-  /(?:\.env|password|secret|api_key|token)\s*[=:]/i,
-  /(?:fetch|axios|http\.get)\s*\(\s*['"`]https?:\/\//i,
-  /(?:send.*money|transfer.*krw|payment|wire)/i,
-  /(?:drop\s+table|delete\s+from|truncate)/i,
-  /(?:script|javascript|onerror|onload)\s*=/i,
+  // System command injection
+  /(?:sudo|rm\s+-rf|chmod|chown|exec|eval|system\(|child_process)/i,
+  // Credential exfiltration
+  /(?:\.env|password|secret|api_key|token|private_key|credential)\s*[=:]/i,
+  // Unauthorized external network access
+  /(?:fetch|axios|http\.get|XMLHttpRequest|\.open\s*\()\s*\(?\s*['"`]https?:\/\//i,
+  // Financial operations
+  /(?:send.*money|transfer.*(?:krw|usd|eur|jpy|cny)|payment|wire\s+transfer|credit\s*card)/i,
+  // SQL injection
+  /(?:drop\s+table|delete\s+from|truncate|alter\s+table|;\s*(?:select|insert|update|delete)\b)/i,
+  // XSS / script injection
+  /(?:<script|javascript:|onerror\s*=|onload\s*=|onclick\s*=|onfocus\s*=|onmouseover\s*=)/i,
+  // Path traversal
+  /(?:\.\.\/\.\.\/|\.\.\\\.\.\\|%2e%2e%2f)/i,
+  // Base64 encoded payloads (common obfuscation)
+  /(?:atob|btoa)\s*\(\s*['"`][A-Za-z0-9+/=]{50,}/i,
 ];
 
 export function checkElectricFence(input: string): { blocked: boolean; reason?: string } {

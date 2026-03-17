@@ -839,5 +839,15 @@
     "title": "Línea de crecimiento",
     "empty": "Aún no hay actividad autónoma. Sigue conversando y aquí aparecerán las huellas de crecimiento.",
     "perspectiveLabel": "Registro de perspectiva"
+  },
+  "error": {
+    "title": "Algo salió mal",
+    "description": "Ocurrió un error temporal. Por favor, inténtalo de nuevo.",
+    "retry": "Reintentar"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página solicitada no existe o ha sido movida.",
+    "backHome": "Volver al inicio"
   }
 }
