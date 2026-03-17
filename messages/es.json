@@ -229,6 +229,8 @@
     },
     "weatherLabel": "Weather",
     "sessionMessagesLabel": "{count} messages",
+    "currentMood": "Ánimo",
+    "currentVitality": "Vitalidad",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
     "streakDaysShort": "{count}d racha",
     "streakAndNext": "Streak and next step",

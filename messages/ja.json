@@ -229,6 +229,8 @@
     },
     "weatherLabel": "Weather",
     "sessionMessagesLabel": "{count} messages",
+    "currentMood": "気分",
+    "currentVitality": "活力",
     "firstSessionHint": "Use one of the three suggestions below or type directly into the input.",
     "streakDaysShort": "{count}日連続",
     "streakAndNext": "Streak and next step",

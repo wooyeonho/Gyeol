@@ -226,6 +226,8 @@
     },
     "weatherLabel": "날씨",
     "sessionMessagesLabel": "메시지 {count}개",
+    "currentMood": "현재 기분",
+    "currentVitality": "활력",
     "firstSessionHint": "아래 추천 질문 3개 중 하나를 누르거나 입력창에 바로 적어보세요.",
     "streakDaysShort": "{count}일 스트릭",
     "streakAndNext": "스트릭과 다음 단계",

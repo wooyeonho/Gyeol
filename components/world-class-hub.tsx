@@ -317,7 +317,7 @@ export function WorldClassHub() {
                   <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/85">
                     {t("home.sessionMessagesLabel").replace("{count}", String(sessionMessages))}
                   </span>
-                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1.5 text-xs text-cyan-200/85">
+                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-200/85">
                     {`${t("home.currentVitality")} \u00b7 ${Math.round(vitality * 100)}%`}
                   </span>
                 </div>
