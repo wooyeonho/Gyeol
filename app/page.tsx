@@ -45,7 +45,6 @@ export default function Home() {
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
   const injectGreeting = useChatStore((s) => s.injectGreeting);
-  const historyLoaded = useChatStore((s) => s.historyLoaded);
   const greetingInjectedRef = useRef(false);
 
   useEffect(() => {
@@ -67,6 +66,8 @@ export default function Home() {
           requestAnimationFrame(checkAndInject);
           return;
         }
+        // If history never loaded within the timeout, skip injection to avoid blocking hydration
+        if (!useChatStore.getState().historyLoaded) return;
         if (greetingInjectedRef.current) return;
         greetingInjectedRef.current = true;
         injectGreeting({
@@ -76,18 +77,10 @@ export default function Home() {
         });
       };
 
-      if (historyLoaded) {
-        greetingInjectedRef.current = true;
-        injectGreeting({
-          id: `greeting-${Date.now()}`,
-          role: "assistant" as const,
-          content: greeting,
-        });
-      } else {
-        requestAnimationFrame(checkAndInject);
-      }
+      // Always use rAF path — historyLoaded is read via getState() inside checkAndInject
+      requestAnimationFrame(checkAndInject);
     },
-    [historyLoaded, injectGreeting],
+    [injectGreeting],
   );
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};

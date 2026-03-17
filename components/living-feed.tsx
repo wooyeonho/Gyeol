@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 
@@ -119,6 +119,10 @@ export function LivingFeed({
   const [dismissed, setDismissed] = useState(false);
   const [expandedDream, setExpandedDream] = useState<string | null>(null);
 
+  // Stabilize callback ref to prevent re-fetching when parent re-renders with new callback identity
+  const onGreetingReadyRef = useRef(onGreetingReady);
+  useEffect(() => { onGreetingReadyRef.current = onGreetingReady; }, [onGreetingReady]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -128,8 +132,8 @@ export function LivingFeed({
         const json = (await res.json()) as WelcomeData;
         if (!cancelled) {
           setData(json);
-          if (json.greeting && onGreetingReady) {
-            onGreetingReady(json.greeting);
+          if (json.greeting && onGreetingReadyRef.current) {
+            onGreetingReadyRef.current(json.greeting);
           }
         }
       } catch {
@@ -142,7 +146,7 @@ export function LivingFeed({
     return () => {
       cancelled = true;
     };
-  }, [onGreetingReady]);
+  }, []);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
