@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
           .from("agent_state")
           .update({ config: cfg })
           .eq("agent_id", agentId)
-          .then(() => { /* fire-and-forget */ });
+          .then(() => { /* fire-and-forget */ })
+          .catch((err: unknown) => console.error("[Chat] preferred_locale sync failed", err));
       }
     }
 
