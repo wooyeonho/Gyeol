@@ -1,28 +1,67 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-function getGenerationStatus() {
-  const providerKey = process.env.OPENAI_API_KEY || process.env.REPLICATE_API_TOKEN;
-  return {
-    providerAvailable: Boolean(providerKey),
-    integrationReady: false,
-  };
+/**
+ * Cloudflare Workers AI image generation via Stable Diffusion XL.
+ * Returns a base64 PNG string on success, null on failure.
+ */
+async function generateImageCF(prompt: string): Promise<string | null> {
+  const accountId = process.env.CF_ACCOUNT_ID;
+  const apiToken = process.env.CF_API_TOKEN;
+  if (!accountId || !apiToken) return null;
+
+  const model = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify({ prompt, num_steps: 20 }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      console.error(`[Generate] CF image ${res.status}`, await res.text().catch(() => ""));
+      return null;
+    }
+    // CF returns raw PNG bytes
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return `data:image/png;base64,${base64}`;
+  } catch (e) {
+    clearTimeout(timer);
+    console.error("[Generate] CF image error:", e);
+    return null;
+  }
+}
+
+function isGenerationAvailable(): boolean {
+  // Cloudflare Workers AI is the primary provider
+  return Boolean(process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN);
 }
 
 export async function GET() {
-  const status = getGenerationStatus();
+  const available = isGenerationAvailable();
   return NextResponse.json({
-    available: status.providerAvailable && status.integrationReady,
-    providerAvailable: status.providerAvailable,
-    integrationReady: status.integrationReady,
+    available,
+    providerAvailable: available,
+    integrationReady: available,
   });
 }
 
 /**
  * POST /api/generate
- * Placeholder generation endpoint. Returns a stub response when no generation
- * provider (e.g. DALL-E, Stable Diffusion) is configured. When a provider key
- * is available the handler can be extended to call the real API.
+ * Real image generation using Cloudflare Workers AI (Stable Diffusion XL).
+ * Generates images from text prompts and stores them as artifacts.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -31,6 +70,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowed = await checkRateLimit(`generate:${user.id}`);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   try {
@@ -42,38 +86,51 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const status = getGenerationStatus();
-    if (!status.providerAvailable) {
+    if (!isGenerationAvailable()) {
       return NextResponse.json(
-        {
-          error: "No generation provider configured. Set OPENAI_API_KEY or REPLICATE_API_TOKEN.",
-          url: null,
-          prompt,
-          type,
-        },
+        { error: "No generation provider configured. Set CF_ACCOUNT_ID and CF_API_TOKEN.", url: null, prompt, type },
         { status: 503 },
       );
     }
 
-    if (!status.integrationReady) {
+    // Build generation prompt with context
+    const genPrompt =
+      type === "avatar"
+        ? `Digital art avatar portrait, ethereal glowing creature, ${prompt}, dark background, soft lighting, minimalist, high quality`
+        : prompt;
+
+    const imageUrl = await generateImageCF(genPrompt);
+    if (!imageUrl) {
       return NextResponse.json(
-        {
-          error: "Generation is not ready yet. The page is visible, but the provider workflow is still being finalized.",
-          url: null,
-          prompt,
-          type,
-        },
-        { status: 503 },
+        { error: "Image generation failed. Please try again.", url: null, prompt, type },
+        { status: 502 },
       );
     }
 
-    return NextResponse.json({
-      url: null,
-      prompt,
-      type,
-      status: "queued",
-      message: "Generation provider detected but integration pending.",
-    });
+    // Persist as artifact
+    try {
+      const service = createServiceClient();
+      const { agentId } = await ensurePrimaryAgent(service, user.id);
+      if (agentId) {
+        await service.from("artifacts").insert({
+          agent_id: agentId,
+          type: type === "avatar" ? "emotion_image" : "image",
+          content: `[Generated] ${prompt}`,
+          is_preserved: false,
+          is_public: false,
+        });
+        await service.from("autonomous_logs").insert({
+          agent_id: agentId,
+          action_type: "image",
+          summary: `Generated ${type}: ${prompt.slice(0, 100)}`,
+        });
+      }
+    } catch (e) {
+      // Non-fatal: image was generated, just didn't persist metadata
+      console.warn("[Generate] persist error:", e);
+    }
+
+    return NextResponse.json({ url: imageUrl, prompt, type, status: "completed" });
   } catch (error) {
     console.error("POST /api/generate error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

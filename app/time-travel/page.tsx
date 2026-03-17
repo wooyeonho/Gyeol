@@ -4,6 +4,7 @@ import { useState } from "react";
 import TimeTravelChat from "@/components/time-travel-chat";
 import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
+import { BottomNav } from "@/components/bottom-nav";
 
 export default function TimeTravelPage() {
   const { t } = useTranslations();
@@ -15,7 +16,7 @@ export default function TimeTravelPage() {
   const defaultDate = threeMonthsAgo.toISOString().slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 pb-24">
+    <div className="theme-page min-h-screen p-4 pb-24">
       <div className="max-w-lg mx-auto">
         <h1 className="text-xl font-semibold mb-2">{t("timeTravel.title")}</h1>
         <p className="text-white/50 text-sm mb-6">{t("timeTravel.subtitle")}</p>
@@ -57,6 +58,7 @@ export default function TimeTravelPage() {
           </Link>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

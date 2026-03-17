@@ -7,6 +7,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { BottomNav } from "@/components/bottom-nav";
 
 const ConstellationScene = dynamic(() => import("@/components/constellation-scene"), { ssr: false });
 
@@ -88,7 +89,7 @@ export default function ConstellationPage() {
   }, [appearance, constellations, stars, t]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="theme-page min-h-screen pb-24 flex flex-col">
       <div className="border-b border-white/10 p-4">
         <div className="mx-auto flex max-w-5xl items-start gap-4">
           <IdentityPresence appearance={appearance} size="md" />
@@ -117,7 +118,7 @@ export default function ConstellationPage() {
         )}
       </div>
       <div className="grid gap-4 p-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-2 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+        <div className="theme-panel space-y-2 rounded-[1.75rem] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("constellationPage.clusters")}
           </p>
@@ -128,7 +129,7 @@ export default function ConstellationPage() {
             </div>
           ))}
         </div>
-        <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+        <div className="theme-panel rounded-[1.75rem] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("constellationPage.timelineEyebrow")}
           </p>
@@ -157,9 +158,10 @@ export default function ConstellationPage() {
           </div>
         </div>
       </div>
-      <div className="p-4 pb-24">
+      <div className="p-4">
         <Link href="/" className="text-white/50 text-sm hover:text-white/80">{t("constellationPage.backHome")}</Link>
       </div>
+      <BottomNav />
     </div>
   );
 }
