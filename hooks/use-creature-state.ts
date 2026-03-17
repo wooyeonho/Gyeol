@@ -53,6 +53,8 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
   const breathAccumRef = useRef(0);
   const exciteRef = useRef(0);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSetStateRef = useRef(0);
+  const SET_STATE_INTERVAL = 66; // ~15fps — throttle React re-renders
 
   // Initialize lastInteraction on mount (avoids calling Date.now() during render)
   useEffect(() => {
@@ -82,15 +84,13 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     touch();
   }, [touch]);
 
-  // Pointer tracking
+  // Pointer tracking — stored in ref, synced to state on next throttled tick
+  const pointerNormRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const updatePointer = useCallback((clientX: number, clientY: number) => {
     if (typeof window === "undefined") return;
     const nx = ((clientX / window.innerWidth) * 2 - 1) * 0.8;
     const ny = ((clientY / window.innerHeight) * 2 - 1) * 0.8;
-    setState((s) => {
-      if (Math.abs(s.pointerNorm.x - nx) < 0.01 && Math.abs(s.pointerNorm.y - ny) < 0.01) return s;
-      return { ...s, pointerNorm: { x: nx, y: ny } };
-    });
+    pointerNormRef.current = { x: nx, y: ny };
   }, []);
 
   // Global event listeners
@@ -123,14 +123,16 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     if (isStreaming) touch();
   }, [isStreaming, touch]);
 
-  // Animation loop
+  // Animation loop — runs at 60fps internally, but throttles React setState to ~15fps
   useEffect(() => {
     const tick = (time: number) => {
       if (prevTimeRef.current === 0) prevTimeRef.current = time;
       const dt = Math.min((time - prevTimeRef.current) / 1000, 0.1); // cap at 100ms
       prevTimeRef.current = time;
 
-      const idleMs = Date.now() - lastInteractionRef.current;
+      // Guard: if lastInteraction hasn't been initialized yet, treat idle as 0
+      const lastInt = lastInteractionRef.current || Date.now();
+      const idleMs = Date.now() - lastInt;
       const idleSec = idleMs / 1000;
 
       let activity: CreatureActivity = "awake";
@@ -139,21 +141,36 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
 
       const rate = getBreathRate(vitality, activity);
       breathAccumRef.current += dt * rate;
-      const breathPhase = breathAccumRef.current % 1;
 
       // Decay excite pulse
       if (exciteRef.current > 0) {
         exciteRef.current = Math.max(0, exciteRef.current - dt * 2.5);
       }
 
-      setState((s) => ({
-        ...s,
-        activity,
-        breathPhase,
-        breathRate: rate,
-        idleSeconds: Math.floor(idleSec),
-        excitePulse: exciteRef.current,
-      }));
+      // Throttle setState to ~15fps to avoid re-rendering the entire tree every frame.
+      // Exception: activity changes are always flushed immediately.
+      const now = time;
+      const elapsed = now - lastSetStateRef.current;
+      const activityChanged = (prev: CreatureState) => prev.activity !== activity;
+
+      if (elapsed >= SET_STATE_INTERVAL) {
+        lastSetStateRef.current = now;
+        setState((s) => ({
+          ...s,
+          activity,
+          breathPhase: breathAccumRef.current % 1,
+          breathRate: rate,
+          idleSeconds: Math.floor(idleSec),
+          excitePulse: exciteRef.current,
+          pointerNorm: pointerNormRef.current,
+        }));
+      } else {
+        // Still flush if activity changed (low frequency, important for UI)
+        setState((s) => {
+          if (!activityChanged(s)) return s; // no-op, no re-render
+          return { ...s, activity };
+        });
+      }
 
       rafRef.current = requestAnimationFrame(tick);
     };
