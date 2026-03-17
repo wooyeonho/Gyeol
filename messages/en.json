@@ -908,5 +908,31 @@
     "fontSizeMedium": "Medium",
     "fontSizeLarge": "Large",
     "fontSizeXLarge": "Extra Large"
+  },
+  "livingFeed": {
+    "whileAway": "While you were away",
+    "hoursAway": "{n}h ago",
+    "minutesAgo": "{n}m ago",
+    "daysAgo": "{n}d ago",
+    "justNow": "just now",
+    "thoughtLabel": "Thought",
+    "dreamLabel": "Dream",
+    "socialLabel": "Social encounter",
+    "researchLabel": "Research completed",
+    "evolutionLabel": "Evolution",
+    "namingLabel": "Self-naming",
+    "personalityLabel": "Personality shift",
+    "crawlLabel": "Web learning",
+    "artifactLabel": "Creation",
+    "activityLabel": "Activity",
+    "currentMood": "Current mood",
+    "vitality": "Vitality",
+    "readMore": "Read more",
+    "collapse": "Collapse"
+  },
+  "growthTimeline": {
+    "title": "Growth Timeline",
+    "empty": "No autonomous activity yet. Keep chatting and growth traces will appear here.",
+    "perspectiveLabel": "Perspective entry"
   }
 }

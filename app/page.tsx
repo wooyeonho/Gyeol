@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
@@ -13,6 +13,7 @@ import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emot
 import { haptic } from "@/lib/micro-interactions";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
+import { LivingFeed } from "@/components/living-feed";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
@@ -43,11 +44,44 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
+  const injectGreeting = useChatStore((s) => s.injectGreeting);
+  const greetingInjectedRef = useRef(false);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  const handleGreetingReady = useCallback(
+    (greeting: string) => {
+      if (greetingInjectedRef.current || !greeting) return;
+
+      // Wait for chat history to load before injecting the greeting.
+      // Cap at 3s to prevent unbounded rAF loop (e.g. new users where historyLoaded stays false).
+      const startTime = Date.now();
+      const MAX_WAIT_MS = 3000;
+      const checkAndInject = () => {
+        const elapsed = Date.now() - startTime;
+        if (!useChatStore.getState().historyLoaded && elapsed < MAX_WAIT_MS) {
+          requestAnimationFrame(checkAndInject);
+          return;
+        }
+        // If history never loaded within the timeout, skip injection to avoid blocking hydration
+        if (!useChatStore.getState().historyLoaded) return;
+        if (greetingInjectedRef.current) return;
+        greetingInjectedRef.current = true;
+        injectGreeting({
+          id: `greeting-${Date.now()}`,
+          role: "assistant" as const,
+          content: greeting,
+        });
+      };
+
+      // Always use rAF path — historyLoaded is read via getState() inside checkAndInject
+      requestAnimationFrame(checkAndInject);
+    },
+    [injectGreeting],
+  );
 
   const visual = (agentState?.visual as Visual | undefined) ?? {};
   const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
@@ -269,6 +303,10 @@ export default function Home() {
       {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
       <div className="relative z-20">
         <WorldClassHub />
+        {/* Living Feed: shows autonomous activity while user was away */}
+        <div className="mt-2">
+          <LivingFeed onGreetingReady={handleGreetingReady} />
+        </div>
       </div>
 
       <ChatPanel navVisible={conversationStarted} />

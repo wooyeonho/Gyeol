@@ -57,6 +57,7 @@ interface ChatStore {
   clearReward: () => void;
   claimDailyLoginBonus: (streakDays?: number) => void;
   hydrateRecentMessages: (messages: Message[]) => void;
+  injectGreeting: (greeting: Message) => void;
   stopStreaming: () => void;
   sendMessage: (message: string, meta?: MessageMeta) => Promise<void>;
   retryLastMessage: () => Promise<void>;
@@ -281,6 +282,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set((state) => ({
       messages: state.messages.length > 0 ? state.messages : messages,
       historyLoaded: true,
+    })),
+  injectGreeting: (greeting) =>
+    set((state) => ({
+      messages:
+        state.messages.length === 0 || state.messages[0].role !== "assistant"
+          ? [greeting, ...state.messages]
+          : state.messages,
     })),
   stopStreaming: () => {
     const controller = get().abortController;

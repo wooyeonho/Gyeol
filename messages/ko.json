@@ -908,5 +908,31 @@
     "fontSizeMedium": "보통",
     "fontSizeLarge": "크게",
     "fontSizeXLarge": "매우 크게"
+  },
+  "livingFeed": {
+    "whileAway": "당신이 없는 동안",
+    "hoursAway": "{n}시간 전",
+    "minutesAgo": "{n}분 전",
+    "daysAgo": "{n}일 전",
+    "justNow": "방금",
+    "thoughtLabel": "혼잣말",
+    "dreamLabel": "꿈",
+    "socialLabel": "사회적 만남",
+    "researchLabel": "탐구 완료",
+    "evolutionLabel": "진화",
+    "namingLabel": "자기 명명",
+    "personalityLabel": "성격 변화",
+    "crawlLabel": "웹 학습",
+    "artifactLabel": "생성물",
+    "activityLabel": "활동",
+    "currentMood": "현재 기분",
+    "vitality": "활력",
+    "readMore": "더 보기",
+    "collapse": "접기"
+  },
+  "growthTimeline": {
+    "title": "성장 타임라인",
+    "empty": "아직 자율 활동 기록이 없습니다. 대화를 이어가면 여기에 성장 흔적이 나타납니다.",
+    "perspectiveLabel": "시점 기록"
   }
 }
