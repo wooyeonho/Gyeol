@@ -1,8 +1,23 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 30;
+const DEFAULT_MAX_PER_WINDOW = 30;
 const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "open" ? "open" : "closed";
+
+/**
+ * Plan-based rate limit tiers.
+ * Keys match the key suffix pattern "chat:<uuid>" → "chat", "api:<uuid>" → "api".
+ */
+const TIER_LIMITS: Record<string, number> = {
+  free: 15,
+  pro: 40,
+  premium: 80,
+};
+
+function getMaxPerWindow(tier?: string | null): number {
+  if (tier && tier in TIER_LIMITS) return TIER_LIMITS[tier];
+  return DEFAULT_MAX_PER_WINDOW;
+}
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
@@ -25,7 +40,7 @@ function extractUserId(key: string): string {
   return match ? match[0] : "00000000-0000-0000-0000-000000000000";
 }
 
-export async function checkRateLimit(key: string): Promise<boolean> {
+export async function checkRateLimit(key: string, tier?: string | null): Promise<boolean> {
   try {
     const service = createServiceClient();
     const expiry = new Date(Date.now() - WINDOW_MS).toISOString();
@@ -43,7 +58,7 @@ export async function checkRateLimit(key: string): Promise<boolean> {
       p_rl_key: key,
       p_user_id: userId,
       p_window_start: windowStart,
-      p_max_requests: MAX_PER_WINDOW,
+      p_max_requests: getMaxPerWindow(tier),
     });
 
     if (!rpcError) {
@@ -63,7 +78,7 @@ export async function checkRateLimit(key: string): Promise<boolean> {
       .maybeSingle();
 
     const currentCount = existing?.request_count ?? 0;
-    if (currentCount >= MAX_PER_WINDOW) return false;
+    if (currentCount >= getMaxPerWindow(tier)) return false;
 
     const { error: upsertError } = await service.rpc("upsert_rate_limit", {
       p_rl_key: key,

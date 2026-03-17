@@ -271,6 +271,8 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        // Run optional personality/evolution steps sequentially to avoid
+        // lost-update race conditions on shared DB columns (config, fragments).
         await runOptionalStep("processVitality", agentId, async () => {
           const { processVitality } = await import("@/lib/evolution/vitality");
           await processVitality(agentId);
@@ -282,6 +284,14 @@ export async function GET(req: NextRequest) {
         await runOptionalStep("checkSelfNaming", agentId, async () => {
           const { checkSelfNaming } = await import("@/lib/personality/naming");
           await checkSelfNaming(agentId);
+        });
+        await runOptionalStep("analyzeUserPatterns", agentId, async () => {
+          const { analyzeUserPatterns } = await import("@/lib/personality/observer");
+          await analyzeUserPatterns(agentId);
+        });
+        await runOptionalStep("detectSilence", agentId, async () => {
+          const { detectSilence } = await import("@/lib/personality/silence");
+          await detectSilence(agentId);
         });
         if (Math.random() < 0.1) {
           await runOptionalStep("analyzeMirrorEffect", agentId, async () => {
@@ -295,14 +305,6 @@ export async function GET(req: NextRequest) {
             await checkContradictions(agentId);
           });
         }
-        await runOptionalStep("analyzeUserPatterns", agentId, async () => {
-          const { analyzeUserPatterns } = await import("@/lib/personality/observer");
-          await analyzeUserPatterns(agentId);
-        });
-        await runOptionalStep("detectSilence", agentId, async () => {
-          const { detectSilence } = await import("@/lib/personality/silence");
-          await detectSilence(agentId);
-        });
         if ((state.subjective_time || 0) % 20 === 0) {
           await runOptionalStep("updateSelfModel", agentId, async () => {
             const { updateSelfModel } = await import("@/lib/personality/self-theory");

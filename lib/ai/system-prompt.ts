@@ -368,5 +368,8 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     parts.push(L.lexicon(words));
   }
 
+  // 19. Final language enforcement (repeated at the end for emphasis)
+  if (L.langDirective) parts.push(`[CRITICAL] ${L.langDirective} Do not mix languages under any circumstances.`);
+
   return parts.join("\n");
 }

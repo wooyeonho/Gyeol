@@ -839,5 +839,15 @@
     "title": "成长时间线",
     "empty": "还没有自律活动记录。继续对话，成长迹象将会显示在这里。",
     "perspectiveLabel": "视角记录"
+  },
+  "error": {
+    "title": "出现了问题",
+    "description": "发生了临时错误，请稍后重试。",
+    "retry": "重试"
+  },
+  "notFound": {
+    "title": "页面未找到",
+    "description": "您请求的页面不存在或已被移动。",
+    "backHome": "返回首页"
   }
 }

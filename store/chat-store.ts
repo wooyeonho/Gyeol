@@ -7,18 +7,15 @@ import { logWarn } from "@/lib/ops/logger";
 import {
   applyRewardToInventory,
   createDailyLoginReward,
-  createWeeklyEventReward,
   getRewardProgress,
   hasClaimedDailyLoginBonus,
   markDailyLoginBonusClaimed,
   readMessagesSinceReward,
   readRewardInventory,
-  rollReward,
+  writeRewardInventory,
   type RewardInventory,
   type RewardProgress,
   type RewardResult,
-  writeMessagesSinceReward,
-  writeRewardInventory,
 } from "@/lib/rewards/variable-reward";
 import {
   getWeeklyEventProgress,
@@ -28,6 +25,7 @@ import {
   type WeeklyEventState,
   writeWeeklyEventState,
 } from "@/lib/engagement/weekly-event";
+import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean }
@@ -107,11 +105,6 @@ function getLocaleText(locale: string | undefined) {
     streamError: "결과 연결이 끊어졌어요.",
     stopped: "응답을 멈췄어요.",
   };
-}
-
-function persistRewardState(inventory: RewardInventory, messagesSinceReward: number) {
-  writeRewardInventory(inventory);
-  writeMessagesSinceReward(messagesSinceReward);
 }
 
 async function handleStreamResponse(
@@ -205,59 +198,23 @@ async function handleStreamResponse(
     } catch (e) {
       console.error("[Chat] agent refresh failed", e);
     }
-    // Roll variable reward on successful completion
+    // Roll variable reward on successful completion (delegated to reward-middleware)
     const lastMsg = get().messages[get().messages.length - 1];
     if (!aborted && lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
-      const agentState = useAgentStore.getState().agentState;
-      const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
-      const previousMessagesSinceReward = get().rewardProgress.messagesSinceReward;
-      const nextMessagesSinceReward = previousMessagesSinceReward + 1;
-      const guaranteedProgress = getRewardProgress(nextMessagesSinceReward, streakDays);
-      const reward = rollReward(streakDays, {
-        forceReward: guaranteedProgress.messagesUntilGuaranteed === 0,
-        source: "message",
+      const msgReward = processMessageReward(get().rewardProgress);
+      set({
+        lastReward: msgReward.lastReward ?? get().lastReward,
+        rewardInventory: msgReward.rewardInventory,
+        ...(msgReward.rewardProgress ? { rewardProgress: msgReward.rewardProgress } : {}),
       });
 
-      if (reward.tier !== "none") {
-        const freshInventory = readRewardInventory();
-        const nextInventory = applyRewardToInventory(freshInventory, reward);
-        persistRewardState(nextInventory, 0);
-        set({
-          lastReward: reward,
-          rewardInventory: nextInventory,
-          rewardProgress: getRewardProgress(0, streakDays),
-        });
-        if (reward.tier === "jackpot") {
-          haptic("jackpot");
-          playSound("jackpot");
-        } else if (reward.tier === "large") {
-          haptic("success");
-          playSound("streak");
-        } else {
-          haptic("receive");
-          playSound("receive");
-        }
-      } else {
-        const freshInvForPersist = readRewardInventory();
-        persistRewardState(freshInvForPersist, nextMessagesSinceReward);
-        set({ rewardInventory: freshInvForPersist });
-        set({ rewardProgress: guaranteedProgress });
-        haptic("receive");
-        playSound("receive");
-      }
-
       if (get().pendingWeeklyEventCompletion) {
-        const weeklyReward = createWeeklyEventReward(streakDays);
-        const freshWeeklyInv = readRewardInventory();
-        const nextInventory = applyRewardToInventory(freshWeeklyInv, weeklyReward);
-        writeRewardInventory(nextInventory);
+        const weeklyUpdate = processWeeklyEventReward();
         set({
-          lastReward: weeklyReward,
-          rewardInventory: nextInventory,
+          lastReward: weeklyUpdate.lastReward,
+          rewardInventory: weeklyUpdate.rewardInventory,
           pendingWeeklyEventCompletion: false,
         });
-        haptic("jackpot");
-        playSound("jackpot");
       }
     }
     set({ isStreaming: false, pendingUsageMode: null, abortController: null });
