@@ -152,7 +152,7 @@ export function LivingFeed({
     setDismissed(true);
   }, []);
 
-  if (loading || !data || !data.has_activity || dismissed) {
+  if (loading || !data || !data.has_activity) {
     return null;
   }
 
@@ -188,7 +188,9 @@ export function LivingFeed({
 
   return (
     <AnimatePresence>
+      {!dismissed && (
       <motion.div
+        key="living-feed"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
@@ -206,11 +208,15 @@ export function LivingFeed({
               <p className="text-xs font-medium uppercase tracking-wider text-white/70">
                 {t("livingFeed.whileAway")}
               </p>
-              {data.hours_away > 0 && (
+              {data.hours_away >= 1 ? (
                 <span className="text-xs text-white/40">
                   {t("livingFeed.hoursAway").replace("{n}", String(Math.round(data.hours_away)))}
                 </span>
-              )}
+              ) : data.hours_away > 0 ? (
+                <span className="text-xs text-white/40">
+                  {t("livingFeed.minutesAgo").replace("{n}", String(Math.max(1, Math.round(data.hours_away * 60))))}
+                </span>
+              ) : null}
             </div>
             <button
               type="button"
@@ -308,6 +314,7 @@ export function LivingFeed({
           )}
         </div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }
