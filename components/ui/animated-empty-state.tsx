@@ -30,7 +30,7 @@ export function AnimatedEmptyState({
   description,
   actionLabel,
   onAction,
-  accentColor = "#22d3ee",
+  accentColor = "#818cf8",
   className = "",
 }: AnimatedEmptyStateProps) {
   const IconComponent = iconMap[icon];

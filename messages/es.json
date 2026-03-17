@@ -832,7 +832,8 @@
     "currentMood": "Estado de ánimo",
     "vitality": "Vitalidad",
     "readMore": "Leer más",
-    "collapse": "Cerrar"
+    "collapse": "Cerrar",
+    "hoursAgo": "hace {n}h"
   },
   "growthTimeline": {
     "title": "Línea de crecimiento",

@@ -260,8 +260,6 @@
     "milestone": "마일스톤",
     "activityLabel": "활동",
     "recentEmptyHint": "첫 활동이 생기면 여기에서 최근 변화 요약을 바로 볼 수 있습니다.",
-    "openRecentActivity": "최근 활동 열기",
-    "openAlbumAgain": "앨범 다시 보기",
     "streakCount": "연속 {count}일",
     "proRecapBody": "더 깊은 주간 리캡과 장기 히스토리 요약은 Pro 이상에서 열립니다.",
     "seeUpgradePlans": "플랜 업그레이드 보기",
@@ -935,7 +933,8 @@
     "currentMood": "현재 기분",
     "vitality": "활력",
     "readMore": "더 보기",
-    "collapse": "접기"
+    "collapse": "접기",
+    "hoursAgo": "{n}시간 전"
   },
   "growthTimeline": {
     "title": "성장 타임라인",
