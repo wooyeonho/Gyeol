@@ -28,19 +28,19 @@ async function generateImageCF(prompt: string): Promise<string | null> {
       body: JSON.stringify({ prompt, num_steps: 20 }),
       signal: ctrl.signal,
     });
-    clearTimeout(timer);
     if (!res.ok) {
       console.error(`[Generate] CF image ${res.status}`, await res.text().catch(() => ""));
       return null;
     }
-    // CF returns raw PNG bytes
+    // CF returns raw PNG bytes — keep timeout active during body download
     const buffer = await res.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (e) {
-    clearTimeout(timer);
     console.error("[Generate] CF image error:", e);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

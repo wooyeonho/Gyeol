@@ -330,7 +330,7 @@ export default function LeaderboardPage() {
             icon="social"
             title={t("leaderboard.empty")}
             description={t("leaderboard.emptyDesc")}
-            accentColor="#22d3ee"
+            accentColor="#818cf8"
           />
         ) : (
           <div className="space-y-3">

@@ -832,7 +832,8 @@
     "currentMood": "現在の気分",
     "vitality": "活力",
     "readMore": "もっと見る",
-    "collapse": "閉じる"
+    "collapse": "閉じる",
+    "hoursAgo": "{n}時間前"
   },
   "growthTimeline": {
     "title": "成長タイムライン",

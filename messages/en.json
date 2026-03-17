@@ -260,8 +260,6 @@
     "milestone": "Milestone",
     "activityLabel": "Activity",
     "recentEmptyHint": "Once the first activity appears, a recent change summary will show up here.",
-    "openRecentActivity": "Open recent activity",
-    "openAlbumAgain": "Open album again",
     "streakCount": "streak {count}",
     "proRecapBody": "Deeper weekly recaps and longer history summaries open on Pro and above.",
     "seeUpgradePlans": "See upgrade plans",
@@ -935,7 +933,8 @@
     "currentMood": "Current mood",
     "vitality": "Vitality",
     "readMore": "Read more",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "hoursAgo": "{n}h ago"
   },
   "growthTimeline": {
     "title": "Growth Timeline",

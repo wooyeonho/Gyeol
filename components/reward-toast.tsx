@@ -25,7 +25,7 @@ type ConfettiParticle = {
 };
 
 const CONFETTI_COLORS = [
-  "#f59e0b", "#8b5cf6", "#22d3ee", "#34d399",
+  "#f59e0b", "#8b5cf6", "#818cf8", "#4ade80",
   "#f472b6", "#fb923c", "#a78bfa", "#67e8f9",
 ];
 
