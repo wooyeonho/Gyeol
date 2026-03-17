@@ -335,6 +335,13 @@ body {
   50% { transform: scale(1.15); opacity: 1; }
 }
 
+/* ── Sleeping float-up for ZZZ emoji ── */
+@keyframes floatUp {
+  0% { transform: translateX(-50%) translateY(0); opacity: 0.4; }
+  50% { transform: translateX(-50%) translateY(-12px); opacity: 0.6; }
+  100% { transform: translateX(-50%) translateY(-24px); opacity: 0; }
+}
+
 /* ── Streak fire pulse ── */
 @keyframes firePulse {
   0%, 100% { transform: scale(1); filter: brightness(1); }

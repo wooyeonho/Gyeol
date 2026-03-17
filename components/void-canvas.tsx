@@ -43,6 +43,9 @@ function CssVoidFallback({
   motionBias,
   pulseScale,
   onTap,
+  breathPhase = 0,
+  creatureActivity = "awake" as CreatureActivity,
+  excitePulse = 0,
 }: {
   color: string;
   size: number;
@@ -52,6 +55,9 @@ function CssVoidFallback({
   motionBias: "gentle" | "kinetic" | "mystic";
   pulseScale: number;
   onTap?: () => void;
+  breathPhase?: number;
+  creatureActivity?: CreatureActivity;
+  excitePulse?: number;
 }) {
   const secondaryColor = useMemo(() => {
     const raw = color.replace("#", "");
@@ -65,12 +71,28 @@ function CssVoidFallback({
     return `rgb(${r}, ${g}, ${b})`;
   }, [color]);
 
-  const effectiveScale = (isListening ? 1.05 : 1) * pulseScale;
+  // Organic breathing — sine wave + heartbeat double-bump
+  const breathSin = Math.sin(breathPhase * Math.PI * 2);
+  const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
+  const breathScale = 1 + breathSin * 0.06 + heartbeat + excitePulse * 0.15;
+
+  // Activity dimming — sleeping creatures fade, drowsy ones dim
+  const activityDim = creatureActivity === "sleeping" ? 0.35 : creatureActivity === "drowsy" ? 0.6 : 1;
+  const activitySpeed = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
+
+  const effectiveScale = (isListening ? 1.05 : 1) * pulseScale * breathScale;
+  const motionDuration = motionBias === "kinetic" ? 8 : motionBias === "mystic" ? 18 : 12;
+  const adjustedDuration = motionDuration / activitySpeed;
   const motionClass = motionBias === "kinetic"
-    ? "animate-[voidOrbitFast_8s_linear_infinite]"
+    ? `animate-[voidOrbitFast_${adjustedDuration}s_linear_infinite]`
     : motionBias === "mystic"
-      ? "animate-[voidOrbitSlow_18s_linear_infinite]"
-      : "animate-[voidOrbit_12s_linear_infinite]";
+      ? `animate-[voidOrbitSlow_${adjustedDuration}s_linear_infinite]`
+      : `animate-[voidOrbit_${adjustedDuration}s_linear_infinite]`;
+
+  // Glow intensity pulses with breathing
+  const breathGlow = glow * (0.8 + breathSin * 0.2) * activityDim;
+  const effectiveOpacity = Math.max(0.45, vitality) * activityDim;
+  const coreOpacity = Math.max(0.65, vitality) * activityDim;
 
   return (
     <div
@@ -85,15 +107,18 @@ function CssVoidFallback({
             width: size * 7,
             height: size * 7,
             transform: `scale(${effectiveScale})`,
-            transition: "transform 220ms ease-out",
+            transition: "transform 80ms ease-out",
           }}
         >
+          {/* Ambient glow — breathes with the creature */}
           <div
-            className="absolute inset-0 rounded-full opacity-35 blur-3xl"
+            className="absolute inset-0 rounded-full blur-3xl"
             style={{
               background: `radial-gradient(circle, ${secondaryColor} 0%, transparent 70%)`,
+              opacity: 0.25 + breathSin * 0.1 * activityDim,
             }}
           />
+          {/* Orbit ring */}
           <div
             className={`absolute left-1/2 top-1/2 rounded-full ${motionClass}`}
             style={{
@@ -101,9 +126,10 @@ function CssVoidFallback({
               height: size * 4.2,
               transform: "translate(-50%, -50%)",
               border: `1px solid ${secondaryColor}30`,
-              boxShadow: `0 0 ${glow}px ${color}25 inset`,
+              boxShadow: `0 0 ${breathGlow}px ${color}25 inset`,
             }}
           />
+          {/* Mid glow layer */}
           <div
             className="absolute left-1/2 top-1/2 rounded-full blur-xl"
             style={{
@@ -111,10 +137,11 @@ function CssVoidFallback({
               height: size * 2.2,
               transform: "translate(-50%, -50%)",
               background: `radial-gradient(circle, ${color} 0%, ${secondaryColor} 55%, transparent 75%)`,
-              opacity: Math.max(0.45, vitality),
-              boxShadow: `0 0 ${glow}px ${color}`,
+              opacity: effectiveOpacity,
+              boxShadow: `0 0 ${breathGlow}px ${color}`,
             }}
           />
+          {/* Core — bright center */}
           <div
             className={`absolute left-1/2 top-1/2 rounded-full ${isListening ? "animate-pulse" : ""}`}
             style={{
@@ -122,9 +149,18 @@ function CssVoidFallback({
               height: size * 1.3,
               transform: "translate(-50%, -50%)",
               background: `radial-gradient(circle, #ffffff 0%, ${color} 60%, transparent 80%)`,
-              opacity: Math.max(0.65, vitality),
+              opacity: coreOpacity,
             }}
           />
+          {/* Sleeping ZZZ overlay */}
+          {creatureActivity === "sleeping" && (
+            <div
+              className="absolute left-1/2 top-1/4 -translate-x-1/2 animate-[floatUp_3s_ease-in-out_infinite]"
+              style={{ fontSize: size * 0.4, opacity: 0.4 }}
+            >
+              💤
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -236,6 +272,9 @@ export function VoidCanvas({
           motionBias={motionBias}
           pulseScale={pulseScale}
           onTap={onTap}
+          breathPhase={breathPhase}
+          creatureActivity={creatureActivity}
+          excitePulse={excitePulse}
         />
       )}
     </div>
