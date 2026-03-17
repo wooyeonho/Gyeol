@@ -315,13 +315,18 @@ export default function Home() {
           pointerNorm={creature.state.pointerNorm}
         />
       </div>
-      {/* Hub z-20 sits above ChatPanel (z-10) so clicks reach hub buttons */}
-      <div className="relative z-20">
-        <WorldClassHub />
+      {/* Hub z-20 sits above ChatPanel (z-10) — pointer-events-none on wrapper
+           so chat input underneath remains clickable; each interactive child opts in */}
+      <div className="pointer-events-none relative z-20">
+        <div className="pointer-events-auto">
+          <WorldClassHub />
+        </div>
         {/* Creature status: sleeping/drowsy indicator */}
-        <CreatureStatusIndicator activity={creature.state.activity} />
+        <div className="pointer-events-auto">
+          <CreatureStatusIndicator activity={creature.state.activity} />
+        </div>
         {/* Living Feed: shows autonomous activity while user was away */}
-        <div className="mt-2">
+        <div className="pointer-events-auto mt-2">
           <LivingFeed onGreetingReady={handleGreetingReady} />
         </div>
       </div>

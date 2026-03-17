@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
+  isValidLocale,
   type Locale,
 } from "@/lib/i18n/config";
 import { loadMessages, getNested } from "@/lib/i18n/messages";
@@ -51,6 +52,19 @@ export function I18nProvider({
       setReady(true);
     });
   }, [locale]);
+
+  // On first mount, if no locale cookie exists, detect from navigator.language
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasCookie = document.cookie.split(";").some((c) => c.trim().startsWith(`${LOCALE_COOKIE_NAME}=`));
+    if (!hasCookie) {
+      const nav = navigator.language?.slice(0, 2);
+      if (nav && isValidLocale(nav) && nav !== locale) {
+        setLocaleState(nav);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     persistLocale(locale);
