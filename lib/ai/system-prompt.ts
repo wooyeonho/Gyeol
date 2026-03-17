@@ -252,6 +252,9 @@ const STRINGS_ES: PromptStrings = {
 
 function getStrings(locale?: string): PromptStrings {
   switch (locale) {
+    case "ko":
+    case "ko-KR":
+      return STRINGS_KO;
     case "en":
     case "en-US":
       return STRINGS_EN;

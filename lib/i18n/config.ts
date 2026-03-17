@@ -15,7 +15,7 @@ export const LOCALES = ["ko", "en", "ja", "zh", "es"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_COOKIE_NAME = "gyeol_locale";
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "ko";
 
 /** Display names for locale switcher UI */
 export const LOCALE_DISPLAY_NAMES: Record<Locale, string> = {

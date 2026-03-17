@@ -173,11 +173,10 @@ export function GrowthTimeline() {
   }
 
   if (items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-        <p className="text-sm text-white/50">{t("growthTimeline.empty")}</p>
-      </div>
-    );
+    // Don't render an empty state card — the Activity page already has its own
+    // AnimatedEmptyState for the case where there are zero items overall.
+    // Showing "no activity" here while the list below has items is confusing.
+    return null;
   }
 
   return (
