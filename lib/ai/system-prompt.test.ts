@@ -4,6 +4,7 @@ import { buildSystemPrompt } from "./system-prompt";
 describe("buildSystemPrompt", () => {
   it("includes memories, logs, world state, and goal context", () => {
     const prompt = buildSystemPrompt({
+      locale: "ko",
       agentState: {
         self_name: "GYEOL",
         intimacy_score: 88,
