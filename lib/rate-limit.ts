@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
 const WINDOW_MS = 60_000;
-const DEFAULT_MAX_PER_WINDOW = 20;
+const DEFAULT_MAX_PER_WINDOW = 30;
 const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "open" ? "open" : "closed";
 
 /**

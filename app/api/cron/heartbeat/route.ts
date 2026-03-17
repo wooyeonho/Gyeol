@@ -271,54 +271,52 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // Run optional personality/evolution steps in parallel to reduce timeout risk
-        const optionalSteps: Array<() => Promise<void>> = [
-          () => runOptionalStep("processVitality", agentId, async () => {
-            const { processVitality } = await import("@/lib/evolution/vitality");
-            await processVitality(agentId);
-          }),
-          () => runOptionalStep("processScar", agentId, async () => {
-            const { processScar } = await import("@/lib/evolution/scars");
-            await processScar(agentId);
-          }),
-          () => runOptionalStep("checkSelfNaming", agentId, async () => {
-            const { checkSelfNaming } = await import("@/lib/personality/naming");
-            await checkSelfNaming(agentId);
-          }),
-          () => runOptionalStep("analyzeUserPatterns", agentId, async () => {
-            const { analyzeUserPatterns } = await import("@/lib/personality/observer");
-            await analyzeUserPatterns(agentId);
-          }),
-          () => runOptionalStep("detectSilence", agentId, async () => {
-            const { detectSilence } = await import("@/lib/personality/silence");
-            await detectSilence(agentId);
-          }),
-        ];
+        // Run optional personality/evolution steps sequentially to avoid
+        // lost-update race conditions on shared DB columns (config, fragments).
+        await runOptionalStep("processVitality", agentId, async () => {
+          const { processVitality } = await import("@/lib/evolution/vitality");
+          await processVitality(agentId);
+        });
+        await runOptionalStep("processScar", agentId, async () => {
+          const { processScar } = await import("@/lib/evolution/scars");
+          await processScar(agentId);
+        });
+        await runOptionalStep("checkSelfNaming", agentId, async () => {
+          const { checkSelfNaming } = await import("@/lib/personality/naming");
+          await checkSelfNaming(agentId);
+        });
+        await runOptionalStep("analyzeUserPatterns", agentId, async () => {
+          const { analyzeUserPatterns } = await import("@/lib/personality/observer");
+          await analyzeUserPatterns(agentId);
+        });
+        await runOptionalStep("detectSilence", agentId, async () => {
+          const { detectSilence } = await import("@/lib/personality/silence");
+          await detectSilence(agentId);
+        });
         if (Math.random() < 0.1) {
-          optionalSteps.push(() => runOptionalStep("analyzeMirrorEffect", agentId, async () => {
+          await runOptionalStep("analyzeMirrorEffect", agentId, async () => {
             const { analyzeMirrorEffect } = await import("@/lib/personality/mirror");
             await analyzeMirrorEffect(agentId);
-          }));
+          });
         }
         if (Math.random() < 0.05) {
-          optionalSteps.push(() => runOptionalStep("checkContradictions", agentId, async () => {
+          await runOptionalStep("checkContradictions", agentId, async () => {
             const { checkContradictions } = await import("@/lib/personality/challenger");
             await checkContradictions(agentId);
-          }));
+          });
         }
         if ((state.subjective_time || 0) % 20 === 0) {
-          optionalSteps.push(() => runOptionalStep("updateSelfModel", agentId, async () => {
+          await runOptionalStep("updateSelfModel", agentId, async () => {
             const { updateSelfModel } = await import("@/lib/personality/self-theory");
             await updateSelfModel(agentId);
-          }));
+          });
         }
         if ((state.subjective_time || 0) % 10 === 0) {
-          optionalSteps.push(() => runOptionalStep("runMemoryPhysics", agentId, async () => {
+          await runOptionalStep("runMemoryPhysics", agentId, async () => {
             const { runMemoryPhysics } = await import("@/lib/memory/physics");
             await runMemoryPhysics(agentId);
-          }));
+          });
         }
-        await Promise.allSettled(optionalSteps.map((fn) => fn()));
         if (Math.random() < 0.25) {
           try {
             const userId = (agent as { user_id?: string }).user_id;

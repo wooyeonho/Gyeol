@@ -15,6 +15,7 @@ export function sanitizeUserInput(text: string): string {
     // Prompt injection: strip common prompt override attempts
     .replace(/\b(ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?|rules?))/gi, "[filtered]")
     .replace(/\b(system\s*:\s*|SYSTEM\s+PROMPT|<<\s*SYS\s*>>)/gi, "[filtered]")
-    .replace(/\b(you\s+are\s+now\s+|pretend\s+you\s+are\s+|act\s+as\s+(?:a\s+)?(?:different|new)\s+)/gi, "[filtered]")
+    .replace(/\b(you\s+are\s+now\s+(?:a\s+)?(?:different|new)\s+(?:ai|assistant|bot|system|model))/gi, "[filtered]")
+    .replace(/\b(pretend\s+you\s+are\s+|act\s+as\s+(?:a\s+)?(?:different|new)\s+)/gi, "[filtered]")
     .trim();
 }
