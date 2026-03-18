@@ -1,0 +1,162 @@
+/**
+ * DNA-Driven Appearance System
+ *
+ * Derives unique visual properties from the creature's DNA.
+ * Unlike the template-based appearance system, this creates
+ * a continuous visual space where no two creatures look the same.
+ */
+
+import type { CreatureDNA } from "./dna";
+import type { SpeciesProfile } from "./species";
+
+export type DNAAppearance = {
+  /** Primary color in HSL */
+  primaryHue: number;
+  primarySaturation: number;
+  primaryLightness: number;
+  /** Secondary color offset from primary */
+  secondaryHueShift: number;
+  /** Eye color derived from emotional DNA */
+  eyeHue: number;
+  /** Body proportions */
+  bodyRatio: number; // 0 = compact, 1 = elongated
+  bodySymmetry: number; // 0 = amorphous, 1 = perfect symmetry
+  /** Surface texture */
+  roughness: number; // 0 = smooth glass, 1 = rough stone
+  metalness: number; // 0 = matte, 1 = mirror
+  /** Glow properties */
+  glowIntensity: number;
+  glowPulseSpeed: number;
+  /** Particle system */
+  particleCount: number;
+  particleDrift: number; // how far particles float
+  particleSize: number;
+  /** Animation */
+  breatheDepth: number;
+  breatheSpeed: number;
+  idleRotation: number;
+  /** Unique markings: a deterministic pattern seed */
+  markingsSeed: number;
+  /** Overall size modifier */
+  scale: number;
+};
+
+/**
+ * Derive unique appearance from DNA and species archetype.
+ * The same DNA always produces the same appearance (deterministic).
+ */
+export function deriveDNAAppearance(
+  dna: CreatureDNA,
+  species: SpeciesProfile
+): DNAAppearance {
+  // Primary color: weighted mix of all DNA dimensions
+  // This creates a continuous color space — no two DNA profiles produce the same color
+  const primaryHue =
+    (dna.warmth * 30 +       // warm → warm hues
+    dna.analytical * 220 +    // analytical → blue
+    dna.creativity * 280 +    // creative → purple
+    dna.intensity * 15 +      // intense → red
+    dna.openness * 160 +      // open → cyan
+    dna.empathy * 340 +       // empathic → pink
+    dna.independence * 120 +  // independent → green
+    dna.intuitive * 260       // intuitive → indigo
+    ) / 8;
+
+  const saturation = 55 + dna.intensity * 25 + dna.playfulness * 10;
+  const lightness = 45 + dna.warmth * 15 + dna.openness * 10 - dna.independence * 8;
+
+  const secondaryHueShift = 30 + dna.creativity * 60 - dna.stability * 20;
+
+  // Eye color from emotional axes
+  const eyeHue =
+    dna.empathy > 0.65 ? 340 :  // pink eyes for empathic
+    dna.intensity > 0.65 ? 30 :  // amber for intense
+    dna.curiosity > 0.65 ? 190 : // cyan for curious
+    dna.stability > 0.65 ? 140 : // green for stable
+    primaryHue + 180; // complementary to body
+
+  // Body shape from cognitive/structural DNA
+  const bodyRatio = 0.3 + dna.verbal * 0.3 + dna.spatial * 0.2 - dna.stability * 0.15;
+  const bodySymmetry = 0.3 + dna.stability * 0.3 + dna.analytical * 0.25 - dna.creativity * 0.15;
+
+  // Surface from DNA
+  const roughness = 0.1 + (1 - dna.stability) * 0.4 + dna.assertiveness * 0.2;
+  const metalness = dna.analytical * 0.3 + dna.spatial * 0.2;
+
+  // Archetype modifiers
+  const archetypeGlowMod =
+    species.archetype === "ethereal" ? 1.3 :
+    species.archetype === "crystalline" ? 1.1 :
+    species.archetype === "volcanic" ? 1.4 :
+    species.archetype === "spectral" ? 1.2 : 1.0;
+
+  const glowIntensity = (0.3 + dna.openness * 0.3 + dna.creativity * 0.2) * archetypeGlowMod;
+  const glowPulseSpeed = 0.5 + dna.intensity * 0.8 + dna.playfulness * 0.4;
+
+  // Particles
+  const particleCount = Math.round(8 + dna.creativity * 20 + dna.openness * 12);
+  const particleDrift = 0.3 + dna.independence * 0.4 + dna.openness * 0.3;
+  const particleSize = 0.01 + dna.warmth * 0.02 + dna.empathy * 0.015;
+
+  // Animation
+  const breatheDepth = 0.02 + dna.stability * 0.03 + dna.warmth * 0.02;
+  const breatheSpeed = 0.8 + dna.playfulness * 0.6 - dna.stability * 0.3;
+  const idleRotation = dna.curiosity * 0.3 + dna.playfulness * 0.2;
+
+  // Deterministic markings seed from DNA hash
+  let markingsSeed = 0;
+  const axes = Object.values(dna) as number[];
+  for (let i = 0; i < axes.length; i++) {
+    markingsSeed = ((markingsSeed << 5) - markingsSeed + Math.round(axes[i] * 1000)) | 0;
+  }
+
+  // Scale from gen-level would be applied externally, base from DNA
+  const scale = 0.85 + dna.assertiveness * 0.15 + dna.persistence * 0.1;
+
+  return {
+    primaryHue: primaryHue % 360,
+    primarySaturation: clamp(saturation, 40, 90),
+    primaryLightness: clamp(lightness, 35, 75),
+    secondaryHueShift: clamp(secondaryHueShift, 10, 90),
+    eyeHue: eyeHue % 360,
+    bodyRatio: clamp(bodyRatio, 0.15, 0.85),
+    bodySymmetry: clamp(bodySymmetry, 0.15, 0.85),
+    roughness: clamp(roughness, 0.05, 0.8),
+    metalness: clamp(metalness, 0, 0.5),
+    glowIntensity: clamp(glowIntensity, 0.2, 1.0),
+    glowPulseSpeed: clamp(glowPulseSpeed, 0.3, 1.8),
+    particleCount: Math.max(4, Math.min(48, particleCount)),
+    particleDrift: clamp(particleDrift, 0.2, 1.0),
+    particleSize: clamp(particleSize, 0.005, 0.04),
+    breatheDepth: clamp(breatheDepth, 0.01, 0.08),
+    breatheSpeed: clamp(breatheSpeed, 0.4, 1.5),
+    idleRotation: clamp(idleRotation, 0, 0.5),
+    markingsSeed: Math.abs(markingsSeed),
+    scale: clamp(scale, 0.75, 1.15),
+  };
+}
+
+/**
+ * Convert DNA appearance to CSS-usable color strings.
+ */
+export function dnaAppearanceToColors(appearance: DNAAppearance) {
+  const h = Math.round(appearance.primaryHue);
+  const s = Math.round(appearance.primarySaturation);
+  const l = Math.round(appearance.primaryLightness);
+
+  const h2 = Math.round((appearance.primaryHue + appearance.secondaryHueShift) % 360);
+  const eyeH = Math.round(appearance.eyeHue);
+
+  return {
+    primary: `hsl(${h} ${s}% ${l}%)`,
+    secondary: `hsl(${h2} ${s - 5}% ${l + 5}%)`,
+    eye: `hsl(${eyeH} 75% 60%)`,
+    glow: `hsl(${h} ${s}% ${l + 10}% / ${(appearance.glowIntensity * 0.4).toFixed(2)})`,
+    background: `hsl(${h} ${Math.round(s * 0.4)}% 6%)`,
+    ring: `hsl(${h} ${s}% 70% / 0.36)`,
+  };
+}
+
+function clamp(v: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, v));
+}
