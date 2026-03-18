@@ -14,7 +14,7 @@ export async function absorbSharedKnowledge(
   // Get the public entry
   const { data: entry, error: fetchErr } = await db
     .from("moltbook_entries")
-    .select("id, agent_id, topic, summary, source_type, confidence, tags, embedding")
+    .select("id, agent_id, topic, summary, source_type, confidence, tags, embedding, times_referenced")
     .eq("id", entryId)
     .eq("is_public", true)
     .single();
@@ -81,7 +81,7 @@ export async function absorbSharedKnowledge(
   // Increment original's times_referenced
   await db
     .from("moltbook_entries")
-    .update({ times_referenced: ((entry as Record<string, unknown>).times_referenced as number ?? 0) + 1 })
+    .update({ times_referenced: (Number(entry.times_referenced) || 0) + 1 })
     .eq("id", entryId)
     .then(() => {});
 

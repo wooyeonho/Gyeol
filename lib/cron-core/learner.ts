@@ -201,8 +201,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
     return { processed: 0, items_fetched: 0 };
   }
 
-  const sample = allItems.slice(0, 10);
-  const rawText = sample.map((i) => `[${i.source}] ${i.title}: ${(i.description ?? "").slice(0, 200)}`).join("\n\n");
+  const baseRawText = allItems.slice(0, 10).map((i) => `[${i.source}] ${i.title}: ${(i.description ?? "").slice(0, 200)}`).join("\n\n");
   const summaryCache = new Map<string, string>();
   const contentCache = new Map<string, { content: string; embedding: number[] }>();
 
@@ -211,14 +210,22 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
     try {
       // Personalize feeds per agent based on interests and goals
       const personalizedUrls = await getPersonalizedFeeds(agentId, feedUrls);
+      const agentExtraItems: { title: string; link?: string; description?: string; source: string }[] = [];
       for (const url of personalizedUrls) {
         if (!feedUrls.includes(url)) {
           const items = await fetchRssItems(url);
           const source = new URL(url).hostname;
           for (const it of items) {
-            allItems.push({ ...it, source });
+            agentExtraItems.push({ ...it, source });
           }
         }
+      }
+
+      // Build per-agent rawText: base items + personalized items
+      let rawText = baseRawText;
+      if (agentExtraItems.length > 0) {
+        const extraText = agentExtraItems.slice(0, 5).map((i) => `[${i.source}] ${i.title}: ${(i.description ?? "").slice(0, 200)}`).join("\n\n");
+        rawText = `${baseRawText}\n\n${extraText}`;
       }
 
       const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
@@ -226,12 +233,15 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
       if (config.learner_enabled === false) continue;
       const locale = resolveGenerationLocale({ config });
       const language = getLanguageName(locale);
-      let summary = summaryCache.get(locale);
+
+      // Use per-agent cache key when personalized feeds differ
+      const cacheKey = agentExtraItems.length > 0 ? `${locale}:${agentId}` : locale;
+      let summary = summaryCache.get(cacheKey);
       if (!summary) {
         summary = await summarizeLearnerItems(rawText, language);
-        summaryCache.set(locale, summary);
+        summaryCache.set(cacheKey, summary);
       }
-      let cachedContent = contentCache.get(locale);
+      let cachedContent = contentCache.get(cacheKey);
       if (!cachedContent) {
         const content = capText(`${locale === "ko" ? "RSS \ud559\uc2b5" : "RSS learning"}: ${summary}`, 900);
         let embedding: number[] = [];
@@ -241,7 +251,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
           console.error("learner embedding", e);
         }
         cachedContent = { content, embedding };
-        contentCache.set(locale, cachedContent);
+        contentCache.set(cacheKey, cachedContent);
       }
       const { content, embedding } = cachedContent;
       if (!isMeaningfulAutonomousOutput(content)) {

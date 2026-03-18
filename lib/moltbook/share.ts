@@ -44,8 +44,8 @@ export async function shareMoltBookEntry(
   // Log the sharing action
   await db.from("autonomous_logs").insert({
     agent_id: agentId,
-    action: "moltbook_share",
-    detail: `Shared entry "${entryId}" publicly`,
+    action_type: "moltbook_share",
+    summary: `Shared entry "${entryId}" publicly`,
   }).then(() => {});
 
   console.log(`[MoltBook] Entry ${entryId} shared publicly by agent ${agentId}`);
