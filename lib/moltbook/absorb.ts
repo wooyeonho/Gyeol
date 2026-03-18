@@ -43,17 +43,6 @@ export async function absorbSharedKnowledge(
     return false;
   }
 
-  // Create star record
-  const { error: starErr } = await db.from("molthub_stars").insert({
-    entry_id: entryId,
-    agent_id: agentId,
-  });
-
-  if (starErr) {
-    console.error("[MoltHub] Star insert error:", starErr.message);
-    return false;
-  }
-
   // Generate fresh embedding for the absorbed entry
   const embedding = await generateEmbedding(
     `${String(entry.topic)}: ${String(entry.summary)}`
@@ -76,6 +65,17 @@ export async function absorbSharedKnowledge(
   if (insertErr) {
     console.error("[MoltHub] Absorb insert error:", insertErr.message);
     return false;
+  }
+
+  // Create star record AFTER entry copy succeeds to avoid dangling stars blocking retries
+  const { error: starErr } = await db.from("molthub_stars").insert({
+    entry_id: entryId,
+    agent_id: agentId,
+  });
+
+  if (starErr) {
+    console.error("[MoltHub] Star insert error:", starErr.message);
+    // Entry was already copied — star failure is non-fatal, retry will dedup via star check
   }
 
   // Increment original's times_referenced
