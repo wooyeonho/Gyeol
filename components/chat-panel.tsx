@@ -138,7 +138,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    sendMessage(trimmed, { source: "input", locale });
+    sendMessage(trimmed, { source: "input", locale, totalMessages });
     setInput("");
   };
 
@@ -170,7 +170,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             copiedIndex={copiedIndex}
             onPromptClick={(prompt) => {
               if (!isStreaming) {
-                void sendMessage(prompt, { source: "prompt", locale });
+                void sendMessage(prompt, { source: "prompt", locale, totalMessages });
               }
             }}
             onSpeak={speak}

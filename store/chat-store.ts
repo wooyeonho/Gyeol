@@ -34,6 +34,8 @@ type MessageMeta = {
   experiment_variant?: string;
   source?: "input" | "prompt" | "cta" | "voice";
   locale?: string;
+  /** Total persisted message count from agent state — avoids cross-store getState() access. */
+  totalMessages?: number;
 };
 type ChatSetter = (
   partial: ChatStore | Partial<ChatStore> | ((state: ChatStore) => ChatStore | Partial<ChatStore>),
@@ -288,10 +290,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     if (get().isStreaming) return;
     const source = meta?.source ?? "input";
     const currentUserMessages = get().messages.filter((item) => item.role === "user").length;
-    const persistedMessages =
-      typeof useAgentStore.getState().agentState?.total_messages === "number"
-        ? useAgentStore.getState().agentState!.total_messages as number
-        : 0;
+    const persistedMessages = meta?.totalMessages ?? 0;
     const isFirstMessage = persistedMessages === 0 && currentUserMessages === 0;
 
     trackClientEvent(CLIENT_EVENT.messageSent, {

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -54,9 +54,15 @@ export async function POST(req: NextRequest) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
         cfg.preferred_locale = normalizedLocale;
-        Promise.resolve(
-          service.from("agent_state").update({ config: cfg }).eq("agent_id", agentId)
-        ).catch((err: unknown) => console.error("[Chat] preferred_locale sync failed", err));
+        after(async () => {
+          await service
+            .from("agent_state")
+            .update({ config: cfg })
+            .eq("agent_id", agentId)
+            .then(({ error }) => {
+              if (error) console.error("[Chat] preferred_locale sync failed", error);
+            });
+        });
       }
     }
 
