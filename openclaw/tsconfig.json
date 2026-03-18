@@ -2,9 +2,13 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "commonjs",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "..",
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,6 +17,32 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "../lib/cron-core/**/*.ts",
+    "../lib/supabase/service.ts",
+    "../lib/env/required.ts",
+    "../lib/ai/**/*.ts",
+    "../lib/autonomy/**/*.ts",
+    "../lib/billing/**/*.ts",
+    "../lib/cron-lock.ts",
+    "../lib/cron-auth.ts",
+    "../lib/crawl/**/*.ts",
+    "../lib/goals/**/*.ts",
+    "../lib/i18n/**/*.ts",
+    "../lib/memory/**/*.ts",
+    "../lib/ops/**/*.ts",
+    "../lib/personality/**/*.ts",
+    "../lib/evolution/**/*.ts",
+    "../lib/artifacts/**/*.ts",
+    "../lib/recap/**/*.ts",
+    "../lib/rewards/**/*.ts",
+    "../lib/safety/**/*.ts",
+    "../lib/sanitize.ts",
+    "../lib/social/**/*.ts",
+    "../lib/micro-interactions.ts",
+    "../lib/security/**/*.ts",
+    "../store/agent-store.ts"
+  ],
+  "exclude": ["node_modules", "dist", "../**/*.test.ts", "../**/*.spec.ts"]
 }

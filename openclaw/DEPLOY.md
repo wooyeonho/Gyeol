@@ -2,21 +2,42 @@
 
 OpenClaw is Gyeol's autonomous engine — a standalone Node.js service that runs scheduled cron jobs to keep the AI agent alive, learning, and evolving.
 
+## Architecture (v2 — Direct Execution)
+
+OpenClaw v2 uses **direct execution**: business logic lives in `lib/cron-core/` and is imported directly by the scheduler, eliminating HTTP round-trips and Vercel's 10-second Hobby plan timeout. Only `lifeline` remains as an HTTP call (it's a watchdog that must test the HTTP path).
+
+```
+lib/cron-core/          ← shared business logic (single source of truth)
+  ├── index.ts          ← barrel export
+  ├── types.ts          ← CronResult type
+  ├── heartbeat.ts      ← executeHeartbeat()
+  ├── dream.ts          ← executeDream()
+  └── ... (13 modules)
+
+app/api/cron/*/route.ts ← thin wrappers (auth + call execute fn + return JSON)
+openclaw/src/scheduler.ts ← imports execute fns directly (no HTTP fetch)
+```
+
 ## Build
 
 ```bash
 cd openclaw
 npm install
-npm run build        # TypeScript → dist/index.js
+npm run build        # TypeScript → dist/openclaw/src/index.js
 npm start            # Start the scheduler
 ```
+
+> **Note**: Because `rootDir` is set to `..` (parent), the build output is at `dist/openclaw/src/index.js` (not `dist/index.js`).
 
 ## Required Environment Variables
 
 | Variable | Description |
 |----------|------------|
-| `GYEOL_APP_URL` | Production URL of the Gyeol app (e.g., `https://gyeol.vercel.app`). The engine calls `/api/cron/*` endpoints on this URL. |
-| `CRON_SECRET` | Shared secret token (32+ characters) used for Bearer authentication between OpenClaw and Gyeol. Must match the value set in Gyeol's environment. |
+| `GYEOL_APP_URL` | Production URL of the Gyeol app (e.g., `https://gyeol.vercel.app`). Used only for HTTP-mode jobs (lifeline). |
+| `CRON_SECRET` | Shared secret token (32+ characters) used for Bearer authentication. Must match the value set in Gyeol's environment. |
+| `SUPABASE_URL` | Supabase project URL (required for direct execution — cron-core functions access DB directly). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (required for direct execution). |
+| `GROQ_API_KEY` | Groq API key for AI generation (used by heartbeat, dream, social, learner, etc.). |
 
 ## Optional Environment Variables
 
@@ -30,21 +51,22 @@ npm start            # Start the scheduler
 
 ## Scheduled Jobs
 
-| Job | Schedule | Endpoint | Description |
-|-----|----------|----------|------------|
-| health | Every 30 min | `/api/cron/health` | Heartbeat check |
-| lifeline | Every 30 min | `/api/cron/lifeline` | Agent vitality maintenance |
-| heartbeat | Every 2 hours | `/api/cron/heartbeat` | Autonomous activity trigger |
-| timecapsule | Every hour | `/api/cron/time-capsule` | Time capsule generation |
-| social | Every 6 hours | `/api/cron/social` | Social interaction processing |
-| learner | Every 6 hours | `/api/cron/learner` | Learning and memory consolidation |
-| crawl | Every 8 hours | `/api/cron/crawl` | Web crawling for external knowledge |
-| dream | Daily at 04:00 | `/api/cron/dream` | Creative output generation |
-| world | Daily at 00:00 | `/api/cron/world` | World state update |
-| retention | Daily at 03:00 | `/api/cron/retention` | User retention processing |
-| redemption | Daily at 10:00 | `/api/cron/redemption` | Redemption arc triggers |
-| war | Every hour | `/api/cron/war` | Competitive event processing |
-| recap | Weekly (Sun 09:00) | `/api/cron/recap` | Weekly recap generation |
+| Job | Schedule | Mode | Description |
+|-----|----------|------|------------|
+| health | Every 30 min | Direct | Autonomy health score check |
+| lifeline | Every 30 min | HTTP | Agent vitality watchdog (tests HTTP path) |
+| heartbeat | Every 2 hours | Direct | Autonomous activity trigger |
+| timecapsule | Every hour | Direct | Time capsule generation |
+| social | Every 6 hours | Direct | Social interaction processing |
+| learner | Every 6 hours | Direct | Learning and memory consolidation |
+| crawl | Every 8 hours | Direct | Web crawling for external knowledge |
+| dream | Daily at 04:00 | Direct | Creative output generation |
+| world | Daily at 00:00 | Direct | World state update |
+| retention | Daily at 03:00 | Direct | User retention processing |
+| redemption | Daily at 10:00 | Direct | Redemption arc triggers |
+| war | Every hour | Direct | Competitive event processing |
+| recap | Weekly (Sun 09:00) | Direct | Weekly recap generation |
+| proactivepush | Daily at 18:00 | Direct | Proactive push notifications |
 
 ## Health Check
 
@@ -97,11 +119,14 @@ docker run -d \
 1. **Create service**: Koyeb dashboard → [Create Web Service] → Deployment method: **GitHub** → Select the Gyeol repository
 2. **Builder**: Select **Dockerfile** (not Buildpacks)
 3. **Dockerfile location**: `openclaw/Dockerfile`
-4. **Context directory**: `/openclaw` (critical — without this, Koyeb tries to build the root Next.js app)
+4. **Context directory**: `/` (root — the Dockerfile copies both `openclaw/` and `lib/` from the repo root)
 5. **Port**: `8000`
 6. **Environment variables**:
    - `GYEOL_APP_URL` = your Vercel Gyeol app URL (e.g., `https://gyeol.vercel.app`) — no trailing slash
    - `CRON_SECRET` = must match the value set in Gyeol's Vercel environment exactly
+   - `SUPABASE_URL` = your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` = your Supabase service role key
+   - `GROQ_API_KEY` = Groq API key for AI generation
    - `PORT` = `8000` (optional but recommended to be explicit)
    - `CRAWL_URLS`, `CRAWL_MAX_PAGES`, etc. (optional)
 7. **Service name**: `gyeol-openclaw`
