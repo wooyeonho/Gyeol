@@ -10,6 +10,7 @@ import { sortResearchTasks } from "@/lib/goals/task-utils";
 import { planNextResearchStep } from "@/lib/goals/next-step-planner";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
 
 type PendingResearchTask = {
   id: string;
@@ -36,7 +37,63 @@ const DEFAULT_FEED_URLS = [
   "https://hnrss.org/frontpage",
   "https://www.reddit.com/r/technology/.rss",
   "https://techcrunch.com/feed/",
+  // YouTube channels (RSS, no API key needed)
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCBR8-60-B28hp2BmDPdntcQ",  // YouTube Trending (tech)
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCVHFbqXqoYvEWM1Ddxl0QDg",  // Android Authority
 ];
+
+// RSS equivalents for source-routing categories
+const INTEREST_FEEDS: Record<string, string[]> = {
+  music: ["https://pitchfork.com/feed/feed-news/rss", "https://www.stereogum.com/feed/"],
+  cooking: ["https://www.seriouseats.com/feeds/serious-eats", "https://minimalistbaker.com/feed/"],
+  gaming: ["https://www.polygon.com/rss/index.xml"],
+  science: ["https://www.nature.com/nature.rss", "https://www.sciencedaily.com/rss/all.xml"],
+  health: ["https://www.health.harvard.edu/blog/feed"],
+  film: ["https://www.indiewire.com/feed/"],
+  finance: ["https://www.bloomberg.com/feed/podcast"],
+  travel: ["https://nomadicmatt.com/feed/"],
+  art: ["https://www.thisiscolossal.com/feed/"],
+  philosophy: ["https://aeon.co/feed.rss"],
+};
+
+async function getPersonalizedFeeds(agentId: string, baseFeedUrls: string[]): Promise<string[]> {
+  const db = createServiceClient();
+  const { data: state } = await db
+    .from("agent_state")
+    .select("config")
+    .eq("agent_id", agentId)
+    .single();
+
+  if (!state) return baseFeedUrls;
+
+  const config = (state.config as Record<string, unknown>) ?? {};
+  const researchFocus = typeof config.research_focus === "string" ? config.research_focus : null;
+  const activeGoal = typeof config.active_goal === "string" ? config.active_goal : null;
+
+  // Get topic-matched URLs from source routing
+  const topicUrls = getSeedUrlsForTask(researchFocus || activeGoal, []);
+
+  // Get interest-based feeds from user conversation keywords
+  const { data: recentChats } = await db
+    .from("chats")
+    .select("content")
+    .eq("agent_id", agentId)
+    .eq("role", "user")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  const chatText = (recentChats ?? []).map((c) => String((c as { content?: string }).content ?? "")).join(" ").toLowerCase();
+  const interestFeeds: string[] = [];
+  for (const [interest, feeds] of Object.entries(INTEREST_FEEDS)) {
+    if (chatText.includes(interest)) {
+      interestFeeds.push(...feeds);
+    }
+  }
+
+  // Combine: base feeds + topic URLs that look like RSS + interest feeds
+  const rssLikeUrls = topicUrls.filter((u) => u.includes("/feed") || u.includes("/rss") || u.includes(".rss") || u.includes(".xml"));
+  return [...new Set([...baseFeedUrls, ...rssLikeUrls, ...interestFeeds])].slice(0, 15);
+}
 
 function isPrivateHost(host: string): boolean {
   const lower = host.toLowerCase();
@@ -152,6 +209,18 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
   let stored = 0;
   for (const { id: agentId } of agents) {
     try {
+      // Personalize feeds per agent based on interests and goals
+      const personalizedUrls = await getPersonalizedFeeds(agentId, feedUrls);
+      for (const url of personalizedUrls) {
+        if (!feedUrls.includes(url)) {
+          const items = await fetchRssItems(url);
+          const source = new URL(url).hostname;
+          for (const it of items) {
+            allItems.push({ ...it, source });
+          }
+        }
+      }
+
       const { data: state } = await service.from("agent_state").select("config").eq("agent_id", agentId).single();
       const config = (state?.config as Record<string, unknown>) ?? {};
       if (config.learner_enabled === false) continue;

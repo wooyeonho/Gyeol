@@ -13,7 +13,7 @@ describe("getSeedUrlsForTask", () => {
   });
 
   it("returns fallback URLs when no keywords match", () => {
-    const result = getSeedUrlsForTask("오늘 날씨와 여행 계획", FALLBACK_URLS);
+    const result = getSeedUrlsForTask("random unrelated topic", FALLBACK_URLS);
     expect(result).toEqual(FALLBACK_URLS);
   });
 
@@ -40,7 +40,7 @@ describe("getSeedUrlsForTask", () => {
 
   it("returns design URLs for 'brand' keyword", () => {
     const result = getSeedUrlsForTask("Brand identity redesign", FALLBACK_URLS);
-    expect(result).toContain("https://www.designsystems.com/");
+    expect(result).toContain("https://www.figma.com/blog/");
   });
 
   it("returns startup URLs for 'startup' keyword", () => {
@@ -49,8 +49,8 @@ describe("getSeedUrlsForTask", () => {
     expect(result).toContain("https://www.ycombinator.com/blog");
   });
 
-  it("returns startup URLs for 마케팅 keyword", () => {
-    const result = getSeedUrlsForTask("마케팅 전략 수립", FALLBACK_URLS);
+  it("returns startup URLs for 'marketing' keyword", () => {
+    const result = getSeedUrlsForTask("marketing strategy planning", FALLBACK_URLS);
     expect(result).toContain("https://andrewchen.com/");
   });
 
@@ -60,9 +60,31 @@ describe("getSeedUrlsForTask", () => {
     expect(result).toContain("https://supabase.com/blog");
   });
 
-  it("returns engineering URLs for 개발 keyword", () => {
-    const result = getSeedUrlsForTask("개발 생산성 향상 방법", FALLBACK_URLS);
+  it("returns engineering URLs for 'devops' keyword", () => {
+    const result = getSeedUrlsForTask("devops pipeline automation", FALLBACK_URLS);
     expect(result).toContain("https://martinfowler.com/");
+  });
+
+  it("returns multiple category URLs when keywords overlap", () => {
+    const result = getSeedUrlsForTask("AI model performance engineering", FALLBACK_URLS);
+    // Should match both AI and engineering categories
+    expect(result).toContain("https://openai.com/news/");
+    expect(result).toContain("https://martinfowler.com/");
+  });
+
+  it("returns science URLs for 'science' keyword", () => {
+    const result = getSeedUrlsForTask("science research papers", FALLBACK_URLS);
+    expect(result).toContain("https://www.nature.com/nature.rss");
+  });
+
+  it("returns music URLs for 'music' keyword", () => {
+    const result = getSeedUrlsForTask("music album reviews", FALLBACK_URLS);
+    expect(result).toContain("https://pitchfork.com/feed/feed-news/rss");
+  });
+
+  it("returns cooking URLs for 'recipe' keyword", () => {
+    const result = getSeedUrlsForTask("easy recipe ideas", FALLBACK_URLS);
+    expect(result).toContain("https://minimalistbaker.com/feed/");
   });
 
   it("includes fallback URLs alongside matched URLs", () => {

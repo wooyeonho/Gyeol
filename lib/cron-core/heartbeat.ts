@@ -21,6 +21,7 @@ import { planHeartbeatAutonomy } from "@/lib/autonomy/heartbeat-planner";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { logWarn } from "@/lib/ops/logger";
+import { distillMemoriesToMoltBook, shareMoltBookEntry } from "@/lib/moltbook";
 
 type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
@@ -334,6 +335,28 @@ export async function executeHeartbeat(): Promise<CronResult> {
               error: error instanceof Error ? error.message : String(error),
             });
           }
+        }
+
+        // MoltBook distillation: every 5 heartbeats, limit 20 agents per cycle
+        if ((state.subjective_time || 0) % 5 === 0 && processed < 20) {
+          await runOptionalStep("moltbookDistill", agentId, async () => {
+            const created = await distillMemoriesToMoltBook(agentId);
+            if (created > 0) {
+              // Auto-share high-confidence entries
+              const { data: bestEntry } = await db
+                .from("moltbook_entries")
+                .select("id")
+                .eq("agent_id", agentId)
+                .eq("is_public", false)
+                .gte("confidence", 0.7)
+                .order("confidence", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (bestEntry) {
+                await shareMoltBookEntry(agentId, bestEntry.id as string);
+              }
+            }
+          });
         }
 
         const proactiveChance = computeProactiveChance({
