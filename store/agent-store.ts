@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import type { AgentState } from "@/types/agent";
 
 interface AgentStore {
   agentId: string | null;
-  agentState: Record<string, unknown> | null;
+  agentState: AgentState | null;
   loading: boolean;
   error: boolean;
   evolutionEvent: { level: number; mutation?: string } | null;
@@ -31,7 +32,7 @@ export const useAgentStore = create<AgentStore>((set) => ({
         const json = await res.json().catch(() => ({ agentId: null, agentState: null }));
         set({
           agentId: typeof json.agentId === "string" ? json.agentId : null,
-          agentState: (json.agentState as Record<string, unknown> | null) ?? null,
+          agentState: (json.agentState as AgentState | null) ?? null,
           loading: false,
           error: false,
         });

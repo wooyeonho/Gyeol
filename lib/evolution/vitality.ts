@@ -15,7 +15,11 @@ function getStage(vitality: number): VitalityStage {
 
 export async function processVitality(agentId: string) {
   const db = createServiceClient();
-  const { data: state } = await db.from("agent_state").select("vitality, config, status").eq("agent_id", agentId).single();
+  const { data: state } = await db
+    .from("agent_state")
+    .select("vitality, config, status, vitality_processed_at")
+    .eq("agent_id", agentId)
+    .single();
   if (!state) return;
 
   if (state.status === "echo") return;
@@ -23,21 +27,36 @@ export async function processVitality(agentId: string) {
   const { data: lastChat } = await db.from("chats").select("created_at").eq("agent_id", agentId).eq("role", "user").order("created_at", { ascending: false }).limit(1).single();
 
   const hoursSinceChat = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
-  let vitality = state.vitality || 1.0;
+  let vitality = state.vitality ?? 1.0;
 
-  // Accelerated decay: starts after 12h, ramps up over time
-  // Day 1-3: gentle (0.02/day), Day 4-7: moderate (0.05/day), Day 8+: steep (0.08/day)
+  // Incremental decay: only apply decay for the period since the last processVitality run.
+  // This prevents double-application when the heartbeat cron re-runs (each call was previously
+  // re-computing cumulative decay from last_chat and subtracting from an already-decayed value).
   if (hoursSinceChat > 12) {
-    const daysSinceChat = hoursSinceChat / 24;
-    let decay: number;
-    if (daysSinceChat <= 3) {
-      decay = daysSinceChat * 0.02;
-    } else if (daysSinceChat <= 7) {
-      decay = 3 * 0.02 + (daysSinceChat - 3) * 0.05;
-    } else {
-      decay = 3 * 0.02 + 4 * 0.05 + (daysSinceChat - 7) * 0.08;
+    // Reference point: last processed_at if available, otherwise last chat time
+    const refTime = state.vitality_processed_at
+      ? new Date(state.vitality_processed_at).getTime()
+      : lastChat
+        ? new Date(lastChat.created_at).getTime()
+        : Date.now();
+
+    const hoursDelta = (Date.now() - refTime) / 3600000;
+
+    if (hoursDelta > 0) {
+      // Daily decay rate at the current point in the decay curve (days since last chat)
+      const daysSinceChat = hoursSinceChat / 24;
+      let ratePerDay: number;
+      if (daysSinceChat <= 3) {
+        ratePerDay = 0.02;
+      } else if (daysSinceChat <= 7) {
+        ratePerDay = 0.05;
+      } else {
+        ratePerDay = 0.08;
+      }
+
+      const incrementalDecay = (hoursDelta / 24) * ratePerDay;
+      vitality = Math.max(0, vitality - incrementalDecay);
     }
-    vitality = Math.max(0, vitality - decay);
   }
 
   const stage = getStage(vitality);
@@ -81,6 +100,7 @@ export async function processVitality(agentId: string) {
   const recallCount = stage === "recall" ? 5 : stage === "near_death" || stage === "will" ? 3 : stage === "melancholy" ? 4 : 5;
   const updates: Record<string, unknown> = {
     vitality,
+    vitality_processed_at: new Date().toISOString(),
     config: { ...state.config, vitality_stage: stage, recall_count: recallCount },
   };
   await db.from("agent_state").update(updates).eq("agent_id", agentId);

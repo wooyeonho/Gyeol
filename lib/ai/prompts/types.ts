@@ -1,0 +1,28 @@
+export type PromptStrings = {
+  defaultBase: string;
+  personality: Record<string, string>;
+  tone: Record<string, string>;
+  intimacy: [string, string, string, string];
+  memories: string;
+  recentLogs: string;
+  vitalityMelancholy: string;
+  vitalityRecall: string;
+  vitalityNearDeath: string;
+  vitalityFading: string;
+  selfName: (name: string) => string;
+  mood: (mood: string) => string;
+  hiddenEmotions: (surface: string, real: string) => string;
+  worldWeather: (name: string) => string;
+  secrets: (count: number) => string;
+  selfObservations: string;
+  identityStatement: (stmt: string) => string;
+  currentRole: (role: string) => string;
+  pendingQuestion: (q: string) => string;
+  pendingConcern: (c: string) => string;
+  activeGoal: (g: string) => string;
+  longTermGoal: (g: string) => string;
+  researchFocus: (f: string) => string;
+  role: (r: string) => string;
+  lexicon: (words: string) => string;
+  langDirective: string;
+};
