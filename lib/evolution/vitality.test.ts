@@ -85,8 +85,8 @@ describe("processVitality", () => {
     expect(db.from).toHaveBeenCalledTimes(1);
   });
 
-  it("does not decay vitality if last chat was less than 24h ago", async () => {
-    const recentChat = { created_at: new Date(Date.now() - 12 * 3600000).toISOString() }; // 12h ago
+  it("does not decay vitality if last chat was less than 12h ago", async () => {
+    const recentChat = { created_at: new Date(Date.now() - 6 * 3600000).toISOString() }; // 6h ago (under 12h threshold)
     const { db, updateFn } = makeDb({
       state: { vitality: 0.9, status: "alive", config: { vitality_stage: "alive" } },
       lastChat: recentChat,
@@ -102,7 +102,7 @@ describe("processVitality", () => {
     );
   });
 
-  it("decays vitality by 0.01 per day without chat", async () => {
+  it("decays vitality with accelerated 3-stage curve", async () => {
     const oldChat = { created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString() }; // 3 days ago
     const { db, updateFn } = makeDb({
       state: { vitality: 1.0, status: "alive", config: { vitality_stage: "alive" } },
@@ -113,8 +113,9 @@ describe("processVitality", () => {
     const { processVitality } = await import("./vitality");
     await processVitality("agent-decay");
 
+    // New formula: days 1-3 decay at 0.02/day → 3 * 0.02 = 0.06
     expect(updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ vitality: 0.97 }) // 1.0 - 3 * 0.01
+      expect.objectContaining({ vitality: expect.closeTo(0.94, 1) }) // 1.0 - 3 * 0.02
     );
   });
 

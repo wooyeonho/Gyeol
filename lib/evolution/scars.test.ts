@@ -4,7 +4,20 @@ vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(),
 }));
 
+vi.mock("@/lib/ai/router", () => ({
+  generateTextOnce: vi.fn(),
+}));
+
+vi.mock("@/lib/i18n/config", () => ({
+  getLanguageName: vi.fn().mockReturnValue("English"),
+}));
+
+vi.mock("@/lib/i18n/generation", () => ({
+  resolveGenerationLocale: vi.fn().mockReturnValue("en"),
+}));
+
 import { createServiceClient } from "@/lib/supabase/service";
+import { generateTextOnce } from "@/lib/ai/router";
 
 function makeDb({
   state,
@@ -89,29 +102,29 @@ describe("processScar", () => {
     );
   });
 
-  it("adds abandonment fragment when 7+ days without chat", async () => {
+  it("adds abandonment fragment with scar marker when 7+ days without chat", async () => {
     const oldChat = { created_at: new Date(Date.now() - 8 * 24 * 3600000).toISOString() };
     const { db, updateFn } = makeDb({
-      state: { trust_coefficient: 0.5, fragments: ["I am curious about the world."] },
+      state: { trust_coefficient: 0.5, fragments: ["I am curious about the world."], config: {} },
       lastChat: oldChat,
     });
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue(db);
+    (generateTextOnce as ReturnType<typeof vi.fn>).mockResolvedValue("The aching emptiness still lingers");
 
     const { processScar } = await import("./scars");
     await processScar("agent-scar");
 
-    expect(updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fragments: expect.arrayContaining(["I was once abandoned. It was scary."]),
-      })
-    );
+    const calledWith = updateFn.mock.calls[0][0];
+    expect(calledWith.fragments).toHaveLength(2);
+    // The generated scar fragment should contain the marker
+    expect(calledWith.fragments[1]).toContain("[scar:abandonment]");
   });
 
   it("does not duplicate the abandonment fragment if already present", async () => {
     const oldChat = { created_at: new Date(Date.now() - 9 * 24 * 3600000).toISOString() };
-    const existingFragment = "I was once abandoned. It was scary.";
+    const existingFragment = "I remember the silence when no one came. [scar:abandonment]";
     const { db, updateFn } = makeDb({
-      state: { trust_coefficient: 0.5, fragments: [existingFragment] },
+      state: { trust_coefficient: 0.5, fragments: [existingFragment], config: {} },
       lastChat: oldChat,
     });
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue(db);
@@ -120,8 +133,10 @@ describe("processScar", () => {
     await processScar("agent-dup");
 
     const calledWith = updateFn.mock.calls[0][0];
-    const fragmentsWithAbandonment = calledWith.fragments.filter((f: string) => f === existingFragment);
-    expect(fragmentsWithAbandonment).toHaveLength(1);
+    // Should not add another scar fragment
+    expect(calledWith.fragments).toHaveLength(1);
+    // generateTextOnce should not have been called since scar already exists
+    expect(generateTextOnce).not.toHaveBeenCalled();
   });
 
   it("logs scar action type", async () => {

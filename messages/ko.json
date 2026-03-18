@@ -272,7 +272,8 @@
     "tasksCount": "대기 태스크 {count}개",
     "returningPrompt1": "오늘 내가 집중해야 할 1가지만 알려줘.",
     "returningPrompt2": "지금 내 상태를 짧게 정리해줘.",
-    "returningPrompt3": "현재 상태를 바탕으로 짧은 실행 계획을 만들어줘."
+    "returningPrompt3": "현재 상태를 바탕으로 짧은 실행 계획을 만들어줘.",
+    "firstTimeGuide": "아래에 아무 말이나 해보세요. 당신의 존재가 깨어납니다."
   },
   "activity": {
     "title": "활동 흔적",
@@ -774,7 +775,8 @@
     "loading": "불러오는 중",
     "itemsCount": "{count}개 항목",
     "open": "열기",
-    "moreWays": "더 둘러볼 수 있는 곳"
+    "moreWays": "더 둘러볼 수 있는 곳",
+    "allEmpty": "대화를 나눌수록 여기가 채워집니다. 활동 기록, 성장 앨범, 소셜 관계가 하나씩 나타날 거예요."
   },
   "weeklyEvent": {
     "label": "주간 이벤트",

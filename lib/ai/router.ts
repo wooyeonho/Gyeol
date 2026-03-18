@@ -54,6 +54,39 @@ async function callCF(system: string, messages: Msg[], stream: boolean) {
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
+async function callGemini(system: string, messages: Msg[], maxTokens = 700, temp = 0.65): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Gemini API key not configured");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const contents = messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents,
+          generationConfig: { maxOutputTokens: maxTokens, temperature: temp },
+        }),
+        signal: ctrl.signal,
+      }
+    );
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`Gemini ${res.status}`);
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  } catch (e) { clearTimeout(timer); throw e; }
+}
+
 function fallbackStream(text: string): ReadableStream {
   return new ReadableStream({
     start(ctrl) {
@@ -105,6 +138,14 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
     const data = (await res.json()) as CloudflareCompletionResponse;
     return data.result?.response || "";
   } catch (e) { console.error("[AI] CF failed:", e); }
+  // Gemini fallback
+  try {
+    const text = await callGemini(systemPrompt, messages, maxTokens, temp);
+    if (text) {
+      console.log("[AI] Using Gemini");
+      return text;
+    }
+  } catch (e) { console.error("[AI] Gemini failed:", e); }
   return "";
 }
 
@@ -113,6 +154,8 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
   userPrompt: string
 ): Promise<T | null> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
+
+  // Attempt 1: try all models
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
@@ -121,7 +164,22 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) return parsed as T;
-    } catch (e) { console.error(`[JSON] ${m.name} failed:`, e); }
+    } catch (e) { console.error(`[JSON] ${m.name} attempt 1 failed:`, e); }
   }
+
+  // Retry once after 500ms backoff (all models again)
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  for (const m of MODELS) {
+    try {
+      const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
+      const data = (await res.json()) as GroqCompletionResponse;
+      const text = data.choices?.[0]?.message?.content || "";
+      const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(cleaned) as unknown;
+      if (isRecord(parsed)) return parsed as T;
+    } catch (e) { console.error(`[JSON] ${m.name} attempt 2 failed:`, e); }
+  }
+
+  console.error("[JSON] All retries exhausted, returning null");
   return null;
 }

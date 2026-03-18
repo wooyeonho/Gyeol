@@ -223,6 +223,19 @@ export default function DiscoverPage() {
           ))}
         </motion.section>
 
+        {!loading && counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5 text-center"
+          >
+            <p className="text-sm text-white/50 leading-relaxed">
+              {t("discover.allEmpty")}
+            </p>
+          </motion.div>
+        )}
+
         <section className="theme-panel rounded-[1.75rem] p-5">
           <p className="text-sm font-medium">
             {t("discover.moreWays")}

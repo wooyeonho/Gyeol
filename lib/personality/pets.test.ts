@@ -95,7 +95,7 @@ describe("processPets", () => {
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
 
     // Use plain functions for the chain to avoid vi.fn() mock state issues
-    const memChain = {
+    const memChain: { eq: (col?: string, val?: string) => typeof memChain; order: (col?: string, opts?: { ascending: boolean }) => typeof memChain; limit: (n?: number) => Promise<{ data: typeof memories }> } = {
       eq: function(this: typeof memChain) { return this; },
       order: function(this: typeof memChain) { return this; },
       limit: () => Promise.resolve({ data: memories }),

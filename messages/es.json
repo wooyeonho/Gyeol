@@ -275,7 +275,8 @@
     "tasksCount": "{count} tasks",
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
-    "returningPrompt3": "Build a short action plan from my current state."
+    "returningPrompt3": "Build a short action plan from my current state.",
+    "firstTimeGuide": "Di algo abajo. Tu ser despertará."
   },
   "activity": {
     "title": "Activity",
@@ -770,7 +771,8 @@
     "loading": "Loading",
     "itemsCount": "{count} items",
     "open": "Open",
-    "moreWays": "More ways to explore"
+    "moreWays": "More ways to explore",
+    "allEmpty": "Esto se llena a medida que hablas. Registros de actividad, álbumes de crecimiento y conexiones sociales aparecerán poco a poco."
   },
   "weeklyEvent": {
     "label": "Weekly event",

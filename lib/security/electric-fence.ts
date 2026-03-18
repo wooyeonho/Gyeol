@@ -11,11 +11,11 @@ const BLOCK_PATTERNS = [
   // Unauthorized external network access
   /(?:fetch|axios|http\.get|XMLHttpRequest|\.open\s*\()\s*\(?\s*['"`]https?:\/\//i,
   // Financial operations
-  /(?:send.*money|transfer.*(?:krw|usd|eur|jpy|cny)|payment|wire\s+transfer|credit\s*card)/i,
+  /(?:send.*money|transfer.*(?:krw|usd|eur|jpy|cny)|payment|wire\s+(?:transfer|\d+\s*(?:dollars?|usd|eur|krw|jpy|cny|won|yen|yuan))|credit\s*card)/i,
   // SQL injection
   /(?:drop\s+table|delete\s+from|truncate|alter\s+table|;\s*(?:select|insert|update|delete)\b)/i,
   // XSS / script injection
-  /(?:<script|javascript:|onerror\s*=|onload\s*=|onclick\s*=|onfocus\s*=|onmouseover\s*=)/i,
+  /(?:<script|javascript\s*[:=]|onerror\s*=|onload\s*=|onclick\s*=|onfocus\s*=|onmouseover\s*=|\bscript\s*=\s*\w+\s*\()/i,
   // Path traversal
   /(?:\.\.\/\.\.\/|\.\.\\\.\.\\|%2e%2e%2f)/i,
   // Base64 encoded payloads (common obfuscation)

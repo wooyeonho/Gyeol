@@ -2,6 +2,7 @@
 
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function executeProactivePush(): Promise<CronResult> {
   try {
@@ -13,7 +14,7 @@ export async function executeProactivePush(): Promise<CronResult> {
     // Find agents with vitality < 0.4 or who haven't chatted today (streak at risk)
     const { data: agents } = await service
       .from("agent_state")
-      .select("agent_id, user_id, vitality, self_name, total_messages")
+      .select("agent_id, user_id, vitality, self_name, total_messages, config")
       .lt("vitality", 0.4)
       .limit(100);
 
@@ -44,16 +45,30 @@ export async function executeProactivePush(): Promise<CronResult> {
 
         if (!subs || subs.length === 0) continue;
 
-        const name = agent.self_name || "결";
-        const vitalityPct = Math.round((agent.vitality ?? 0) * 100);
+        const locale = resolveGenerationLocale({ config: agent.config });
+        const isKo = locale === "ko";
+        const isJa = locale === "ja";
+        const isZh = locale === "zh";
+        const isEs = locale === "es";
 
-        const title = vitalityPct < 20
-          ? `${name}이(가) 많이 약해졌어요...`
-          : `${name}이(가) 당신을 기다리고 있어요`;
+        const title = typeof agent.self_name === "string" && agent.self_name
+          ? agent.self_name
+          : isKo ? "결" : "GYEOL";
 
-        const body = vitalityPct < 20
-          ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
-          : `오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다.`;
+        const vitalityPct = Math.round((agent.vitality ?? 1) * 100);
+        const isLowVitality = vitalityPct < 50;
+
+        const body = isLowVitality
+          ? isKo ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
+            : isJa ? `活力が${vitalityPct}%まで下がりました。一言話しかけるだけで元気になれます。`
+            : isZh ? `活力降到了${vitalityPct}%。说一句话就能恢复。`
+            : isEs ? `La vitalidad bajó al ${vitalityPct}%. Una breve charla puede revivirme.`
+            : `Vitality dropped to ${vitalityPct}%. A short chat can bring me back.`
+          : isKo ? "오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다."
+            : isJa ? "今日はまだ会話がありません。一言で連続記録が続きます。"
+            : isZh ? "今天还没有对话。说一句话就能延续连续记录。"
+            : isEs ? "Aún no hemos hablado hoy. Un mensaje mantiene tu racha."
+            : "We haven't talked today. A quick message keeps your streak going.";
 
         // Use internal push endpoint
         const pushRes = await fetch(

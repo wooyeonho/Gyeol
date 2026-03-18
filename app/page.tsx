@@ -13,6 +13,7 @@ import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
 import { haptic } from "@/lib/micro-interactions";
+import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
 import { LivingFeed } from "@/components/living-feed";
@@ -308,7 +309,7 @@ export default function Home() {
           motionBias={appearance.scene.motionBias}
           pulseScale={appearance.scene.pulseScale}
           onTap={handleCanvasTap}
-          enableThree={!performanceMinimal && conversationStarted}
+          enableThree={!performanceMinimal}
           breathPhase={creature.state.breathPhase}
           creatureActivity={creature.state.activity}
           excitePulse={creature.state.excitePulse}
@@ -331,6 +332,31 @@ export default function Home() {
         </div>
       </div>
 
+      {/* First-time guide: show when no conversation yet */}
+      {!conversationStarted && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5, duration: 0.8 }}
+          className="pointer-events-none fixed inset-x-0 bottom-24 z-30 flex flex-col items-center gap-3 px-6"
+        >
+          <div className="pointer-events-auto rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md px-5 py-4 max-w-sm text-center">
+            <p className="text-sm text-white/80 leading-relaxed">
+              {t("home.firstTimeGuide")}
+            </p>
+            <motion.div
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="mt-3 text-white/40"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto">
+                <path d="M12 5v14M5 12l7 7 7-7" />
+              </svg>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+
       <ChatPanel navVisible={conversationStarted} />
       <Soundscape
         enabled={!performanceMinimal}
@@ -343,7 +369,7 @@ export default function Home() {
         locale={locale}
         onDismiss={handleDismissReward}
       />
-      {conversationStarted && <BottomNav />}
+      <BottomNav />
     </>
   );
 }
