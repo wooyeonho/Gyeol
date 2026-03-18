@@ -49,7 +49,7 @@ export async function absorbSharedKnowledge(
   );
 
   // Create own copy with degraded confidence
-  const degradedConfidence = Math.max(0.3, (entry.confidence as number) - 0.1);
+  const degradedConfidence = Math.max(0.3, Number(entry.confidence ?? 0.5) - 0.1);
   const { error: insertErr } = await db.from("moltbook_entries").insert({
     agent_id: agentId,
     topic: entry.topic,
@@ -78,12 +78,11 @@ export async function absorbSharedKnowledge(
     // Entry was already copied — star failure is non-fatal, retry will dedup via star check
   }
 
-  // Increment original's times_referenced
-  await db
-    .from("moltbook_entries")
-    .update({ times_referenced: (Number(entry.times_referenced) || 0) + 1 })
-    .eq("id", entryId)
-    .then(() => {});
+  // Atomic increment of times_referenced to avoid race conditions
+  await db.rpc("increment_moltbook_counter", {
+    p_entry_id: entryId,
+    p_column: "times_referenced",
+  }).then(() => {});
 
   console.log(`[MoltHub] Agent ${agentId} absorbed entry ${entryId} (confidence: ${degradedConfidence})`);
   return true;

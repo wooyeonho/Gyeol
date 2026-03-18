@@ -190,9 +190,9 @@ export async function executeSocial(): Promise<CronResult> {
           .maybeSingle();
 
         if (bestA) {
-          const shared = await shareMoltBookEntry(a.agent_id, bestA.id as string);
+          const shared = await shareMoltBookEntry(a.agent_id, String(bestA.id));
           if (shared) {
-            await absorbSharedKnowledge(b.agent_id, bestA.id as string);
+            await absorbSharedKnowledge(b.agent_id, String(bestA.id));
             await db.from("autonomous_logs").insert({
               agent_id: a.agent_id,
               action_type: "moltbook_share",
@@ -214,9 +214,9 @@ export async function executeSocial(): Promise<CronResult> {
           .maybeSingle();
 
         if (bestB) {
-          const shared = await shareMoltBookEntry(b.agent_id, bestB.id as string);
+          const shared = await shareMoltBookEntry(b.agent_id, String(bestB.id));
           if (shared) {
-            await absorbSharedKnowledge(a.agent_id, bestB.id as string);
+            await absorbSharedKnowledge(a.agent_id, String(bestB.id));
             await db.from("autonomous_logs").insert({
               agent_id: b.agent_id,
               action_type: "moltbook_share",

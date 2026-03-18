@@ -24,6 +24,7 @@ export default function MoltHubPage() {
   const { t } = useTranslations();
   const [entries, setEntries] = useState<MoltHubEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [absorbedIds, setAbsorbedIds] = useState<Set<string>>(new Set());
   const [absorbingId, setAbsorbingId] = useState<string | null>(null);
 
@@ -35,7 +36,11 @@ export default function MoltHubPage() {
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) setEntries(data.entries ?? []);
+        } else {
+          if (!cancelled) setError(true);
         }
+      } catch {
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -85,6 +90,10 @@ export default function MoltHubPage() {
               <div key={i} className="theme-panel animate-pulse rounded-2xl p-4 h-28" />
             ))}
           </div>
+        ) : error ? (
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-8 text-center">
+            <p className="text-sm text-red-300">{t("molthub.errorLoading")}</p>
+          </div>
         ) : entries.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -114,7 +123,7 @@ export default function MoltHubPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-white">{entry.topic}</h3>
                       <p className="text-[10px] theme-text-faint">
-                        {t("molthub.from").replace("{name}", entry.agent_name ?? "Unknown")}
+                        {t("molthub.from").replace("{name}", entry.agent_name ?? t("molthub.unknown"))}
                       </p>
                     </div>
                   </div>

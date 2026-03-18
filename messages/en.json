@@ -960,7 +960,9 @@
     "entryCount": "{count} knowledge entries",
     "confidence": "Confidence",
     "source": "Source",
-    "shared": "Shared"
+    "shared": "Shared",
+    "referenced": "Referenced {count}x",
+    "errorLoading": "Failed to load entries"
   },
   "molthub": {
     "title": "MoltHub",
@@ -968,6 +970,8 @@
     "empty": "No shared knowledge yet",
     "star": "Absorb",
     "starred": "Absorbed",
-    "from": "From {name}"
+    "from": "From {name}",
+    "unknown": "Unknown",
+    "errorLoading": "Failed to load feed"
   }
 }

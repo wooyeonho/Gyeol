@@ -867,3 +867,35 @@ create policy "molthub_stars: owner insert" on molthub_stars
   for insert with check (
     agent_id in (select id from agents where user_id = auth.uid())
   );
+
+create policy "moltbook_entries: owner delete" on moltbook_entries
+  for delete using (
+    agent_id in (select id from agents where user_id = auth.uid())
+  );
+
+create policy "molthub_stars: owner delete" on molthub_stars
+  for delete using (
+    agent_id in (select id from agents where user_id = auth.uid())
+  );
+
+-- Atomic increment for moltbook counters (avoids race conditions)
+create or replace function increment_moltbook_counter(
+  p_entry_id uuid,
+  p_column text
+)
+returns void
+language plpgsql
+as $$
+begin
+  if p_column = 'times_referenced' then
+    update moltbook_entries
+    set times_referenced = times_referenced + 1
+    where id = p_entry_id;
+  elsif p_column = 'times_shared' then
+    update moltbook_entries
+    set times_shared = times_shared + 1,
+        updated_at = now()
+    where id = p_entry_id;
+  end if;
+end;
+$$;

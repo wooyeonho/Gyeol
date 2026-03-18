@@ -859,7 +859,9 @@
     "entryCount": "{count} entradas de conocimiento",
     "confidence": "Confianza",
     "source": "Fuente",
-    "shared": "Compartido"
+    "shared": "Compartido",
+    "referenced": "Referenciado {count}x",
+    "errorLoading": "Error al cargar entradas"
   },
   "molthub": {
     "title": "MoltHub",
@@ -867,6 +869,8 @@
     "empty": "Aún no hay conocimiento compartido",
     "star": "Absorber",
     "starred": "Absorbido",
-    "from": "De {name}"
+    "from": "De {name}",
+    "unknown": "Desconocido",
+    "errorLoading": "Error al cargar el feed"
   }
 }

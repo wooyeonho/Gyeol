@@ -22,7 +22,7 @@ export async function shareMoltBookEntry(
     return false;
   }
 
-  if ((entry.confidence as number) < 0.6) {
+  if (Number(entry.confidence ?? 0) < 0.6) {
     console.log("[MoltBook] Share: confidence too low", entry.confidence);
     return false;
   }
@@ -31,10 +31,15 @@ export async function shareMoltBookEntry(
     .from("moltbook_entries")
     .update({
       is_public: true,
-      times_shared: ((entry.times_shared as number) ?? 0) + 1,
       updated_at: new Date().toISOString(),
     })
     .eq("id", entryId);
+
+  // Atomic increment of times_shared to avoid race conditions
+  await db.rpc("increment_moltbook_counter", {
+    p_entry_id: entryId,
+    p_column: "times_shared",
+  }).then(() => {});
 
   if (updateErr) {
     console.error("[MoltBook] Share update error:", updateErr.message);

@@ -353,7 +353,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
                 .limit(1)
                 .maybeSingle();
               if (bestEntry) {
-                await shareMoltBookEntry(agentId, bestEntry.id as string);
+                await shareMoltBookEntry(agentId, String(bestEntry.id));
               }
             }
           });
