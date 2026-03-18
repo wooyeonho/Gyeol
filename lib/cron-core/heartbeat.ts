@@ -30,6 +30,8 @@ type AgentConfig = Record<string, unknown>;
 function getBaseUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) return appUrl.replace(/\/$/, "");
+  const gyeolUrl = process.env.GYEOL_APP_URL;
+  if (gyeolUrl) return gyeolUrl.replace(/\/$/, "");
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
@@ -79,7 +81,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
     const { data: agents } = await db.from("agents").select("id, user_id");
     if (!agents) return { processed: 0, timestamp: new Date().toISOString() };
     const { data: worldState } = await db.from("world_state").select("weather").eq("id", "global").single();
-    const weatherName = (worldState as { weather?: { name?: string } } | null)?.weather?.name ?? "unknown weather";
+    const weatherName = (worldState as { weather?: { name?: string } } | null)?.weather?.name ?? "알 수 없는 날씨";
     const circadian = getCircadianProfile();
 
     let processed = 0;

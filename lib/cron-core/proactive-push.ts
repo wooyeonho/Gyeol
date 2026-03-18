@@ -57,7 +57,7 @@ export async function executeProactivePush(): Promise<CronResult> {
 
         // Use internal push endpoint
         const pushRes = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/push/send`,
+          `${process.env.NEXT_PUBLIC_APP_URL || process.env.GYEOL_APP_URL || "http://localhost:3000"}/api/push/send`,
           {
             method: "POST",
             headers: {
