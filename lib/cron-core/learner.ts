@@ -300,7 +300,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
 export async function executeLearner(body?: unknown): Promise<CronResult> {
   const feedUrls = getFeedUrls(body ?? null);
   if (feedUrls.length === 0) {
-    return { processed: 0, timestamp: new Date().toISOString(), error: "No feed URLs" };
+    return { processed: 0, timestamp: new Date().toISOString(), error: "No feed URLs", statusCode: 400 };
   }
   const lockKey = "cron:learner";
   const acquired = await acquireCronLock(lockKey, 600);

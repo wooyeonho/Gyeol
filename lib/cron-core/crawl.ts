@@ -289,7 +289,7 @@ export async function executeCrawl(): Promise<CronResult> {
   try {
     const urls = getCrawlUrls();
     if (urls.length === 0) {
-      return { processed: 0, timestamp: new Date().toISOString(), error: "No CRAWL_URLS configured" };
+      return { processed: 0, timestamp: new Date().toISOString(), error: "No CRAWL_URLS configured", statusCode: 400 };
     }
 
     const maxPages = parseInt(process.env.CRAWL_MAX_PAGES || "10", 10);
@@ -362,7 +362,7 @@ export async function executeCrawlWithBody(body: {
     }
 
     if (pages.length === 0) {
-      return { processed: 0, timestamp: new Date().toISOString(), error: "No pages to process" };
+      return { processed: 0, timestamp: new Date().toISOString(), error: "No pages to process", statusCode: 400 };
     }
 
     const fallbackUrls = body?.urls?.filter((item): item is string => typeof item === "string") ?? getCrawlUrls();

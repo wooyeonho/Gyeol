@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
   const result = await executeLearner();
   return new Response(JSON.stringify(result), {
-    status: result.error ? 500 : 200,
+    status: result.statusCode ?? (result.error ? 500 : 200),
     headers: { "Content-Type": "application/json" },
   });
 }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
   const result = await executeLearner(body);
   return new Response(JSON.stringify(result), {
-    status: result.error ? 500 : 200,
+    status: result.statusCode ?? (result.error ? 500 : 200),
     headers: { "Content-Type": "application/json" },
   });
 }
