@@ -8,8 +8,9 @@ WORKDIR /app
 COPY openclaw/package.json openclaw/package-lock.json* ./openclaw/
 RUN cd openclaw && npm ci
 
-# Copy parent lib/ for direct execution imports
+# Copy parent lib/ and store/ for direct execution imports
 COPY lib/ lib/
+COPY store/ store/
 COPY openclaw/tsconfig.json openclaw/tsconfig.json
 COPY openclaw/src/ openclaw/src/
 

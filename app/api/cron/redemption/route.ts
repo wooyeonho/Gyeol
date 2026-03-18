@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   }
   const result = await executeRedemption();
   return new Response(JSON.stringify(result), {
+    status: result.error ? 500 : 200,
     headers: { "Content-Type": "application/json" },
   });
 }
