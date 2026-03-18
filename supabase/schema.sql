@@ -25,6 +25,7 @@ create table if not exists agent_state (
   total_messages int not null default 0,
   intimacy_score numeric not null default 0,
   vitality numeric not null default 1,
+  vitality_processed_at timestamptz,
   progress numeric not null default 0,
   mood text,
   personality jsonb,
