@@ -73,7 +73,13 @@ export function getSeedUrlsForTask(taskTitle: string | null | undefined, fallbac
   // Collect all matching categories (not just first match)
   const matchedUrls: string[] = [];
   for (const entry of SOURCE_CATALOG) {
-    const matchCount = entry.keywords.filter((keyword) => lower.includes(keyword)).length;
+    const matchCount = entry.keywords.filter((keyword) => {
+      // CJK keywords: plain includes is safe (they don't appear as substrings of unrelated words)
+      const isCJK = /[\u3131-\uD79D]/.test(keyword);
+      if (isCJK) return lower.includes(keyword);
+      // ASCII keywords: word-boundary match to avoid "art" matching "startup"
+      return new RegExp(`\\b${keyword}\\b`, "i").test(lower);
+    }).length;
     if (matchCount > 0) {
       matchedUrls.push(...entry.urls);
     }
