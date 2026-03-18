@@ -4,6 +4,8 @@ import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
+import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -140,6 +142,18 @@ export async function persistChatTurn(params: {
   const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
   const previousUsageProfile = currentConfig.usage_profile;
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
+
+  // Evolve creature DNA based on conversation signals
+  const currentGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string } | null;
+  let nextGenome = currentGenome;
+  if (currentGenome?.dna) {
+    const { dna: evolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
+    if (changedAxes.length > 0) {
+      const species = deriveSpecies(evolvedDNA);
+      nextGenome = { ...currentGenome, dna: evolvedDNA, species: species.name };
+    }
+  }
+
   const nextConfig = {
     ...currentConfig,
     usage_profile: nextUsageProfile,
@@ -150,6 +164,7 @@ export async function persistChatTurn(params: {
     intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
     vitality: newVitality,
     config: nextConfig,
+    ...(nextGenome !== currentGenome ? { genome: nextGenome } : {}),
   }).eq("agent_id", params.agentId);
 
   const goalSignal = await applyGoalLoop({

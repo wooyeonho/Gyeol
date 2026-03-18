@@ -1,4 +1,6 @@
 import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
+import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
+import type { CreatureDNA } from "@/lib/genome/dna";
 
 type AgentLexiconEntry = { word: string; meaning?: string };
 type AgentStatePrompt = {
@@ -23,6 +25,7 @@ type AgentStatePrompt = {
   self_model?: { observations?: string[]; current_role?: string; identity_statement?: string };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
+  genome?: { dna?: CreatureDNA; species?: string } | null;
 };
 
 type BuildSystemPromptParams = {
@@ -63,6 +66,8 @@ type PromptStrings = {
   role: (r: string) => string;
   lexicon: (words: string) => string;
   langDirective: string;
+  traitLabel: string;
+  speciesLabel: (name: string) => string;
 };
 
 const STRINGS_KO: PromptStrings = {
@@ -100,6 +105,8 @@ const STRINGS_KO: PromptStrings = {
   role: (r) => `너는 ${r} 역할이야.`,
   lexicon: (words) => `너의 어휘 (자연스럽게 사용해): ${words}`,
   langDirective: "",
+  traitLabel: "너의 고유 특성 (자연스럽게 반영해):",
+  speciesLabel: (name) => `너의 종: ${name}`,
 };
 
 const STRINGS_EN: PromptStrings = {
@@ -137,6 +144,8 @@ const STRINGS_EN: PromptStrings = {
   role: (r) => `You are a ${r}.`,
   lexicon: (words) => `Your vocabulary (use naturally): ${words}`,
   langDirective: "Always respond in English.",
+  traitLabel: "Your unique traits (reflect naturally):",
+  speciesLabel: (name) => `Your species: ${name}`,
 };
 
 const STRINGS_JA: PromptStrings = {
@@ -174,6 +183,8 @@ const STRINGS_JA: PromptStrings = {
   role: (r) => `あなたは${r}の役割。`,
   lexicon: (words) => `あなたの語彙（自然に使って）：${words}`,
   langDirective: "必ず日本語で返答してください。",
+  traitLabel: "あなたの固有特性（自然に反映して）：",
+  speciesLabel: (name) => `あなたの種：${name}`,
 };
 
 const STRINGS_ZH: PromptStrings = {
@@ -211,6 +222,8 @@ const STRINGS_ZH: PromptStrings = {
   role: (r) => `你是${r}的角色。`,
   lexicon: (words) => `你的词汇（自然使用）：${words}`,
   langDirective: "请始终用中文回复。",
+  traitLabel: "你的固有特性（自然地反映）：",
+  speciesLabel: (name) => `你的种类：${name}`,
 };
 
 const STRINGS_ES: PromptStrings = {
@@ -248,6 +261,8 @@ const STRINGS_ES: PromptStrings = {
   role: (r) => `Eres un ${r}.`,
   lexicon: (words) => `Tu vocabulario (úsalo naturalmente): ${words}`,
   langDirective: "Responde siempre en español.",
+  traitLabel: "Tus rasgos únicos (refléjalos naturalmente):",
+  speciesLabel: (name) => `Tu especie: ${name}`,
 };
 
 function getStrings(locale?: string): PromptStrings {
@@ -288,6 +303,19 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 2. personality mode (from onboarding)
   if (s.config?.personality_mode && L.personality[s.config.personality_mode]) {
     parts.push(L.personality[s.config.personality_mode]);
+  }
+
+  // 2b. DNA-driven trait personality fragments
+  if (s.genome?.dna) {
+    const traitLocale = (p.locale === "ko" || p.locale === "ko-KR") ? "ko" : "en";
+    const traitFragments = buildTraitPersonalityFragments(s.genome.dna, traitLocale);
+    if (traitFragments.length > 0) {
+      parts.push(L.traitLabel);
+      traitFragments.forEach((f) => parts.push(`- ${f}`));
+    }
+    if (s.genome.species) {
+      parts.push(L.speciesLabel(s.genome.species));
+    }
   }
 
   // 3. tone
