@@ -35,16 +35,16 @@ export async function shareMoltBookEntry(
     })
     .eq("id", entryId);
 
+  if (updateErr) {
+    console.error("[MoltBook] Share update error:", updateErr.message);
+    return false;
+  }
+
   // Atomic increment of times_shared to avoid race conditions
   await db.rpc("increment_moltbook_counter", {
     p_entry_id: entryId,
     p_column: "times_shared",
   }).then(() => {});
-
-  if (updateErr) {
-    console.error("[MoltBook] Share update error:", updateErr.message);
-    return false;
-  }
 
   // Log the sharing action
   await db.from("autonomous_logs").insert({
