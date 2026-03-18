@@ -8,7 +8,6 @@ vi.mock("@/lib/ai/embedding", () => ({
 }));
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateEmbedding } from "@/lib/ai/embedding";
 import { absorbSharedKnowledge } from "./absorb";
 
 function mockSupabase(overrides: Record<string, unknown> = {}) {
