@@ -65,6 +65,16 @@ describe("getSeedUrlsForTask", () => {
     expect(result).toContain("https://martinfowler.com/");
   });
 
+  it("returns startup URLs for Korean 마케팅 keyword", () => {
+    const result = getSeedUrlsForTask("마케팅 전략 수립", FALLBACK_URLS);
+    expect(result).toContain("https://andrewchen.com/");
+  });
+
+  it("returns engineering URLs for Korean 개발 keyword", () => {
+    const result = getSeedUrlsForTask("개발 생산성 향상 방법", FALLBACK_URLS);
+    expect(result).toContain("https://martinfowler.com/");
+  });
+
   it("returns multiple category URLs when keywords overlap", () => {
     const result = getSeedUrlsForTask("AI model performance engineering", FALLBACK_URLS);
     // Should match both AI and engineering categories

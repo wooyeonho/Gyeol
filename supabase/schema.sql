@@ -740,6 +740,8 @@ alter table breeding_records enable row level security;
 alter table adoption_board enable row level security;
 alter table time_capsules enable row level security;
 alter table redemption_requests enable row level security;
+alter table moltbook_entries enable row level security;
+alter table molthub_stars enable row level security;
 
 -- Agents: users can only see their own
 create policy "agents: owner access" on agents

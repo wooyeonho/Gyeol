@@ -1,19 +1,19 @@
 const SOURCE_CATALOG = [
   // Tech & AI
   {
-    keywords: ["ai", "llm", "model", "agent", "prompt", "gpt", "claude", "gemini", "machine learning"],
+    keywords: ["ai", "llm", "model", "agent", "prompt", "gpt", "claude", "gemini", "machine learning", "모델", "에이아이"],
     urls: ["https://openai.com/news/", "https://www.anthropic.com/news", "https://huggingface.co/blog"],
   },
   {
-    keywords: ["design", "ui", "ux", "brand", "product", "figma", "typography"],
+    keywords: ["design", "ui", "ux", "brand", "product", "figma", "typography", "디자인", "브랜드"],
     urls: ["https://www.figma.com/blog/", "https://www.smashingmagazine.com/feed/"],
   },
   {
-    keywords: ["startup", "growth", "marketing", "acquisition", "founder", "venture", "fundraise"],
+    keywords: ["startup", "growth", "marketing", "acquisition", "founder", "venture", "fundraise", "마케팅", "확산"],
     urls: ["https://techcrunch.com", "https://www.ycombinator.com/blog", "https://andrewchen.com/"],
   },
   {
-    keywords: ["engineering", "backend", "database", "infra", "devops", "performance", "api"],
+    keywords: ["engineering", "backend", "database", "infra", "devops", "performance", "api", "개발", "성능"],
     urls: ["https://martinfowler.com/", "https://vercel.com/blog", "https://supabase.com/blog"],
   },
   // Science & Knowledge

@@ -85,7 +85,8 @@ async function getPersonalizedFeeds(agentId: string, baseFeedUrls: string[]): Pr
   const chatText = (recentChats ?? []).map((c) => String((c as { content?: string }).content ?? "")).join(" ").toLowerCase();
   const interestFeeds: string[] = [];
   for (const [interest, feeds] of Object.entries(INTEREST_FEEDS)) {
-    if (chatText.includes(interest)) {
+    const regex = new RegExp(`\\b${interest}\\b`, "i");
+    if (regex.test(chatText)) {
       interestFeeds.push(...feeds);
     }
   }
