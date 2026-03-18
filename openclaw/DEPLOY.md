@@ -35,7 +35,7 @@ npm start            # Start the scheduler
 |----------|------------|
 | `GYEOL_APP_URL` | Production URL of the Gyeol app (e.g., `https://gyeol.vercel.app`). Used only for HTTP-mode jobs (lifeline). |
 | `CRON_SECRET` | Shared secret token (32+ characters) used for Bearer authentication. Must match the value set in Gyeol's environment. |
-| `SUPABASE_URL` | Supabase project URL (required for direct execution — cron-core functions access DB directly). |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (required for direct execution — cron-core functions access DB directly). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (required for direct execution). |
 | `GROQ_API_KEY` | Groq API key for AI generation (used by heartbeat, dream, social, learner, etc.). |
 
@@ -124,7 +124,7 @@ docker run -d \
 6. **Environment variables**:
    - `GYEOL_APP_URL` = your Vercel Gyeol app URL (e.g., `https://gyeol.vercel.app`) — no trailing slash
    - `CRON_SECRET` = must match the value set in Gyeol's Vercel environment exactly
-   - `SUPABASE_URL` = your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_URL` = your Supabase project URL
    - `SUPABASE_SERVICE_ROLE_KEY` = your Supabase service role key
    - `GROQ_API_KEY` = Groq API key for AI generation
    - `PORT` = `8000` (optional but recommended to be explicit)
