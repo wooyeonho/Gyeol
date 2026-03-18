@@ -79,7 +79,7 @@ export async function executeDream(): Promise<CronResult> {
         await db.from("artifacts").insert({
           agent_id: agentId,
           type: "dream_journal",
-          title: locale === "ko" ? "Dream journal" : "Dream journal",
+          title: locale === "ko" ? "\uAFC8 \uC77C\uAE30" : "Dream journal",
           content: `${dreamContent}\n\n---\n${reflection}`,
           expires_at: new Date(Date.now() + 48 * 3600000).toISOString(),
         });
