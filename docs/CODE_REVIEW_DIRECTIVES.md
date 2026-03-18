@@ -1,8 +1,20 @@
 # 코드 리뷰 지시서 (Code Review Directives)
 
 > 작성일: 2026-03-18
+> 최종 업데이트: 2026-03-18 (2차 리뷰 반영)
 > 분석 기준: 시니어 풀스택 개발자 + 수석 UI/UX 디자이너
 > 우선순위: 🔴 즉시 수정 → 🟡 단기 개선 → 🟠 장기 개선
+
+---
+
+## 2차 리뷰 반영 노트
+
+| 리뷰어 지적 | 판단 | 처리 |
+|---|---|---|
+| FIX-03 수정 방향 — 1.0 초기값 가정 오류 | **타당** | `processed_at` 기반 증분 감쇠 방식으로 수정 |
+| IMPROVE-03 — `messages/*.json` 통합 우려 | **오해** | 지시서는 `lib/ai/prompts/` 분리를 제안, JSON 통합 언급 없음. 원안 유지 |
+| ENHANCE-02 — Next.js 버전 확인 필요 | **확인 완료** | `package.json` 기준 Next.js 16.1.6, `after()` 사용 가능 |
+| Rate Limit — Redis/Vercel 동작 보장 이슈 | **해당 없음** | `lib/rate-limit.ts` 확인 결과 Supabase DB 기반 atomic RPC(`check_and_increment_rate_limit`) 이미 구현됨. Redis 무관. |
 
 ---
 
@@ -87,12 +99,46 @@ vitality = Math.max(0, vitality - decay); // ← 문제
 `processVitality`가 매일(cron heartbeat) 호출될 때, `decay`는 "마지막 채팅 이후 누적 전체 감쇠량"으로 계산되지만 현재 vitality(이미 감쇠된 값)에서 다시 차감한다. 예: 5일차에 이미 vitality=0.84로 낮아진 상태에서 또 `3*0.02 + 2*0.05 = 0.16`을 빼면 이중 차감.
 
 **수정 방향**:
-마지막 처리 시각(`processed_at`)을 저장하고, 직전 처리 이후 경과 시간만큼의 **증분 감쇠**만 적용하거나, 매 호출 시 last_chat 기준 **목표 vitality**를 계산하고 현재값과 min을 취하는 방식으로 변경.
+`agent_state` 테이블에 `vitality_processed_at` 컬럼을 추가하고, **직전 처리 이후 경과 시간만큼의 증분 감쇠**만 적용하는 것이 정확한 해법.
+
+> ⚠ 주의: `targetVitality = Math.max(0, 1.0 - decay)` 방식은 vitality가 대화로 1.0 이상으로 회복될 수 있는 경우 초기값을 1.0으로 고정 가정하므로 부정확. 증분 방식을 사용해야 함.
 
 ```typescript
-// 목표 vitality 계산 후 현재값과 min 적용 (단순 fix)
-const targetVitality = Math.max(0, 1.0 - decay); // 초기 1.0 기준 목표값
-vitality = Math.min(state.vitality || 1.0, targetVitality); // 더 낮은 쪽 적용
+// 권장 수정: processed_at 기반 증분 감쇠
+const { data: state } = await db
+  .from("agent_state")
+  .select("vitality, config, status, vitality_processed_at")
+  .eq("agent_id", agentId)
+  .single();
+
+const lastProcessed = state.vitality_processed_at
+  ? new Date(state.vitality_processed_at)
+  : new Date(lastChat?.created_at ?? Date.now());
+
+const hoursSinceProcessed = (Date.now() - lastProcessed.getTime()) / 3600000;
+
+// 직전 호출 이후 증분만 계산
+if (hoursSinceProcessed > 24) {
+  const daysDelta = hoursSinceProcessed / 24;
+  let incrementalDecay: number;
+  if (daysDelta <= 3) incrementalDecay = daysDelta * 0.02;
+  else if (daysDelta <= 7) incrementalDecay = 3 * 0.02 + (daysDelta - 3) * 0.05;
+  else incrementalDecay = 3 * 0.02 + 4 * 0.05 + (daysDelta - 7) * 0.08;
+
+  vitality = Math.max(0, (state.vitality ?? 1.0) - incrementalDecay);
+}
+
+// 업데이트 시 processed_at 갱신
+await db.from("agent_state").update({
+  vitality,
+  vitality_processed_at: new Date().toISOString(),
+  config: { ...state.config, vitality_stage: stage },
+}).eq("agent_id", agentId);
+```
+
+**필요한 마이그레이션**:
+```sql
+ALTER TABLE agent_state ADD COLUMN vitality_processed_at TIMESTAMPTZ;
 ```
 
 ---
@@ -298,7 +344,7 @@ Promise.resolve(
 Next.js Serverless 환경에서 응답 반환 후 실행 중인 비동기 작업이 런타임에 의해 잘릴 수 있음. `preferred_locale` 동기화가 누락될 수 있음.
 
 **수정 방향**:
-Next.js 15의 `after()` API 사용 (응답 완료 후 안전하게 실행 보장).
+현재 프로젝트는 **Next.js 16.1.6** (`package.json` 확인)으로 `after()` API 사용 가능.
 
 ```typescript
 import { after } from "next/server";
