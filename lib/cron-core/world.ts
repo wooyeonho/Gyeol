@@ -5,11 +5,11 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 
 const WEATHERS = [
-  { name: "peaceful day", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
-  { name: "high mutation day", memory_accuracy_modifier: 0, mutation_modifier: 0.2, social_modifier: 0, life_interval_modifier: 1.0 },
-  { name: "vivid memory day", memory_accuracy_modifier: 0.2, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
-  { name: "quiet day", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 2.0 },
-  { name: "festival", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 3.0, life_interval_modifier: 0.5 },
+  { name: "평온한 날", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "변이가 강한 날", memory_accuracy_modifier: 0, mutation_modifier: 0.2, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "기억이 선명한 날", memory_accuracy_modifier: 0.2, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
+  { name: "고요한 날", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 2.0 },
+  { name: "축제", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 3.0, life_interval_modifier: 0.5 },
 ];
 
 export async function executeWorld(): Promise<CronResult> {

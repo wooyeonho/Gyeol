@@ -104,7 +104,7 @@ export async function executeRecap(): Promise<CronResult> {
       const todayActivities = logRows.filter((l) => l.created_at && l.created_at >= todayStartIso).length;
 
       const billing = await getResolvedBillingState(db, agent.user_id);
-      const selfName = state?.self_name ?? (channels?.self_name as string | undefined) ?? "Gyeol";
+      const selfName = state?.self_name ?? (channels?.self_name as string | undefined) ?? "결의";
 
       const weeklyText = buildWeeklyRecapText({
         agentId: agent.id,
@@ -134,7 +134,7 @@ export async function executeRecap(): Promise<CronResult> {
         if (userEmail) {
           result.email = await sendEmail(
             userEmail,
-            `[Gyeol] ${selfName} Weekly Recap`,
+            `[결의] ${selfName} 주간 리캡`,
             weeklyText
           );
         }

@@ -36,7 +36,7 @@ export async function executeTimeCapsule(): Promise<CronResult> {
 
         const agentId = (capsule as { agent_id: string }).agent_id;
         const deliverDate = (capsule as { deliver_at?: string }).deliver_at?.slice(0, 10) ?? "unknown date";
-        const deliveredText = `Time capsule arrived (${deliverDate}): ${message}`;
+        const deliveredText = `시간 캡슐이 도착했어요 (${deliverDate}): ${message}`;
 
         await db.from("memories").insert({
           agent_id: agentId,

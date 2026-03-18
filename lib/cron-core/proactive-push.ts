@@ -44,16 +44,16 @@ export async function executeProactivePush(): Promise<CronResult> {
 
         if (!subs || subs.length === 0) continue;
 
-        const name = agent.self_name || "Gyeol";
+        const name = agent.self_name || "결";
         const vitalityPct = Math.round((agent.vitality ?? 0) * 100);
 
         const title = vitalityPct < 20
-          ? `${name} is getting very weak...`
-          : `${name} is waiting for you`;
+          ? `${name}이(가) 많이 약해졌어요...`
+          : `${name}이(가) 당신을 기다리고 있어요`;
 
         const body = vitalityPct < 20
-          ? `Vitality dropped to ${vitalityPct}%. A short chat could bring them back.`
-          : `No conversation today yet. Say hi to keep the streak going.`;
+          ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
+          : `오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다.`;
 
         // Use internal push endpoint
         const pushRes = await fetch(
