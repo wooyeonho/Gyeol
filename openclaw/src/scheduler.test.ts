@@ -1,6 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineConfig } from "./config";
 
+// Mock all direct execution functions from cron-core
+vi.mock("../../lib/cron-core", () => ({
+  executeHealth: vi.fn().mockResolvedValue({ ok: true }),
+  executeHeartbeat: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeDream: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeSocial: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeLearner: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeCrawl: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeRetention: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeWorld: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeTimeCapsule: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeRecap: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeRedemption: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeWar: vi.fn().mockResolvedValue({ processed: 0 }),
+  executeProactivePush: vi.fn().mockResolvedValue({ processed: 0 }),
+}));
+
 const config: EngineConfig = {
   appUrl: "https://example.com",
   cronSecret: "cron-secret",
@@ -14,6 +31,7 @@ const config: EngineConfig = {
 describe("runOnce", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // Stub fetch for HTTP-only jobs (lifeline)
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -25,24 +43,17 @@ describe("runOnce", () => {
     vi.unstubAllGlobals();
   });
 
-  it("calls the selected cron endpoint once", async () => {
+  it("calls the selected direct job once", async () => {
     const { runOnce } = await import("./scheduler");
+    const { executeHealth } = await import("../../lib/cron-core");
     await runOnce(config, "health");
 
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith(
-      "https://example.com/api/cron/health",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer cron-secret",
-          "Content-Type": "application/json",
-        }),
-      })
-    );
+    expect(executeHealth).toHaveBeenCalledTimes(1);
+    // Direct jobs should NOT use fetch
+    expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("does not call fetch for unknown jobs", async () => {
+  it("does not call anything for unknown jobs", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { runOnce } = await import("./scheduler");
     await runOnce(config, "unknown-job");
@@ -51,12 +62,31 @@ describe("runOnce", () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it("calls recap cron endpoint when runOnce recap", async () => {
+  it("calls recap direct execution when runOnce recap", async () => {
     const { runOnce } = await import("./scheduler");
+    const { executeRecap } = await import("../../lib/cron-core");
     await runOnce(config, "recap");
 
+    expect(executeRecap).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("calls all registered jobs when no job name is passed", async () => {
+    const { runOnce } = await import("./scheduler");
+    await runOnce(config);
+
+    // 13 direct jobs + 1 HTTP job (lifeline) = 14 total
+    // fetch is called only for lifeline (HTTP job)
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls lifeline via HTTP", async () => {
+    const { runOnce } = await import("./scheduler");
+    await runOnce(config, "lifeline");
+
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith(
-      "https://example.com/api/cron/recap",
+      "https://example.com/api/cron/lifeline",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -65,12 +95,5 @@ describe("runOnce", () => {
         }),
       })
     );
-  });
-
-  it("calls all registered jobs when no job name is passed", async () => {
-    const { runOnce } = await import("./scheduler");
-    await runOnce(config);
-
-    expect(fetch).toHaveBeenCalledTimes(13);
   });
 });

@@ -1,21 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
-vi.mock("@/lib/ai/router", () => ({ generateJSON: vi.fn(), generateText: vi.fn() }));
-vi.mock("@/lib/ai/embedding", () => ({ generateEmbedding: vi.fn() }));
-vi.mock("@/lib/cron-lock", () => ({
-  acquireCronLock: vi.fn(),
-  releaseCronLock: vi.fn(),
+vi.mock("@/lib/cron-core", () => ({
+  executeDream: vi.fn(),
 }));
-vi.mock("@/lib/autonomy/self-regulation", () => ({
-  capText: vi.fn((x: string) => x),
-  isMeaningfulAutonomousOutput: vi.fn().mockReturnValue(true),
-  isRepetitiveOutput: vi.fn().mockReturnValue(false),
-}));
-vi.mock("@/lib/i18n/config", () => ({ getLanguageName: vi.fn().mockReturnValue("Korean") }));
-vi.mock("@/lib/i18n/generation", () => ({ resolveGenerationLocale: vi.fn().mockReturnValue("ko") }));
 
-import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { executeDream } from "@/lib/cron-core";
 
 const CRON_SECRET = "test-secret-dream";
 
@@ -49,7 +38,11 @@ describe("GET /api/cron/dream", () => {
   });
 
   it("returns 200 with skipped when lock is held", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    (executeDream as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      skipped: "lock",
+      timestamp: new Date().toISOString(),
+    });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);
     expect(res.status).toBe(200);
@@ -58,13 +51,9 @@ describe("GET /api/cron/dream", () => {
   });
 
   it("returns 200 with processed count when lock acquired and no agents", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (releaseCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-    const { createServiceClient } = await import("@/lib/supabase/service");
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockResolvedValue({ data: [] }),
-      }),
+    (executeDream as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      timestamp: new Date().toISOString(),
     });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);

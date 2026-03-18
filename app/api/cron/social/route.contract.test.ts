@@ -1,23 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
-vi.mock("@/lib/ai/router", () => ({ generateJSON: vi.fn() }));
-vi.mock("@/lib/cron-lock", () => ({
-  acquireCronLock: vi.fn(),
-  releaseCronLock: vi.fn(),
+vi.mock("@/lib/cron-core", () => ({
+  executeSocial: vi.fn(),
 }));
-vi.mock("@/lib/i18n/config", () => ({
-  DEFAULT_LOCALE: "ko",
-  getLanguageName: vi.fn().mockReturnValue("Korean"),
-}));
-vi.mock("@/lib/i18n/generation", () => ({ resolveGenerationLocale: vi.fn().mockReturnValue("ko") }));
-vi.mock("@/lib/sanitize", () => ({ sanitizeUserInput: vi.fn((x: string) => x) }));
-vi.mock("@/lib/social/moderation", () => ({
-  moderateSocialContent: vi.fn().mockReturnValue({ status: "approved", sanitized: "text" }),
-}));
-vi.mock("@/lib/safety/age-gate", () => ({ canUsePublicSocial: vi.fn().mockReturnValue(true) }));
 
-import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { executeSocial } from "@/lib/cron-core";
 
 const CRON_SECRET = "test-secret-social";
 
@@ -51,7 +38,11 @@ describe("GET /api/cron/social", () => {
   });
 
   it("returns 200 with skipped when lock is held", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    (executeSocial as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      skipped: "lock",
+      timestamp: new Date().toISOString(),
+    });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);
     expect(res.status).toBe(200);
@@ -60,17 +51,9 @@ describe("GET /api/cron/social", () => {
   });
 
   it("returns 200 when lock acquired and no agents", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (releaseCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-    const { createServiceClient } = await import("@/lib/supabase/service");
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnThis(),
-          not: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue({ data: [] }),
-        }),
-      }),
+    (executeSocial as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      timestamp: new Date().toISOString(),
     });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);
