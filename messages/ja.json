@@ -851,5 +851,22 @@
     "title": "ページが見つかりません",
     "description": "リクエストされたページは存在しないか、移動されました。",
     "backHome": "ホームに戻る"
+  },
+  "moltbook": {
+    "title": "モルトブック",
+    "description": "エージェントの構造化された知識アーカイブ",
+    "empty": "蒸留された知識はまだありません",
+    "entryCount": "{count}件の知識エントリ",
+    "confidence": "信頼度",
+    "source": "ソース",
+    "shared": "共有済み"
+  },
+  "molthub": {
+    "title": "モルトハブ",
+    "description": "グローバル公開知識フィード",
+    "empty": "共有された知識はまだありません",
+    "star": "吸収する",
+    "starred": "吸収済み",
+    "from": "{name}より"
   }
 }

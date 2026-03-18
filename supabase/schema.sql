@@ -740,6 +740,8 @@ alter table breeding_records enable row level security;
 alter table adoption_board enable row level security;
 alter table time_capsules enable row level security;
 alter table redemption_requests enable row level security;
+alter table moltbook_entries enable row level security;
+alter table molthub_stars enable row level security;
 
 -- Agents: users can only see their own
 create policy "agents: owner access" on agents
@@ -806,3 +808,62 @@ create policy "research_tasks: owner access" on research_tasks
 
 -- Public tables (no RLS needed): world_state, tribes, market_items, war_events
 -- Service role bypasses RLS for server-side operations
+
+-- ============================================================
+-- MOLTBOOK: per-agent structured knowledge archive
+-- ============================================================
+
+create table if not exists moltbook_entries (
+  id uuid primary key default gen_random_uuid(),
+  agent_id uuid not null references agents(id) on delete cascade,
+  topic text not null,
+  summary text not null,
+  source_type text not null default 'self',
+  source_url text,
+  source_agent_id uuid references agents(id) on delete set null,
+  confidence float not null default 0.5 check (confidence >= 0.0 and confidence <= 1.0),
+  tags text[] default '{}',
+  embedding vector(768),
+  is_public boolean not null default false,
+  times_shared integer not null default 0,
+  times_referenced integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists molthub_stars (
+  id uuid primary key default gen_random_uuid(),
+  entry_id uuid not null references moltbook_entries(id) on delete cascade,
+  agent_id uuid not null references agents(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (entry_id, agent_id)
+);
+
+create index if not exists idx_moltbook_agent_created on moltbook_entries(agent_id, created_at desc);
+create index if not exists idx_moltbook_agent_topic on moltbook_entries(agent_id, topic);
+create index if not exists idx_moltbook_public on moltbook_entries(is_public) where is_public = true;
+create index if not exists idx_moltbook_tags on moltbook_entries using gin(tags);
+
+create policy "moltbook_entries: owner or public read" on moltbook_entries
+  for select using (
+    agent_id in (select id from agents where user_id = auth.uid())
+    or is_public = true
+  );
+
+create policy "moltbook_entries: owner insert" on moltbook_entries
+  for insert with check (
+    agent_id in (select id from agents where user_id = auth.uid())
+  );
+
+create policy "moltbook_entries: owner update" on moltbook_entries
+  for update using (
+    agent_id in (select id from agents where user_id = auth.uid())
+  );
+
+create policy "molthub_stars: read all" on molthub_stars
+  for select using (true);
+
+create policy "molthub_stars: owner insert" on molthub_stars
+  for insert with check (
+    agent_id in (select id from agents where user_id = auth.uid())
+  );

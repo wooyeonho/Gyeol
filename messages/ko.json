@@ -952,5 +952,22 @@
     "title": "페이지를 찾을 수 없습니다",
     "description": "요청한 페이지가 존재하지 않거나 이동되었습니다.",
     "backHome": "홈으로 돌아가기"
+  },
+  "moltbook": {
+    "title": "몰트북",
+    "description": "에이전트의 구조화된 지식 아카이브",
+    "empty": "아직 증류된 지식이 없습니다",
+    "entryCount": "{count}개의 지식 항목",
+    "confidence": "신뢰도",
+    "source": "출처",
+    "shared": "공유됨"
+  },
+  "molthub": {
+    "title": "몰트허브",
+    "description": "전체 공개 지식 피드",
+    "empty": "아직 공유된 지식이 없습니다",
+    "star": "흡수하기",
+    "starred": "흡수 완료",
+    "from": "출처: {name}"
   }
 }

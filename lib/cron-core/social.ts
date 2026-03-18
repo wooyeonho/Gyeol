@@ -9,6 +9,7 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { moderateSocialContent } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
+import { distillMemoriesToMoltBook, shareMoltBookEntry, absorbSharedKnowledge } from "@/lib/moltbook";
 
 type SocialAgentState = {
   agent_id: string;
@@ -170,6 +171,61 @@ export async function executeSocial(): Promise<CronResult> {
             await db.from("agent_state").update({ lexicon: { entries } }).eq("agent_id", agent.agent_id);
           }
         }
+      }
+    }
+
+    // MoltBook knowledge sharing (30% chance)
+    if (Math.random() < 0.3) {
+      try {
+        // Agent A distills and shares best entry
+        await distillMemoriesToMoltBook(a.agent_id);
+        const { data: bestA } = await db
+          .from("moltbook_entries")
+          .select("id, topic")
+          .eq("agent_id", a.agent_id)
+          .eq("is_public", false)
+          .gte("confidence", 0.6)
+          .order("confidence", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (bestA) {
+          const shared = await shareMoltBookEntry(a.agent_id, bestA.id as string);
+          if (shared) {
+            await absorbSharedKnowledge(b.agent_id, bestA.id as string);
+            await db.from("autonomous_logs").insert({
+              agent_id: a.agent_id,
+              action_type: "moltbook_share",
+              summary: `Shared knowledge "${bestA.topic}" with ${b.self_name || "another being"}`,
+            });
+          }
+        }
+
+        // Bidirectional: Agent B also shares with A
+        await distillMemoriesToMoltBook(b.agent_id);
+        const { data: bestB } = await db
+          .from("moltbook_entries")
+          .select("id, topic")
+          .eq("agent_id", b.agent_id)
+          .eq("is_public", false)
+          .gte("confidence", 0.6)
+          .order("confidence", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (bestB) {
+          const shared = await shareMoltBookEntry(b.agent_id, bestB.id as string);
+          if (shared) {
+            await absorbSharedKnowledge(a.agent_id, bestB.id as string);
+            await db.from("autonomous_logs").insert({
+              agent_id: b.agent_id,
+              action_type: "moltbook_share",
+              summary: `Shared knowledge "${bestB.topic}" with ${a.self_name || "another being"}`,
+            });
+          }
+        }
+      } catch (e) {
+        console.error("[Social] MoltBook sharing error:", e);
       }
     }
 

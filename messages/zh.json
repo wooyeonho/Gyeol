@@ -851,5 +851,22 @@
     "title": "页面未找到",
     "description": "您请求的页面不存在或已被移动。",
     "backHome": "返回首页"
+  },
+  "moltbook": {
+    "title": "知识本",
+    "description": "代理的结构化知识档案",
+    "empty": "暂无提炼的知识",
+    "entryCount": "{count}条知识条目",
+    "confidence": "置信度",
+    "source": "来源",
+    "shared": "已共享"
+  },
+  "molthub": {
+    "title": "知识中心",
+    "description": "全局公开知识流",
+    "empty": "暂无共享知识",
+    "star": "吸收",
+    "starred": "已吸收",
+    "from": "来自{name}"
   }
 }

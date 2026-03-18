@@ -851,5 +851,22 @@
     "title": "Página no encontrada",
     "description": "La página solicitada no existe o ha sido movida.",
     "backHome": "Volver al inicio"
+  },
+  "moltbook": {
+    "title": "MoltBook",
+    "description": "Archivo de conocimiento estructurado de tu agente",
+    "empty": "Aún no hay conocimiento destilado",
+    "entryCount": "{count} entradas de conocimiento",
+    "confidence": "Confianza",
+    "source": "Fuente",
+    "shared": "Compartido"
+  },
+  "molthub": {
+    "title": "MoltHub",
+    "description": "Feed público global de conocimiento",
+    "empty": "Aún no hay conocimiento compartido",
+    "star": "Absorber",
+    "starred": "Absorbido",
+    "from": "De {name}"
   }
 }

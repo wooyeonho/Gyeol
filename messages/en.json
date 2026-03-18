@@ -952,5 +952,22 @@
     "title": "Page not found",
     "description": "The page you requested does not exist or has been moved.",
     "backHome": "Back to home"
+  },
+  "moltbook": {
+    "title": "MoltBook",
+    "description": "Your agent's structured knowledge archive",
+    "empty": "No distilled knowledge yet",
+    "entryCount": "{count} knowledge entries",
+    "confidence": "Confidence",
+    "source": "Source",
+    "shared": "Shared"
+  },
+  "molthub": {
+    "title": "MoltHub",
+    "description": "Global public knowledge feed",
+    "empty": "No shared knowledge yet",
+    "star": "Absorb",
+    "starred": "Absorbed",
+    "from": "From {name}"
   }
 }
