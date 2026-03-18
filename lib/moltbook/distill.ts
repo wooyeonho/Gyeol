@@ -14,6 +14,8 @@ const DISTILL_MEMORY_TYPES = [
   "observation",
 ];
 
+const VALID_SOURCE_TYPES = new Set(["rss", "crawl", "conversation", "social", "dream", "self", "shared"]);
+
 interface DistilledEntry {
   topic: string;
   summary: string;
@@ -100,7 +102,7 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
         agent_id: agentId,
         topic: entry.topic,
         summary: entry.summary,
-        source_type: entry.source_type || "self",
+        source_type: VALID_SOURCE_TYPES.has(entry.source_type) ? entry.source_type : "self",
         confidence: Math.min(1, Math.max(0, entry.confidence ?? 0.5)),
         tags: entry.tags ?? [],
         embedding: embedding.length > 0 ? embedding : null,

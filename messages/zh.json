@@ -859,7 +859,9 @@
     "entryCount": "{count}条知识条目",
     "confidence": "置信度",
     "source": "来源",
-    "shared": "已共享"
+    "shared": "已共享",
+    "referenced": "被引用{count}次",
+    "errorLoading": "加载条目失败"
   },
   "molthub": {
     "title": "知识中心",
@@ -867,6 +869,8 @@
     "empty": "暂无共享知识",
     "star": "吸收",
     "starred": "已吸收",
-    "from": "来自{name}"
+    "from": "来自{name}",
+    "unknown": "未知",
+    "errorLoading": "加载动态失败"
   }
 }

@@ -32,6 +32,7 @@ export default function MoltBookPage() {
   const { t } = useTranslations();
   const [entries, setEntries] = useState<MoltBookEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +42,11 @@ export default function MoltBookPage() {
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) setEntries(data.entries ?? []);
+        } else {
+          if (!cancelled) setError(true);
         }
+      } catch {
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -74,6 +79,10 @@ export default function MoltBookPage() {
             {[0, 1, 2].map((i) => (
               <div key={i} className="theme-panel animate-pulse rounded-2xl p-4 h-24" />
             ))}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-8 text-center">
+            <p className="text-sm text-red-300">{t("moltbook.errorLoading")}</p>
           </div>
         ) : entries.length === 0 ? (
           <motion.div
@@ -126,7 +135,7 @@ export default function MoltBookPage() {
                 )}
                 {entry.times_referenced > 0 && (
                   <p className="mt-1 text-[10px] theme-text-faint">
-                    Referenced {entry.times_referenced}x
+                    {t("moltbook.referenced").replace("{count}", String(entry.times_referenced))}
                   </p>
                 )}
               </motion.div>

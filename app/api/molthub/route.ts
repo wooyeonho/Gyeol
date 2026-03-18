@@ -23,14 +23,18 @@ export async function GET(request: NextRequest) {
       .limit(30);
 
     if (topicFilter) {
-      query = query.ilike("topic", `%${topicFilter}%`);
+      // Sanitize topic filter: strip SQL wildcards and limit length to prevent abuse
+      const sanitized = topicFilter.replace(/[%_\\]/g, "").slice(0, 100);
+      if (sanitized) {
+        query = query.ilike("topic", `%${sanitized}%`);
+      }
     }
 
     const { data: entries } = await query;
     if (!entries || entries.length === 0) return NextResponse.json({ entries: [] });
 
     // Fetch agent names and visuals separately (no FK join)
-    const agentIds = [...new Set((entries as Array<{ agent_id: string }>).map((e) => e.agent_id))];
+    const agentIds = [...new Set(entries.map((e: { agent_id?: string }) => String(e.agent_id ?? "")))].filter(Boolean);
     const { data: agentStates } = await service
       .from("agent_state")
       .select("agent_id, self_name, visual")
@@ -41,8 +45,8 @@ export async function GET(request: NextRequest) {
       agentMap.set(s.agent_id, { self_name: s.self_name ?? null, visual: s.visual ?? null });
     }
 
-    const enriched = (entries as Array<Record<string, unknown>>).map((e) => {
-      const agent = agentMap.get(e.agent_id as string);
+    const enriched = entries.map((e: Record<string, unknown>) => {
+      const agent = agentMap.get(String(e.agent_id ?? ""));
       return {
         ...e,
         agent_name: agent?.self_name ?? null,

@@ -960,7 +960,9 @@
     "entryCount": "{count}개의 지식 항목",
     "confidence": "신뢰도",
     "source": "출처",
-    "shared": "공유됨"
+    "shared": "공유됨",
+    "referenced": "{count}회 참조됨",
+    "errorLoading": "항목을 불러오지 못했습니다"
   },
   "molthub": {
     "title": "몰트허브",
@@ -968,6 +970,8 @@
     "empty": "아직 공유된 지식이 없습니다",
     "star": "흡수하기",
     "starred": "흡수 완료",
-    "from": "출처: {name}"
+    "from": "출처: {name}",
+    "unknown": "알 수 없음",
+    "errorLoading": "피드를 불러오지 못했습니다"
   }
 }

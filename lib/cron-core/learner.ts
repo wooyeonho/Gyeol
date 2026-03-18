@@ -85,7 +85,9 @@ async function getPersonalizedFeeds(agentId: string, baseFeedUrls: string[]): Pr
   const chatText = (recentChats ?? []).map((c) => String((c as { content?: string }).content ?? "")).join(" ").toLowerCase();
   const interestFeeds: string[] = [];
   for (const [interest, feeds] of Object.entries(INTEREST_FEEDS)) {
-    const regex = new RegExp(`\\b${interest}\\b`, "i");
+    // Use escaped interest key to safely handle multi-word keys and special chars
+    const escaped = interest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(?:^|\\s|\\b)${escaped}(?:\\s|\\b|$)`, "i");
     if (regex.test(chatText)) {
       interestFeeds.push(...feeds);
     }

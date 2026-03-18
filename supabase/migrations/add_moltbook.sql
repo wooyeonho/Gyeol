@@ -4,20 +4,13 @@
 -- Enable pgvector if not already enabled
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Source type enum for knowledge entries
-DO $$ BEGIN
-  CREATE TYPE moltbook_source_type AS ENUM ('rss', 'crawl', 'conversation', 'social', 'dream', 'self', 'shared');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
 -- Main knowledge entries table
 CREATE TABLE IF NOT EXISTS moltbook_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   topic TEXT NOT NULL,
   summary TEXT NOT NULL,
-  source_type moltbook_source_type NOT NULL DEFAULT 'self',
+  source_type TEXT NOT NULL DEFAULT 'self',
   source_url TEXT,
   source_agent_id UUID REFERENCES agents(id) ON DELETE SET NULL,
   confidence FLOAT NOT NULL DEFAULT 0.5 CHECK (confidence >= 0.0 AND confidence <= 1.0),
@@ -74,3 +67,36 @@ CREATE POLICY molthub_stars_insert ON molthub_stars
   FOR INSERT WITH CHECK (
     agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
   );
+
+-- DELETE policies: owner can delete own entries and unstars
+CREATE POLICY moltbook_owner_delete ON moltbook_entries
+  FOR DELETE USING (
+    agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY molthub_stars_delete ON molthub_stars
+  FOR DELETE USING (
+    agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
+  );
+
+-- Atomic increment for moltbook counters
+CREATE OR REPLACE FUNCTION increment_moltbook_counter(
+  p_entry_id UUID,
+  p_column TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF p_column = 'times_referenced' THEN
+    UPDATE moltbook_entries
+    SET times_referenced = times_referenced + 1
+    WHERE id = p_entry_id;
+  ELSIF p_column = 'times_shared' THEN
+    UPDATE moltbook_entries
+    SET times_shared = times_shared + 1,
+        updated_at = now()
+    WHERE id = p_entry_id;
+  END IF;
+END;
+$$;
