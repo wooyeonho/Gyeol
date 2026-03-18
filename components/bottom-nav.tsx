@@ -95,6 +95,7 @@ export function BottomNav() {
     <nav
       className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       style={{ borderColor: `${appearance.palette.primary}25` }}
+      aria-label="Bottom navigation"
     >
       <div className="relative mx-auto flex max-w-md justify-around px-3 py-2">
         {/* Animated active pill indicator */}

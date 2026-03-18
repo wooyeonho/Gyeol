@@ -37,6 +37,7 @@ const DEFAULT_METADATA: Pick<Metadata, "title" | "description"> = METADATA_BY_LO
 export const viewport = {
   width: "device-width" as const,
   initialScale: 1,
+  userScalable: true,
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -58,11 +59,19 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className="bg-black text-white min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-black focus:text-sm focus:font-medium focus:shadow-lg"
+          >
+            Skip to content
+          </a>
           <DocumentLocaleSync />
           <ThemePreferenceSync />
           <WebPushManager />
           <NavigationHub />
-          <AnalyticsProvider>{children}</AnalyticsProvider>
+          <AnalyticsProvider>
+            <main id="main-content">{children}</main>
+          </AnalyticsProvider>
         </I18nProvider>
       </body>
     </html>

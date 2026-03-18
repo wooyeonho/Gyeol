@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 
 type Star = { id: string; content: string; x: number; y: number; z: number };
 
-function StarPoint({ star, color }: { star: Star; color: string }) {
+const StarPoint = React.memo(function StarPoint({ star, color }: { star: Star; color: string }) {
   const ref = useRef<THREE.Mesh>(null);
   useFrame((state) => {
     if (ref.current) {
@@ -20,7 +21,7 @@ function StarPoint({ star, color }: { star: Star; color: string }) {
       <meshBasicMaterial color={color} />
     </mesh>
   );
-}
+});
 
 export default function ConstellationScene({
   stars,
@@ -42,15 +43,17 @@ export default function ConstellationScene({
   }
   return (
     <div className="w-full h-full min-h-[400px]">
-      <Canvas camera={{ position: [0, 0, 2], fov: 60 }} gl={{ alpha: true }}>
-        <color attach="background" args={[backgroundColor]} />
-        <ambientLight intensity={0.3} />
-        <pointLight position={[0, 0, 1]} intensity={0.5} color={color} />
-        {stars.map((s) => (
-          <StarPoint key={s.id} star={s} color={color} />
-        ))}
-        <OrbitControls enableZoom enablePan />
-      </Canvas>
+      <ThreeErrorBoundary>
+        <Canvas camera={{ position: [0, 0, 2], fov: 60 }} gl={{ alpha: true }}>
+          <color attach="background" args={[backgroundColor]} />
+          <ambientLight intensity={0.3} />
+          <pointLight position={[0, 0, 1]} intensity={0.5} color={color} />
+          {stars.map((s) => (
+            <StarPoint key={s.id} star={s} color={color} />
+          ))}
+          <OrbitControls enableZoom enablePan />
+        </Canvas>
+      </ThreeErrorBoundary>
     </div>
   );
 }

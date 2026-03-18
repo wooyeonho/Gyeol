@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
     if (action !== "accept") return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     return NextResponse.json(
-      { error: "현재는 단일 메인 에이전트만 지원합니다. 브리딩 수락은 멀티 에이전트 구조 이후 다시 열립니다." },
+      { error: "Breeding accept is not yet available. It will be enabled after multi-agent support." },
       { status: 409 }
     );
   } catch (e) {

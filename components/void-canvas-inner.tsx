@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -30,9 +30,9 @@ export interface InnerProps {
   pointerNorm?: { x: number; y: number };
 }
 
-function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
+const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
   return <meshStandardMaterial color={color} emissive={color} emissiveIntensity={emissiveIntensity} transparent opacity={opacity} roughness={0.3} metalness={0.12} />;
-}
+});
 
 /** Glowing eye that tracks pointer position */
 function CreatureEye({ position, size, color, pointerNorm }: { position: [number, number, number]; size: number; color: string; pointerNorm: { x: number; y: number } }) {

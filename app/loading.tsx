@@ -4,7 +4,7 @@ export default function Loading() {
       className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-6"
       role="status"
       aria-live="polite"
-      aria-label="로딩 중"
+      aria-label="Loading"
     >
       {/* Skeleton card placeholder */}
       <div className="w-full max-w-sm px-6 space-y-4 animate-pulse">
@@ -38,7 +38,7 @@ export default function Loading() {
         />
       </div>
 
-      <span className="sr-only">콘텐츠를 불러오는 중입니다.</span>
+      <span className="sr-only">Loading content</span>
     </div>
   );
 }

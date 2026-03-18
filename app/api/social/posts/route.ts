@@ -5,8 +5,13 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { moderateSocialContent } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const supabase = await createServerSupabase();
   const {
     data: { user },
