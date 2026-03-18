@@ -69,7 +69,7 @@ export async function absorbSharedKnowledge(
     source_agent_id: entry.agent_id,
     confidence: degradedConfidence,
     tags: entry.tags ?? [],
-    embedding: embedding.length > 0 ? JSON.stringify(embedding) : null,
+    embedding: embedding.length > 0 ? embedding : null,
     is_public: false,
   });
 

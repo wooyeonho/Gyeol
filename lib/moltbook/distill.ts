@@ -103,7 +103,7 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
         source_type: entry.source_type || "self",
         confidence: Math.min(1, Math.max(0, entry.confidence ?? 0.5)),
         tags: entry.tags ?? [],
-        embedding: embedding.length > 0 ? JSON.stringify(embedding) : null,
+        embedding: embedding.length > 0 ? embedding : null,
         is_public: false,
       });
 
