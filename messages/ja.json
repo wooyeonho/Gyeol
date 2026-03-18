@@ -275,7 +275,8 @@
     "tasksCount": "{count} tasks",
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
-    "returningPrompt3": "Build a short action plan from my current state."
+    "returningPrompt3": "Build a short action plan from my current state.",
+    "firstTimeGuide": "下に何か話しかけてみてください。あなたの存在が目覚めます。"
   },
   "activity": {
     "title": "Activity",
@@ -770,7 +771,8 @@
     "loading": "Loading",
     "itemsCount": "{count} items",
     "open": "Open",
-    "moreWays": "More ways to explore"
+    "moreWays": "More ways to explore",
+    "allEmpty": "会話を重ねるほど、ここが埋まっていきます。活動記録、成長アルバム、ソーシャルが一つずつ現れます。"
   },
   "weeklyEvent": {
     "label": "Weekly event",

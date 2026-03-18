@@ -25,10 +25,18 @@ export async function processVitality(agentId: string) {
   const hoursSinceChat = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
   let vitality = state.vitality || 1.0;
 
-  // Decay proportional to days without chat (0.01 per 24h elapsed)
-  if (hoursSinceChat > 24) {
+  // Accelerated decay: starts after 12h, ramps up over time
+  // Day 1-3: gentle (0.02/day), Day 4-7: moderate (0.05/day), Day 8+: steep (0.08/day)
+  if (hoursSinceChat > 12) {
     const daysSinceChat = hoursSinceChat / 24;
-    const decay = Math.floor(daysSinceChat) * 0.01;
+    let decay: number;
+    if (daysSinceChat <= 3) {
+      decay = daysSinceChat * 0.02;
+    } else if (daysSinceChat <= 7) {
+      decay = 3 * 0.02 + (daysSinceChat - 3) * 0.05;
+    } else {
+      decay = 3 * 0.02 + 4 * 0.05 + (daysSinceChat - 7) * 0.08;
+    }
     vitality = Math.max(0, vitality - decay);
   }
 

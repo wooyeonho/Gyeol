@@ -275,7 +275,8 @@
     "tasksCount": "{count} tasks",
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
-    "returningPrompt3": "Build a short action plan from my current state."
+    "returningPrompt3": "Build a short action plan from my current state.",
+    "firstTimeGuide": "在下方说点什么吧。你的存在将会觉醒。"
   },
   "activity": {
     "title": "Activity",
@@ -770,7 +771,8 @@
     "loading": "Loading",
     "itemsCount": "{count} items",
     "open": "Open",
-    "moreWays": "More ways to explore"
+    "moreWays": "More ways to explore",
+    "allEmpty": "随着对话的增多，这里会逐渐丰富起来。活动记录、成长相册、社交关系会一一出现。"
   },
   "weeklyEvent": {
     "label": "Weekly event",

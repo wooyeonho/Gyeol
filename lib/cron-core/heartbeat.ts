@@ -52,18 +52,16 @@ async function runOptionalStep(
   }
 }
 
-async function triggerAutonomousAction(baseUrl: string, action: "learner" | "crawl", cronSecret: string) {
-  const endpoint = action === "learner" ? "/api/cron/learner" : "/api/cron/crawl";
+async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl", _cronSecret: string) {
   try {
-    await fetch(`${baseUrl}${endpoint}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${cronSecret}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ source: "heartbeat" }),
-      signal: AbortSignal.timeout(120_000),
-    });
+    if (action === "learner") {
+      const { executeLearner } = await import("@/lib/cron-core/learner");
+      await executeLearner();
+    } else {
+      const { executeCrawl } = await import("@/lib/cron-core/crawl");
+      await executeCrawl();
+    }
+    console.log(`[Heartbeat] immediate ${action} trigger succeeded (direct)`);
   } catch (error) {
     console.error(`[Heartbeat] immediate ${action} trigger failed`, error);
   }
