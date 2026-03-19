@@ -120,7 +120,7 @@ export async function GET(request?: Request) {
       return NextResponse.json({ socialLogs: [], socialPosts: [], breedingRecords: [], otherAgents: [] });
     }
 
-    const [logsRes, breedingRes, agentsRes, giftRes, selfStateRes, postsRes, followingRes, followersRes] = await Promise.all([
+    const settled = await Promise.allSettled([
       service
         .from("social_logs")
         .select("id, agent_a_id, agent_b_id, topic, conversation, message, outcome, created_at")
@@ -163,6 +163,18 @@ export async function GET(request?: Request) {
         .select("follower_agent_id, followee_agent_id")
         .eq("followee_agent_id", myAgentId),
     ]);
+
+    const unwrap = <T,>(result: PromiseSettledResult<{ data: T | null }>) =>
+      result.status === "fulfilled" ? result : { status: "fulfilled" as const, value: { data: null as T | null } };
+
+    const logsRes = unwrap(settled[0]).value;
+    const breedingRes = unwrap(settled[1]).value;
+    const agentsRes = unwrap(settled[2]).value;
+    const giftRes = unwrap(settled[3]).value;
+    const selfStateRes = unwrap(settled[4]).value;
+    const postsRes = unwrap(settled[5]).value;
+    const followingRes = unwrap(settled[6]).value;
+    const followersRes = unwrap(settled[7]).value;
 
     const rawTopPostRows = (postsRes.data ?? []) as SocialPostRow[];
     const followingRows = (followingRes.data ?? []) as SocialConnectionRow[];

@@ -35,6 +35,8 @@ const STRINGS_JA: PromptStrings = {
   role: (r) => `あなたは${r}の役割。`,
   lexicon: (words) => `あなたの語彙（自然に使って）：${words}`,
   langDirective: "必ず日本語で返答してください。",
+  traitLabel: "あなたの固有特性（自然に反映して）：",
+  speciesLabel: (name) => `あなたの種：${name}`,
 };
 
 export default STRINGS_JA;

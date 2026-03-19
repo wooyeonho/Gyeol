@@ -35,6 +35,8 @@ const STRINGS_ZH: PromptStrings = {
   role: (r) => `你是${r}的角色。`,
   lexicon: (words) => `你的词汇（自然使用）：${words}`,
   langDirective: "请始终用中文回复。",
+  traitLabel: "你的固有特性（自然地反映）：",
+  speciesLabel: (name) => `你的种类：${name}`,
 };
 
 export default STRINGS_ZH;

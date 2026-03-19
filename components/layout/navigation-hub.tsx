@@ -66,11 +66,11 @@ export function NavigationHub() {
               </button>
             </div>
             
-            <div className="p-2 py-4 flex flex-col gap-1 overflow-y-auto max-h-[60vh]">
+            <nav className="p-2 py-4 flex flex-col gap-1 overflow-y-auto max-h-[60vh]" aria-label="Main navigation">
               {links.map((link) => (
                 <NavLink key={link.href} href={link.href} icon={link.icon} label={link.label} onClick={() => setIsOpen(false)} />
               ))}
-            </div>
+            </nav>
           </div>
         </div>
       )}

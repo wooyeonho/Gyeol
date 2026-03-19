@@ -35,6 +35,8 @@ const STRINGS_EN: PromptStrings = {
   role: (r) => `You are a ${r}.`,
   lexicon: (words) => `Your vocabulary (use naturally): ${words}`,
   langDirective: "Always respond in English.",
+  traitLabel: "Your unique traits (reflect naturally):",
+  speciesLabel: (name) => `Your species: ${name}`,
 };
 
 export default STRINGS_EN;

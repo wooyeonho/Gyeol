@@ -11,12 +11,12 @@ export async function GET() {
     if (agentIds.length === 0) return NextResponse.json({ list: [] });
 
     const { data: states } = await service.from("agent_state").select("agent_id, self_name, vitality, visual, genome, config").in("agent_id", agentIds);
-    const { data: mems } = await service.from("memories").select("agent_id").in("agent_id", agentIds);
+    const { data: memRows } = await service.from("memories").select("agent_id").in("agent_id", agentIds);
     const countByAgent: Record<string, number> = {};
-    (mems ?? []).forEach((r) => {
+    for (const r of memRows ?? []) {
       const id = (r as { agent_id: string }).agent_id;
       countByAgent[id] = (countByAgent[id] ?? 0) + 1;
-    });
+    }
     const stateMap = (states ?? []).reduce((acc, r) => {
       acc[(r as { agent_id: string }).agent_id] = r;
       return acc;
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     const { agentId: currentPrimaryAgentId } = await getPrimaryAgent(service, user.id);
     if (currentPrimaryAgentId) {
       return NextResponse.json(
-        { error: "현재는 단일 메인 에이전트만 지원합니다. 입양은 멀티 에이전트 지원 이후 다시 열립니다." },
+        { error: "Adoption is not yet available. It will be enabled after multi-agent support." },
         { status: 409 }
       );
     }

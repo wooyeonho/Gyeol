@@ -1,4 +1,6 @@
 import type { createServiceClient } from "@/lib/supabase/service";
+import { generateInitialDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
 
 type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
 
@@ -47,9 +49,18 @@ export async function ensurePrimaryAgent(db: DbClient, userId: string) {
     return { agentId: null, createdAt: undefined, hasMultiple: false };
   }
 
+  const initialDNA = generateInitialDNA(agentId);
+  const initialSpecies = deriveSpecies(initialDNA);
+
   await db.from("agent_state").insert({
     agent_id: agentId,
     ...INITIAL_AGENT_STATE,
+    genome: {
+      dna: initialDNA,
+      species: initialSpecies.name,
+      archetype: initialSpecies.archetype,
+      element: initialSpecies.element,
+    },
   });
 
   return {

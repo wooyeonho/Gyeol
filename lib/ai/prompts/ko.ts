@@ -35,6 +35,8 @@ const STRINGS_KO: PromptStrings = {
   role: (r) => `너는 ${r} 역할이야.`,
   lexicon: (words) => `너의 어휘 (자연스럽게 사용해): ${words}`,
   langDirective: "",
+  traitLabel: "너의 고유 특성 (자연스럽게 반영해):",
+  speciesLabel: (name) => `너의 종: ${name}`,
 };
 
 export default STRINGS_KO;

@@ -25,4 +25,6 @@ export type PromptStrings = {
   role: (r: string) => string;
   lexicon: (words: string) => string;
   langDirective: string;
+  traitLabel: string;
+  speciesLabel: (name: string) => string;
 };

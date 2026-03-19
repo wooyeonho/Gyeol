@@ -6,6 +6,7 @@ import { OrbitControls } from "@react-three/drei";
 import { useMemo } from "react";
 import * as THREE from "three";
 import type { RoomObject } from "@/lib/room/types";
+import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 
 function ObjectMesh({ obj, accentColor }: { obj: RoomObject; accentColor: string }) {
   const ref = useRef<THREE.Mesh>(null);
@@ -71,20 +72,22 @@ export default function RoomScene({
 
   return (
     <div className="w-full h-full min-h-[400px]">
-      <Canvas camera={{ position: [0, 2, 5], fov: 50 }} gl={{ antialias: true }}>
-        <color attach="background" args={[backgroundColor]} />
-        <ambientLight intensity={0.35} />
-        <directionalLight position={[5, 5, 5]} intensity={0.8} color={accentColor} />
-        <pointLight position={[0, 3, 0]} intensity={0.55} color={accentColor} />
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-          <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="#14141c" emissive={accentColor} emissiveIntensity={0.05} />
-        </mesh>
-        {objects.map((obj) => (
-          <ObjectMesh key={obj.id} obj={obj} accentColor={accentColor} />
-        ))}
-        <OrbitControls enableZoom enablePan maxPolarAngle={Math.PI / 2} />
-      </Canvas>
+      <ThreeErrorBoundary>
+        <Canvas camera={{ position: [0, 2, 5], fov: 50 }} gl={{ antialias: true }}>
+          <color attach="background" args={[backgroundColor]} />
+          <ambientLight intensity={0.35} />
+          <directionalLight position={[5, 5, 5]} intensity={0.8} color={accentColor} />
+          <pointLight position={[0, 3, 0]} intensity={0.55} color={accentColor} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+            <planeGeometry args={[20, 20]} />
+            <meshStandardMaterial color="#14141c" emissive={accentColor} emissiveIntensity={0.05} />
+          </mesh>
+          {objects.map((obj) => (
+            <ObjectMesh key={obj.id} obj={obj} accentColor={accentColor} />
+          ))}
+          <OrbitControls enableZoom enablePan maxPolarAngle={Math.PI / 2} />
+        </Canvas>
+      </ThreeErrorBoundary>
     </div>
   );
 }

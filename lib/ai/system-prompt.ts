@@ -1,4 +1,6 @@
 import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
+import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
+import type { CreatureDNA } from "@/lib/genome/dna";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 
 type AgentLexiconEntry = { word: string; meaning?: string };
@@ -24,6 +26,7 @@ type AgentStatePrompt = {
   self_model?: { observations?: string[]; current_role?: string; identity_statement?: string };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
+  genome?: { dna?: CreatureDNA; species?: string } | null;
 };
 
 type BuildSystemPromptParams = {
@@ -56,6 +59,19 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 2. personality mode (from onboarding)
   if (s.config?.personality_mode && L.personality[s.config.personality_mode]) {
     parts.push(L.personality[s.config.personality_mode]);
+  }
+
+  // 2b. DNA-driven trait personality fragments
+  if (s.genome?.dna) {
+    const traitLocale = (p.locale === "ko" || p.locale === "ko-KR") ? "ko" : "en";
+    const traitFragments = buildTraitPersonalityFragments(s.genome.dna, traitLocale);
+    if (traitFragments.length > 0) {
+      parts.push(L.traitLabel);
+      traitFragments.forEach((f) => parts.push(`- ${f}`));
+    }
+    if (s.genome.species) {
+      parts.push(L.speciesLabel(s.genome.species));
+    }
   }
 
   // 3. tone

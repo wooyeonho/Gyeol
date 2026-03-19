@@ -68,7 +68,11 @@ describe("/api/social/posts contract", () => {
 
     const request = new Request("http://localhost/api/social/posts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        host: "localhost",
+        origin: "http://localhost",
+      },
       body: JSON.stringify({ content: "hello world", topic: "intro", language: "en" }),
     });
 

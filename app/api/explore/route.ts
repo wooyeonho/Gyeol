@@ -1,22 +1,21 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { getDemoAgentState } from "@/lib/demo/runtime";
-import { isMissingEnvError } from "@/lib/env/required";
+import { safeHandler } from "@/lib/api/safe-handler";
 
-export async function GET() {
-  try {
+export const GET = safeHandler(async () => {
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").limit(30);
+    const { data: agents } = await service.from("agents").select("id, created_at").limit(30);
     const ids = (agents ?? []).map((r) => (r as { id: string }).id);
     if (ids.length === 0) return NextResponse.json({ profiles: [], rankings: null });
 
     const { data: states } = await service.from("agent_state").select("agent_id, self_name, gen_level, vitality, total_messages, visual, genome, config").in("agent_id", ids);
-    const { data: memCounts } = await service.from("memories").select("agent_id").in("agent_id", ids);
+    const { data: memRows } = await service.from("memories").select("agent_id").in("agent_id", ids);
     const countByAgent: Record<string, number> = {};
-    (memCounts ?? []).forEach((r) => {
+    for (const r of memRows ?? []) {
       const id = (r as { agent_id: string }).agent_id;
       countByAgent[id] = (countByAgent[id] ?? 0) + 1;
-    });
+    }
     const stateMap = (states ?? []).reduce((acc, r) => {
       acc[(r as { agent_id: string }).agent_id] = r;
       return acc;
@@ -30,9 +29,13 @@ export async function GET() {
     });
     const speciesBestiary = Object.entries(speciesCount).filter(([k]) => k !== "unknown").map(([name, count]) => ({ name, count }));
 
+    const createdMap = (agents ?? []).reduce((acc, r) => {
+      acc[(r as { id: string }).id] = (r as { created_at?: string }).created_at;
+      return acc;
+    }, {} as Record<string, string | undefined>);
+
     const profiles = ids.map((id) => {
       const s = stateMap[id];
-      const created = (agents ?? []).find((a) => (a as { id: string }).id === id);
       return {
         id,
         self_name: s?.self_name ?? null,
@@ -41,7 +44,7 @@ export async function GET() {
         total_messages: s?.total_messages ?? 0,
         memory_count: countByAgent[id] ?? 0,
         visual: s?.visual ?? null,
-        created_at: (created as { created_at?: string } | undefined)?.created_at ?? null,
+        created_at: createdMap[id] ?? null,
         species: (s?.genome as { species?: string | null })?.species ?? null,
         config: {
           usage_profile: (s?.config as { usage_profile?: { primary_mode?: string | null; updated_at?: string | null } | null } | undefined)?.usage_profile ?? null,
@@ -50,44 +53,42 @@ export async function GET() {
     });
 
     return NextResponse.json({ profiles, speciesBestiary });
-  } catch (e) {
-    console.error("GET /api/explore error", e);
-    if (isMissingEnvError(e)) {
-      const demo = getDemoAgentState();
-      return NextResponse.json({
-        profiles: [
-          {
-            id: "demo-1",
-            self_name: "Luma",
-            gen_level: 3,
-            vitality: 0.82,
-            total_messages: 34,
-            memory_count: 34,
-            visual: demo.visual,
-            created_at: new Date().toISOString(),
-            species: "lumen-being",
-            config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
-          },
-          {
-            id: "demo-2",
-            self_name: "Morrow",
-            gen_level: 2,
-            vitality: 0.64,
-            total_messages: 21,
-            memory_count: 21,
-            visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
-            created_at: new Date().toISOString(),
-            species: "echo-bloom",
-            config: { usage_profile: { primary_mode: "companion", updated_at: new Date().toISOString() } },
-          },
-        ],
-        speciesBestiary: [
-          { name: "lumen-being", count: 1 },
-          { name: "echo-bloom", count: 1 },
-        ],
-        demo_mode: true,
-      });
-    }
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
-  }
-}
+}, {
+  label: "GET /api/explore",
+  demoFallback: () => {
+    const demo = getDemoAgentState();
+    return NextResponse.json({
+      profiles: [
+        {
+          id: "demo-1",
+          self_name: "Luma",
+          gen_level: 3,
+          vitality: 0.82,
+          total_messages: 34,
+          memory_count: 34,
+          visual: demo.visual,
+          created_at: new Date().toISOString(),
+          species: "lumen-being",
+          config: { usage_profile: (demo.config as { usage_profile?: unknown })?.usage_profile ?? null },
+        },
+        {
+          id: "demo-2",
+          self_name: "Morrow",
+          gen_level: 2,
+          vitality: 0.64,
+          total_messages: 21,
+          memory_count: 21,
+          visual: { ...(demo.visual as Record<string, unknown>), color: "#f9a8d4" },
+          created_at: new Date().toISOString(),
+          species: "echo-bloom",
+          config: { usage_profile: { primary_mode: "companion", updated_at: new Date().toISOString() } },
+        },
+      ],
+      speciesBestiary: [
+        { name: "lumen-being", count: 1 },
+        { name: "echo-bloom", count: 1 },
+      ],
+      demo_mode: true,
+    });
+  },
+});
