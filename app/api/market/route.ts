@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items: list, currentAgent });
   } catch (e) {
-    console.error("GET /api/market error", e);
+    logRouteError("GET /api/market error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     }).select("id").single();
     return NextResponse.json(row ?? { error: "Insert failed" }, row ? { status: 200 } : { status: 500 });
   } catch (e) {
-    console.error("POST /api/market error", e);
+    logRouteError("POST /api/market error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

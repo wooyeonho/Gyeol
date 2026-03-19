@@ -35,9 +35,9 @@ function currentWindowStart(): string {
  * Extract a user UUID from the rate-limit key pattern "action:uuid".
  * Falls back to the nil UUID for non-user callers.
  */
-function extractUserId(key: string): string {
+function extractUserId(key: string): string | null {
   const match = key.match(UUID_RE);
-  return match ? match[0] : "00000000-0000-0000-0000-000000000000";
+  return match ? match[0] : null;
 }
 
 export async function checkRateLimit(key: string, tier?: string | null): Promise<boolean> {
@@ -46,6 +46,11 @@ export async function checkRateLimit(key: string, tier?: string | null): Promise
     const expiry = new Date(Date.now() - WINDOW_MS).toISOString();
     const windowStart = currentWindowStart();
     const userId = extractUserId(key);
+    if (!userId) {
+      // Reject requests without a valid user UUID to prevent shared-bucket bypass
+      console.warn("[RateLimit] no UUID in key, denying:", key);
+      return false;
+    }
 
     // Remove expired entries for this key (fire-and-forget).
     await service.from("rate_limits").delete().eq("rl_key", key).lt("created_at", expiry);

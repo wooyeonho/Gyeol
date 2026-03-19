@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { getDemoAgentState, getDemoConstellation } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   try {
@@ -72,7 +73,7 @@ export async function GET() {
         : null,
     });
   } catch (e) {
-    console.error("constellation GET", e);
+    logRouteError("constellation GET", e);
     if (isMissingEnvError(e)) {
       const demoState = getDemoAgentState();
       const demoConstellation = getDemoConstellation();

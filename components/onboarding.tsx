@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
-import { haptic } from "@/lib/micro-interactions";
+import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface OnboardingProps {
   onComplete: (personalityMode?: string) => void;
@@ -19,7 +19,7 @@ const PERSONALITY_MODES = [
   { key: "creative", emoji: "🎨" },
 ] as const;
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5; // Added birth sequence step
 
 const slideVariants = {
   enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
@@ -91,9 +91,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="text-center"
           >
-            {step === 0 && <StepWelcome t={t} />}
-            {step === 1 && <StepAlive t={t} />}
-            {step === 2 && (
+            {step === 0 && <StepBirth t={t} onReady={goNext} />}
+            {step === 1 && <StepWelcome t={t} />}
+            {step === 2 && <StepAlive t={t} />}
+            {step === 3 && (
               <StepPersonality
                 t={t}
                 selectedMode={selectedMode}
@@ -103,7 +104,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 }}
               />
             )}
-            {step === 3 && <StepRewards t={t} />}
+            {step === 4 && <StepRewards t={t} />}
           </motion.div>
         </AnimatePresence>
 
@@ -270,5 +271,118 @@ function StepRewards({ t }: { t: (key: string) => string }) {
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * Birth sequence — the magical first 3 seconds.
+ * A pulsing orb of light that grows, flickers, and "wakes up".
+ * This is THE moment that hooks users emotionally.
+ */
+function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => void }) {
+  const [phase, setPhase] = useState<"dark" | "spark" | "grow" | "alive">("dark");
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase("spark"), 800),
+      setTimeout(() => {
+        setPhase("grow");
+        haptic("tap");
+      }, 1800),
+      setTimeout(() => {
+        setPhase("alive");
+        haptic("success");
+        try { playSound("levelUp"); } catch { /* audio may be blocked */ }
+      }, 3000),
+      setTimeout(() => onReady(), 4500),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [onReady]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-8" role="status" aria-label={t("onboarding.birthLabel")}>
+      {/* The Orb */}
+      <motion.div
+        className="relative flex items-center justify-center"
+        animate={{
+          width: phase === "dark" ? 8 : phase === "spark" ? 24 : phase === "grow" ? 64 : 80,
+          height: phase === "dark" ? 8 : phase === "spark" ? 24 : phase === "grow" ? 64 : 80,
+        }}
+        transition={{ duration: phase === "alive" ? 0.6 : 1, ease: "easeOut" }}
+      >
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          animate={{
+            backgroundColor:
+              phase === "dark" ? "rgba(255,255,255,0.05)" :
+              phase === "spark" ? "rgba(34,211,238,0.3)" :
+              phase === "grow" ? "rgba(34,211,238,0.5)" :
+              "rgba(34,211,238,0.8)",
+            boxShadow:
+              phase === "dark" ? "0 0 0 rgba(34,211,238,0)" :
+              phase === "spark" ? "0 0 20px rgba(34,211,238,0.3)" :
+              phase === "grow" ? "0 0 40px rgba(34,211,238,0.4), 0 0 80px rgba(34,211,238,0.2)" :
+              "0 0 60px rgba(34,211,238,0.6), 0 0 120px rgba(34,211,238,0.3), 0 0 200px rgba(34,211,238,0.1)",
+          }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        />
+        {phase === "alive" && (
+          <motion.div
+            className="absolute inset-[-20px] rounded-full border border-cyan-400/30"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.5, 1.5, 2] }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          />
+        )}
+      </motion.div>
+
+      {/* Text */}
+      <AnimatePresence mode="wait">
+        {phase === "dark" && (
+          <motion.p
+            key="dark"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            exit={{ opacity: 0 }}
+            className="mt-8 text-sm text-white/40"
+          >
+            ...
+          </motion.p>
+        )}
+        {phase === "spark" && (
+          <motion.p
+            key="spark"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.7 }}
+            exit={{ opacity: 0 }}
+            className="mt-8 text-sm text-cyan-300/70"
+          >
+            {t("onboarding.birthSpark")}
+          </motion.p>
+        )}
+        {(phase === "grow" || phase === "alive") && (
+          <motion.div
+            key="alive"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 text-center"
+          >
+            <p className="text-lg font-semibold text-cyan-200">
+              {t("onboarding.birthAlive")}
+            </p>
+            {phase === "alive" && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 0.5 }}
+                className="mt-2 text-sm text-white/60"
+              >
+                {t("onboarding.birthNotice")}
+              </motion.p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

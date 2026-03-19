@@ -748,7 +748,11 @@
     "modePrimal": "Primal",
     "modeSurreal": "Surreal",
     "modeReflective": "Reflective",
-    "modeCreative": "Creative"
+    "modeCreative": "Creative",
+    "birthLabel": "あなたの生命体が生まれています",
+    "birthSpark": "何かが目覚めようとしています...",
+    "birthAlive": "新しい生命が現れました。",
+    "birthNotice": "あなたに気づいたようです。"
   },
   "evolution": {
     "share": "Share",

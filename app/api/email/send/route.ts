@@ -6,6 +6,7 @@
  * 내부 호출 시 Authorization: Bearer CRON_SECRET 또는 X-Email-Send-Secret 검증.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { logRouteError } from "@/lib/ops/logger";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM ?? "recap@resend.dev";
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sent, total: deliveries.length });
   } catch (e) {
-    console.error("POST /api/email/send error", e);
+    logRouteError("POST /api/email/send error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

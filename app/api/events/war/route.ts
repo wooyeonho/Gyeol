@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
       .maybeSingle();
     return NextResponse.json(event ?? null);
   } catch (e) {
-    console.error("war GET", e);
+    logRouteError("war GET", e);
     return NextResponse.json(null);
   }
 }
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ processed: resolved, resolved });
   } catch (e) {
-    console.error("war POST", e);
+    logRouteError("war POST", e);
     return NextResponse.json({ error: "War processing failed" }, { status: 500 });
   } finally {
     await releaseCronLock(lockKey);

@@ -55,7 +55,24 @@ describe("agent-store", () => {
 
     const store = useAgentStore.getState();
     // Pre-fill state to verify it gets cleared
-    useAgentStore.setState({ agentId: "123", agentState: { mood: "happy" } });
+    useAgentStore.setState({
+      agentId: "123",
+      agentState: {
+        agent_id: "123",
+        vitality: 1,
+        gen_level: 1,
+        mood: "happy",
+        self_name: "Test",
+        status: "active",
+        total_messages: 0,
+        streak_days: 0,
+        intimacy_score: 0,
+        genome: null,
+        visual: {},
+        config: {},
+        self_model: null,
+      },
+    });
     
     await store.fetchAgentState();
 

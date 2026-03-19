@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import webpush from "web-push";
+import { logRouteError } from "@/lib/ops/logger";
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -48,14 +49,14 @@ export async function POST(req: Request) {
         if (statusCode === 404 || statusCode === 410) {
            await service.from("push_subscriptions").delete().eq("id", sub.id);
         } else {
-           console.error("Failed to send push", e);
+           logRouteError("Failed to send push", e);
         }
       }
     }));
 
     return NextResponse.json({ success: true, sent: sentCount });
   } catch (e) {
-    console.error("Push send error", e);
+    logRouteError("Push send error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import type { RoomState } from "@/lib/room/types";
 import { NextResponse } from "next/server";
 import { getDemoAgentState, getDemoRoomObjects } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   try {
@@ -55,7 +56,7 @@ export async function GET() {
       },
     });
   } catch (e) {
-    console.error("GET /api/room error", e);
+    logRouteError("GET /api/room error", e);
     if (isMissingEnvError(e)) {
       const demoState = getDemoAgentState();
       return NextResponse.json({
@@ -95,7 +96,7 @@ export async function PATCH(req: Request) {
     }
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   } catch (e) {
-    console.error("PATCH /api/room error", e);
+    logRouteError("PATCH /api/room error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
