@@ -10,15 +10,15 @@ import Soundscape from "@/components/soundscape";
 import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
-import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
-import { getCircadianTint } from "@/lib/circadian";
+import { useCircadianTint } from "@/hooks/use-circadian-tint";
+import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
+import { useEmotionSound } from "@/hooks/use-emotion-sound";
 import { haptic } from "@/lib/micro-interactions";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
 import { LivingFeed } from "@/components/living-feed";
 import { CreatureStatusIndicator } from "@/components/creature-status";
-import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -41,6 +41,15 @@ export default function Home() {
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
   const injectGreeting = useChatStore((s) => s.injectGreeting);
   const historyLoaded = useChatStore((s) => s.historyLoaded);
+  const lastReward = useChatStore((s) => s.lastReward);
+  const clearReward = useChatStore((s) => s.clearReward);
+
+  // --- Extracted hooks ---
+  const circadian = useCircadianTint();
+  const { showAgeGate, showOnboarding, handleAgeGateComplete, handleOnboardingComplete } = useOnboardingGate();
+  const { soundProfile } = useEmotionSound();
+
+  // --- Greeting injection ---
   const greetingInjectedRef = useRef(false);
   const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
 
@@ -49,7 +58,6 @@ export default function Home() {
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
 
-  // Inject greeting once history is loaded — no rAF polling needed
   useEffect(() => {
     if (!historyLoaded || !pendingGreeting || greetingInjectedRef.current) return;
     greetingInjectedRef.current = true;
@@ -65,22 +73,14 @@ export default function Home() {
     setPendingGreeting(greeting);
   }, []);
 
+  // --- Visual / creature state ---
   const visual: AgentVisual = agentState?.visual ?? {};
   const vitality = agentState?.vitality ?? 1;
   const { isLowDevice } = useDevicePerformance();
   const creature = useCreatureState(vitality, isStreaming);
-  const [circadian, setCircadian] = useState(() => getCircadianTint());
-  useEffect(() => {
-    const update = () => setCircadian(getCircadianTint());
-    const id = setInterval(update, 60 * 60 * 1000); // refresh every hour
-    document.addEventListener("visibilitychange", update);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", update);
-    };
-  }, []);
   const config = agentState?.config ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
+
   const effectiveConfig = useMemo(
     () => ({
       mutation_trait: config.mutation_trait ?? null,
@@ -90,6 +90,7 @@ export default function Home() {
     }),
     [config.mutation_trait, config.usage_profile, pendingUsageMode]
   );
+
   const appearance = resolveIdentityAppearance(
     {
       selfName: agentState?.self_name ?? null,
@@ -103,96 +104,22 @@ export default function Home() {
     },
     locale
   );
-  // Derive emotion-based sound profile dynamically from agent state
-  const emotionMood = useMemo(() => {
-    const v = agentState?.vitality ?? 0.5;
-    const trust = agentState?.intimacy_score ?? 0.3;
-    const mood = agentState?.mood;
-    const tone = mood === "joyful" || mood === "energetic" ? "positive" as const
-      : mood === "melancholy" ? "negative" as const
-      : mood ? "neutral" as const
-      : null;
-    return deriveEmotionMood(v, trust, tone);
-  }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
 
-  const soundProfile = useMemo(() => {
-    const emotionProfile = getEmotionSoundProfile(emotionMood);
-    return {
-      base_note: emotionProfile.base_note,
-      tempo: emotionProfile.tempo,
-      instruments: emotionProfile.instruments,
-      scale: emotionProfile.scale,
-    };
-  }, [emotionMood]);
-
-  const lastReward = useChatStore((s) => s.lastReward);
-  const clearReward = useChatStore((s) => s.clearReward);
+  // --- Event handlers ---
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
-
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
   }, [creature]);
 
-  // Onboarding state — show once per device
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !localStorage.getItem("gyeol_onboarded");
-  });
-  const [showAgeGate, setShowAgeGate] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !readAgeGateCompleted();
-  });
-
-  const handleOnboardingComplete = useCallback(
-    async (personalityMode?: string) => {
-      localStorage.setItem("gyeol_onboarded", "1");
-      setShowOnboarding(false);
-      if (personalityMode) {
-        try {
-          await fetch("/api/settings", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ personality_mode: personalityMode }),
-          });
-          await fetchAgentState({ silent: true });
-        } catch {
-          // Best-effort; onboarding should still proceed even if save fails
-        }
-      }
-    },
-    [fetchAgentState],
-  );
-
-  const handleAgeGateComplete = useCallback(
-    async ({ ageGroup, guardianConsent }: { ageGroup: "under_13" | "teen" | "adult"; guardianConsent: boolean }) => {
-      markAgeGateCompleted();
-      setShowAgeGate(false);
-      try {
-        await fetch("/api/settings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            age_group: ageGroup,
-            guardian_consent: guardianConsent,
-            social_public_enabled: ageGroup === "adult",
-          }),
-        });
-        await fetchAgentState({ silent: true });
-      } catch {
-        // Best-effort only; local gate completion should still proceed.
-      }
-    },
-    [fetchAgentState],
-  );
-
+  // --- Daily login bonus ---
   useEffect(() => {
     if (loading || showOnboarding) return;
-
     const streakDays = agentState?.streak_days ?? 0;
     claimDailyLoginBonus(streakDays);
   }, [agentState?.streak_days, claimDailyLoginBonus, loading, showOnboarding]);
 
+  // --- Render: loading / error / gates ---
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 transition-all duration-1000">
@@ -238,18 +165,13 @@ export default function Home() {
     );
   }
 
+  if (showAgeGate) return <AgeGate onComplete={handleAgeGateComplete} />;
+  if (showOnboarding) return <Onboarding onComplete={handleOnboardingComplete} />;
+
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
   const conversationStarted =
     (agentState?.total_messages ?? 0) > 0 ||
     messages.some((message) => message.role === "user");
-
-  if (showAgeGate) {
-    return <AgeGate onComplete={handleAgeGateComplete} />;
-  }
-
-  if (showOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
-  }
 
   return (
     <>
@@ -269,7 +191,6 @@ export default function Home() {
         className="fixed inset-0 z-0 transition-[background] duration-700"
         style={{ backgroundImage: appearance.scene.backgroundGradient }}
       >
-        {/* Circadian time-of-day tint overlay */}
         <div
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
           style={{ backgroundImage: circadian.overlay }}
@@ -303,23 +224,18 @@ export default function Home() {
           pointerNorm={creature.state.pointerNorm}
         />
       </div>
-      {/* Hub z-20 sits above ChatPanel (z-10) — pointer-events-none on wrapper
-           so chat input underneath remains clickable; each interactive child opts in */}
       <div className="pointer-events-none relative z-20">
         <div className="pointer-events-auto">
           <WorldClassHub />
         </div>
-        {/* Creature status: sleeping/drowsy indicator */}
         <div className="pointer-events-auto">
           <CreatureStatusIndicator activity={creature.state.activity} />
         </div>
-        {/* Living Feed: shows autonomous activity while user was away */}
         <div className="pointer-events-auto mt-2">
           <LivingFeed onGreetingReady={handleGreetingReady} />
         </div>
       </div>
 
-      {/* First-time guide: show when no conversation yet */}
       {!conversationStarted && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}

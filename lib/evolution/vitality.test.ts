@@ -103,7 +103,7 @@ describe("processVitality", () => {
   });
 
   it("decays vitality with accelerated 3-stage curve", async () => {
-    const oldChat = { created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString() }; // 3 days ago
+    const oldChat = { created_at: new Date(Date.now() - 2 * 24 * 3600000).toISOString() }; // 2 days ago (clearly in days 1-3 bracket)
     const { db, updateFn } = makeDb({
       state: { vitality: 1.0, status: "alive", config: { vitality_stage: "alive" } },
       lastChat: oldChat,
@@ -113,9 +113,9 @@ describe("processVitality", () => {
     const { processVitality } = await import("./vitality");
     await processVitality("agent-decay");
 
-    // New formula: days 1-3 decay at 0.02/day → 3 * 0.02 = 0.06
+    // Incremental decay: 2 days in 0.02/day bracket → ~0.04 decay
     expect(updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ vitality: expect.closeTo(0.94, 1) }) // 1.0 - 3 * 0.02
+      expect.objectContaining({ vitality: expect.closeTo(0.96, 1) }) // 1.0 - 2 * 0.02
     );
   });
 

@@ -15,35 +15,37 @@ type AgentStateRow = Record<string, unknown> & {
 };
 
 async function runEvolutionHooks(agentId: string, totalMessages: number, message: string, reply: string) {
+  // Run all hooks concurrently — none depend on each other's output.
+  // Each is wrapped in its own catch so one failure doesn't cancel others.
+  const tasks: Promise<void>[] = [];
+
   if (totalMessages % 10 === 0) {
-    try {
-      const { analyzePersonality } = await import("@/lib/evolution/personality");
-      await analyzePersonality(agentId);
-    } catch (error) {
-      console.error("[Evolution]", error);
-    }
+    tasks.push(
+      import("@/lib/evolution/personality")
+        .then(({ analyzePersonality }) => analyzePersonality(agentId))
+        .catch((error) => console.error("[Evolution]", error))
+    );
   }
 
-  try {
-    const { checkEvolution } = await import("@/lib/evolution/gen-level");
-    await checkEvolution(agentId);
-  } catch (error) {
-    console.error("[GenLevel]", error);
-  }
+  tasks.push(
+    import("@/lib/evolution/gen-level")
+      .then(({ checkEvolution }) => checkEvolution(agentId).then(() => undefined))
+      .catch((error) => console.error("[GenLevel]", error))
+  );
 
-  try {
-    const { processHiddenEmotions } = await import("@/lib/personality/deception");
-    await processHiddenEmotions(agentId, message, reply);
-  } catch (error) {
-    console.error("[Emotions]", error);
-  }
+  tasks.push(
+    import("@/lib/personality/deception")
+      .then(({ processHiddenEmotions }) => processHiddenEmotions(agentId, message, reply))
+      .catch((error) => console.error("[Emotions]", error))
+  );
 
-  try {
-    const { updateVoiceParams } = await import("@/lib/personality/voice");
-    await updateVoiceParams(agentId);
-  } catch (error) {
-    console.error("[Voice]", error);
-  }
+  tasks.push(
+    import("@/lib/personality/voice")
+      .then(({ updateVoiceParams }) => updateVoiceParams(agentId))
+      .catch((error) => console.error("[Voice]", error))
+  );
+
+  await Promise.allSettled(tasks);
 }
 
 async function applyGoalLoop(params: {
@@ -175,7 +177,10 @@ export async function persistChatTurn(params: {
     writer: params.writer,
   });
 
-  await runEvolutionHooks(params.agentId, totalMessages, params.message, params.reply);
+  // Fire-and-forget: evolution hooks (AI personality analysis, emotion detection,
+  // voice update, gen-level check) run in background without blocking post-process
+  // completion or the analytics event below.
+  void runEvolutionHooks(params.agentId, totalMessages, params.message, params.reply);
 
   recordServerEvent(PRODUCT_EVENT.chatPostProcessCompleted, {
     agentId: params.agentId,

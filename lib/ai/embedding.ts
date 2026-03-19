@@ -1,6 +1,29 @@
 /** Target dimension used by the pgvector column in the memories table. */
 const TARGET_DIM = 768;
 
+/** Simple LRU cache for embedding results to avoid redundant API calls. */
+const CACHE_MAX = 128;
+const embeddingCache = new Map<string, number[]>();
+
+function cacheGet(key: string): number[] | undefined {
+  const val = embeddingCache.get(key);
+  if (val) {
+    // Move to end (most recently used)
+    embeddingCache.delete(key);
+    embeddingCache.set(key, val);
+  }
+  return val;
+}
+
+function cacheSet(key: string, val: number[]): void {
+  if (embeddingCache.size >= CACHE_MAX) {
+    // Evict oldest (first) entry
+    const oldest = embeddingCache.keys().next().value;
+    if (oldest !== undefined) embeddingCache.delete(oldest);
+  }
+  embeddingCache.set(key, val);
+}
+
 /**
  * Zero-pad a vector to TARGET_DIM so that shorter fallback embeddings
  * (e.g. Cloudflare bge-small 384-dim) can be stored in the vector(768) column.
@@ -14,6 +37,8 @@ function padToTargetDim(vec: number[]): number[] {
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {
+  const cached = cacheGet(text);
+  if (cached) return cached;
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`,
@@ -22,7 +47,12 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     if (!res.ok) throw new Error(`Gemini ${res.status}`);
     const data = await res.json();
     const values: number[] = data.embedding?.values || [];
-    return values.length > 0 ? padToTargetDim(values) : [];
+    if (values.length > 0) {
+      const result = padToTargetDim(values);
+      cacheSet(text, result);
+      return result;
+    }
+    return [];
   } catch (e) {
     console.error("[Embed] Gemini failed:", e);
   }
@@ -37,7 +67,12 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       if (!res.ok) throw new Error(`CF embed ${res.status}`);
       const data = await res.json();
       const vec: number[] = data.result?.data?.[0] || [];
-      return vec.length > 0 ? padToTargetDim(vec) : [];
+      if (vec.length > 0) {
+        const result = padToTargetDim(vec);
+        cacheSet(text, result);
+        return result;
+      }
+      return [];
     } catch (e) {
       console.error("[Embed] CF failed:", e);
     }
