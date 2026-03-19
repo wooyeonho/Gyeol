@@ -15,7 +15,11 @@ export default defineConfig({
     include: ["**/*.test.ts"],
     exclude: ["node_modules", ".next"],
     coverage: {
-      enabled: false,
+      enabled: true,
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      include: ["lib/**/*.ts", "store/**/*.ts", "hooks/**/*.ts", "app/api/**/*.ts"],
+      exclude: ["**/*.test.ts", "**/*.contract.test.ts", "node_modules/**"],
     },
   },
 });
