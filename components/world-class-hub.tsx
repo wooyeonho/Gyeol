@@ -340,7 +340,7 @@ export function WorldClassHub() {
                           type="button"
                           onClick={() => {
                             if (!isStreaming) {
-                              void sendMessage(prompt, { source: "prompt", locale });
+                              void sendMessage(prompt, { source: "prompt", locale, totalMessages });
                             }
                           }}
                           disabled={isStreaming}

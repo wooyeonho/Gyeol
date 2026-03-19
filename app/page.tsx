@@ -29,16 +29,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
-
-type Visual = {
-  shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
-  color?: string;
-  size?: number;
-  glow?: number;
-  animation?: "float" | "pulse-fast" | "breathe-slow";
-  particles?: number;
-  background?: string;
-};
+import type { AgentVisual } from "@/types/agent";
 
 export default function Home() {
   const { locale, t } = useTranslations();
@@ -49,81 +40,77 @@ export default function Home() {
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
   const injectGreeting = useChatStore((s) => s.injectGreeting);
+  const historyLoaded = useChatStore((s) => s.historyLoaded);
   const greetingInjectedRef = useRef(false);
+  const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
 
-  const handleGreetingReady = useCallback(
-    (greeting: string) => {
-      if (greetingInjectedRef.current || !greeting) return;
+  // Inject greeting once history is loaded — no rAF polling needed
+  useEffect(() => {
+    if (!historyLoaded || !pendingGreeting || greetingInjectedRef.current) return;
+    greetingInjectedRef.current = true;
+    injectGreeting({
+      id: `greeting-${Date.now()}`,
+      role: "assistant" as const,
+      content: pendingGreeting,
+    });
+  }, [historyLoaded, pendingGreeting, injectGreeting]);
 
-      // Wait for chat history to load before injecting the greeting.
-      // Cap at 3s to prevent unbounded rAF loop (e.g. new users where historyLoaded stays false).
-      const startTime = Date.now();
-      const MAX_WAIT_MS = 3000;
-      const checkAndInject = () => {
-        const elapsed = Date.now() - startTime;
-        if (!useChatStore.getState().historyLoaded && elapsed < MAX_WAIT_MS) {
-          requestAnimationFrame(checkAndInject);
-          return;
-        }
-        // If history never loaded within the timeout, skip injection to avoid blocking hydration
-        if (!useChatStore.getState().historyLoaded) return;
-        if (greetingInjectedRef.current) return;
-        greetingInjectedRef.current = true;
-        injectGreeting({
-          id: `greeting-${Date.now()}`,
-          role: "assistant" as const,
-          content: greeting,
-        });
-      };
+  const handleGreetingReady = useCallback((greeting: string) => {
+    if (!greeting || greetingInjectedRef.current) return;
+    setPendingGreeting(greeting);
+  }, []);
 
-      // Always use rAF path — historyLoaded is read via getState() inside checkAndInject
-      requestAnimationFrame(checkAndInject);
-    },
-    [injectGreeting],
-  );
-
-  const visual = (agentState?.visual as Visual | undefined) ?? {};
-  const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
-  const isLowDevice = useDevicePerformance();
+  const visual: AgentVisual = agentState?.visual ?? {};
+  const vitality = agentState?.vitality ?? 1;
+  const { isLowDevice } = useDevicePerformance();
   const creature = useCreatureState(vitality, isStreaming);
-  const circadian = useMemo(() => getCircadianTint(), []);
-  const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
+  const [circadian, setCircadian] = useState(() => getCircadianTint());
+  useEffect(() => {
+    const update = () => setCircadian(getCircadianTint());
+    const id = setInterval(update, 60 * 60 * 1000); // refresh every hour
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
+  const config = agentState?.config ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
     () => ({
-      mutation_trait: typeof config.mutation_trait === "string" ? config.mutation_trait : null,
+      mutation_trait: config.mutation_trait ?? null,
       usage_profile: pendingUsageMode
-        ? { ...(config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined), primary_mode: pendingUsageMode }
-        : ((config.usage_profile as { primary_mode?: string | null; updated_at?: string | null } | undefined) ?? null),
+        ? { ...config.usage_profile, primary_mode: pendingUsageMode }
+        : (config.usage_profile ?? null),
     }),
     [config.mutation_trait, config.usage_profile, pendingUsageMode]
   );
   const appearance = resolveIdentityAppearance(
     {
-      selfName: typeof agentState?.self_name === "string" ? agentState.self_name : null,
+      selfName: agentState?.self_name ?? null,
       visual,
-      genome: (agentState?.genome as { species?: string | null; mutations?: string[] | null } | undefined) ?? null,
-      selfModel: (agentState?.self_model as { current_role?: string | null; identity_statement?: string | null } | undefined) ?? null,
+      genome: agentState?.genome ?? null,
+      selfModel: agentState?.self_model ?? null,
       config: effectiveConfig,
-      genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
+      genLevel: agentState?.gen_level ?? 1,
       vitality,
-      mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+      mood: agentState?.mood ?? null,
     },
     locale
   );
   // Derive emotion-based sound profile dynamically from agent state
   const emotionMood = useMemo(() => {
-    const v = typeof agentState?.vitality === "number" ? agentState.vitality : 0.5;
-    const trust = typeof agentState?.intimacy_score === "number" ? agentState.intimacy_score : 0.3;
-    const tone = typeof agentState?.mood === "string"
-      ? (agentState.mood === "joyful" || agentState.mood === "energetic" ? "positive" as const
-        : agentState.mood === "melancholy" ? "negative" as const
-        : "neutral" as const)
+    const v = agentState?.vitality ?? 0.5;
+    const trust = agentState?.intimacy_score ?? 0.3;
+    const mood = agentState?.mood;
+    const tone = mood === "joyful" || mood === "energetic" ? "positive" as const
+      : mood === "melancholy" ? "negative" as const
+      : mood ? "neutral" as const
       : null;
     return deriveEmotionMood(v, trust, tone);
   }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
@@ -202,7 +189,7 @@ export default function Home() {
   useEffect(() => {
     if (loading || showOnboarding) return;
 
-    const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
+    const streakDays = agentState?.streak_days ?? 0;
     claimDailyLoginBonus(streakDays);
   }, [agentState?.streak_days, claimDailyLoginBonus, loading, showOnboarding]);
 
@@ -210,13 +197,13 @@ export default function Home() {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 transition-all duration-1000">
         <div className="relative flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 rounded-full blur-xl animate-pulse opacity-20"
-            style={{ backgroundColor: appearance.palette.primary }}
+            style={{ backgroundColor: "var(--accent)" }}
           />
-          <div 
+          <div
             className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center relative z-10"
-            style={{ boxShadow: `0 0 20px ${appearance.palette.primary}20 inset` }}
+            style={{ boxShadow: "0 0 20px color-mix(in srgb, var(--accent) 20%, transparent) inset" }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-ping" />
           </div>
@@ -243,7 +230,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => fetchAgentState()}
-          className="mt-6 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-cyan-400 transition-colors"
+          className="mt-6 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90 transition-opacity"
         >
           {t("common.retry")}
         </button>
@@ -253,7 +240,7 @@ export default function Home() {
 
   const showCeremony = evolutionEvent && typeof evolutionEvent.level === "number";
   const conversationStarted =
-    (typeof agentState?.total_messages === "number" ? agentState.total_messages : 0) > 0 ||
+    (agentState?.total_messages ?? 0) > 0 ||
     messages.some((message) => message.role === "user");
 
   if (showAgeGate) {
@@ -271,10 +258,10 @@ export default function Home() {
           level={evolutionEvent.level!}
           mutation={evolutionEvent.mutation}
           onComplete={clearEvolution}
-          selfName={typeof agentState?.self_name === "string" ? agentState.self_name : undefined}
+          selfName={agentState?.self_name ?? undefined}
           primaryColor={appearance.palette.primary}
           secondaryColor={appearance.palette.secondary}
-          species={(agentState?.genome as { species?: string } | undefined)?.species}
+          species={agentState?.genome?.species ?? undefined}
           shareBaseUrl={typeof window !== "undefined" ? window.location.origin : undefined}
         />
       )}
@@ -296,7 +283,7 @@ export default function Home() {
           }}
         />
         <VoidCanvas
-          shape={appearance.visual.shape as Visual["shape"]}
+          shape={appearance.visual.shape as AgentVisual["shape"]}
           color={appearance.visual.color}
           size={Math.min(50, Math.max(10, visual.size ?? 24))}
           glow={Math.min(100, Math.max(0, appearance.visual.glow))}
@@ -304,7 +291,7 @@ export default function Home() {
           particles={appearance.visual.particles}
           background={appearance.visual.background}
           vitality={vitality}
-          mood={typeof agentState?.mood === "string" ? agentState.mood : undefined}
+          mood={agentState?.mood ?? undefined}
           isListening={isStreaming}
           motionBias={appearance.scene.motionBias}
           pulseScale={appearance.scene.pulseScale}

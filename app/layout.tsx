@@ -57,7 +57,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className="bg-black text-white min-h-screen antialiased">
+      <body className="bg-background text-foreground min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
           <a
             href="#main-content"

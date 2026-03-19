@@ -277,7 +277,7 @@ body {
 }
 
 /* ── Shimmer loading skeleton ── */
-@keyframes shimmer {
+@keyframes skeletonShimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
@@ -290,7 +290,7 @@ body {
     rgba(255, 255, 255, 0.04) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
 }
 
 :root[data-theme="light"] .skeleton-shimmer {

@@ -28,41 +28,45 @@ export function evaluateLowDeviceProfile(params: {
     || (isMobile && params.hardwareConcurrency <= 4);
 }
 
-export function useDevicePerformance() {
-  const [isLowDevice, setIsLowDevice] = useState(() => {
-    if (typeof window === "undefined" || typeof navigator === "undefined") {
-      return false;
-    }
+type DevicePerformanceResult = {
+  isLowDevice: boolean;
+  isMobile: boolean;
+  reducedVisualMode: boolean;
+};
 
-    const connection = (navigator as NavigatorWithDeviceMemory).connection;
-    return evaluateLowDeviceProfile({
-      userAgent: navigator.userAgent,
-      hardwareConcurrency: navigator.hardwareConcurrency || 4,
-      deviceMemory: (navigator as NavigatorWithDeviceMemory).deviceMemory || 4,
-      prefersReducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-      saveData: connection?.saveData === true,
-      effectiveType: connection?.effectiveType,
-    });
+function computeProfile(): DevicePerformanceResult {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return { isLowDevice: false, isMobile: false, reducedVisualMode: false };
+  }
+  const nav = navigator as NavigatorWithDeviceMemory;
+  const connection = nav.connection;
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const saveData = connection?.saveData === true;
+  const slowNetwork = /2g|3g/i.test(connection?.effectiveType ?? "");
+  const lowConcurrency = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+  const lowMemory = (nav.deviceMemory ?? 8) <= 4;
+  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory || saveData || slowNetwork;
+  const isLowDevice = evaluateLowDeviceProfile({
+    userAgent: navigator.userAgent,
+    hardwareConcurrency: navigator.hardwareConcurrency || 4,
+    deviceMemory: nav.deviceMemory || 4,
+    prefersReducedMotion,
+    saveData,
+    effectiveType: connection?.effectiveType,
   });
+  return { isLowDevice, isMobile, reducedVisualMode };
+}
+
+export function useDevicePerformance(): DevicePerformanceResult {
+  const [profile, setProfile] = useState<DevicePerformanceResult>(() => computeProfile());
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof navigator === "undefined") return;
 
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const connection = (navigator as NavigatorWithDeviceMemory).connection;
-
-    const recompute = () => {
-      setIsLowDevice(
-        evaluateLowDeviceProfile({
-          userAgent: navigator.userAgent,
-          hardwareConcurrency: navigator.hardwareConcurrency || 4,
-          deviceMemory: (navigator as NavigatorWithDeviceMemory).deviceMemory || 4,
-          prefersReducedMotion: mediaQuery.matches,
-          saveData: connection?.saveData === true,
-          effectiveType: connection?.effectiveType,
-        }),
-      );
-    };
+    const recompute = () => setProfile(computeProfile());
 
     recompute();
     mediaQuery.addEventListener?.("change", recompute);
@@ -74,5 +78,5 @@ export function useDevicePerformance() {
     };
   }, []);
 
-  return isLowDevice;
+  return profile;
 }
