@@ -144,13 +144,13 @@ export async function persistChatTurn(params: {
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
 
   // Evolve creature DNA based on conversation signals
-  const currentGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string } | null;
+  const currentGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
   let nextGenome = currentGenome;
   if (currentGenome?.dna) {
     const { dna: evolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
     if (changedAxes.length > 0) {
       const species = deriveSpecies(evolvedDNA);
-      nextGenome = { ...currentGenome, dna: evolvedDNA, species: species.name };
+      nextGenome = { ...currentGenome, dna: evolvedDNA, species: species.name, archetype: species.archetype, element: species.element };
     }
   }
 

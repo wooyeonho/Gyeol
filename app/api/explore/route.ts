@@ -5,7 +5,7 @@ import { safeHandler } from "@/lib/api/safe-handler";
 
 export const GET = safeHandler(async () => {
     const service = createServiceClient();
-    const { data: agents } = await service.from("agents").select("id").limit(30);
+    const { data: agents } = await service.from("agents").select("id, created_at").limit(30);
     const ids = (agents ?? []).map((r) => (r as { id: string }).id);
     if (ids.length === 0) return NextResponse.json({ profiles: [], rankings: null });
 
