@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAgentStore } from "./agent-store";
+import type { AgentState } from "@/types/agent";
 
 describe("agent-store", () => {
   beforeEach(() => {
@@ -55,7 +56,7 @@ describe("agent-store", () => {
 
     const store = useAgentStore.getState();
     // Pre-fill state to verify it gets cleared
-    useAgentStore.setState({ agentId: "123", agentState: { mood: "happy" } });
+    useAgentStore.setState({ agentId: "123", agentState: { mood: "happy" } as AgentState });
     
     await store.fetchAgentState();
 
