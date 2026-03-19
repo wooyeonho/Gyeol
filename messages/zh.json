@@ -748,7 +748,11 @@
     "modePrimal": "Primal",
     "modeSurreal": "Surreal",
     "modeReflective": "Reflective",
-    "modeCreative": "Creative"
+    "modeCreative": "Creative",
+    "birthLabel": "你的生命体正在诞生",
+    "birthSpark": "有什么东西正在苏醒...",
+    "birthAlive": "一个新生命出现了。",
+    "birthNotice": "它注意到了你。"
   },
   "evolution": {
     "share": "Share",

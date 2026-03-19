@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { addCoinsAtomic, spendCoinsAtomic } from "@/lib/economy/coins";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -41,10 +42,17 @@ export async function POST(req: NextRequest) {
     const sellerNet = Math.max(0, Math.floor(price * 0.85));
     await addCoinsAtomic(item.seller_agent_id, sellerNet, `market_sale:${item.id}`);
 
-    await service
-      .from("market_items")
-      .update({ purchase_count: Number(item.purchase_count ?? 0) + 1 })
-      .eq("id", item.id);
+    // Atomic increment to prevent race conditions on concurrent purchases
+    await service.rpc("increment_purchase_count", { p_item_id: item.id })
+      .then(({ error: rpcErr }) => {
+        if (rpcErr) {
+          // Fallback: non-atomic increment (acceptable for counters, not money)
+          return service
+            .from("market_items")
+            .update({ purchase_count: Number(item.purchase_count ?? 0) + 1 })
+            .eq("id", item.id);
+        }
+      });
 
     // Optional purchase history table (if migration applied).
     const { error: purchaseInsertError } = await service.from("market_purchases").insert({
@@ -89,7 +97,7 @@ export async function POST(req: NextRequest) {
       fee: price - sellerNet,
     });
   } catch (e) {
-    console.error("market/purchase POST", e);
+    logRouteError("market/purchase POST", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

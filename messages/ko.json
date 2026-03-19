@@ -752,7 +752,11 @@
     "modePrimal": "원초적인",
     "modeSurreal": "초현실적인",
     "modeReflective": "사색적인",
-    "modeCreative": "창의적인"
+    "modeCreative": "창의적인",
+    "birthLabel": "당신의 생명체가 태어나고 있습니다",
+    "birthSpark": "무언가 깨어나고 있어요...",
+    "birthAlive": "새로운 생명이 나타났습니다.",
+    "birthNotice": "당신을 알아챘어요."
   },
   "evolution": {
     "share": "자랑하기",

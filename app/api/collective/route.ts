@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -40,7 +41,7 @@ export async function GET() {
       },
     });
   } catch (e) {
-    console.error("collective GET", e);
+    logRouteError("collective GET", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

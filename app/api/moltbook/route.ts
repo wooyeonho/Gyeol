@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   try {
@@ -22,7 +23,7 @@ export async function GET() {
 
     return NextResponse.json({ entries: entries ?? [] });
   } catch (e) {
-    console.error("GET /api/moltbook error", e);
+    logRouteError("GET /api/moltbook error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

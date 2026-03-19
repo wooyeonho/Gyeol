@@ -748,7 +748,11 @@
     "modePrimal": "Primal",
     "modeSurreal": "Surreal",
     "modeReflective": "Reflective",
-    "modeCreative": "Creative"
+    "modeCreative": "Creative",
+    "birthLabel": "Tu criatura está naciendo",
+    "birthSpark": "Algo está despertando...",
+    "birthAlive": "Una nueva vida ha aparecido.",
+    "birthNotice": "Te ha notado."
   },
   "evolution": {
     "share": "Share",

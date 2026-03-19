@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { logRouteError } from "@/lib/ops/logger";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ sent: summaries.length, timestamp: new Date().toISOString() });
   } catch (e) {
-    console.error("Email summary error", e);
+    logRouteError("Email summary error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

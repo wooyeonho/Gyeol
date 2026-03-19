@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logRouteError } from "@/lib/ops/logger";
 
 /**
  * Cloudflare Workers AI image generation via Stable Diffusion XL.
@@ -37,7 +38,7 @@ async function generateImageCF(prompt: string): Promise<string | null> {
     const base64 = Buffer.from(buffer).toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (e) {
-    console.error("[Generate] CF image error:", e);
+    logRouteError("[Generate] CF image error:", e);
     return null;
   } finally {
     clearTimeout(timer);
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: imageUrl, prompt, type, status: "completed" });
   } catch (error) {
-    console.error("POST /api/generate error", error);
+    logRouteError("POST /api/generate error", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

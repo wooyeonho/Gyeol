@@ -6,6 +6,7 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { normalizeLocale } from "@/lib/i18n/config";
 import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
+import { logRouteError } from "@/lib/ops/logger";
 
 export async function GET() {
   try {
@@ -30,7 +31,7 @@ export async function GET() {
     if (stateData?.channels?.telegram) connections.telegram = true;
     return NextResponse.json({ state: stateData ?? null, connections });
   } catch (e) {
-    console.error("GET /api/settings error", e);
+    logRouteError("GET /api/settings error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -93,7 +94,7 @@ export async function PATCH(request: NextRequest) {
     await service.from("agent_state").update(updates).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("PATCH /api/settings error", e);
+    logRouteError("PATCH /api/settings error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

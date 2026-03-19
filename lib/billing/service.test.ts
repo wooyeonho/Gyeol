@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
+import type { createServiceClient } from "@/lib/supabase/service";
 import { getLatestSubscription, upsertSubscriptionFromStripe, getResolvedBillingState } from "./service";
 
-function makeDb(overrides: Record<string, unknown> = {}) {
+type DbClient = Pick<ReturnType<typeof createServiceClient>, "from">;
+
+function makeDb(overrides: Record<string, unknown> = {}): { from: DbClient["from"]; _chain: Record<string, unknown> } {
   const chain = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -12,7 +15,7 @@ function makeDb(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
   return {
-    from: vi.fn().mockReturnValue(chain),
+    from: vi.fn().mockReturnValue(chain) as unknown as DbClient["from"],
     _chain: chain,
   };
 }
@@ -20,7 +23,7 @@ function makeDb(overrides: Record<string, unknown> = {}) {
 describe("getLatestSubscription", () => {
   it("returns null when no subscription found", async () => {
     const db = makeDb();
-    const result = await getLatestSubscription(db as any, "user-123");
+    const result = await getLatestSubscription(db as unknown as DbClient, "user-123");
     expect(result).toBeNull();
   });
 
@@ -45,7 +48,7 @@ describe("getLatestSubscription", () => {
     };
     const db = { from: vi.fn().mockReturnValue(chain) };
 
-    const result = await getLatestSubscription(db as any, "user-123");
+    const result = await getLatestSubscription(db as unknown as DbClient, "user-123");
     expect(result).toEqual(mockRow);
     expect(db.from).toHaveBeenCalledWith("user_subscriptions");
   });
@@ -69,7 +72,7 @@ describe("upsertSubscriptionFromStripe", () => {
       cancel_at_period_end: false,
     };
 
-    await upsertSubscriptionFromStripe(db as any, params);
+    await upsertSubscriptionFromStripe(db as unknown as DbClient, params);
 
     expect(db.from).toHaveBeenCalledWith("user_subscriptions");
     expect(chain.upsert).toHaveBeenCalledWith(
@@ -93,7 +96,7 @@ describe("upsertSubscriptionFromStripe", () => {
     };
     const db = { from: vi.fn().mockReturnValue(chain) };
 
-    await upsertSubscriptionFromStripe(db as any, {
+    await upsertSubscriptionFromStripe(db as unknown as DbClient, {
       user_id: "user-1",
       plan_tier: "premium",
       status: "trialing",
@@ -115,7 +118,7 @@ describe("upsertSubscriptionFromStripe", () => {
 describe("getResolvedBillingState", () => {
   it("returns free plan defaults when no subscription", async () => {
     const db = makeDb();
-    const state = await getResolvedBillingState(db as any, "user-789", "en");
+    const state = await getResolvedBillingState(db as unknown as DbClient, "user-789", "en");
 
     expect(state.plan.tier).toBe("free");
     expect(state.entitlements.advanced_recaps).toBe(false);
@@ -144,7 +147,7 @@ describe("getResolvedBillingState", () => {
     };
     const db = { from: vi.fn().mockReturnValue(chain) };
 
-    const state = await getResolvedBillingState(db as any, "user-pro", "ko");
+    const state = await getResolvedBillingState(db as unknown as DbClient, "user-pro", "ko");
 
     expect(state.plan.tier).toBe("pro");
     expect(state.entitlements.advanced_recaps).toBe(true);
@@ -175,7 +178,7 @@ describe("getResolvedBillingState", () => {
     };
     const db = { from: vi.fn().mockReturnValue(chain) };
 
-    const state = await getResolvedBillingState(db as any, "user-prem", "en");
+    const state = await getResolvedBillingState(db as unknown as DbClient, "user-prem", "en");
 
     expect(state.plan.tier).toBe("premium");
     expect(state.entitlements.multichannel).toBe(true);
@@ -197,7 +200,7 @@ describe("getResolvedBillingState", () => {
     };
     const db = { from: vi.fn().mockReturnValue(chain) };
 
-    const state = await getResolvedBillingState(db as any, "user-unk", "en");
+    const state = await getResolvedBillingState(db as unknown as DbClient, "user-unk", "en");
     expect(state.plan.tier).toBe("free");
   });
 });

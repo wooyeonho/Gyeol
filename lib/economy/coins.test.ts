@@ -176,29 +176,12 @@ describe("spendCoinsAtomic", () => {
     expect(result).toBe(false);
   });
 
-  it("falls back to spendCoins when RPC throws", async () => {
-    // Make RPC throw
-    const throwingRpc = vi.fn().mockRejectedValue(new Error("Function not found"));
-    const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
-    const insertFn = vi.fn().mockResolvedValue({});
-    const from = vi.fn().mockImplementation((table: string) => {
-      if (table === "agent_state") {
-        return {
-          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { coins: 200 } }) }) }),
-          update: updateFn,
-        };
-      }
-      if (table === "autonomous_logs") return { insert: insertFn };
-      return {};
-    });
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from, rpc: throwingRpc });
+  it("throws when RPC fails (no unsafe fallback)", async () => {
+    const rpcFn = vi.fn().mockResolvedValue({ data: null, error: { message: "Function not found" } });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ rpc: rpcFn });
 
     const { spendCoinsAtomic } = await import("./coins");
-    const result = await spendCoinsAtomic("agent-1", 50, "fallback test");
-
-    // Fallback to non-atomic spendCoins
-    expect(result).toBe(true);
-    expect(updateFn).toHaveBeenCalled();
+    await expect(spendCoinsAtomic("agent-1", 50, "test")).rejects.toThrow("spend_coins_atomic RPC failed");
   });
 });
 
@@ -222,26 +205,11 @@ describe("addCoinsAtomic", () => {
     }));
   });
 
-  it("falls back to addCoins when RPC throws", async () => {
-    const throwingRpc = vi.fn().mockRejectedValue(new Error("RPC not found"));
-    const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
-    const insertFn = vi.fn().mockResolvedValue({});
-    const from = vi.fn().mockImplementation((table: string) => {
-      if (table === "agent_state") {
-        return {
-          select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { coins: 50 } }) }) }),
-          update: updateFn,
-        };
-      }
-      if (table === "autonomous_logs") return { insert: insertFn };
-      return {};
-    });
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from, rpc: throwingRpc });
+  it("throws when RPC fails (no unsafe fallback)", async () => {
+    const rpcFn = vi.fn().mockResolvedValue({ data: null, error: { message: "RPC not found" } });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ rpc: rpcFn });
 
     const { addCoinsAtomic } = await import("./coins");
-    const result = await addCoinsAtomic("agent-1", 75, "fallback");
-
-    expect(result).toBe(true);
-    expect(updateFn).toHaveBeenCalledWith({ coins: 125 }); // 50 + 75
+    await expect(addCoinsAtomic("agent-1", 75, "test")).rejects.toThrow("add_coins_atomic RPC failed");
   });
 });

@@ -26,31 +26,26 @@ export async function spendCoins(agentId: string, amount: number, reason: string
 
 export async function spendCoinsAtomic(agentId: string, amount: number, reason: string): Promise<boolean> {
   const db = createServiceClient();
-  try {
-    const { data, error } = await db.rpc("spend_coins_atomic", {
-      p_agent_id: agentId,
-      p_amount: amount,
-      p_reason: reason,
-    });
-    if (!error && typeof data === "boolean") return data;
-  } catch {
-    // Fallback to non-RPC flow when function is unavailable.
+  const { data, error } = await db.rpc("spend_coins_atomic", {
+    p_agent_id: agentId,
+    p_amount: amount,
+    p_reason: reason,
+  });
+  if (error) {
+    throw new Error(`[Coins] spend_coins_atomic RPC failed: ${error.message}`);
   }
-  return spendCoins(agentId, amount, reason);
+  return typeof data === "boolean" ? data : false;
 }
 
 export async function addCoinsAtomic(agentId: string, amount: number, reason: string): Promise<boolean> {
   const db = createServiceClient();
-  try {
-    const { data, error } = await db.rpc("add_coins_atomic", {
-      p_agent_id: agentId,
-      p_amount: amount,
-      p_reason: reason,
-    });
-    if (!error && typeof data === "boolean") return data;
-  } catch {
-    // Fallback to non-RPC flow when function is unavailable.
+  const { data, error } = await db.rpc("add_coins_atomic", {
+    p_agent_id: agentId,
+    p_amount: amount,
+    p_reason: reason,
+  });
+  if (error) {
+    throw new Error(`[Coins] add_coins_atomic RPC failed: ${error.message}`);
   }
-  await addCoins(agentId, amount, reason);
-  return true;
+  return typeof data === "boolean" ? data : true;
 }

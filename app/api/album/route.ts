@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logRouteError } from "@/lib/ops/logger";
 
 const MILESTONE_TYPES = [
   "first_chat",
@@ -91,7 +92,7 @@ export async function GET() {
       created,
     });
   } catch (e) {
-    console.error("album GET error", e);
+    logRouteError("album GET error", e);
     if (isMissingEnvError(e)) {
       const demo = getDemoAgentState();
       return NextResponse.json({

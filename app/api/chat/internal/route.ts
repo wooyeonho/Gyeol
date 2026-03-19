@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { NextRequest, NextResponse } from "next/server";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logRouteError } from "@/lib/ops/logger";
 import { runSynchronousChatTurn } from "@/lib/chat/sync-turn";
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ reply: result.reply || "..." });
   } catch (e) {
-    console.error("Chat internal error", e);
+    logRouteError("Chat internal error", e);
     if (isMissingEnvError(e)) {
       return NextResponse.json(
         { error: "Service unavailable: missing server configuration", code: "MISSING_ENV" },
