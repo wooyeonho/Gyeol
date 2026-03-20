@@ -356,15 +356,58 @@ function Scene({
   );
 }
 
+/** Hook to attach WebGL context loss/restore listeners to the R3F canvas */
+function useContextRecovery(onLost: () => void, onRestored: () => void) {
+  const domRef = useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const container = domRef.current;
+    if (!container) return;
+    const canvas = container.querySelector("canvas");
+    if (!canvas) return;
+
+    const handleLost = (e: Event) => {
+      e.preventDefault();
+      console.warn("[VoidCanvasInner] WebGL context lost — waiting for restore");
+      onLost();
+    };
+    const handleRestored = () => {
+      console.info("[VoidCanvasInner] WebGL context restored");
+      onRestored();
+    };
+    canvas.addEventListener("webglcontextlost", handleLost);
+    canvas.addEventListener("webglcontextrestored", handleRestored);
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleLost);
+      canvas.removeEventListener("webglcontextrestored", handleRestored);
+    };
+  }, [onLost, onRestored]);
+
+  return domRef;
+}
+
 export function VoidCanvasInner(props: InnerProps) {
+  const [contextLost, setContextLost] = useState(false);
+  const handleLost = useCallback(() => setContextLost(true), []);
+  const handleRestored = useCallback(() => setContextLost(false), []);
+  const wrapperRef = useContextRecovery(handleLost, handleRestored);
+
   return (
-    <Canvas
-      camera={{ position: [0, 0, 5], fov: 50 }}
-      dpr={[1, 1.5]}
-      gl={{ antialias: false, powerPreference: "low-power" }}
-    >
-      <Scene {...props} />
-    </Canvas>
+    <div ref={wrapperRef} className="absolute inset-0">
+      {contextLost ? (
+        <div className="flex h-full w-full items-center justify-center text-white/40 text-sm">
+          <span className="animate-pulse">Restoring 3D...</span>
+        </div>
+      ) : (
+        <Canvas
+          camera={{ position: [0, 0, 5], fov: 50 }}
+          dpr={[1, 1.5]}
+          gl={{ antialias: false, powerPreference: "low-power" }}
+        >
+          <Scene {...props} />
+        </Canvas>
+      )}
+    </div>
   );
 }
 

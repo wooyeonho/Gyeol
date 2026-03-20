@@ -251,8 +251,10 @@ export default function Home() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
+  const creatureSize = Math.min(80, Math.max(20, (visual.size ?? 24) * 1.8));
+
   return (
-    <>
+    <div className="flex h-[100dvh] flex-col bg-black">
       {showCeremony && (
         <EvolutionCeremony
           level={evolutionEvent.level!}
@@ -265,9 +267,11 @@ export default function Home() {
           shareBaseUrl={typeof window !== "undefined" ? window.location.origin : undefined}
         />
       )}
+
+      {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
       <div
-        className="fixed inset-0 z-0 transition-[background] duration-700"
-        style={{ backgroundImage: appearance.scene.backgroundGradient }}
+        className="relative flex-shrink-0 overflow-hidden"
+        style={{ height: "38vh", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
         {/* Circadian time-of-day tint overlay */}
         <div
@@ -285,7 +289,7 @@ export default function Home() {
         <VoidCanvas
           shape={appearance.visual.shape as AgentVisual["shape"]}
           color={appearance.visual.color}
-          size={Math.min(50, Math.max(10, visual.size ?? 24))}
+          size={creatureSize}
           glow={Math.min(100, Math.max(0, appearance.visual.glow))}
           animation={appearance.visual.animation}
           particles={appearance.visual.particles}
@@ -297,54 +301,72 @@ export default function Home() {
           pulseScale={appearance.scene.pulseScale}
           onTap={handleCanvasTap}
           enableThree={!performanceMinimal}
+          contained
           breathPhase={creature.state.breathPhase}
           creatureActivity={creature.state.activity}
           excitePulse={creature.state.excitePulse}
           pointerNorm={creature.state.pointerNorm}
         />
-      </div>
-      {/* Hub z-20 sits above ChatPanel (z-10) — pointer-events-none on wrapper
-           so chat input underneath remains clickable; each interactive child opts in */}
-      <div className="pointer-events-none relative z-20">
-        <div className="pointer-events-auto">
-          <WorldClassHub />
-        </div>
-        {/* Creature status: sleeping/drowsy indicator */}
-        <div className="pointer-events-auto">
+
+        {/* Bottom gradient fade into chat area */}
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
+
+        {/* Creature identity bar */}
+        <div className="absolute bottom-3 inset-x-0 z-10 text-center pointer-events-none">
           <CreatureStatusIndicator activity={creature.state.activity} />
-        </div>
-        {/* Living Feed: shows autonomous activity while user was away */}
-        <div className="pointer-events-auto mt-2">
-          <LivingFeed onGreetingReady={handleGreetingReady} />
+          <p className="mt-1 text-base font-semibold text-white drop-shadow-lg tracking-wide">
+            {agentState?.self_name ?? "GYEOL"}
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50">
+            <span>Gen {agentState?.gen_level ?? 1}</span>
+            <span className="h-1 w-1 rounded-full bg-white/30" />
+            <span>{Math.round(vitality * 100)}%</span>
+            {agentState?.mood && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <span className="text-purple-300/70">{agentState.mood}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* First-time guide: show when no conversation yet */}
-      {!conversationStarted && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.8 }}
-          className="pointer-events-none fixed inset-x-0 bottom-24 z-30 flex flex-col items-center gap-3 px-6"
-        >
-          <div className="pointer-events-auto rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md px-5 py-4 max-w-sm text-center">
-            <p className="text-sm text-white/80 leading-relaxed">
-              {t("home.firstTimeGuide")}
-            </p>
-            <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="mt-3 text-white/40"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto">
-                <path d="M12 5v14M5 12l7 7 7-7" />
-              </svg>
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
+      {/* ===== HUB + LIVING FEED ===== */}
+      <div className="relative z-10 flex-shrink-0">
+        <WorldClassHub />
+        <LivingFeed onGreetingReady={handleGreetingReady} />
+      </div>
 
-      <ChatPanel navVisible={conversationStarted} />
+      {/* ===== CHAT AREA — fills remaining space ===== */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        {/* First-time guide: show when no conversation yet */}
+        {!conversationStarted && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5, duration: 0.8 }}
+            className="flex flex-col items-center gap-3 px-6 py-4"
+          >
+            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md px-5 py-4 max-w-sm text-center">
+              <p className="text-sm text-white/80 leading-relaxed">
+                {t("home.firstTimeGuide")}
+              </p>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="mt-3 text-white/40"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto">
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        <ChatPanel navVisible={conversationStarted} />
+      </div>
+
       <Soundscape
         enabled={!performanceMinimal}
         soundProfile={soundProfile}
@@ -357,6 +379,6 @@ export default function Home() {
         onDismiss={handleDismissReward}
       />
       <BottomNav />
-    </>
+    </div>
   );
 }

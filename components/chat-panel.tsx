@@ -153,9 +153,9 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   };
 
   return (
-    <div className={`pointer-events-none fixed inset-0 z-10 px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
-      <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col pt-20">
-        <div className="pointer-events-auto min-h-0 flex-1 overflow-hidden">
+    <div className={`flex min-h-0 flex-1 flex-col px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
+      <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <MessageList
             messages={messages}
             isStreaming={isStreaming}
@@ -181,7 +181,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
           />
         </div>
 
-        <div className="pointer-events-auto shrink-0 pt-3">
+        <div className="shrink-0 pt-3">
           <MessageInput
             input={input}
             setInput={setInput}
