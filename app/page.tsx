@@ -22,7 +22,7 @@ import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gat
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
-  loading: () => <div className="fixed inset-0 z-0 bg-black" aria-hidden="true" />,
+  loading: () => <div className="absolute inset-0 bg-black" aria-hidden="true" />,
 });
 import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
@@ -306,6 +306,7 @@ export default function Home() {
           creatureActivity={creature.state.activity}
           excitePulse={creature.state.excitePulse}
           pointerNorm={creature.state.pointerNorm}
+          restoring3dLabel={t("creature.restoring3d")}
         />
 
         {/* Bottom gradient fade into chat area */}

@@ -29,7 +29,8 @@
     "drowsy": "うとうとしています",
     "awake": "起きています",
     "breathingLabel": "呼吸中",
-    "eyeTracking": "視線追跡中"
+    "eyeTracking": "視線追跡中",
+    "restoring3d": "3D復元中..."
   },
   "nav": {
     "home": "Home",

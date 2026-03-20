@@ -29,7 +29,8 @@
     "drowsy": "昏昏欲睡",
     "awake": "清醒中",
     "breathingLabel": "呼吸中",
-    "eyeTracking": "视线追踪中"
+    "eyeTracking": "视线追踪中",
+    "restoring3d": "正在恢复3D..."
   },
   "nav": {
     "home": "Home",

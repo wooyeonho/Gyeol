@@ -26,7 +26,8 @@
     "drowsy": "Drowsy",
     "awake": "Awake",
     "breathingLabel": "Breathing",
-    "eyeTracking": "Eye tracking"
+    "eyeTracking": "Eye tracking",
+    "restoring3d": "Restoring 3D..."
   },
   "nav": {
     "home": "Home",

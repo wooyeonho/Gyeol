@@ -28,6 +28,8 @@ export interface InnerProps {
   excitePulse?: number;
   /** Normalized pointer position for eye tracking */
   pointerNorm?: { x: number; y: number };
+  /** Translated label for WebGL context-loss overlay */
+  restoring3dLabel?: string;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -386,7 +388,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
-export function VoidCanvasInner(props: InnerProps) {
+export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
@@ -403,7 +405,7 @@ export function VoidCanvasInner(props: InnerProps) {
       </Canvas>
       {contextLost && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white/40 text-sm">
-          <span className="animate-pulse">Restoring 3D...</span>
+          <span className="animate-pulse">{restoring3dLabel || "Restoring 3D..."}</span>
         </div>
       )}
     </div>

@@ -30,6 +30,8 @@ interface VoidCanvasProps {
   excitePulse?: number;
   /** Normalized pointer for eye tracking */
   pointerNorm?: { x: number; y: number };
+  /** Translated label for WebGL context-loss overlay */
+  restoring3dLabel?: string;
 }
 
 const VoidCanvasInner = dynamic(
@@ -206,6 +208,7 @@ export function VoidCanvas({
   creatureActivity,
   excitePulse,
   pointerNorm,
+  restoring3dLabel,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -267,6 +270,7 @@ export function VoidCanvas({
           creatureActivity={creatureActivity}
           excitePulse={excitePulse}
           pointerNorm={pointerNorm}
+          restoring3dLabel={restoring3dLabel}
         />
       ) : (
         <CssVoidFallback
