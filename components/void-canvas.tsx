@@ -20,6 +20,8 @@ interface VoidCanvasProps {
   pulseScale?: number;
   onTap?: () => void;
   enableThree?: boolean;
+  /** Render in contained mode (absolute) instead of full-screen fixed */
+  contained?: boolean;
   /** Creature breathing phase 0..1 */
   breathPhase?: number;
   /** Creature activity state */
@@ -28,6 +30,8 @@ interface VoidCanvasProps {
   excitePulse?: number;
   /** Normalized pointer for eye tracking */
   pointerNorm?: { x: number; y: number };
+  /** Translated label for WebGL context-loss overlay */
+  restoring3dLabel?: string;
 }
 
 const VoidCanvasInner = dynamic(
@@ -90,10 +94,10 @@ function CssVoidFallback({
       ? `animate-[voidOrbitSlow_${adjustedDuration}s_linear_infinite]`
       : `animate-[voidOrbit_${adjustedDuration}s_linear_infinite]`;
 
-  // Glow intensity pulses with breathing
-  const breathGlow = glow * (0.8 + breathSin * 0.2) * activityDim;
-  const effectiveOpacity = Math.max(0.45, vitality) * activityDim;
-  const coreOpacity = Math.max(0.65, vitality) * activityDim;
+  // Glow intensity pulses with breathing — enhanced for hero viewport
+  const breathGlow = glow * (0.7 + breathSin * 0.3) * activityDim;
+  const effectiveOpacity = Math.max(0.55, vitality) * activityDim;
+  const coreOpacity = Math.max(0.75, vitality) * activityDim;
 
   return (
     <div
@@ -105,59 +109,75 @@ function CssVoidFallback({
         <div
           className="relative"
           style={{
-            width: size * 7,
-            height: size * 7,
+            width: size * 5,
+            height: size * 5,
             transform: `scale(${effectiveScale})`,
             transition: "transform 80ms ease-out",
           }}
         >
-          {/* Ambient glow — breathes with the creature */}
+          {/* Outer ambient glow — large, breathes with the creature */}
           <div
-            className="absolute inset-0 rounded-full blur-3xl"
+            className="absolute -inset-[30%] rounded-full blur-3xl"
             style={{
-              background: `radial-gradient(circle, ${secondaryColor} 0%, transparent 70%)`,
-              opacity: 0.25 + breathSin * 0.1 * activityDim,
+              background: `radial-gradient(circle, ${secondaryColor} 0%, ${color}40 40%, transparent 70%)`,
+              opacity: 0.35 + breathSin * 0.15 * activityDim,
             }}
           />
           {/* Orbit ring */}
           <div
             className={`absolute left-1/2 top-1/2 rounded-full ${motionClass}`}
             style={{
-              width: size * 4.2,
-              height: size * 4.2,
+              width: size * 3.5,
+              height: size * 3.5,
               transform: "translate(-50%, -50%)",
-              border: `1px solid ${secondaryColor}30`,
-              boxShadow: `0 0 ${breathGlow}px ${color}25 inset`,
+              border: `1.5px solid ${secondaryColor}40`,
+              boxShadow: `0 0 ${breathGlow * 1.2}px ${color}30 inset`,
             }}
           />
-          {/* Mid glow layer */}
+          {/* Mid glow layer — larger and brighter */}
           <div
-            className="absolute left-1/2 top-1/2 rounded-full blur-xl"
+            className="absolute left-1/2 top-1/2 rounded-full blur-lg"
             style={{
-              width: size * 2.2,
-              height: size * 2.2,
+              width: size * 2.8,
+              height: size * 2.8,
               transform: "translate(-50%, -50%)",
-              background: `radial-gradient(circle, ${color} 0%, ${secondaryColor} 55%, transparent 75%)`,
+              background: `radial-gradient(circle, ${color} 0%, ${secondaryColor} 50%, transparent 75%)`,
               opacity: effectiveOpacity,
-              boxShadow: `0 0 ${breathGlow}px ${color}`,
+              boxShadow: `0 0 ${breathGlow * 1.5}px ${color}`,
             }}
           />
-          {/* Core — bright center */}
+          {/* Core — bright vivid center */}
           <div
             className={`absolute left-1/2 top-1/2 rounded-full ${isListening ? "animate-pulse" : ""}`}
             style={{
-              width: size * 1.3,
-              height: size * 1.3,
+              width: size * 1.6,
+              height: size * 1.6,
               transform: "translate(-50%, -50%)",
-              background: `radial-gradient(circle, #ffffff 0%, ${color} 60%, transparent 80%)`,
+              background: `radial-gradient(circle, #ffffff 0%, ${color} 55%, transparent 80%)`,
               opacity: coreOpacity,
+              boxShadow: `0 0 ${size * 0.5}px ${color}80`,
             }}
           />
+          {/* Excitement flash ring — visible on message send */}
+          {excitePulse > 0.05 && (
+            <div
+              className="absolute left-1/2 top-1/2 rounded-full"
+              style={{
+                width: size * 3,
+                height: size * 3,
+                transform: "translate(-50%, -50%)",
+                border: `2px solid ${color}`,
+                opacity: excitePulse * 0.6,
+                boxShadow: `0 0 ${excitePulse * 30}px ${color}60`,
+                transition: "opacity 150ms ease-out",
+              }}
+            />
+          )}
           {/* Sleeping ZZZ overlay */}
           {creatureActivity === "sleeping" && (
             <div
               className="absolute left-1/2 top-1/4 -translate-x-1/2 animate-[floatUp_3s_ease-in-out_infinite]"
-              style={{ fontSize: size * 0.4, opacity: 0.4 }}
+              style={{ fontSize: size * 0.35, opacity: 0.5 }}
             >
               💤
             </div>
@@ -183,10 +203,12 @@ export function VoidCanvas({
   pulseScale = 1,
   onTap,
   enableThree = false,
+  contained = false,
   breathPhase,
   creatureActivity,
   excitePulse,
   pointerNorm,
+  restoring3dLabel,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -230,7 +252,7 @@ export function VoidCanvas({
   const shouldUseThree = enableThree && !reducedVisualMode && shouldRenderThree;
 
   return (
-    <div className="fixed inset-0 z-0" style={{ backgroundColor: background }}>
+    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
         <VoidCanvasInner
           shape={shape}
@@ -248,6 +270,7 @@ export function VoidCanvas({
           creatureActivity={creatureActivity}
           excitePulse={excitePulse}
           pointerNorm={pointerNorm}
+          restoring3dLabel={restoring3dLabel}
         />
       ) : (
         <CssVoidFallback

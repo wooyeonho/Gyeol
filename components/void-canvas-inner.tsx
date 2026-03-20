@@ -28,6 +28,8 @@ export interface InnerProps {
   excitePulse?: number;
   /** Normalized pointer position for eye tracking */
   pointerNorm?: { x: number; y: number };
+  /** Translated label for WebGL context-loss overlay */
+  restoring3dLabel?: string;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -356,15 +358,57 @@ function Scene({
   );
 }
 
-export function VoidCanvasInner(props: InnerProps) {
+/** Hook to attach WebGL context loss/restore listeners to the R3F canvas */
+function useContextRecovery(onLost: () => void, onRestored: () => void) {
+  const domRef = useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const container = domRef.current;
+    if (!container) return;
+    const canvas = container.querySelector("canvas");
+    if (!canvas) return;
+
+    const handleLost = (e: Event) => {
+      e.preventDefault();
+      console.warn("[VoidCanvasInner] WebGL context lost — waiting for restore");
+      onLost();
+    };
+    const handleRestored = () => {
+      console.info("[VoidCanvasInner] WebGL context restored");
+      onRestored();
+    };
+    canvas.addEventListener("webglcontextlost", handleLost);
+    canvas.addEventListener("webglcontextrestored", handleRestored);
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleLost);
+      canvas.removeEventListener("webglcontextrestored", handleRestored);
+    };
+  }, [onLost, onRestored]);
+
+  return domRef;
+}
+
+export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
+  const [contextLost, setContextLost] = useState(false);
+  const handleLost = useCallback(() => setContextLost(true), []);
+  const handleRestored = useCallback(() => setContextLost(false), []);
+  const wrapperRef = useContextRecovery(handleLost, handleRestored);
+
   return (
-    <Canvas
-      camera={{ position: [0, 0, 5], fov: 50 }}
-      dpr={[1, 1.5]}
-      gl={{ antialias: false, powerPreference: "low-power" }}
-    >
-      <Scene {...props} />
-    </Canvas>
+    <div ref={wrapperRef} className="relative w-full h-full">
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 50 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: false, powerPreference: "low-power" }}
+      >
+        <Scene {...props} />
+      </Canvas>
+      {contextLost && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white/40 text-sm">
+          <span className="animate-pulse">{restoring3dLabel || "Restoring 3D..."}</span>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -29,7 +29,8 @@
     "drowsy": "Somnoliento",
     "awake": "Despierto",
     "breathingLabel": "Respirando",
-    "eyeTracking": "Seguimiento ocular"
+    "eyeTracking": "Seguimiento ocular",
+    "restoring3d": "Restaurando 3D..."
   },
   "nav": {
     "home": "Home",
