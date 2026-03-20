@@ -393,7 +393,7 @@ export function VoidCanvasInner(props: InnerProps) {
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   return (
-    <div ref={wrapperRef} className="absolute inset-0">
+    <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         dpr={[1, 1.5]}
