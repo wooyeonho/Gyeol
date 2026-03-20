@@ -394,18 +394,17 @@ export function VoidCanvasInner(props: InnerProps) {
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
-      {contextLost ? (
-        <div className="flex h-full w-full items-center justify-center text-white/40 text-sm">
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 50 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: false, powerPreference: "low-power" }}
+      >
+        <Scene {...props} />
+      </Canvas>
+      {contextLost && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white/40 text-sm">
           <span className="animate-pulse">Restoring 3D...</span>
         </div>
-      ) : (
-        <Canvas
-          camera={{ position: [0, 0, 5], fov: 50 }}
-          dpr={[1, 1.5]}
-          gl={{ antialias: false, powerPreference: "low-power" }}
-        >
-          <Scene {...props} />
-        </Canvas>
       )}
     </div>
   );
