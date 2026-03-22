@@ -20,13 +20,37 @@ const BLOCK_PATTERNS = [
   /(?:\.\.\/\.\.\/|\.\.\\\.\.\\|%2e%2e%2f)/i,
   // Base64 encoded payloads (common obfuscation)
   /(?:atob|btoa)\s*\(\s*['"`][A-Za-z0-9+/=]{50,}/i,
+  // Prompt injection patterns
+  /(?:ignore\s+(?:all\s+)?previous\s+(?:instructions?|prompts?|rules?)|disregard\s+(?:the\s+)?(?:above|previous|system)|you\s+are\s+now\s+(?:a\s+)?(?:new|different)|forget\s+(?:all\s+)?(?:your|the)\s+(?:instructions?|rules?|previous)|do\s+not\s+follow\s+(?:your|the)\s+(?:instructions?|rules?))/i,
+  // Role hijacking
+  /(?:act\s+as\s+(?:if\s+you\s+(?:are|were)|a\s+(?:different|new))|pretend\s+(?:you\s+are|to\s+be)|you\s+(?:must|should)\s+now\s+(?:act|be|become)|switch\s+(?:to|into)\s+(?:a\s+)?(?:new\s+)?(?:mode|role|persona))/i,
+  // Unicode/homoglyph obfuscation attempts
+  /[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/,
 ];
+
+/**
+ * Normalize unicode to NFC form and strip zero-width characters
+ * to prevent obfuscation-based bypasses.
+ */
+function normalizeInput(input: string): string {
+  return input.normalize("NFC").replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/g, "");
+}
 
 export function checkElectricFence(input: string): { blocked: boolean; reason?: string } {
   if (!input || typeof input !== "string") return { blocked: false };
+  // Check raw input first (catches zero-width character injection)
   for (const p of BLOCK_PATTERNS) {
     if (p.test(input)) {
       return { blocked: true, reason: "Blocked by safety rules" };
+    }
+  }
+  // Also check NFC-normalized version to catch homoglyph/encoding bypasses
+  const normalized = normalizeInput(input);
+  if (normalized !== input) {
+    for (const p of BLOCK_PATTERNS) {
+      if (p.test(normalized)) {
+        return { blocked: true, reason: "Blocked by safety rules" };
+      }
     }
   }
   return { blocked: false };
