@@ -4,8 +4,12 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { addCoinsAtomic, spendCoinsAtomic } from "@/lib/economy/coins";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

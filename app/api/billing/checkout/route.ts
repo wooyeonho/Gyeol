@@ -1,13 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { type PlanTier } from "@/lib/billing/catalog";
 import { getStripe, getStripeAppUrl, getStripePriceId, isStripeConfigured } from "@/lib/billing/stripe";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 function isPaidPlanTier(value: unknown): value is Exclude<PlanTier, "free"> {
   return value === "pro" || value === "premium";
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createClient();
   const {
     data: { user },

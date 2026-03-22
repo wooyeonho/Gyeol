@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 /**
  * Cloudflare Workers AI image generation via Stable Diffusion XL.
@@ -64,7 +65,10 @@ export async function GET() {
  * Real image generation using Cloudflare Workers AI (Stable Diffusion XL).
  * Generates images from text prompts and stores them as artifacts.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createClient();
   const {
     data: { user },
