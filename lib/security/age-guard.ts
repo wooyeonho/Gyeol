@@ -4,9 +4,10 @@ type AgeGroup = "under_13" | "teen" | "adult";
 
 /**
  * Returns the age group stored in the agent's config.
- * Defaults to "adult" if the field is missing (backwards-compatible).
+ * Returns null if the field is missing — callers must handle the unset case
+ * (default-deny: unset age_group should restrict sensitive features).
  */
-export async function getAgentAgeGroup(agentId: string): Promise<AgeGroup> {
+export async function getAgentAgeGroup(agentId: string): Promise<AgeGroup | null> {
   const service = createServiceClient();
   const { data } = await service
     .from("agent_state")
@@ -21,18 +22,20 @@ export async function getAgentAgeGroup(agentId: string): Promise<AgeGroup> {
     return group;
   }
 
-  return "adult";
+  return null; // age_group not set — callers should apply restrictions
 }
 
 /**
  * Returns true if the age group is allowed to access the feature.
- * "adult" features are blocked for under_13 and teen.
- * "teen" features are blocked for under_13 only.
+ * null (unset) age group is treated as restricted — must complete age gate first.
+ * "adult" features are blocked for under_13, teen, and null.
+ * "teen" features are blocked for under_13 and null only.
  */
 export function isAgeAllowed(
-  ageGroup: AgeGroup,
+  ageGroup: AgeGroup | null,
   requiredAge: "teen" | "adult"
 ): boolean {
+  if (!ageGroup) return false; // unset = restricted (default-deny)
   if (requiredAge === "adult") return ageGroup === "adult";
   if (requiredAge === "teen") return ageGroup === "teen" || ageGroup === "adult";
   return true;
