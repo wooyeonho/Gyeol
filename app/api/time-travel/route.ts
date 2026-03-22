@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const targetDateRaw = typeof body?.target_date === "string" ? body.target_date : "";
-    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
-    if (!targetDateRaw || !message) {
+    const rawMessage = typeof body?.message === "string" ? body.message : "";
+    if (!targetDateRaw || !rawMessage.trim()) {
       return NextResponse.json({ error: "target_date and message required" }, { status: 400 });
     }
 
@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid target_date" }, { status: 400 });
     }
 
-    const fence = checkElectricFence(message);
+    const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+    const message = sanitizeUserInput(rawMessage);
     const locale = resolveGenerationLocale({
       acceptLanguage: req.headers.get("accept-language"),
       cookieHeader: req.headers.get("cookie"),
