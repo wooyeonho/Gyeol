@@ -7,6 +7,7 @@ import { normalizeLocale } from "@/lib/i18n/config";
 import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 import { logRouteError } from "@/lib/ops/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 export async function GET() {
   try {
@@ -37,6 +38,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

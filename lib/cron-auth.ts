@@ -42,7 +42,13 @@ export function checkCronAuth(request: NextRequest): boolean {
     }
   }
 
-  // Fallback: simple Bearer token (for Vercel cron)
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
+  // Fallback: simple Bearer token (for Vercel cron) — timing-safe comparison
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${secret}`;
+  if (auth.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }

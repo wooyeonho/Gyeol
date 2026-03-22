@@ -5,8 +5,18 @@
  * Contract: POST { to, subject, body } 또는 { deliveries: [{ to, subject, body }] }
  * 내부 호출 시 Authorization: Bearer CRON_SECRET 또는 X-Email-Send-Secret 검증.
  */
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
+
+function timingSafeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM ?? "recap@resend.dev";
@@ -14,10 +24,10 @@ const CRON_SECRET = process.env.CRON_SECRET;
 const EMAIL_SEND_SECRET = process.env.EMAIL_SEND_SECRET;
 
 function isAuthorized(req: NextRequest): boolean {
-  const auth = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  const secretHeader = req.headers.get("x-email-send-secret");
-  if (CRON_SECRET && auth === CRON_SECRET) return true;
-  if (EMAIL_SEND_SECRET && secretHeader === EMAIL_SEND_SECRET) return true;
+  const auth = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
+  const secretHeader = req.headers.get("x-email-send-secret") ?? "";
+  if (CRON_SECRET && timingSafeCompare(auth, CRON_SECRET)) return true;
+  if (EMAIL_SEND_SECRET && timingSafeCompare(secretHeader, EMAIL_SEND_SECRET)) return true;
   return false;
 }
 

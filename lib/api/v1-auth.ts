@@ -32,7 +32,7 @@ function hasScope(row: ApiKeyRow, requiredScope: string): boolean {
     : Array.isArray(row.scopes)
       ? row.scopes
       : [];
-  if (scopes.length === 0) return true;
+  if (scopes.length === 0) return false; // default-deny: empty scopes = no permissions
   return scopes.includes("v1") || scopes.includes(requiredScope);
 }
 

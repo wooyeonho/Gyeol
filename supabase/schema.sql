@@ -86,7 +86,7 @@ create table if not exists memories (
 create index if not exists memories_agent_id_idx on memories(agent_id);
 create index if not exists memories_agent_id_type_idx on memories(agent_id, type);
 
--- Vector similarity search function
+-- Vector similarity search function with time decay + importance weighting
 create or replace function match_memories(
   p_agent_id uuid,
   p_embedding vector(768),
@@ -104,11 +104,18 @@ as $$
     m.id,
     m.content,
     m.type,
-    1 - (m.embedding <=> p_embedding) as similarity
+    (
+      -- Base: cosine similarity (0..1)
+      (1 - (m.embedding <=> p_embedding))
+      -- Time decay: recent memories score higher (half-life ~30 days)
+      * (0.5 + 0.5 * exp(-extract(epoch from now() - m.created_at) / (30 * 86400)))
+      -- Importance boost: referenced memories score higher (log scale, capped)
+      * (1.0 + 0.1 * least(ln(greatest(m.reference_count, 1) + 1), 3.0))
+    ) as similarity
   from memories m
   where m.agent_id = p_agent_id
     and m.embedding is not null
-  order by m.embedding <=> p_embedding
+  order by similarity desc
   limit p_match_count;
 $$;
 

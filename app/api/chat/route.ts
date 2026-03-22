@@ -18,10 +18,12 @@ export async function POST(req: NextRequest) {
   try {
     const requestStartedAt = Date.now();
     const payload = (await req.json()) as { message?: unknown; locale?: unknown };
-    const message = typeof payload.message === "string" ? sanitizeUserInput(payload.message) : "";
-    if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
-    const fence = checkElectricFence(message);
+    const rawMessage = typeof payload.message === "string" ? payload.message : "";
+    if (!rawMessage.trim()) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
+    const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
+    const message = sanitizeUserInput(rawMessage);
+    if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
 
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();

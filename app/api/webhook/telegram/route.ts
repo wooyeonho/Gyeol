@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
@@ -16,8 +17,11 @@ export async function POST(req: NextRequest) {
     if (!TELEGRAM_WEBHOOK_SECRET) {
       return NextResponse.json({ error: "Service not configured" }, { status: 503 });
     }
-    const providedSecret = req.headers.get("x-telegram-bot-api-secret-token");
-    if (providedSecret !== TELEGRAM_WEBHOOK_SECRET) {
+    const providedSecret = req.headers.get("x-telegram-bot-api-secret-token") ?? "";
+    if (
+      providedSecret.length !== TELEGRAM_WEBHOOK_SECRET.length ||
+      !crypto.timingSafeEqual(Buffer.from(providedSecret), Buffer.from(TELEGRAM_WEBHOOK_SECRET))
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

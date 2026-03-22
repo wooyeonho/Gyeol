@@ -17,12 +17,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
-    if (!agentId || !message) {
+    const rawMessage = typeof body?.message === "string" ? body.message : "";
+    if (!agentId || !rawMessage.trim()) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
-    const fence = checkElectricFence(message);
+    const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+    const message = sanitizeUserInput(rawMessage);
 
     const service = createServiceClient();
     const { data: agent } = await service.from("agents").select("id, user_id").eq("id", agentId).maybeSingle();

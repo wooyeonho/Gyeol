@@ -10,7 +10,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { haptic } from "@/lib/micro-interactions";
 
 function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
-  const common = "h-5 w-5";
+  const common = "h-4 w-4";
   switch (name) {
     case "chat":
       return (

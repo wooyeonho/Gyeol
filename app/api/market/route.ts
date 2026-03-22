@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 export async function GET(request: NextRequest) {
   try {
@@ -133,6 +134,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const body = await request.json().catch(() => ({}));
     const { seller_agent_id, type, title, description, price, content } = body;

@@ -14,6 +14,7 @@ const HIGH_RISK_PATTERNS = [
 ];
 
 export function moderateSocialContent(input: string): ModerationDecision {
+  // Always sanitize first so we can return sanitized text even when blocked
   const sanitized = sanitizeUserInput(input).replace(/\s+/g, " ").trim();
   if (!sanitized) {
     return {
@@ -23,6 +24,18 @@ export function moderateSocialContent(input: string): ModerationDecision {
     };
   }
 
+  // Check electric fence on raw input BEFORE using sanitized content
+  // to prevent bypass via HTML-wrapped payloads
+  const rawFence = checkElectricFence(input);
+  if (rawFence.blocked) {
+    return {
+      sanitized,
+      status: "blocked",
+      reason: rawFence.reason ?? "electric_fence",
+    };
+  }
+
+  // Second fence check on sanitized content for thoroughness
   const fence = checkElectricFence(sanitized);
   if (fence.blocked) {
     return {

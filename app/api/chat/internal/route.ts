@@ -22,15 +22,18 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const agentId = body.agent_id as string | undefined;
-    const message = typeof body.message === "string" ? sanitizeUserInput(body.message) : "";
-    if (!agentId || !message) {
+    const rawMessage = typeof body.message === "string" ? body.message : "";
+    if (!agentId || !rawMessage.trim()) {
       return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
     }
     const allowed = await checkRateLimit(`internal-chat:${agentId}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const fence = checkElectricFence(message);
+    const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+    const message = sanitizeUserInput(rawMessage);
+    const sanitizedFence = checkElectricFence(message);
+    if (sanitizedFence.blocked) return NextResponse.json({ error: sanitizedFence.reason || "Blocked" }, { status: 400 });
 
     const service = createServiceClient();
     const result = await runSynchronousChatTurn({

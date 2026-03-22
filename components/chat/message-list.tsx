@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
@@ -6,6 +7,9 @@ const messageVariants = {
   hidden: { opacity: 0, y: 12, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
+
+/** Only render the last N messages in the DOM to avoid excessive DOM nodes. */
+const VISIBLE_MESSAGE_CAP = 100;
 
 export function MessageList({
   messages,
@@ -44,9 +48,18 @@ export function MessageList({
   onRetry: () => void;
   t: (key: string) => string;
 }) {
+  // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
+  const visibleMessages = useMemo(
+    () => messages.length > VISIBLE_MESSAGE_CAP ? messages.slice(-VISIBLE_MESSAGE_CAP) : messages,
+    [messages],
+  );
+  // Offset for correct index mapping when messages are capped
+  const indexOffset = messages.length - visibleMessages.length;
+
   return (
     <div
       className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 pr-1"
+      style={{ contain: "layout style" }}
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -70,7 +83,9 @@ export function MessageList({
         />
       )}
       <AnimatePresence initial={false}>
-      {messages.map((m, i) => (
+      {visibleMessages.map((m, vi) => {
+        const i = vi + indexOffset; // original index for callbacks
+        return (
         <motion.div
           key={m.id ?? `${m.role}-${i}`}
           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
@@ -153,7 +168,8 @@ export function MessageList({
             </motion.div>
           )}
         </motion.div>
-      ))}
+        );
+      })}
       </AnimatePresence>
       <div ref={bottomRef} />
     </div>
