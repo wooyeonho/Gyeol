@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
@@ -8,8 +9,11 @@ export async function GET(req: NextRequest) {
   if (!CRON_SECRET) {
     return NextResponse.json({ error: "Service not configured" }, { status: 503 });
   }
-  const auth = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (auth !== CRON_SECRET) {
+  const auth = req.headers.get("authorization")?.replace("Bearer ", "") ?? "";
+  if (
+    auth.length !== CRON_SECRET.length ||
+    !crypto.timingSafeEqual(Buffer.from(auth), Buffer.from(CRON_SECRET))
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
