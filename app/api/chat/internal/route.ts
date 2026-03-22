@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
     const message = sanitizeUserInput(rawMessage);
-    // fence already checked above on raw input
-    if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+    const sanitizedFence = checkElectricFence(message);
+    if (sanitizedFence.blocked) return NextResponse.json({ error: sanitizedFence.reason || "Blocked" }, { status: 400 });
 
     const service = createServiceClient();
     const result = await runSynchronousChatTurn({
