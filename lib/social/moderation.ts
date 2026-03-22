@@ -14,22 +14,24 @@ const HIGH_RISK_PATTERNS = [
 ];
 
 export function moderateSocialContent(input: string): ModerationDecision {
-  // Check electric fence on raw input BEFORE sanitization to prevent bypass
-  const rawFence = checkElectricFence(input);
-  if (rawFence.blocked) {
-    return {
-      sanitized: "",
-      status: "blocked",
-      reason: rawFence.reason ?? "electric_fence",
-    };
-  }
-
+  // Always sanitize first so we can return sanitized text even when blocked
   const sanitized = sanitizeUserInput(input).replace(/\s+/g, " ").trim();
   if (!sanitized) {
     return {
       sanitized: "",
       status: "blocked",
       reason: "empty",
+    };
+  }
+
+  // Check electric fence on raw input BEFORE using sanitized content
+  // to prevent bypass via HTML-wrapped payloads
+  const rawFence = checkElectricFence(input);
+  if (rawFence.blocked) {
+    return {
+      sanitized,
+      status: "blocked",
+      reason: rawFence.reason ?? "electric_fence",
     };
   }
 
