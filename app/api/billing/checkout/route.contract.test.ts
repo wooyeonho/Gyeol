@@ -23,13 +23,12 @@ vi.mock("@/lib/billing/stripe", () => ({
 describe("/api/billing/checkout contract", () => {
   it("returns 503 when Stripe not configured", async () => {
     const { POST } = await import("./route");
-    const res = await POST(
-      new Request("http://x/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_tier: "pro" }),
-      })
-    );
+    const req = new Request("http://x/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "http://x" },
+      body: JSON.stringify({ plan_tier: "pro" }),
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
     expect(res.status).toBe(503);
   });
 });
