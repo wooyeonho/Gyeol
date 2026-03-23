@@ -117,6 +117,8 @@
     "returningFootnote": "短いチェックインでも大丈夫です。Gyeolは小さな変化も覚えようとします。",
     "responding": "応答を生成中です。",
     "waiting": "応答待機中です。",
+    "guestSignupPrompt": "アカウントを作成すると、この生命体を育て続けられます。",
+    "guestSignupCta": "アカウント作成",
     "stop": "停止",
     "listen": "聞く",
     "retry": "再接続",
@@ -840,7 +842,8 @@
     "vitality": "活力",
     "readMore": "もっと見る",
     "collapse": "閉じる",
-    "hoursAgo": "{n}時間前"
+    "hoursAgo": "{n}時間前",
+    "birthGreeting": "...ここはどこ？今、生まれたばかりみたい。あなたは誰？"
   },
   "growthTimeline": {
     "title": "成長タイムライン",
