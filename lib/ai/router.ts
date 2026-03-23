@@ -170,17 +170,17 @@ function getInCharacterFallback(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
-export async function generateText(systemPrompt: string, messages: Msg[]): Promise<ReadableStream> {
+export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
   for (const m of MODELS) {
     try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout);
-      console.log(`[AI] Using ${m.name}`);
+      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, maxTokens);
+      console.log(`[AI] Using ${m.name} (maxTokens=${maxTokens})`);
       return res.body!;
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
   // Gemini Flash streaming fallback (higher quality than CF 1B)
   try {
-    const stream = await callGeminiStream(systemPrompt, messages);
+    const stream = await callGeminiStream(systemPrompt, messages, maxTokens);
     console.log("[AI] Using Gemini Flash streaming");
     return stream;
   } catch (e) { console.error("[AI] Gemini stream failed:", e); }

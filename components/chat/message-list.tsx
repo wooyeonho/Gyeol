@@ -88,7 +88,13 @@ export function MessageList({
             </motion.div>
           ) : (
             <motion.div
-              className="max-w-[80%] rounded-2xl border bg-black/40 px-4 py-3 text-base leading-7"
+              className={`rounded-2xl border bg-black/40 leading-7 ${
+                appearance.verbal < 0.15 ? "max-w-[50%] px-3 py-2 text-sm" :
+                appearance.verbal < 0.35 ? "max-w-[60%] px-3 py-2 text-sm" :
+                appearance.verbal < 0.55 ? "max-w-[70%] px-4 py-3 text-base" :
+                appearance.verbal >= 0.75 ? "max-w-[90%] px-5 py-4 text-base" :
+                "max-w-[80%] px-4 py-3 text-base"
+              }`}
               style={{
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,

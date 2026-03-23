@@ -63,6 +63,7 @@ export function useAppearance(opts?: {
       genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
       vitality: typeof agentState?.vitality === "number" ? agentState.vitality : 1,
       mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+      dnaVerbal: ((agentState?.genome as { dna?: { verbal?: number } } | null | undefined)?.dna?.verbal) ?? null,
     };
     return resolveIdentityAppearance(input, locale);
   }, [agentState, locale, pendingUsageMode]);

@@ -84,7 +84,16 @@ export async function POST(req: NextRequest) {
       "- If you are unsure, be concrete and honest instead of vague.",
     ].join("\n");
 
-    const stream = await generateText(finalSystemPrompt, context.chatMessages);
+    // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
+    const genome = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
+    const verbal = genome?.dna?.verbal ?? 0.5;
+    const maxTokens = verbal < 0.15 ? 30
+      : verbal < 0.35 ? 60
+      : verbal < 0.55 ? 180
+      : verbal < 0.75 ? 500
+      : 700;
+
+    const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
     const transformStream = createAssistantTapStream(async (fullResponse) => {
       recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
         agentId,
