@@ -63,7 +63,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { is_anonymous?: boolean } | null } }) => {
       if (data?.user?.is_anonymous) setIsAnonymous(true);
     }).catch(() => {});
   }, []);

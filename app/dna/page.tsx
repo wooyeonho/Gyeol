@@ -136,7 +136,8 @@ function RadarChart({ dna, size = 280 }: { dna: CreatureDNA; size?: number }) {
 export default function DNAPage() {
   const { t } = useTranslations();
   const agentState = useAgentStore((s) => s.agentState);
-  const dna = agentState?.genome?.dna as CreatureDNA | undefined;
+  // genome is stored as JSON with a .dna sub-object at runtime (from Supabase JSONB)
+  const dna = (agentState?.genome as unknown as { dna?: CreatureDNA } | null)?.dna;
 
   const speciesInfo = useMemo(() => {
     if (!dna) return null;
@@ -145,7 +146,7 @@ export default function DNAPage() {
 
   const traits = useMemo(() => {
     if (!dna) return [];
-    try { return getExpressedTraits(dna, "ko").slice(0, 6); } catch { return []; }
+    try { return getExpressedTraits(dna).slice(0, 6); } catch { return []; }
   }, [dna]);
 
   const defaultDNA: CreatureDNA = {
@@ -167,7 +168,7 @@ export default function DNAPage() {
             {agentState?.self_name ?? "GYEOL"}
           </h1>
           {speciesInfo && (
-            <p className="mt-1 text-sm text-cyan-300/60">{speciesInfo.species}</p>
+            <p className="mt-1 text-sm text-cyan-300/60">{speciesInfo.name}</p>
           )}
           <div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/40">
             <span>Gen {agentState?.gen_level ?? 1}</span>
@@ -241,7 +242,7 @@ export default function DNAPage() {
                   transition={{ delay: i * 0.06 }}
                   className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs text-white/70"
                 >
-                  {trait}
+                  {trait.name.ko}
                 </motion.span>
               ))}
             </div>

@@ -23,18 +23,18 @@ const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, { label: string; color: str
 
 export default function ChallengesPage() {
   const { t } = useTranslations();
-  const [state, setState] = useState<DailyChallengeState | null>(null);
-  const [definitions, setDefinitions] = useState<ReturnType<typeof generateDailyChallenges>>([]);
-  const [showPerfect, setShowPerfect] = useState(false);
-
-  useEffect(() => {
-    const s = initOrRefreshDailyChallenges();
-    setState(s);
-    setDefinitions(generateDailyChallenges(getTodayDateString()));
-    if (isAllChallengesCompleted(s) && !s.perfectDayClaimed) {
-      setShowPerfect(true);
-    }
-  }, []);
+  const [state, setState] = useState<DailyChallengeState | null>(() => {
+    if (typeof window === "undefined") return null;
+    return initOrRefreshDailyChallenges();
+  });
+  const [definitions, setDefinitions] = useState<ReturnType<typeof generateDailyChallenges>>(() => {
+    if (typeof window === "undefined") return [];
+    return generateDailyChallenges(getTodayDateString());
+  });
+  const [showPerfect, setShowPerfect] = useState(() => {
+    if (typeof window === "undefined" || !state) return false;
+    return isAllChallengesCompleted(state) && !state.perfectDayClaimed;
+  });
 
   const perfectBonus = getPerfectDayBonus();
   const completedCount = state?.challenges.filter((c) => c.completed).length ?? 0;
