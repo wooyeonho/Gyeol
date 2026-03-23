@@ -25,13 +25,24 @@
 - [ ] GitHub OAuth provider 활성화
 - [ ] Redirect URL에 `/auth/callback` 등록
 
-## 4. AI 런타임
+## 4. AI 런타임 (캐스케이드: Groq → Gemini Flash → CF → in-character fallback)
 
-- [ ] `GROQ_API_KEY` 또는
-- [ ] `GEMINI_API_KEY` 또는
-- [ ] Cloudflare AI 계정 정보 연결
+- [ ] `GROQ_API_KEY` (주 모델 3종)
+- [ ] `GEMINI_API_KEY` (임베딩 + Gemini Flash 스트리밍 fallback)
+- [ ] `CF_ACCOUNT_ID` + `CF_API_TOKEN` (Cloudflare 최종 fallback + 이미지 생성)
 - [ ] 홈 채팅에서 실제 응답 스트리밍 확인
 - [ ] 기억 저장 및 `/api/home/summary` 갱신 확인
+
+## 4b. OpenClaw (Koyeb)
+
+- [ ] `GYEOL_APP_URL` (Vercel 배포 URL)
+- [ ] `CRON_SECRET` (앱과 동일한 값)
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` (DB 직접 접근)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` (DB 직접 접근)
+- [ ] `GROQ_API_KEY` (AI 생성)
+- [ ] `GEMINI_API_KEY` (임베딩)
+- [ ] `/health` 엔드포인트 응답 확인
+- [ ] Vercel 로그에서 `[Cron]` 엔트리 확인
 
 ## 5. 운영
 
@@ -56,6 +67,13 @@
 - [ ] `/terms` 공개 확인
 - [ ] 로그인/회원가입 화면에서 법적 링크 노출 확인
 - [ ] 공유/대시보드 공개 범위 최종 검토
+
+## 7b. PWA 푸시 알림 (선택)
+
+- [ ] `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- [ ] `VAPID_PRIVATE_KEY`
+- [ ] `VAPID_MAILTO`
+- [ ] 모바일 Chrome에서 푸시 수신 확인
 
 ## 8. 최종 QA
 

@@ -74,15 +74,25 @@
 - `CRAWL_MAX_PAGES`
 - `CRAWL_DEPTH`
 
+### PWA Push Notifications
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_MAILTO` (기본값: `mailto:ops@gyeol.app`)
+
+### CSRF
+
+- `CSRF_ALLOWED_ORIGINS` (콤마 구분 추가 허용 origin, 기본은 `NEXT_PUBLIC_APP_URL` 자동 포함)
+
 ### Integrations
+
+- `TELEGRAM_BOT_TOKEN`
+
+### [FUTURE] 코드에서 아직 미사용 — 예약됨
 
 - `NOTION_API_KEY`
 - `SLACK_BOT_TOKEN`
 - `GITHUB_TOKEN`
-- `TELEGRAM_BOT_TOKEN`
-
-### Media
-
 - `SUNO_API_KEY`
 - `RUNWAYML_API_KEY`
 
@@ -90,8 +100,17 @@
 
 `openclaw/` 프로세스는 웹앱과 별개로 아래 값을 봅니다.
 
-- `GYEOL_APP_URL` - OpenClaw가 호출할 앱 URL
+### 필수 (v2 direct execution)
+
+- `GYEOL_APP_URL` - OpenClaw가 호출할 앱 URL (lifeline 전용)
 - `CRON_SECRET` - 앱과 동일한 cron 인증값
+- `NEXT_PUBLIC_SUPABASE_URL` - DB 직접 접근용
+- `SUPABASE_SERVICE_ROLE_KEY` - DB 직접 접근용
+- `GROQ_API_KEY` - heartbeat/dream/social 등 AI 생성
+- `GEMINI_API_KEY` - embedding + Gemini Flash fallback
+
+### 선택
+
 - `PORT` - 기본 `8000`
 - `CRAWL_URLS`
 - `CRAWL_MAX_PAGES`
@@ -165,6 +184,14 @@
 ### `TELEGRAM_BOT_TOKEN` 또는 `TELEGRAM_WEBHOOK_SECRET`
 
 - telegram webhook 동작 실패
+
+### `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+
+- PWA 푸시 알림 미동작 (구독 등록 실패)
+
+### `CSRF_ALLOWED_ORIGINS`
+
+- 커스텀 도메인 사용 시 CSRF 검증에서 403 발생 가능
 
 ## 7. 운영 추천값
 

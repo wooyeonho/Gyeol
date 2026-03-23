@@ -14,10 +14,10 @@
 ## 🟡 AI 필수 (없으면 AI 기능 불가)
 | 변수명 | 용도 | 어디서 발급 |
 |---|---|---|
-| `GROQ_API_KEY` | 주 AI | console.groq.com |
-| `GEMINI_API_KEY` | 임베딩 | aistudio.google.com |
-| `CF_ACCOUNT_ID` | Fallback AI | Cloudflare Dashboard |
-| `CF_API_TOKEN` | Fallback AI | Cloudflare Dashboard |
+| `GROQ_API_KEY` | 주 AI (캐스케이드 1단계) | console.groq.com |
+| `GEMINI_API_KEY` | 임베딩 + Gemini Flash 캐스케이드 2단계 | aistudio.google.com |
+| `CF_ACCOUNT_ID` | Fallback AI (캐스케이드 3단계) | Cloudflare Dashboard |
+| `CF_API_TOKEN` | Fallback AI + 이미지 생성 | Cloudflare Dashboard |
 
 ## 🔵 기능별 선택
 
@@ -41,18 +41,36 @@
 - `OPS_ALERT_SLACK_WEBHOOK_URL`
 - `OPS_ALERT_EMAIL_TO`
 
-**미디어 생성**
-- `SUNO_API_KEY` (음악)
-- `RUNWAYML_API_KEY` (비디오)
+**PWA 푸시 알림**
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (web-push 발급)
+- `VAPID_PRIVATE_KEY` (web-push 발급)
+- `VAPID_MAILTO` (기본: `mailto:ops@gyeol.app`)
+
+**보안**
+- `CSRF_ALLOWED_ORIGINS` (커스텀 도메인 사용 시)
 
 ---
 
 ## 🟢 OpenClaw 전용 (Koyeb)
+
+**필수 (v2 direct execution)**
+| 변수명 | 설명 |
+|---|---|
+| `GYEOL_APP_URL` | Vercel 배포 URL (lifeline HTTP 호출용) |
+| `CRON_SECRET` | 앱과 동일한 값 |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서비스 키 |
+| `GROQ_API_KEY` | AI 생성 (heartbeat/dream/social) |
+| `GEMINI_API_KEY` | 임베딩 + Gemini Flash fallback |
+
+**선택**
 | 변수명 | 기본값 |
 |---|---|
-| `GYEOL_APP_URL` | (Vercel 배포 URL) |
-| `CRON_SECRET` | (앱과 동일) |
 | `PORT` | 8000 |
+| `CRAWL_URLS` | _(empty)_ |
+| `CRAWL_MAX_PAGES` | 10 |
+| `CRAWL_DEPTH` | 1 |
+| `USE_HMAC_AUTH` | false |
 
 ---
 
