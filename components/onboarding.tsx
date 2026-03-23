@@ -274,113 +274,135 @@ function StepRewards({ t }: { t: (key: string) => string }) {
   );
 }
 
+const DNA_AXES_DISPLAY = [
+  "analytical","intuitive","verbal","spatial",
+  "warmth","intensity","stability","openness",
+  "assertiveness","empathy","playfulness","independence",
+  "curiosity","persistence","adaptability","creativity",
+] as const;
+
 /**
- * Birth sequence — the magical first 3 seconds.
- * A pulsing orb of light that grows, flickers, and "wakes up".
- * This is THE moment that hooks users emotionally.
+ * Birth sequence — cinematic 5-second moment.
+ * Dark void → spark → orb expansion → particle explosion → DNA 16축 결정 → creature forms.
+ * No skip. This is THE emotional hook.
  */
 function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => void }) {
-  const [phase, setPhase] = useState<"dark" | "spark" | "grow" | "alive">("dark");
+  const [phase, setPhase] = useState<"void" | "spark" | "expand" | "dna" | "born">("void");
+  const [dnaRevealed, setDnaRevealed] = useState(0);
+  const [dnaValues] = useState(() =>
+    DNA_AXES_DISPLAY.map(() => Math.random() * 0.6 + 0.2)
+  );
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase("spark"), 800),
-      setTimeout(() => {
-        setPhase("grow");
-        haptic("tap");
-      }, 1800),
-      setTimeout(() => {
-        setPhase("alive");
-        haptic("success");
-        try { playSound("levelUp"); } catch { /* audio may be blocked */ }
-      }, 3000),
-      setTimeout(() => onReady(), 4500),
+      setTimeout(() => { setPhase("spark"); haptic("tap"); }, 600),
+      setTimeout(() => { setPhase("expand"); haptic("tap"); }, 1400),
+      setTimeout(() => { setPhase("dna"); haptic("success"); try { playSound("levelUp"); } catch { /* blocked */ } }, 2600),
+      ...DNA_AXES_DISPLAY.map((_, i) =>
+        setTimeout(() => setDnaRevealed(i + 1), 2800 + i * 100)
+      ),
+      setTimeout(() => { setPhase("born"); haptic("success"); }, 4600),
+      setTimeout(() => onReady(), 5200),
     ];
     return () => timers.forEach(clearTimeout);
   }, [onReady]);
 
   return (
-    <div className="flex flex-col items-center justify-center py-8" role="status" aria-label={t("onboarding.birthLabel")}>
-      {/* The Orb */}
-      <motion.div
-        className="relative flex items-center justify-center"
-        animate={{
-          width: phase === "dark" ? 8 : phase === "spark" ? 24 : phase === "grow" ? 64 : 80,
-          height: phase === "dark" ? 8 : phase === "spark" ? 24 : phase === "grow" ? 64 : 80,
-        }}
-        transition={{ duration: phase === "alive" ? 0.6 : 1, ease: "easeOut" }}
-      >
+    <div className="flex flex-col items-center justify-center py-4" role="status" aria-label={t("onboarding.birthLabel")}>
+      {/* Orb */}
+      <div className="relative flex items-center justify-center" style={{ height: 100 }}>
         <motion.div
-          className="absolute inset-0 rounded-full"
+          className="rounded-full"
           animate={{
+            width: phase === "void" ? 4 : phase === "spark" ? 16 : phase === "expand" ? 72 : phase === "dna" ? 56 : 80,
+            height: phase === "void" ? 4 : phase === "spark" ? 16 : phase === "expand" ? 72 : phase === "dna" ? 56 : 80,
             backgroundColor:
-              phase === "dark" ? "rgba(255,255,255,0.05)" :
-              phase === "spark" ? "rgba(34,211,238,0.3)" :
-              phase === "grow" ? "rgba(34,211,238,0.5)" :
-              "rgba(34,211,238,0.8)",
+              phase === "void" ? "rgba(255,255,255,0.04)" :
+              phase === "spark" ? "rgba(34,211,238,0.5)" :
+              phase === "expand" ? "rgba(34,211,238,0.7)" :
+              phase === "dna" ? "rgba(168,85,247,0.6)" :
+              "rgba(34,211,238,0.9)",
             boxShadow:
-              phase === "dark" ? "0 0 0 rgba(34,211,238,0)" :
-              phase === "spark" ? "0 0 20px rgba(34,211,238,0.3)" :
-              phase === "grow" ? "0 0 40px rgba(34,211,238,0.4), 0 0 80px rgba(34,211,238,0.2)" :
-              "0 0 60px rgba(34,211,238,0.6), 0 0 120px rgba(34,211,238,0.3), 0 0 200px rgba(34,211,238,0.1)",
+              phase === "void" ? "none" :
+              phase === "spark" ? "0 0 30px rgba(34,211,238,0.5)" :
+              phase === "expand" ? "0 0 60px rgba(34,211,238,0.5), 0 0 120px rgba(34,211,238,0.2)" :
+              phase === "dna" ? "0 0 40px rgba(168,85,247,0.4), 0 0 80px rgba(168,85,247,0.2)" :
+              "0 0 80px rgba(34,211,238,0.7), 0 0 160px rgba(34,211,238,0.3)",
           }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: phase === "expand" ? 0.8 : 0.5, ease: "easeOut" }}
         />
-        {phase === "alive" && (
+        {phase === "born" && (
           <motion.div
-            className="absolute inset-[-20px] rounded-full border border-cyan-400/30"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: [0, 1, 0], scale: [0.5, 1.5, 2] }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute rounded-full border border-cyan-400/40"
+            initial={{ width: 80, height: 80, opacity: 0.8 }}
+            animate={{ width: 160, height: 160, opacity: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
           />
         )}
-      </motion.div>
+      </div>
 
-      {/* Text */}
-      <AnimatePresence mode="wait">
-        {phase === "dark" && (
-          <motion.p
-            key="dark"
+      {/* DNA axes reveal */}
+      <AnimatePresence>
+        {(phase === "dna" || phase === "born") && (
+          <motion.div
+            key="dna-grid"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            exit={{ opacity: 0 }}
-            className="mt-8 text-sm text-white/40"
+            animate={{ opacity: 1 }}
+            className="mt-3 grid grid-cols-4 gap-x-3 gap-y-1.5 w-full"
           >
-            ...
-          </motion.p>
+            {DNA_AXES_DISPLAY.map((axis, i) => (
+              <motion.div
+                key={axis}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={i < dnaRevealed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col items-center gap-0.5"
+              >
+                <span className="text-[8px] text-white/40 uppercase tracking-wide">{axis.slice(0,3)}</span>
+                <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: `hsl(${180 + i * 11}, 80%, 60%)` }}
+                    initial={{ width: "0%" }}
+                    animate={i < dnaRevealed ? { width: `${dnaValues[i] * 100}%` } : { width: "0%" }}
+                    transition={{ duration: 0.3, delay: 0.05 }}
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Status text */}
+      <AnimatePresence mode="wait">
+        {phase === "void" && (
+          <motion.p key="void" initial={{ opacity: 0 }} animate={{ opacity: 0.3 }} exit={{ opacity: 0 }}
+            className="mt-4 text-xs text-white/30">...</motion.p>
         )}
         {phase === "spark" && (
-          <motion.p
-            key="spark"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.7 }}
-            exit={{ opacity: 0 }}
-            className="mt-8 text-sm text-cyan-300/70"
-          >
-            {t("onboarding.birthSpark")}
+          <motion.p key="spark" initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} exit={{ opacity: 0 }}
+            className="mt-4 text-sm text-cyan-300/80">
+            {t("onboarding.birthSpark") || "무언가 깨어나고 있어..."}
           </motion.p>
         )}
-        {(phase === "grow" || phase === "alive") && (
-          <motion.div
-            key="alive"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8 text-center"
-          >
-            <p className="text-lg font-semibold text-cyan-200">
-              {t("onboarding.birthAlive")}
-            </p>
-            {phase === "alive" && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.7 }}
-                transition={{ delay: 0.5 }}
-                className="mt-2 text-sm text-white/60"
-              >
-                {t("onboarding.birthNotice")}
-              </motion.p>
-            )}
-          </motion.div>
+        {phase === "expand" && (
+          <motion.p key="expand" initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}
+            className="mt-4 text-sm text-cyan-200">
+            {t("onboarding.birthAlive") || "생명이 형성되고 있어..."}
+          </motion.p>
+        )}
+        {phase === "dna" && (
+          <motion.p key="dna" initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}
+            className="mt-3 text-xs text-purple-300/80">
+            {t("onboarding.birthDNA") || "DNA가 결정되고 있어..."}
+          </motion.p>
+        )}
+        {phase === "born" && (
+          <motion.p key="born" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-3 text-base font-semibold text-cyan-200">
+            {t("onboarding.birthNotice") || "탄생했어."}
+          </motion.p>
         )}
       </AnimatePresence>
     </div>

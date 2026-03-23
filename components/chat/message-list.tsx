@@ -29,6 +29,7 @@ export function MessageList({
   onCopy,
   onRetry,
   t,
+  verbal,
 }: {
   messages: Array<{ id?: string; role: string; content: string; error?: boolean }>;
   isStreaming: boolean;
@@ -47,6 +48,7 @@ export function MessageList({
   onCopy: (index: number, content: string) => void;
   onRetry: () => void;
   t: (key: string) => string;
+  verbal?: number;
 }) {
   // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
   const visibleMessages = useMemo(
@@ -55,6 +57,18 @@ export function MessageList({
   );
   // Offset for correct index mapping when messages are capped
   const indexOffset = messages.length - visibleMessages.length;
+
+  // Verbal-based bubble style
+  const v = verbal ?? 0.5;
+  const assistantBubbleExtra = v < 0.15
+    ? "max-w-[50%] px-3 py-2 font-mono text-xs tracking-widest text-center opacity-80 italic"
+    : v < 0.35
+      ? "max-w-[60%] px-3 py-2 text-sm tracking-wide text-center opacity-90"
+      : v < 0.55
+        ? "max-w-[70%] px-4 py-3 text-sm leading-6"
+        : v >= 0.75
+          ? "max-w-[90%] px-5 py-4 text-base leading-8 font-light tracking-wide"
+          : "max-w-[80%] px-4 py-3 text-base leading-7";
 
   return (
     <div
@@ -103,13 +117,7 @@ export function MessageList({
             </motion.div>
           ) : (
             <motion.div
-              className={`rounded-2xl border bg-black/40 leading-7 ${
-                appearance.verbal < 0.15 ? "max-w-[50%] px-3 py-2 text-sm" :
-                appearance.verbal < 0.35 ? "max-w-[60%] px-3 py-2 text-sm" :
-                appearance.verbal < 0.55 ? "max-w-[70%] px-4 py-3 text-base" :
-                appearance.verbal >= 0.75 ? "max-w-[90%] px-5 py-4 text-base" :
-                "max-w-[80%] px-4 py-3 text-base"
-              }`}
+              className={`rounded-2xl border bg-black/40 ${assistantBubbleExtra}`}
               style={{
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
@@ -118,7 +126,7 @@ export function MessageList({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35 }}
             >
-              <p className="whitespace-pre-wrap leading-relaxed break-words">
+              <p className="whitespace-pre-wrap break-words">
                 {m.content}
                 {isStreaming && i === messages.length - 1 && (
                   <motion.span

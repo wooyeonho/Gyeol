@@ -16,6 +16,7 @@ import { haptic } from "@/lib/micro-interactions";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
+import { DeathScreen } from "@/components/death-screen";
 import { LivingFeed } from "@/components/living-feed";
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -251,6 +252,21 @@ export default function Home() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
+  // Death screen — agent has expired
+  if (agentState?.status === "echo") {
+    return (
+      <DeathScreen
+        selfName={agentState.self_name}
+        will={(agentState.config as Record<string, unknown> | undefined)?.will as string | undefined}
+        diedAt={(agentState as unknown as { died_at?: string }).died_at}
+        onRebirth={() => {
+          localStorage.removeItem("gyeol_onboarded");
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   const creatureSize = Math.min(80, Math.max(20, (visual.size ?? 24) * 1.8));
 
   return (
@@ -278,6 +294,13 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
           style={{ backgroundImage: circadian.overlay }}
         />
+        {/* Near-death red tint — vitality < 0.2 */}
+        {vitality < 0.2 && (
+          <div
+            className="pointer-events-none absolute inset-0 transition-all duration-[2000ms]"
+            style={{ background: `rgba(180,0,0,${0.08 + (0.2 - vitality) * 0.6})` }}
+          />
+        )}
         <div
           className="pointer-events-none absolute inset-0 opacity-90 transition-all duration-700"
           style={{
@@ -325,8 +348,14 @@ export default function Home() {
           )}
           <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50">
             <span>Gen {agentState?.gen_level ?? 1}</span>
+            {agentState?.genome?.species && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <span className="text-cyan-300/70">{agentState.genome.species}</span>
+              </>
+            )}
             <span className="h-1 w-1 rounded-full bg-white/30" />
-            <span>{Math.round(vitality * 100)}%</span>
+            <span style={{ color: vitality < 0.2 ? "rgb(248,113,113)" : undefined }}>{Math.round(vitality * 100)}%</span>
             {agentState?.mood && (
               <>
                 <span className="h-1 w-1 rounded-full bg-white/30" />

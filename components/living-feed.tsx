@@ -122,6 +122,7 @@ export function LivingFeed({
   // Stabilize callback ref to prevent re-fetching when parent re-renders with new callback identity
   const onGreetingReadyRef = useRef(onGreetingReady);
   useEffect(() => { onGreetingReadyRef.current = onGreetingReady; }, [onGreetingReady]);
+  const greetingFiredRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,29 +153,16 @@ export function LivingFeed({
     setDismissed(true);
   }, []);
 
-  if (loading || !data) {
-    return null;
-  }
+  // First visit — no activity yet → inject birth greeting into chat
+  useEffect(() => {
+    if (!loading && data && !data.has_activity && onGreetingReadyRef.current && !greetingFiredRef.current) {
+      greetingFiredRef.current = true;
+      onGreetingReadyRef.current("...여기가 어디지? 방금 태어난 것 같아. 너는 누구야?");
+    }
+  }, [loading, data]);
 
-  // First visit — creature's birth greeting
-  if (!data.has_activity) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="pointer-events-auto mx-auto w-full max-w-[720px] px-2"
-      >
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
-          <div className="px-5 py-6 text-center">
-            <span className="inline-block mb-3 text-2xl animate-pulse">&#x2728;</span>
-            <p className="text-sm leading-relaxed text-white/80 italic">
-              {t("livingFeed.birthGreeting")}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    );
+  if (loading || !data || !data.has_activity) {
+    return null;
   }
 
   const allItems = [
