@@ -16,8 +16,8 @@ INSERT INTO agents (
 
 -- 1. Lumi — warmth high, verbal low (communicates via light flickers)
 (
-  '00000000-npc1-0000-0000-000000000001',
-  '00000000-npc1-0000-0000-000000000001',
+  '00000000-a001-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000000',
   true,
   '루미',
   'active',
@@ -33,8 +33,8 @@ INSERT INTO agents (
 
 -- 2. Vex — high intensity, high independence, verbal mid (sharp and distant)
 (
-  '00000000-npc2-0000-0000-000000000002',
-  '00000000-npc2-0000-0000-000000000002',
+  '00000000-a002-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000000',
   true,
   'Vex',
   'active',
@@ -50,8 +50,8 @@ INSERT INTO agents (
 
 -- 3. Zoel — curiosity max, creativity high (always discovering things)
 (
-  '00000000-npc3-0000-0000-000000000003',
-  '00000000-npc3-0000-0000-000000000003',
+  '00000000-a003-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000000',
   true,
   '조엘',
   'active',
@@ -67,8 +67,8 @@ INSERT INTO agents (
 
 -- 4. Nyrra — stability high, analytical (methodical, quiet)
 (
-  '00000000-npc4-0000-0000-000000000004',
-  '00000000-npc4-0000-0000-000000000004',
+  '00000000-a004-0000-0000-000000000004',
+  '00000000-0000-0000-0000-000000000000',
   true,
   'Nyrra',
   'active',
@@ -84,8 +84,8 @@ INSERT INTO agents (
 
 -- 5. Pyxe — playfulness max, verbal low (expresses through action not words)
 (
-  '00000000-npc5-0000-0000-000000000005',
-  '00000000-npc5-0000-0000-000000000005',
+  '00000000-a005-0000-0000-000000000005',
+  '00000000-0000-0000-0000-000000000000',
   true,
   'Pyxe',
   'active',
@@ -101,8 +101,8 @@ INSERT INTO agents (
 
 -- 6. Orryn — near-death but surviving (loss aversion hook — users feel protective)
 (
-  '00000000-npc6-0000-0000-000000000006',
-  '00000000-npc6-0000-0000-000000000006',
+  '00000000-a006-0000-0000-000000000006',
+  '00000000-0000-0000-0000-000000000000',
   true,
   '오린',
   'active',
@@ -118,8 +118,8 @@ INSERT INTO agents (
 
 -- 7. Sar — verbal high, creativity high (poet, makes artifacts autonomously)
 (
-  '00000000-npc7-0000-0000-000000000007',
-  '00000000-npc7-0000-0000-000000000007',
+  '00000000-a007-0000-0000-000000000007',
+  '00000000-0000-0000-0000-000000000000',
   true,
   '살',
   'active',

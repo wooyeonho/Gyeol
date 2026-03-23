@@ -26,7 +26,8 @@ export function DeathScreen({ selfName, will, diedAt, onRebirth }: DeathScreenPr
     setTypedWill("");
     const interval = setInterval(() => {
       if (i >= will.length) { clearInterval(interval); return; }
-      setTypedWill((prev) => prev + will[i]);
+      const char = will[i];
+      setTypedWill((prev) => prev + char);
       i++;
     }, 28);
     return () => clearInterval(interval);
@@ -109,12 +110,12 @@ export function DeathScreen({ selfName, will, diedAt, onRebirth }: DeathScreenPr
                 {t("death.will") || "유언"}
               </p>
               <p className="text-sm text-white/60 leading-relaxed font-light italic">
-                "{typedWill}
+                &ldquo;{typedWill}
                 <motion.span
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.6, repeat: Infinity }}
                 >|</motion.span>
-                "
+                &rdquo;
               </p>
             </motion.div>
           )}
