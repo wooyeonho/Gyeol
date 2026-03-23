@@ -5,9 +5,7 @@ import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
 import { createClient } from "@/lib/supabase/client";
-
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
-import { createClient } from "@/lib/supabase/client";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
@@ -62,21 +60,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    async function checkAnon() {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!cancelled && user?.is_anonymous) setIsAnonymous(true);
-      } catch { /* ignore */ }
-    }
-    void checkAnon();
-    return () => { cancelled = true; };
-  }, []);
-
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    createClient().auth.getUser().then(({ data }) => {
+    createClient().auth.getUser().then(({ data }: { data: { user: { is_anonymous?: boolean } | null } }) => {
       if (!cancelled && data.user?.is_anonymous) setIsAnonymous(true);
     });
     return () => { cancelled = true; };
@@ -235,19 +219,6 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         )}
 
         <div className="shrink-0 pt-3">
-          {isAnonymous && totalMessages >= 5 && (
-            <div className="mb-3 mx-auto max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-400/5 backdrop-blur-md px-4 py-3 text-center">
-              <p className="text-sm text-white/80">
-                {t("chat.guestSignupPrompt")}
-              </p>
-              <a
-                href="/settings"
-                className="mt-2 inline-block rounded-full bg-cyan-500/20 px-4 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/30 transition-colors"
-              >
-                {t("chat.guestSignupCta")}
-              </a>
-            </div>
-          )}
           <MessageInput
             input={input}
             setInput={setInput}
