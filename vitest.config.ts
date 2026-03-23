@@ -16,6 +16,10 @@ export default defineConfig({
     exclude: ["node_modules", ".next"],
     coverage: {
       enabled: false,
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      include: ["lib/**/*.ts", "store/**/*.ts", "hooks/**/*.ts", "app/api/**/*.ts"],
+      exclude: ["**/*.test.ts", "**/*.contract.test.ts", "node_modules/**"],
     },
   },
 });
