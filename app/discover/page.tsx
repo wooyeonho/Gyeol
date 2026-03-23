@@ -8,6 +8,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { useChatStore } from "@/store/chat-store";
 import { haptic } from "@/lib/micro-interactions";
+import { initOrRefreshDailyChallenges } from "@/lib/engagement/daily-challenge";
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -80,6 +81,14 @@ export default function DiscoverPage() {
     explore: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [challengeCompleted, setChallengeCompleted] = useState(0);
+  const challengeTotal = 3;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const state = initOrRefreshDailyChallenges();
+    setChallengeCompleted(state.challenges.filter((c) => c.completed).length);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,8 +190,35 @@ export default function DiscoverPage() {
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
+        {/* Daily Challenge progress bar */}
+        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚡</span>
+              <span className="text-sm font-medium text-white/80">
+                {t("discover.dailyChallenges") || "오늘의 챌린지"}
+              </span>
+            </div>
+            <span className="text-xs text-white/40">{challengeCompleted}/{challengeTotal}</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-purple-400"
+              initial={{ width: "0%" }}
+              animate={{ width: `${(challengeCompleted / challengeTotal) * 100}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+          </div>
+          {challengeCompleted === challengeTotal && (
+            <p className="mt-1.5 text-xs text-amber-300/80">
+              {t("discover.perfectDay") || "완벽한 하루! 보상을 받을 수 있어요 🎁"}
+            </p>
+          )}
+        </Link>
+
+        {/* 2×2 Bento Grid */}
         <motion.section
-          className="grid gap-4 md:grid-cols-2"
+          className="grid grid-cols-2 gap-3"
           initial="hidden"
           animate="visible"
         >
@@ -191,33 +227,21 @@ export default function DiscoverPage() {
               <Link
                 href={card.href}
                 onClick={() => haptic("tap")}
-                className={`group relative block overflow-hidden rounded-[1.75rem] bg-gradient-to-br ${card.gradient} p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
+                className={`group relative flex flex-col overflow-hidden rounded-[1.5rem] bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
               >
-                {/* Gradient border accent */}
-                <div className="absolute inset-0 rounded-[1.75rem] border border-white/10 group-hover:border-white/20 transition-colors" />
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors">
-                        <CardIcon type={card.iconType} />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold tracking-tight text-white">{card.title}</h2>
-                        <p className="theme-text-faint text-xs">
-                          {loading ? (
-                            <span className="inline-block h-3 w-16 animate-pulse rounded bg-white/10" />
-                          ) : (
-                            t("discover.itemsCount").replace("{count}", String(card.count))
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="theme-text-subtle mt-3 text-sm leading-6">{card.body}</p>
-                  </div>
-                  <span className="mt-1 rounded-full bg-white/8 px-3 py-1.5 text-xs font-medium text-white/60 group-hover:bg-white/12 group-hover:text-white/80 transition-all">
-                    {t("discover.open")}
-                  </span>
+                <div className="absolute inset-0 rounded-[1.5rem] border border-white/10 group-hover:border-white/20 transition-colors" />
+                <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors w-fit mb-2">
+                  <CardIcon type={card.iconType} />
                 </div>
+                <h2 className="text-sm font-semibold tracking-tight text-white leading-tight">{card.title}</h2>
+                <p className="theme-text-faint text-xs mt-0.5">
+                  {loading ? (
+                    <span className="inline-block h-3 w-10 animate-pulse rounded bg-white/10" />
+                  ) : (
+                    t("discover.itemsCount").replace("{count}", String(card.count))
+                  )}
+                </p>
+                <p className="theme-text-subtle mt-auto pt-2 text-xs leading-5 line-clamp-2">{card.body}</p>
               </Link>
             </motion.div>
           ))}

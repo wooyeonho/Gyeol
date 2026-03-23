@@ -10,6 +10,9 @@ export async function GET(
   try {
     const { slug } = await params;
     if (!slug) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    // S-5: Validate slug is a valid UUID to prevent enumeration / path traversal
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(slug)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const locale = resolveLocale({
       acceptLanguage: request.headers.get("accept-language"),

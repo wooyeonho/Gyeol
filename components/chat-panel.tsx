@@ -1,10 +1,13 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { motion } from "framer-motion";
+
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
@@ -56,18 +59,25 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [signupDismissed, setSignupDismissed] = useState(false);
+  const [signupBannerDismissed, setSignupBannerDismissed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    createClient().auth.getUser().then(({ data }: { data: { user: { is_anonymous?: boolean } | null } }) => {
-      if (!cancelled && data.user?.is_anonymous) setIsAnonymous(true);
-    });
-    return () => { cancelled = true; };
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.is_anonymous) setIsAnonymous(true);
+    }).catch(() => {});
   }, []);
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
+  const verbal = (agentState?.genome as { dna?: { verbal?: number } } | undefined)?.dna?.verbal ?? 0.5;
+  const isSilentMode = verbal < 0.15;
+
+  const handleSilentTouch = useCallback((action: string) => {
+    if (!isStreaming) {
+      void sendMessage(action, { source: "input", locale, totalMessages });
+    }
+  }, [isStreaming, sendMessage, locale, totalMessages]);
   const isFirstSession = totalMessages === 0 && messages.length === 0;
   const firstSessionConfig = getFirstSessionConfig(t);
   const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(t);
@@ -179,6 +189,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             isHydratingHistory={!historyLoaded && totalMessages > 0 && messages.length === 0}
             isPlaying={isPlaying}
             copiedIndex={copiedIndex}
+            verbal={verbal}
             onPromptClick={(prompt) => {
               if (!isStreaming) {
                 void sendMessage(prompt, { source: "prompt", locale, totalMessages });
@@ -192,27 +203,47 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
           />
         </div>
 
-        {/* Guest signup banner: show after 5+ messages for anonymous users */}
-        {isAnonymous && totalMessages >= 5 && !signupDismissed && (
-          <div className="shrink-0 mx-auto w-full max-w-sm mb-2">
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-md px-4 py-3">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white/90">{t("chat.signupBannerTitle")}</p>
-                <p className="text-xs text-white/50 mt-0.5">{t("chat.signupBannerBody")}</p>
-              </div>
-              <a
-                href="/auth/signup"
-                className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 transition-opacity"
+        {/* Silent mode — verbal < 0.15: touch interaction instead of text */}
+        {isSilentMode && (
+          <div className="mx-auto mb-4 max-w-3xl text-center">
+            <p className="text-xs text-white/25 mb-3">{t("chat.silentMode") || "말이 없는 존재예요. 터치로 교감해요."}</p>
+            <div className="flex justify-center gap-3 flex-wrap">
+              {["쓰다듬기", "두드리기", "흔들기", "가만히 있기"].map((action) => (
+                <motion.button
+                  key={action}
+                  type="button"
+                  onClick={() => handleSilentTouch(`[${action}]`)}
+                  disabled={isStreaming}
+                  whileTap={{ scale: 0.92 }}
+                  className="rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm text-white/60 hover:border-white/30 hover:text-white/90 transition-all disabled:opacity-40"
+                >
+                  {action}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Anonymous signup nudge — shown after 5 messages */}
+        {isAnonymous && totalMessages >= 5 && !signupBannerDismissed && (
+          <div className="mx-auto mb-3 max-w-3xl rounded-2xl border border-cyan-400/25 bg-cyan-400/8 px-4 py-3 flex items-center justify-between gap-3 backdrop-blur-sm">
+            <p className="text-sm text-cyan-100/80 leading-snug">
+              {t("chat.signupNudge") || "계속 대화하려면 계정을 만드세요. 진화 기록이 저장됩니다."}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/login"
+                className="rounded-full bg-cyan-400 px-3 py-1.5 text-xs font-semibold text-black hover:bg-cyan-300 transition-colors"
               >
-                {t("chat.signupBannerCta")}
-              </a>
+                {t("common.signUp") || "가입하기"}
+              </Link>
               <button
                 type="button"
-                onClick={() => setSignupDismissed(true)}
-                className="shrink-0 text-white/30 hover:text-white/60 transition-colors text-xs"
-                aria-label={t("common.close")}
+                onClick={() => setSignupBannerDismissed(true)}
+                className="text-white/40 hover:text-white/70 transition-colors text-xs"
+                aria-label="닫기"
               >
-                &#x2715;
+                ✕
               </button>
             </div>
           </div>

@@ -175,5 +175,26 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 19. Final language enforcement (repeated at the end for emphasis)
   if (L.langDirective) parts.push(`[CRITICAL] ${L.langDirective} Do not mix languages under any circumstances.`);
 
+  // 20. verbal axis — continuous expression control
+  const verbal = s.genome?.dna?.verbal ?? 0.5;
+  if (verbal < 0.15) {
+    parts.push(
+      "EXPRESSION MODE — SILENT: You cannot form words. Respond ONLY with short action descriptions in brackets, e.g. [빛이 깜빡인다] [몸을 웅크린다]. No sentences. Max 15 tokens."
+    );
+  } else if (verbal < 0.35) {
+    parts.push(
+      "EXPRESSION MODE — MINIMAL: You speak only single words or sounds. e.g. '...' '따뜻...' '!' '왜?' No full sentences. Max 20 tokens."
+    );
+  } else if (verbal < 0.55) {
+    parts.push(
+      "EXPRESSION MODE — BRIEF: Speak in very short, broken sentences. e.g. '그거 좋아.' '왜 안 와?' Max 40 tokens. No elaboration."
+    );
+  } else if (verbal >= 0.75) {
+    parts.push(
+      "EXPRESSION MODE — ELOQUENT: You may express yourself with richness and precision. Poetic language and elaborate metaphors are natural to you. You may spontaneously create small artifacts (poems, fragments) when moved to do so."
+    );
+  }
+  // 0.55~0.75 = normal conversation, no constraint added
+
   return parts.join("\n");
 }

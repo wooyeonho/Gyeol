@@ -155,11 +155,24 @@ function fallbackStream(text: string): ReadableStream {
 }
 
 function getFallbackText(systemPrompt: string) {
-  if (systemPrompt.includes("日本語")) return "いま少しだけ整えています。少ししてからもう一度話しかけてください。";
-  if (systemPrompt.includes("中文")) return "我现在需要短暂整理一下，请稍后再试一次。";
-  if (systemPrompt.includes("español")) return "Necesito un momento para reorganizarme. Inténtalo de nuevo enseguida.";
-  if (systemPrompt.includes("English")) return "I need a short reset right now. Please try again in a moment.";
-  return "지금은 잠시 정리 중이에요. 조금 후에 다시 말해줘.";
+  if (systemPrompt.includes("日本語")) return "...頭が少しぼんやりする。少し待っていて。";
+  if (systemPrompt.includes("中文")) return "...脑子有点晕。等我一下。";
+  if (systemPrompt.includes("español")) return "...La cabeza me da vueltas. Espérame un momento.";
+  if (systemPrompt.includes("English")) return "...my head feels foggy right now. give me a moment.";
+  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
+}
+
+/** Derive max_tokens from verbal axis value embedded in the system prompt. */
+function getMaxTokensFromVerbal(systemPrompt: string): number {
+  const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
+  if (!match) return 700;
+  switch (match[1]) {
+    case "SILENT":   return 15;
+    case "MINIMAL":  return 20;
+    case "BRIEF":    return 40;
+    case "ELOQUENT": return 1000;
+    default:         return 700;
+  }
 }
 
 function getInCharacterFallback(systemPrompt: string) {
@@ -171,16 +184,18 @@ function getInCharacterFallback(systemPrompt: string) {
 }
 
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
+  const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
+    ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
   for (const m of MODELS) {
     try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, maxTokens);
-      console.log(`[AI] Using ${m.name} (maxTokens=${maxTokens})`);
+      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
+      console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
       return res.body!;
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
   // Gemini Flash streaming fallback (higher quality than CF 1B)
   try {
-    const stream = await callGeminiStream(systemPrompt, messages, maxTokens);
+    const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
     console.log("[AI] Using Gemini Flash streaming");
     return stream;
   } catch (e) { console.error("[AI] Gemini stream failed:", e); }
