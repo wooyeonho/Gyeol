@@ -152,8 +152,29 @@ export function LivingFeed({
     setDismissed(true);
   }, []);
 
-  if (loading || !data || !data.has_activity) {
+  if (loading || !data) {
     return null;
+  }
+
+  // First visit — creature's birth greeting
+  if (!data.has_activity) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="pointer-events-auto mx-auto w-full max-w-[720px] px-2"
+      >
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
+          <div className="px-5 py-6 text-center">
+            <span className="inline-block mb-3 text-2xl animate-pulse">&#x2728;</span>
+            <p className="text-sm leading-relaxed text-white/80 italic">
+              {t("livingFeed.birthGreeting")}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
   }
 
   const allItems = [

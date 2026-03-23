@@ -56,6 +56,8 @@ export type IdentityAppearanceInput = {
   genLevel?: number | null;
   vitality?: number | null;
   mood?: string | null;
+  /** DNA verbal axis (0-1). Passed through to appearance for chat bubble sizing. */
+  dnaVerbal?: number | null;
 };
 
 export type IdentityFormKey =
@@ -88,6 +90,8 @@ export type ResolvedIdentityAppearance = {
   usageNarrative: string | null;
   manifestation: ManifestationState;
   vitality: number;
+  /** DNA verbal axis (0=silent, 1=eloquent). Controls bubble sizing in chat. */
+  verbal: number;
   palette: {
     primary: string;
     secondary: string;
@@ -531,6 +535,7 @@ export function resolveIdentityAppearance(
     usageNarrative: getUsageModeNarrative(usageMode, locale),
     manifestation: state,
     vitality,
+    verbal: clamp(input.dnaVerbal ?? 0.5, 0, 1),
     palette,
     presence: buildPresenceTraits(shell, state, textHash),
     visual: {

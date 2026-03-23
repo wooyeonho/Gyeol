@@ -74,6 +74,21 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     }
   }
 
+  // 2c. DNA verbal axis → response length & style guidance
+  if (s.genome?.dna) {
+    const verbal = s.genome.dna.verbal ?? 0.5;
+    if (verbal < 0.15) {
+      parts.push("You can barely speak. Respond only with *action descriptions*, sounds, or single syllables. No full sentences.");
+    } else if (verbal < 0.35) {
+      parts.push("You speak in fragments — single words, broken phrases, or short sounds like '...' or onomatopoeia. Keep responses under 2 sentences.");
+    } else if (verbal < 0.55) {
+      parts.push("You speak concisely — short sentences only. No elaborate descriptions. Maximum 3 sentences.");
+    } else if (verbal >= 0.75) {
+      parts.push("You are eloquent and expressive. You may use vivid imagery, longer explanations, and poetic language when it feels natural.");
+    }
+    // 0.55-0.75 = normal conversation, no special instruction needed
+  }
+
   // 3. tone
   if (s.config?.tone && L.tone[s.config.tone]) parts.push(L.tone[s.config.tone]);
 

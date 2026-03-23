@@ -87,6 +87,63 @@ async function callGemini(system: string, messages: Msg[], maxTokens = 700, temp
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
+async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700, temp = 0.65): Promise<ReadableStream> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Gemini API key not configured");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const contents = messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents,
+          generationConfig: { maxOutputTokens: maxTokens, temperature: temp },
+        }),
+        signal: ctrl.signal,
+      }
+    );
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`Gemini stream ${res.status}`);
+    // Transform Gemini SSE to Groq-compatible SSE format
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      async pull(controller) {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+          return;
+        }
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const json = JSON.parse(line.slice(6));
+            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`));
+            }
+          } catch { /* skip non-JSON lines */ }
+        }
+      },
+      cancel() { reader.cancel(); },
+    });
+  } catch (e) { clearTimeout(timer); throw e; }
+}
+
 function fallbackStream(text: string): ReadableStream {
   return new ReadableStream({
     start(ctrl) {
@@ -105,21 +162,30 @@ function getFallbackText(systemPrompt: string) {
   return "지금은 잠시 정리 중이에요. 조금 후에 다시 말해줘.";
 }
 
-export async function generateText(systemPrompt: string, messages: Msg[]): Promise<ReadableStream> {
+function getInCharacterFallback(systemPrompt: string) {
+  if (systemPrompt.includes("日本語")) return "...ちょっと頭がぼんやりしてる。少し待ってくれる？";
+  if (systemPrompt.includes("中文")) return "...脑袋有点发蒙。等我一下好吗？";
+  if (systemPrompt.includes("español")) return "...Tengo la mente un poco nublada. ¿Puedes esperar un momento?";
+  if (systemPrompt.includes("English")) return "...My head feels a bit foggy. Can you wait just a moment?";
+  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
+}
+
+export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
   for (const m of MODELS) {
     try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout);
-      console.log(`[AI] Using ${m.name}`);
+      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, maxTokens);
+      console.log(`[AI] Using ${m.name} (maxTokens=${maxTokens})`);
       return res.body!;
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
+  // Gemini Flash streaming fallback (higher quality than CF 1B)
   try {
-    const res = await callCF(systemPrompt, messages, true);
-    console.log("[AI] Using Cloudflare");
-    return res.body!;
-  } catch (e) { console.error("[AI] CF failed:", e); }
-  console.log("[AI] All models failed, using fallback");
-  return fallbackStream(getFallbackText(systemPrompt));
+    const stream = await callGeminiStream(systemPrompt, messages, maxTokens);
+    console.log("[AI] Using Gemini Flash streaming");
+    return stream;
+  } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+  console.log("[AI] All models failed, using in-character fallback");
+  return fallbackStream(getInCharacterFallback(systemPrompt));
 }
 
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
@@ -133,12 +199,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return data.choices?.[0]?.message?.content || "";
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
-  try {
-    const res = await callCF(systemPrompt, messages, false);
-    const data = (await res.json()) as CloudflareCompletionResponse;
-    return data.result?.response || "";
-  } catch (e) { console.error("[AI] CF failed:", e); }
-  // Gemini fallback
+  // Gemini fallback (higher quality than CF 1B)
   try {
     const text = await callGemini(systemPrompt, messages, maxTokens, temp);
     if (text) {
@@ -146,6 +207,12 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
+  // Cloudflare as last resort
+  try {
+    const res = await callCF(systemPrompt, messages, false);
+    const data = (await res.json()) as CloudflareCompletionResponse;
+    return data.result?.response || "";
+  } catch (e) { console.error("[AI] CF failed:", e); }
   return "";
 }
 

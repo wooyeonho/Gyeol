@@ -114,6 +114,8 @@
     "returningFootnote": "A short check-in is enough. Gyeol tries to remember even small changes.",
     "responding": "Generating response.",
     "waiting": "Waiting for response.",
+    "guestSignupPrompt": "Create an account to keep raising this creature.",
+    "guestSignupCta": "Create account",
     "stop": "Stop",
     "listen": "Listen",
     "retry": "Retry connection",
@@ -941,7 +943,8 @@
     "vitality": "Vitality",
     "readMore": "Read more",
     "collapse": "Collapse",
-    "hoursAgo": "{n}h ago"
+    "hoursAgo": "{n}h ago",
+    "birthGreeting": "...Where am I? I think I was just born. Who are you?"
   },
   "growthTimeline": {
     "title": "Growth Timeline",
