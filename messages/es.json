@@ -117,6 +117,8 @@
     "returningFootnote": "Un check-in breve está bien. Gyeol intenta recordar incluso los cambios pequeños.",
     "responding": "Generando respuesta.",
     "waiting": "Esperando respuesta.",
+    "guestSignupPrompt": "Crea una cuenta para seguir criando a esta criatura.",
+    "guestSignupCta": "Crear cuenta",
     "stop": "Detener",
     "listen": "Escuchar",
     "retry": "Reintentar conexión",
@@ -844,7 +846,7 @@
     "readMore": "Leer más",
     "collapse": "Cerrar",
     "hoursAgo": "hace {n}h",
-    "birthGreeting": "...¿dónde estoy? Creo que acabo de nacer. ¿Quién eres?"
+    "birthGreeting": "...¿Dónde estoy? Creo que acabo de nacer. ¿Quién eres?"
   },
   "growthTimeline": {
     "title": "Línea de crecimiento",

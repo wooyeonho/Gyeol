@@ -117,6 +117,8 @@
     "returningFootnote": "简短的签到也没关系，Gyeol 会记住哪怕很小的变化。",
     "responding": "正在生成回复。",
     "waiting": "等待回复中。",
+    "guestSignupPrompt": "创建账户后可以继续养育这个生命体。",
+    "guestSignupCta": "创建账户",
     "stop": "停止",
     "listen": "收听",
     "retry": "重新连接",
@@ -844,7 +846,7 @@
     "readMore": "展开",
     "collapse": "收起",
     "hoursAgo": "{n}小时前",
-    "birthGreeting": "...这里是哪里？好像刚出生。你是谁？"
+    "birthGreeting": "...这是哪里？我好像刚刚出生。你是谁？"
   },
   "growthTimeline": {
     "title": "成长时间线",

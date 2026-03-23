@@ -114,6 +114,8 @@
     "returningFootnote": "짧은 체크인도 괜찮습니다. 결은 작은 변화도 기억하려고 합니다.",
     "responding": "응답 생성 중입니다.",
     "waiting": "응답 대기 중입니다.",
+    "guestSignupPrompt": "계정을 만들면 이 생명체를 계속 키울 수 있어요.",
+    "guestSignupCta": "계정 만들기",
     "stop": "정지",
     "listen": "듣기",
     "retry": "다시 연결 시도",

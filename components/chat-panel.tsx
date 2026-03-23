@@ -7,6 +7,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { createClient } from "@/lib/supabase/client";
 
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { createClient } from "@/lib/supabase/client";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
@@ -72,6 +73,15 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     return () => { cancelled = true; };
   }, []);
 
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    createClient().auth.getUser().then(({ data }) => {
+      if (!cancelled && data.user?.is_anonymous) setIsAnonymous(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const isFirstSession = totalMessages === 0 && messages.length === 0;
@@ -93,6 +103,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
       genLevel: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
       vitality: typeof agentState?.vitality === "number" ? agentState.vitality : 1,
       mood: typeof agentState?.mood === "string" ? agentState.mood : null,
+      dnaVerbal: ((agentState?.genome as { dna?: { verbal?: number } } | null | undefined)?.dna?.verbal) ?? null,
     },
     locale
   );
@@ -224,6 +235,19 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         )}
 
         <div className="shrink-0 pt-3">
+          {isAnonymous && totalMessages >= 5 && (
+            <div className="mb-3 mx-auto max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-400/5 backdrop-blur-md px-4 py-3 text-center">
+              <p className="text-sm text-white/80">
+                {t("chat.guestSignupPrompt")}
+              </p>
+              <a
+                href="/settings"
+                className="mt-2 inline-block rounded-full bg-cyan-500/20 px-4 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/30 transition-colors"
+              >
+                {t("chat.guestSignupCta")}
+              </a>
+            </div>
+          )}
           <MessageInput
             input={input}
             setInput={setInput}

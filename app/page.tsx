@@ -319,7 +319,9 @@ export default function Home() {
             {agentState?.self_name ?? "GYEOL"}
           </p>
           {agentState?.genome?.species && (
-            <p className="text-xs text-white/40 italic">{agentState.genome.species}</p>
+            <p className="mt-0.5 text-xs text-white/40 italic tracking-wide">
+              {agentState.genome.species}
+            </p>
           )}
           <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50">
             <span>Gen {agentState?.gen_level ?? 1}</span>
