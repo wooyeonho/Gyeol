@@ -157,7 +157,7 @@ export function LivingFeed({
   useEffect(() => {
     if (!loading && data && !data.has_activity && onGreetingReadyRef.current && !greetingFiredRef.current) {
       greetingFiredRef.current = true;
-      onGreetingReadyRef.current("...여기가 어디지? 방금 태어난 것 같아. 너는 누구야?");
+      onGreetingReadyRef.current(t("livingFeed.birthGreeting"));
     }
   }, [loading, data]);
 
