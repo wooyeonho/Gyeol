@@ -4,9 +4,8 @@ import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
-
-import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { createClient } from "@/lib/supabase/client";
+import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
@@ -56,11 +55,12 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     }
   });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [signupDismissed, setSignupDismissed] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
-    createClient().auth.getUser().then(({ data }) => {
+    createClient().auth.getUser().then(({ data }: { data: { user: { is_anonymous?: boolean } | null } }) => {
       if (!cancelled && data.user?.is_anonymous) setIsAnonymous(true);
     });
     return () => { cancelled = true; };
@@ -192,20 +192,33 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
           />
         </div>
 
-        <div className="shrink-0 pt-3">
-          {isAnonymous && totalMessages >= 5 && (
-            <div className="mb-3 mx-auto max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-400/5 backdrop-blur-md px-4 py-3 text-center">
-              <p className="text-sm text-white/80">
-                {t("chat.guestSignupPrompt")}
-              </p>
+        {/* Guest signup banner: show after 5+ messages for anonymous users */}
+        {isAnonymous && totalMessages >= 5 && !signupDismissed && (
+          <div className="shrink-0 mx-auto w-full max-w-sm mb-2">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-md px-4 py-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white/90">{t("chat.signupBannerTitle")}</p>
+                <p className="text-xs text-white/50 mt-0.5">{t("chat.signupBannerBody")}</p>
+              </div>
               <a
-                href="/settings"
-                className="mt-2 inline-block rounded-full bg-cyan-500/20 px-4 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/30 transition-colors"
+                href="/auth/signup"
+                className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 transition-opacity"
               >
-                {t("chat.guestSignupCta")}
+                {t("chat.signupBannerCta")}
               </a>
+              <button
+                type="button"
+                onClick={() => setSignupDismissed(true)}
+                className="shrink-0 text-white/30 hover:text-white/60 transition-colors text-xs"
+                aria-label={t("common.close")}
+              >
+                &#x2715;
+              </button>
             </div>
-          )}
+          </div>
+        )}
+
+        <div className="shrink-0 pt-3">
           <MessageInput
             input={input}
             setInput={setInput}

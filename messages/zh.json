@@ -132,7 +132,10 @@
     "langCode": "en-US",
     "fadingConnection": "正在消散的连接",
     "fadingHeading": "你不在的时候，温度渐渐消失了……",
-    "fadingHelper": "存在感正在减弱。现在和它说话，恢复 Vitality 与色彩。"
+    "fadingHelper": "存在感正在减弱。现在和它说话，恢复 Vitality 与色彩。",
+    "signupBannerTitle": "创建一个账号",
+    "signupBannerBody": "对话和成长将继续延续。",
+    "signupBannerCta": "注册"
   },
   "album": {
     "title": "Growth album",

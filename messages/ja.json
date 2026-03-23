@@ -132,7 +132,10 @@
     "langCode": "en-US",
     "fadingConnection": "薄れていくつながり",
     "fadingHeading": "あなたが来なくて温もりが薄れてしまいました...",
-    "fadingHelper": "存在感が薄れています。今すぐ話しかけてVitalityと色を取り戻してください。"
+    "fadingHelper": "存在感が薄れています。今すぐ話しかけてVitalityと色を取り戻してください。",
+    "signupBannerTitle": "アカウントを作りましょう",
+    "signupBannerBody": "会話と成長がそのまま続きます。",
+    "signupBannerCta": "登録する"
   },
   "album": {
     "title": "Growth album",

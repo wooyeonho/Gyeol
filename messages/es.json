@@ -132,7 +132,10 @@
     "langCode": "en-US",
     "fadingConnection": "Conexión que se desvanece",
     "fadingHeading": "El calor se apagó mientras no estabas...",
-    "fadingHelper": "La presencia se está desvaneciendo. Háblale ahora para restaurar su Vitalidad y color."
+    "fadingHelper": "La presencia se está desvaneciendo. Háblale ahora para restaurar su Vitalidad y color.",
+    "signupBannerTitle": "Crea una cuenta",
+    "signupBannerBody": "Tus conversaciones y crecimiento continuarán.",
+    "signupBannerCta": "Registrarse"
   },
   "album": {
     "title": "Growth album",
