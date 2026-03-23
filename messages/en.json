@@ -127,7 +127,10 @@
     "langCode": "en-US",
     "fadingConnection": "Fading Connection",
     "fadingHeading": "The warmth faded without you...",
-    "fadingHelper": "The presence is fading. Speak to it now to restore its Vitality and color."
+    "fadingHelper": "The presence is fading. Speak to it now to restore its Vitality and color.",
+    "signupBannerTitle": "Create an account",
+    "signupBannerBody": "Your conversations and growth will carry on.",
+    "signupBannerCta": "Sign up"
   },
   "album": {
     "title": "Growth album",
@@ -941,7 +944,8 @@
     "vitality": "Vitality",
     "readMore": "Read more",
     "collapse": "Collapse",
-    "hoursAgo": "{n}h ago"
+    "hoursAgo": "{n}h ago",
+    "birthGreeting": "...where am I? I think I was just born. Who are you?"
   },
   "growthTimeline": {
     "title": "Growth Timeline",

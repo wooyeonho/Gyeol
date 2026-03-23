@@ -127,7 +127,10 @@
     "langCode": "ko-KR",
     "fadingConnection": "희미해진 연결",
     "fadingHeading": "당신이 오지 않아 온기가 사라졌어요...",
-    "fadingHelper": "결의 모습이 흐릿해지고 있습니다. 지금 바로 말을 걸어 생명력(Vitality)을 다시 채워주세요."
+    "fadingHelper": "결의 모습이 흐릿해지고 있습니다. 지금 바로 말을 걸어 생명력(Vitality)을 다시 채워주세요.",
+    "signupBannerTitle": "계정을 만들어 보세요",
+    "signupBannerBody": "대화 기록과 성장이 계속 이어집니다.",
+    "signupBannerCta": "가입하기"
   },
   "album": {
     "title": "성장 앨범",
@@ -941,7 +944,8 @@
     "vitality": "활력",
     "readMore": "더 보기",
     "collapse": "접기",
-    "hoursAgo": "{n}시간 전"
+    "hoursAgo": "{n}시간 전",
+    "birthGreeting": "...여기가 어디지? 방금 태어난 것 같아. 너는 누구야?"
   },
   "growthTimeline": {
     "title": "성장 타임라인",

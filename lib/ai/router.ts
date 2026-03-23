@@ -1,12 +1,7 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
-
 interface Msg { role: string; content: string }
 interface GroqCompletionResponse {
   choices?: Array<{ message?: { content?: string } }>;
-}
-interface CloudflareCompletionResponse {
-  result?: { response?: string };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -31,25 +26,6 @@ async function callGroq(model: string, system: string, messages: Msg[], stream: 
     });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Groq ${model} ${res.status}`);
-    return res;
-  } catch (e) { clearTimeout(timer); throw e; }
-}
-
-async function callCF(system: string, messages: Msg[], stream: boolean) {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
-  if (!accountId || !apiToken) throw new Error("CF credentials not configured");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
-  try {
-    const res = await fetch(CF_URL(accountId), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
-      body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`CF ${res.status}`);
     return res;
   } catch (e) { clearTimeout(timer); throw e; }
 }
@@ -98,14 +74,15 @@ function fallbackStream(text: string): ReadableStream {
 }
 
 function getFallbackText(systemPrompt: string) {
-  if (systemPrompt.includes("日本語")) return "いま少しだけ整えています。少ししてからもう一度話しかけてください。";
-  if (systemPrompt.includes("中文")) return "我现在需要短暂整理一下，请稍后再试一次。";
-  if (systemPrompt.includes("español")) return "Necesito un momento para reorganizarme. Inténtalo de nuevo enseguida.";
-  if (systemPrompt.includes("English")) return "I need a short reset right now. Please try again in a moment.";
-  return "지금은 잠시 정리 중이에요. 조금 후에 다시 말해줘.";
+  if (systemPrompt.includes("日本語")) return "...頭がちょっとぼんやりしてる。少し待ってて。";
+  if (systemPrompt.includes("中文")) return "...脑子有点迷糊。等我一下。";
+  if (systemPrompt.includes("español")) return "...mi cabeza está un poco confusa. Espera un momento.";
+  if (systemPrompt.includes("English")) return "...my head feels a bit foggy. Give me a moment.";
+  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
 export async function generateText(systemPrompt: string, messages: Msg[]): Promise<ReadableStream> {
+  // Primary: Groq models (3 tiers)
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout);
@@ -113,12 +90,16 @@ export async function generateText(systemPrompt: string, messages: Msg[]): Promi
       return res.body!;
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
+  // Secondary: Gemini Flash (non-streaming, wrapped as SSE stream)
   try {
-    const res = await callCF(systemPrompt, messages, true);
-    console.log("[AI] Using Cloudflare");
-    return res.body!;
-  } catch (e) { console.error("[AI] CF failed:", e); }
-  console.log("[AI] All models failed, using fallback");
+    const text = await callGemini(systemPrompt, messages);
+    if (text) {
+      console.log("[AI] Using Gemini Flash");
+      return fallbackStream(text);
+    }
+  } catch (e) { console.error("[AI] Gemini failed:", e); }
+  // Final: in-character fallback
+  console.log("[AI] All models failed, using in-character fallback");
   return fallbackStream(getFallbackText(systemPrompt));
 }
 
@@ -126,6 +107,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
   const maxTokens = opts?.max_tokens ?? 500;
   const temp = opts?.temperature ?? 0.7;
+  // Primary: Groq models
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
@@ -133,12 +115,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return data.choices?.[0]?.message?.content || "";
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
-  try {
-    const res = await callCF(systemPrompt, messages, false);
-    const data = (await res.json()) as CloudflareCompletionResponse;
-    return data.result?.response || "";
-  } catch (e) { console.error("[AI] CF failed:", e); }
-  // Gemini fallback
+  // Secondary: Gemini Flash
   try {
     const text = await callGemini(systemPrompt, messages, maxTokens, temp);
     if (text) {

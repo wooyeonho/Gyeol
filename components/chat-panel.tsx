@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { useChatStore } from "@/store/chat-store";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
+import { createClient } from "@/lib/supabase/client";
 
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTTS } from "@/hooks/use-tts";
@@ -55,6 +56,21 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     }
   });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [signupDismissed, setSignupDismissed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkAnon() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!cancelled && user?.is_anonymous) setIsAnonymous(true);
+      } catch { /* ignore */ }
+    }
+    void checkAnon();
+    return () => { cancelled = true; };
+  }, []);
 
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
@@ -180,6 +196,32 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             t={t}
           />
         </div>
+
+        {/* Guest signup banner: show after 5+ messages for anonymous users */}
+        {isAnonymous && totalMessages >= 5 && !signupDismissed && (
+          <div className="shrink-0 mx-auto w-full max-w-sm mb-2">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] backdrop-blur-md px-4 py-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white/90">{t("chat.signupBannerTitle")}</p>
+                <p className="text-xs text-white/50 mt-0.5">{t("chat.signupBannerBody")}</p>
+              </div>
+              <a
+                href="/auth/signup"
+                className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 transition-opacity"
+              >
+                {t("chat.signupBannerCta")}
+              </a>
+              <button
+                type="button"
+                onClick={() => setSignupDismissed(true)}
+                className="shrink-0 text-white/30 hover:text-white/60 transition-colors text-xs"
+                aria-label={t("common.close")}
+              >
+                &#x2715;
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="shrink-0 pt-3">
           <MessageInput

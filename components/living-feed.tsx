@@ -152,6 +152,28 @@ export function LivingFeed({
     setDismissed(true);
   }, []);
 
+  // First visit: no activity yet → show birth greeting
+  if (!loading && data && !data.has_activity) {
+    return (
+      <motion.div
+        key="birth-greeting"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="pointer-events-auto mx-auto w-full max-w-[720px] px-2"
+      >
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
+          <div className="px-4 py-5 text-center">
+            <span className="text-2xl">&#x2728;</span>
+            <p className="mt-2 text-sm leading-relaxed text-white/80">
+              {t("livingFeed.birthGreeting")}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (loading || !data || !data.has_activity) {
     return null;
   }
