@@ -76,33 +76,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Internal error" }, { status: 500 });
     }
 
-    // 5. Award coins to both users via agent_config
-    // Referrer
-    const { data: referrerConfig } = await service
-      .from("agent_config")
-      .select("coins")
-      .eq("user_id", invite.user_id)
-      .maybeSingle();
+    // 5. Award coins to both users via add_coins_atomic RPC
+    // Resolve user_id → agent_id for both users
+    const [{ data: referrerAgent }, { data: referredAgent }] = await Promise.all([
+      service.from("agents").select("id").eq("user_id", invite.user_id).maybeSingle(),
+      service.from("agents").select("id").eq("user_id", user.id).maybeSingle(),
+    ]);
 
-    if (referrerConfig) {
-      await service
-        .from("agent_config")
-        .update({ coins: (referrerConfig.coins ?? 0) + REFERRAL_REWARD_COINS })
-        .eq("user_id", invite.user_id);
+    // Award coins atomically (avoids read-then-write race condition)
+    if (referrerAgent) {
+      await service.rpc("add_coins_atomic", {
+        p_agent_id: referrerAgent.id,
+        p_amount: REFERRAL_REWARD_COINS,
+        p_reason: "referral_reward",
+      });
     }
-
-    // Referred user
-    const { data: referredConfig } = await service
-      .from("agent_config")
-      .select("coins")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (referredConfig) {
-      await service
-        .from("agent_config")
-        .update({ coins: (referredConfig.coins ?? 0) + REFERRAL_REWARD_COINS })
-        .eq("user_id", user.id);
+    if (referredAgent) {
+      await service.rpc("add_coins_atomic", {
+        p_agent_id: referredAgent.id,
+        p_amount: REFERRAL_REWARD_COINS,
+        p_reason: "referral_reward",
+      });
     }
 
     return NextResponse.json({
