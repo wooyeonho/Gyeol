@@ -259,6 +259,7 @@ export function getActiveSeasonalEvent(now = new Date()): SeasonalEvent | null {
     createSummerEvent(year),
     createAutumnEvent(year),
     createWinterEvent(year),
+    createWinterEvent(year - 1), // Winter event crosses year boundary (Dec Y-1 → Jan Y)
   ];
 
   return events.find((e) => isEventActive(e, now)) ?? null;

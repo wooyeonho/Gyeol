@@ -147,8 +147,10 @@ export async function persistChatTurn(params: {
   // Evolve creature DNA based on conversation signals
   const currentGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
   let nextGenome = currentGenome;
+  let mutationChangedAxes: string[] = [];
   if (currentGenome?.dna) {
     const { dna: evolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
+    mutationChangedAxes = changedAxes;
     if (changedAxes.length > 0) {
       const species = deriveSpecies(evolvedDNA);
       nextGenome = { ...currentGenome, dna: evolvedDNA, species: species.name, archetype: species.archetype, element: species.element };
@@ -187,12 +189,10 @@ export async function persistChatTurn(params: {
     totalMessages,
   });
 
-  // Compute changedAxes for DNA shift notification
-  const changedAxes: string[] = [];
+  // Reuse changedAxes from the first applySoftMutation call (deterministic, no need to recompute)
+  const changedAxes: string[] = [...mutationChangedAxes];
   let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
   if (currentGenome?.dna && nextGenome !== currentGenome) {
-    const { changedAxes: axes } = applySoftMutation(currentGenome.dna, params.message);
-    changedAxes.push(...axes);
 
     // TASK 3: Detect newly expressed traits after DNA mutation
     const prevTraits = getExpressedTraits(currentGenome.dna);
