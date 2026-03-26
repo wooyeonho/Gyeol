@@ -51,15 +51,22 @@ export async function POST(req: NextRequest) {
 
     // Auto-sync detected locale to agent config so autonomous crons
     // (heartbeat, dream, social, etc.) generate in the user's language.
+    // Uses atomic JSON merge to avoid overwriting config written by persistChatTurn.
     const normalizedLocale = normalizeLocale(locale);
     if (normalizedLocale && context.agentState) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
-        cfg.preferred_locale = normalizedLocale;
         after(async () => {
+          // Re-read latest config from DB to avoid overwriting usage_profile, goals, trait notifications
+          const { data: freshRow } = await service
+            .from("agent_state")
+            .select("config")
+            .eq("agent_id", agentId)
+            .maybeSingle();
+          const freshConfig = (freshRow as { config?: Record<string, unknown> } | null)?.config ?? {};
           await service
             .from("agent_state")
-            .update({ config: cfg })
+            .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
             .eq("agent_id", agentId)
             .then(({ error }) => {
               if (error) console.error("[Chat] preferred_locale sync failed", error);

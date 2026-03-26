@@ -319,6 +319,10 @@ function Scene({
     onTap?.();
   }, [onTap]);
 
+  // Memoize deriveSpecies to avoid creating new object refs every render (~15fps),
+  // which would defeat React.memo on ProceduralCreature and rebuild geometry each frame.
+  const species = useMemo(() => dna ? deriveSpecies(dna) : null, [dna]);
+
   // Organic breathing: sin wave + heartbeat double-bump
   const breathSin = Math.sin(breathPhase * Math.PI * 2);
   const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
@@ -347,10 +351,10 @@ function Scene({
         floatIntensity={floatIntensity * sleepFloatMult}
       >
         <group scale={pulseScale} onPointerDown={handlePointerDown}>
-          {dna ? (
+          {dna && species ? (
             <ProceduralCreature
               dna={dna}
-              species={deriveSpecies(dna)}
+              species={species}
               scale={size / 30}
               breathPhase={breathPhase}
               creatureActivity={creatureActivity}
