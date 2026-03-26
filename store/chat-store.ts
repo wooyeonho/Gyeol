@@ -28,7 +28,7 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: string }[] }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -142,13 +142,35 @@ async function handleStreamResponse(
       for (const line of lines) {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
-            const content = JSON.parse(line.slice(6)).choices?.[0]?.delta?.content || "";
-            if (content) {
+            const parsed = JSON.parse(line.slice(6));
+            // Handle dna_shift metadata event
+            if (parsed.type === "dna_shift" && Array.isArray(parsed.axes)) {
               set((s) => {
                 const msgs = [...s.messages];
-                msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + content, error: false };
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = { ...last, dnaShift: parsed.axes as string[] };
+                }
                 return { messages: msgs };
               });
+            } else if (parsed.type === "trait_emerged" && Array.isArray(parsed.traits)) {
+              set((s) => {
+                const msgs = [...s.messages];
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: string }[] };
+                }
+                return { messages: msgs };
+              });
+            } else {
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              if (content) {
+                set((s) => {
+                  const msgs = [...s.messages];
+                  msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + content, error: false };
+                  return { messages: msgs };
+                });
+              }
             }
           } catch (error) {
             logWarn("Chat store skipped malformed SSE delta", {

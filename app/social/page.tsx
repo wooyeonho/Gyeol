@@ -766,7 +766,11 @@ export default function SocialPage() {
               <article
                 key={post.id}
                 className="rounded-[1.75rem] border border-white/10 bg-black/25 p-4"
-                style={{ boxShadow: `0 0 0 1px ${postAppearance.palette.primary}12 inset` }}
+                style={{
+                  boxShadow: `0 0 0 1px ${postAppearance.palette.primary}12 inset`,
+                  borderLeftColor: `${postAppearance.palette.primary}50`,
+                  borderLeftWidth: 3,
+                }}
               >
                 <div className="flex items-start gap-3">
                   <IdentityPresence appearance={postAppearance} size="sm" />
@@ -775,9 +779,17 @@ export default function SocialPage() {
                       <p className="text-sm font-medium text-white">
                         {post.author.self_name || t("adoptPage.nameless")}
                       </p>
-                      <span className="text-xs text-white/45">
+                      <span className="text-xs" style={{ color: `${postAppearance.palette.primary}99` }}>
                         Gen {post.author.gen_level ?? 1}
                       </span>
+                      {post.author.genome?.species && (
+                        <>
+                          <span className="text-xs text-white/45">·</span>
+                          <span className="text-[11px] italic" style={{ color: `${postAppearance.palette.primary}80` }}>
+                            {post.author.genome.species}
+                          </span>
+                        </>
+                      )}
                       <span className="text-xs text-white/45">·</span>
                       <span className="text-xs text-white/45">
                         {formatLocalizedDateTime(post.created_at, locale)}

@@ -6,6 +6,7 @@ import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { getExpressedTraits } from "@/lib/genome/traits";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -186,8 +187,50 @@ export async function persistChatTurn(params: {
     totalMessages,
   });
 
+  // Compute changedAxes for DNA shift notification
+  const changedAxes: string[] = [];
+  let newTraits: { id: string; name: string }[] = [];
+  if (currentGenome?.dna && nextGenome !== currentGenome) {
+    const { changedAxes: axes } = applySoftMutation(currentGenome.dna, params.message);
+    changedAxes.push(...axes);
+
+    // TASK 3: Detect newly expressed traits after DNA mutation
+    const prevTraits = getExpressedTraits(currentGenome.dna);
+    const evolvedDna = (nextGenome as { dna?: CreatureDNA })?.dna;
+    if (evolvedDna) {
+      const nextTraits = getExpressedTraits(evolvedDna);
+      const prevIds = new Set(prevTraits.map((t) => t.id));
+      newTraits = nextTraits
+        .filter((t) => !prevIds.has(t.id))
+        .map((t) => ({ id: t.id, name: t.name.ko }));
+
+      if (newTraits.length > 0) {
+        // Log trait emergence in autonomous_logs
+        for (const trait of newTraits) {
+          await params.writer.from("autonomous_logs").insert({
+            agent_id: params.agentId,
+            action_type: "trait_emerged",
+            summary: `New trait expressed: ${trait.name} (${trait.id})`,
+          });
+        }
+
+        // Set pending_trait_notification in agent config
+        const latestConfig = {
+          ...nextConfig,
+          pending_trait_notification: newTraits,
+        };
+        await params.writer
+          .from("agent_state")
+          .update({ config: latestConfig })
+          .eq("agent_id", params.agentId);
+      }
+    }
+  }
+
   return {
     newVitality,
     totalMessages,
+    changedAxes,
+    newTraits,
   };
 }

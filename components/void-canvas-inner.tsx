@@ -5,6 +5,9 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
+import type { CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
+import { ProceduralCreature } from "@/components/procedural-creature";
 
 export interface InnerProps {
   shape: string;
@@ -30,6 +33,8 @@ export interface InnerProps {
   pointerNorm?: { x: number; y: number };
   /** Translated label for WebGL context-loss overlay */
   restoring3dLabel?: string;
+  /** Creature DNA for procedural rendering */
+  dna?: CreatureDNA | null;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -294,6 +299,7 @@ function Scene({
   shape, color, size, glow, animation, particles, vitality, isListening,
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
+  dna,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -341,14 +347,26 @@ function Scene({
         floatIntensity={floatIntensity * sleepFloatMult}
       >
         <group scale={pulseScale} onPointerDown={handlePointerDown}>
-          <CoreShape
-            shape={shape}
-            color={color}
-            size={size}
-            opacity={effectiveOpacity}
-            pointerNorm={creatureActivity !== "sleeping" ? pointerNorm : undefined}
-            breathScale={breathScale}
-          />
+          {dna ? (
+            <ProceduralCreature
+              dna={dna}
+              species={deriveSpecies(dna)}
+              scale={size / 30}
+              breathPhase={breathPhase}
+              creatureActivity={creatureActivity}
+              excitePulse={excitePulse}
+              pointerNorm={creatureActivity !== "sleeping" ? pointerNorm : undefined}
+            />
+          ) : (
+            <CoreShape
+              shape={shape}
+              color={color}
+              size={size}
+              opacity={effectiveOpacity}
+              pointerNorm={creatureActivity !== "sleeping" ? pointerNorm : undefined}
+              breathScale={breathScale}
+            />
+          )}
         </group>
       </Float>
       {particles > 0 && (

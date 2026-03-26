@@ -883,5 +883,13 @@
     "from": "{name}より",
     "unknown": "不明",
     "errorLoading": "フィードの読み込みに失敗しました"
+  },
+  "events": {
+    "title": "シーズンイベント",
+    "timeRemaining": "残り時間",
+    "rewards": "報酬ティア",
+    "communityGoal": "コミュニティ目標",
+    "noActiveEvent": "現在進行中のイベントはありません",
+    "checkBackLater": "次のシーズンイベントをお楽しみに"
   }
 }
