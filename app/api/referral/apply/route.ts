@@ -87,13 +87,13 @@ export async function POST(req: Request) {
     // Award coins atomically (avoids read-then-write race condition)
     let coinsAwarded = true;
     if (referrerResult.agentId) {
-      const { error: referrerErr } = await service.rpc("add_coins_atomic", {
+      const { data: referrerData, error: referrerErr } = await service.rpc("add_coins_atomic", {
         p_agent_id: referrerResult.agentId,
         p_amount: REFERRAL_REWARD_COINS,
         p_reason: "referral_reward",
       });
-      if (referrerErr) {
-        console.error("referral: failed to award coins to referrer", referrerErr);
+      if (referrerErr || referrerData === false) {
+        console.error("referral: failed to award coins to referrer", referrerErr ?? "RPC returned false");
         coinsAwarded = false;
       }
     } else {
@@ -101,13 +101,13 @@ export async function POST(req: Request) {
       coinsAwarded = false;
     }
     if (referredResult.agentId) {
-      const { error: referredErr } = await service.rpc("add_coins_atomic", {
+      const { data: referredData, error: referredErr } = await service.rpc("add_coins_atomic", {
         p_agent_id: referredResult.agentId,
         p_amount: REFERRAL_REWARD_COINS,
         p_reason: "referral_reward",
       });
-      if (referredErr) {
-        console.error("referral: failed to award coins to referred user", referredErr);
+      if (referredErr || referredData === false) {
+        console.error("referral: failed to award coins to referred user", referredErr ?? "RPC returned false");
         coinsAwarded = false;
       }
     } else {
