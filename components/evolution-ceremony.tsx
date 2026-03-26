@@ -54,9 +54,25 @@ export function EvolutionCeremony({
     .replace("{level}", String(level))
     .replace("{mutation}", mutation ? ` ${t("evolution.mutationLabel")}: ${mutation}` : "");
 
-  const shareUrl = shareBaseUrl
-    ? `${shareBaseUrl}/share/evolution?gen=${level}${mutation ? `&mutation=${encodeURIComponent(mutation)}` : ""}${selfName !== "GYEOL" ? `&name=${encodeURIComponent(selfName)}` : ""}`
-    : typeof window !== "undefined" ? window.location.origin : "";
+  // Fetch user's referral code once to embed in share URLs
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  useEffect(() => {
+    if (phase !== "card") return;
+    fetch("/api/invite")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.code) setReferralCode(d.code as string); })
+      .catch(() => { /* ignore — share will work without referral code */ });
+  }, [phase]);
+
+  const shareUrl = (() => {
+    const base = shareBaseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
+    const params = new URLSearchParams();
+    params.set("gen", String(level));
+    if (mutation) params.set("mutation", mutation);
+    if (selfName !== "GYEOL") params.set("name", selfName);
+    if (referralCode) params.set("ref", referralCode);
+    return `${base}/share/evolution?${params.toString()}`;
+  })();
 
   const handleShare = useCallback(async () => {
     haptic("tap");
