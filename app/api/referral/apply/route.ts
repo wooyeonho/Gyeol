@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { ensurePrimaryAgent } from "@/lib/agents/primary";
 
 const REFERRAL_REWARD_COINS = 100;
 
@@ -77,38 +78,50 @@ export async function POST(req: Request) {
     }
 
     // 5. Award coins to both users via add_coins_atomic RPC
-    // Resolve user_id → agent_id for both users
-    const [{ data: referrerAgent }, { data: referredAgent }] = await Promise.all([
-      service.from("agents").select("id").eq("user_id", invite.user_id).maybeSingle(),
-      service.from("agents").select("id").eq("user_id", user.id).maybeSingle(),
+    // Ensure agents exist (new users may not have one yet — agents are created lazily)
+    const [referrerResult, referredResult] = await Promise.all([
+      ensurePrimaryAgent(service, invite.user_id),
+      ensurePrimaryAgent(service, user.id),
     ]);
 
     // Award coins atomically (avoids read-then-write race condition)
-    if (referrerAgent) {
+    let coinsAwarded = true;
+    if (referrerResult.agentId) {
       const { error: referrerErr } = await service.rpc("add_coins_atomic", {
-        p_agent_id: referrerAgent.id,
+        p_agent_id: referrerResult.agentId,
         p_amount: REFERRAL_REWARD_COINS,
         p_reason: "referral_reward",
       });
       if (referrerErr) {
         console.error("referral: failed to award coins to referrer", referrerErr);
+        coinsAwarded = false;
       }
+    } else {
+      console.error("referral: could not resolve agent for referrer", invite.user_id);
+      coinsAwarded = false;
     }
-    if (referredAgent) {
+    if (referredResult.agentId) {
       const { error: referredErr } = await service.rpc("add_coins_atomic", {
-        p_agent_id: referredAgent.id,
+        p_agent_id: referredResult.agentId,
         p_amount: REFERRAL_REWARD_COINS,
         p_reason: "referral_reward",
       });
       if (referredErr) {
         console.error("referral: failed to award coins to referred user", referredErr);
+        coinsAwarded = false;
       }
+    } else {
+      console.error("referral: could not resolve agent for referred user", user.id);
+      coinsAwarded = false;
     }
 
     return NextResponse.json({
       success: true,
       reward: REFERRAL_REWARD_COINS,
-      message: `Both you and your friend received ${REFERRAL_REWARD_COINS} coins!`,
+      coinsAwarded,
+      message: coinsAwarded
+        ? `Both you and your friend received ${REFERRAL_REWARD_COINS} coins!`
+        : "Referral recorded. Coins will be credited once your profile is ready.",
     });
   } catch (e) {
     console.error("POST /api/referral/apply error", e);
