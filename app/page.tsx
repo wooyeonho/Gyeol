@@ -31,6 +31,7 @@ import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
+import type { CreatureDNA } from "@/lib/genome/dna";
 
 export default function Home() {
   const { locale, t } = useTranslations();
@@ -267,10 +268,11 @@ export default function Home() {
     );
   }
 
+  const creatureDna = ((agentState?.genome as Record<string, unknown> | null | undefined)?.dna as CreatureDNA | null | undefined) ?? null;
   const creatureSize = Math.min(80, Math.max(20, (visual.size ?? 24) * 1.8));
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-black">
+    <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
       {showCeremony && (
         <EvolutionCeremony
           level={evolutionEvent.level!}
@@ -330,6 +332,7 @@ export default function Home() {
           excitePulse={creature.state.excitePulse}
           pointerNorm={creature.state.pointerNorm}
           restoring3dLabel={t("creature.restoring3d")}
+          dna={creatureDna}
         />
 
         {/* Bottom gradient fade into chat area */}
@@ -351,7 +354,7 @@ export default function Home() {
             {agentState?.genome?.species && (
               <>
                 <span className="h-1 w-1 rounded-full bg-white/30" />
-                <span className="text-cyan-300/70">{agentState.genome.species}</span>
+                <span style={{ color: `color-mix(in srgb, ${appearance.palette.primary} 70%, white)` }}>{agentState.genome.species}</span>
               </>
             )}
             <span className="h-1 w-1 rounded-full bg-white/30" />

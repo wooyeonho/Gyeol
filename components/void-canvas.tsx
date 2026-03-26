@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
+import type { CreatureDNA } from "@/lib/genome/dna";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -32,6 +33,8 @@ interface VoidCanvasProps {
   pointerNorm?: { x: number; y: number };
   /** Translated label for WebGL context-loss overlay */
   restoring3dLabel?: string;
+  /** Creature DNA for procedural rendering */
+  dna?: CreatureDNA | null;
 }
 
 const VoidCanvasInner = dynamic(
@@ -209,6 +212,7 @@ export function VoidCanvas({
   excitePulse,
   pointerNorm,
   restoring3dLabel,
+  dna,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -271,6 +275,7 @@ export function VoidCanvas({
           excitePulse={excitePulse}
           pointerNorm={pointerNorm}
           restoring3dLabel={restoring3dLabel}
+          dna={dna}
         />
       ) : (
         <CssVoidFallback

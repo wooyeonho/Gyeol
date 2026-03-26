@@ -51,15 +51,22 @@ export async function POST(req: NextRequest) {
 
     // Auto-sync detected locale to agent config so autonomous crons
     // (heartbeat, dream, social, etc.) generate in the user's language.
+    // Uses atomic JSON merge to avoid overwriting config written by persistChatTurn.
     const normalizedLocale = normalizeLocale(locale);
     if (normalizedLocale && context.agentState) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
-        cfg.preferred_locale = normalizedLocale;
         after(async () => {
+          // Re-read latest config from DB to avoid overwriting usage_profile, goals, trait notifications
+          const { data: freshRow } = await service
+            .from("agent_state")
+            .select("config")
+            .eq("agent_id", agentId)
+            .maybeSingle();
+          const freshConfig = (freshRow as { config?: Record<string, unknown> } | null)?.config ?? {};
           await service
             .from("agent_state")
-            .update({ config: cfg })
+            .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
             .eq("agent_id", agentId)
             .then(({ error }) => {
               if (error) console.error("[Chat] preferred_locale sync failed", error);
@@ -96,6 +103,7 @@ export async function POST(req: NextRequest) {
       : 700;
 
     const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
+    let postProcessResult: { changedAxes?: string[]; newTraits?: { id: string; name: { ko: string; en: string } }[] } = {};
     const transformStream = createAssistantTapStream(async (fullResponse) => {
       recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
         agentId,
@@ -104,7 +112,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
       });
       try {
-        await persistChatTurn({
+        const result = await persistChatTurn({
           agentId,
           agentState: context.agentState,
           durationMs: Date.now() - requestStartedAt,
@@ -112,6 +120,7 @@ export async function POST(req: NextRequest) {
           reply: fullResponse,
           writer: service,
         });
+        postProcessResult = { changedAxes: result.changedAxes, newTraits: result.newTraits };
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
           agentId,
@@ -134,7 +143,36 @@ export async function POST(req: NextRequest) {
       headers.Vary = "Origin";
     }
 
-    return new Response(stream.pipeThrough(transformStream), { headers });
+    // Pipe AI stream through tap, then append dna_shift metadata event
+    const aiStream = stream.pipeThrough(transformStream);
+    const encoder = new TextEncoder();
+    const metaStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = aiStream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        // Append dna_shift event after the main stream completes
+        if (postProcessResult.changedAxes && postProcessResult.changedAxes.length > 0) {
+          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: postProcessResult.changedAxes });
+          controller.enqueue(encoder.encode(`data: ${dnaEvent}\n\n`));
+        }
+        // Append trait_emerged event if new traits expressed
+        if (postProcessResult.newTraits && postProcessResult.newTraits.length > 0) {
+          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: postProcessResult.newTraits });
+          controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(metaStream, { headers });
   } catch (e: unknown) {
     console.error("[Chat]", e);
     if (isMissingEnvError(e)) {

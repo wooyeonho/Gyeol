@@ -984,5 +984,13 @@
     "from": "From {name}",
     "unknown": "Unknown",
     "errorLoading": "Failed to load feed"
+  },
+  "events": {
+    "title": "Seasonal Events",
+    "timeRemaining": "Time Remaining",
+    "rewards": "Reward Tiers",
+    "communityGoal": "Community Goal",
+    "noActiveEvent": "No active events right now",
+    "checkBackLater": "Check back for the next seasonal event"
   }
 }

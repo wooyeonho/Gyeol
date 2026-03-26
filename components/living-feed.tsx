@@ -211,8 +211,8 @@ export function LivingFeed({
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ backgroundColor: "var(--creature-primary, #22d3ee)" }} />
+                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: "var(--creature-primary, #22d3ee)" }} />
               </span>
               <p className="text-xs font-medium uppercase tracking-wider text-white/70">
                 {t("livingFeed.whileAway")}
@@ -278,7 +278,8 @@ export function LivingFeed({
                             expandedDream === item.id ? null : item.id,
                           )
                         }
-                        className="mt-1 text-xs text-cyan-400/70 hover:text-cyan-400 transition-colors"
+                        className="mt-1 text-xs transition-colors hover:opacity-100 opacity-70"
+                        style={{ color: "var(--creature-primary, #22d3ee)" }}
                       >
                         {expandedDream === item.id
                           ? t("livingFeed.collapse")

@@ -31,7 +31,7 @@ export function MessageList({
   t,
   verbal,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -143,6 +143,49 @@ export function MessageList({
                 <p className="mt-2 text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                   {appearance.voice.toneHint}
                 </p>
+              )}
+              {m.dnaShift && m.dnaShift.length > 0 && !isStreaming && (
+                <motion.div
+                  className="mt-1.5 flex flex-wrap gap-1.5"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {m.dnaShift.map((axis) => (
+                    <span
+                      key={axis}
+                      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      style={{
+                        background: `${appearance.palette.primary}18`,
+                        color: appearance.palette.primary,
+                        border: `1px solid ${appearance.palette.primary}30`,
+                      }}
+                    >
+                      {axis} +
+                    </span>
+                  ))}
+                </motion.div>
+              )}
+              {m.traitEmerged && m.traitEmerged.length > 0 && !isStreaming && (
+                <motion.div
+                  className="mt-2 rounded-xl border p-2.5"
+                  style={{
+                    borderColor: `${appearance.palette.primary}40`,
+                    background: `${appearance.palette.primary}0a`,
+                  }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: appearance.palette.primary }}>
+                    New Trait
+                  </p>
+                  {m.traitEmerged.map((trait) => (
+                    <p key={trait.id} className="mt-0.5 text-xs text-white/80">
+                      {typeof trait.name === "string" ? trait.name : (trait.name.ko || trait.name.en)}
+                    </p>
+                  ))}
+                </motion.div>
               )}
               {!isStreaming && m.error && (
                 <div className="mt-3 border-t border-white/10 pt-3">

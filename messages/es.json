@@ -883,5 +883,13 @@
     "from": "De {name}",
     "unknown": "Desconocido",
     "errorLoading": "Error al cargar el feed"
+  },
+  "events": {
+    "title": "Eventos de Temporada",
+    "timeRemaining": "Tiempo Restante",
+    "rewards": "Niveles de Recompensa",
+    "communityGoal": "Objetivo Comunitario",
+    "noActiveEvent": "No hay eventos activos ahora",
+    "checkBackLater": "Vuelve para el siguiente evento de temporada"
   }
 }
