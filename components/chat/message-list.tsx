@@ -31,7 +31,7 @@ export function MessageList({
   t,
   verbal,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: string }[] }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -182,7 +182,7 @@ export function MessageList({
                   </p>
                   {m.traitEmerged.map((trait) => (
                     <p key={trait.id} className="mt-0.5 text-xs text-white/80">
-                      {trait.name}
+                      {typeof trait.name === "string" ? trait.name : (trait.name.ko || trait.name.en)}
                     </p>
                   ))}
                 </motion.div>

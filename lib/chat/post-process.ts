@@ -189,7 +189,7 @@ export async function persistChatTurn(params: {
 
   // Compute changedAxes for DNA shift notification
   const changedAxes: string[] = [];
-  let newTraits: { id: string; name: string }[] = [];
+  let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
   if (currentGenome?.dna && nextGenome !== currentGenome) {
     const { changedAxes: axes } = applySoftMutation(currentGenome.dna, params.message);
     changedAxes.push(...axes);
@@ -202,7 +202,7 @@ export async function persistChatTurn(params: {
       const prevIds = new Set(prevTraits.map((t) => t.id));
       newTraits = nextTraits
         .filter((t) => !prevIds.has(t.id))
-        .map((t) => ({ id: t.id, name: t.name.ko }));
+        .map((t) => ({ id: t.id, name: t.name }));
 
       if (newTraits.length > 0) {
         // Log trait emergence in autonomous_logs
@@ -210,14 +210,20 @@ export async function persistChatTurn(params: {
           await params.writer.from("autonomous_logs").insert({
             agent_id: params.agentId,
             action_type: "trait_emerged",
-            summary: `New trait expressed: ${trait.name} (${trait.id})`,
+            summary: `New trait expressed: ${trait.name.en} (${trait.id})`,
           });
         }
 
-        // Set pending_trait_notification in agent config
+        // Re-read current config from DB to avoid overwriting goal data written by applyGoalLoop
+        const { data: freshState } = await params.writer
+          .from("agent_state")
+          .select("config")
+          .eq("agent_id", params.agentId)
+          .maybeSingle();
+        const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? nextConfig;
         const latestConfig = {
-          ...nextConfig,
-          pending_trait_notification: newTraits,
+          ...freshConfig,
+          pending_trait_notification: newTraits.map((t) => ({ id: t.id, name: t.name })),
         };
         await params.writer
           .from("agent_state")

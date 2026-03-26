@@ -28,7 +28,7 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: string }[] }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -158,7 +158,7 @@ async function handleStreamResponse(
                 const msgs = [...s.messages];
                 const last = msgs[msgs.length - 1];
                 if (last?.role === "assistant") {
-                  msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: string }[] };
+                  msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: { ko: string; en: string } }[] };
                 }
                 return { messages: msgs };
               });

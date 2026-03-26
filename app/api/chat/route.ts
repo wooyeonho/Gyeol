@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       : 700;
 
     const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
-    let postProcessResult: { changedAxes?: string[]; newTraits?: { id: string; name: string }[] } = {};
+    let postProcessResult: { changedAxes?: string[]; newTraits?: { id: string; name: { ko: string; en: string } }[] } = {};
     const transformStream = createAssistantTapStream(async (fullResponse) => {
       recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
         agentId,
