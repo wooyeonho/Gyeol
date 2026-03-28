@@ -68,10 +68,15 @@ async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "cr
   }
 }
 
+/** Hard deadline (ms) — stop accepting new agents after this to avoid HTTP timeout. */
+const HEARTBEAT_DEADLINE_MS = 250_000; // 250s — well within 300s curl timeout
+
 export async function executeHeartbeat(): Promise<CronResult> {
   const lockKey = "cron:heartbeat";
   const acquired = await acquireCronLock(lockKey, 600);
   if (!acquired) return { processed: 0, timestamp: new Date().toISOString(), skipped: "lock" };
+
+  const startedAt = Date.now();
 
   try {
     const db = createServiceClient();
@@ -84,8 +89,15 @@ export async function executeHeartbeat(): Promise<CronResult> {
     const circadian = getCircadianProfile();
 
     let processed = 0;
+    let skippedDeadline = 0;
 
     for (const agent of agents) {
+      // Stop processing new agents if we're near the deadline
+      if (Date.now() - startedAt > HEARTBEAT_DEADLINE_MS) {
+        skippedDeadline = agents.length - agents.indexOf(agent);
+        console.log(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
+        break;
+      }
       try {
         const agentId = agent.id;
         const { data: state } = await db.from("agent_state").select("*").eq("agent_id", agentId).single();
@@ -392,7 +404,12 @@ export async function executeHeartbeat(): Promise<CronResult> {
       } catch (e) { console.error(`[Heartbeat] ${agent.id}:`, e); }
     }
 
-    return { processed, timestamp: new Date().toISOString() };
+    return {
+      processed,
+      timestamp: new Date().toISOString(),
+      ...(skippedDeadline > 0 ? { skippedDeadline } : {}),
+      elapsedMs: Date.now() - startedAt,
+    };
   } finally {
     await releaseCronLock(lockKey);
   }
