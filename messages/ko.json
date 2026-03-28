@@ -319,6 +319,8 @@
     "dream": "드림 엔진",
     "social": "소셜",
     "publicSocial": "공개 소셜 피드 참여",
+    "simpleMode": "간단 모드",
+    "simpleModeBody": "전문 용어 대신 쉬운 말로 설명합니다. DNA→마법 레시피, 진화→레벨업 등으로 바꿔서 표시해요.",
     "performanceMinimal": "저전력 모드",
     "inviteFriends": "친구 초대",
     "createInvite": "초대 링크 만들기",

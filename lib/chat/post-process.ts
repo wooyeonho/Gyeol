@@ -7,6 +7,7 @@ import { updateUsageProfile } from "@/lib/identity/usage-profile";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
+import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -157,9 +158,14 @@ export async function persistChatTurn(params: {
     }
   }
 
+  // Extract and accumulate user preferences (BG3-style: every conversation shapes the relationship)
+  const existingPrefs = (currentConfig.user_preferences as UserPreferences | undefined) ?? createDefaultPreferences();
+  const updatedPrefs = extractPreferencesFromTurn(params.message, params.reply, existingPrefs);
+
   const nextConfig = {
     ...currentConfig,
     usage_profile: nextUsageProfile,
+    user_preferences: updatedPrefs,
   };
 
   await params.writer.from("agent_state").update({
