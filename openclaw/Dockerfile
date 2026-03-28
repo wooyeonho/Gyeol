@@ -7,10 +7,14 @@ WORKDIR /app
 
 COPY openclaw/package.json openclaw/package-lock.json* ./openclaw/
 RUN cd openclaw && npm ci
+# Symlink node_modules to root so lib/ imports resolve correctly
+RUN ln -s /app/openclaw/node_modules /app/node_modules
 
-# Copy parent lib/ and store/ for direct execution imports
+# Copy parent lib/, store/, types/, messages/ for direct execution imports
 COPY lib/ lib/
 COPY store/ store/
+COPY types/ types/
+COPY messages/ messages/
 COPY openclaw/tsconfig.json openclaw/tsconfig.json
 COPY openclaw/src/ openclaw/src/
 
