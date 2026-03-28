@@ -76,13 +76,17 @@ export function useCreatureState(
     affinityMood: "neutral",
   });
 
-  // Store DNA/mood in refs for access inside animation loop without re-subscribing
+  // Store DNA/mood/isStreaming in refs for access inside animation loop without re-subscribing
   const moodRef = useRef(mood);
   const dnaRef = useRef(dna);
+  const isStreamingRef = useRef(isStreaming);
   useEffect(() => { moodRef.current = mood; }, [mood]);
   useEffect(() => { dnaRef.current = dna; }, [dna]);
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
 
   const lastInteractionRef = useRef(0);
+  const sessionStartRef = useRef(Date.now());
+  const accumulatedWatchRef = useRef(0);
   const rafRef = useRef<number>(0);
   const prevTimeRef = useRef(0);
   const breathAccumRef = useRef(0);
@@ -219,14 +223,19 @@ export function useCreatureState(
 
       if (elapsed >= SET_STATE_INTERVAL) {
         lastSetStateRef.current = now;
+        // Accumulate watch time: user is "watching" when idle < 30s (page active, engaged)
+        if (idleSec < 30) {
+          accumulatedWatchRef.current += (SET_STATE_INTERVAL / 1000);
+        }
+
         // Derive affinity mood from session interaction patterns
         const affinityMoodValue = deriveAffinityMood({
-          watchSeconds: Math.max(0, idleSec < 30 ? idleSec : 0),
+          watchSeconds: accumulatedWatchRef.current,
           touchCount: touchCountRef.current,
           touchAffinity: sessionAffinityRef.current,
           ignoreSeconds: idleSec > 60 ? idleSec - 60 : 0,
           lastInteractionAt: lastInteractionRef.current,
-          sessionStartAt: 0,
+          sessionStartAt: sessionStartRef.current,
         });
 
         // Full idle behavior resolution — BG3-style: DNA + mood + affinity drive behavior
@@ -236,7 +245,7 @@ export function useCreatureState(
           dna: dnaRef.current ?? null,
           affinityMood: affinityMoodValue,
           recentTouchCount: touchCountRef.current,
-          isStreaming,
+          isStreaming: isStreamingRef.current,
         });
 
         // Map rich idle to basic activity for backward compat
