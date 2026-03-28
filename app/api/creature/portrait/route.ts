@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const allowed = await checkRateLimit(`portrait:${user.id}`, 5, 3600);
+  const allowed = await checkRateLimit(`portrait:${user.id}`);
   if (!allowed) {
     return NextResponse.json({ error: "Portrait generation limited to 5/hour" }, { status: 429 });
   }
