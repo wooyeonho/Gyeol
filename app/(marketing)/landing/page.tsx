@@ -52,10 +52,10 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/signup"
+              href="/demo"
               className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95"
             >
-              {t("landing.ctaPrimary")}
+              Try it — 2 minutes, no signup
             </Link>
             <Link
               href="/login"
@@ -66,7 +66,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-4 text-xs theme-text-faint">
-            {t("landing.ctaHint")}
+            No account needed. Talk for 3 messages and watch your creature emerge.
           </p>
         </motion.div>
 
@@ -213,10 +213,10 @@ export default function LandingPage() {
                 </li>
               </ul>
               <Link
-                href="/signup"
+                href="/demo"
                 className="mt-6 block w-full rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-center text-sm font-medium text-[color:var(--background)]"
               >
-                {t("landing.ctaPrimary")}
+                Try free
               </Link>
             </div>
 
@@ -344,10 +344,10 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
-                href="/signup"
+                href="/demo"
                 className="rounded-full bg-accent px-10 py-4 text-base font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95"
               >
-                {t("landing.ctaPrimary")}
+                Meet your creature
               </Link>
             </div>
           </motion.div>

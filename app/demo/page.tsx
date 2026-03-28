@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateInitialDNA, applySoftMutation, type CreatureDNA, DNA_AXES } from "@/lib/genome/dna";
 import { DNAReveal } from "@/components/demo/dna-reveal";
+import { FriendPreview } from "@/components/demo/friend-preview";
 
 type Message = {
   role: "user" | "assistant";
@@ -19,6 +21,13 @@ const STARTER_PROMPTS = [
 ];
 
 export default function DemoPage() {
+  const searchParams = useSearchParams();
+  const sharedDnaParam = searchParams.get("dna");
+  const sharedReading = searchParams.get("reading");
+
+  // If URL has ?dna= param, show friend's result first
+  const [viewingFriend, setViewingFriend] = useState(!!sharedDnaParam);
+
   const [phase, setPhase] = useState<"intro" | "chat" | "reveal">("intro");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -171,14 +180,24 @@ export default function DemoPage() {
   );
 
   const handleContinue = useCallback(() => {
-    window.location.href = "/signup";
-  }, []);
+    // Preserve demo DNA so it transfers to the new account
+    try {
+      sessionStorage.setItem("gyeol_demo_dna", JSON.stringify(dna));
+      if (soulReading) sessionStorage.setItem("gyeol_demo_reading", soulReading);
+    } catch {}
+    window.location.href = "/signup?from=demo";
+  }, [dna, soulReading]);
 
   const handleShare = useCallback(() => {
+    // Encode DNA into share URL for OG image + friend preview
+    const dnaValues = DNA_AXES.map((a) => dna[a].toFixed(2)).join(",");
+    const shareParams = new URLSearchParams({ dna: dnaValues });
+    if (soulReading) shareParams.set("reading", soulReading.slice(0, 200));
+    const url = `${window.location.origin}/demo?${shareParams.toString()}`;
+
     const text = soulReading
       ? `"${soulReading}" — my AI-generated soul reading from 3 messages. Try it:`
       : "I just discovered my Gyeol — a living AI being shaped by my words. Try it:";
-    const url = window.location.origin + "/demo";
 
     if (navigator.share) {
       navigator.share({ title: "My Gyeol", text, url }).catch(() => {});
@@ -187,7 +206,27 @@ export default function DemoPage() {
         alert("Link copied!");
       }).catch(() => {});
     }
-  }, [soulReading]);
+  }, [dna, soulReading]);
+
+  // Friend preview — show shared creature, then let visitor try their own
+  if (viewingFriend && sharedDnaParam) {
+    const vals = sharedDnaParam.split(",").map(Number);
+    const friendDna = {} as CreatureDNA;
+    DNA_AXES.forEach((axis, i) => {
+      (friendDna as Record<string, number>)[axis] = vals[i] != null && !isNaN(vals[i]) ? Math.max(0, Math.min(1, vals[i])) : 0.5;
+    });
+    return (
+      <FriendPreview
+        dna={friendDna}
+        reading={sharedReading || null}
+        onTryOwn={() => {
+          setViewingFriend(false);
+          // Clean URL without reload
+          window.history.replaceState({}, "", "/demo");
+        }}
+      />
+    );
+  }
 
   // Intro screen
   if (phase === "intro") {
