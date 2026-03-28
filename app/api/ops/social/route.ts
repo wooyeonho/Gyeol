@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { isOpsAdminUser } from "@/lib/security/ops-access";
+import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
 
 type ReportRow = {
   id: string;
@@ -27,7 +27,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isOpsAdminUser(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await isOpsAdminUserAsync(user))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  logOpsAudit({ userId: user.id, action: "ops:social:view" });
 
   try {
     const service = createServiceClient();
@@ -109,7 +110,7 @@ export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isOpsAdminUser(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await isOpsAdminUserAsync(user))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
     const body = await request.json().catch(() => ({}));
@@ -129,6 +130,13 @@ export async function PATCH(request: NextRequest) {
       .update({ status: reportStatus })
       .eq("post_id", postId)
       .eq("status", "open");
+
+    logOpsAudit({
+      userId: user.id,
+      action: "ops:social:moderate",
+      resource: postId,
+      metadata: { action, moderation_status: moderationStatus, report_status: reportStatus },
+    });
 
     return NextResponse.json({
       ok: true,

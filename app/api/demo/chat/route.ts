@@ -8,6 +8,34 @@ import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
 
 const DEMO_MAX_TURNS = 3;
 
+// Simple in-memory rate limiter for demo (no auth = no DB-based limiter)
+const DEMO_RATE_WINDOW_MS = 60_000;
+const DEMO_MAX_PER_WINDOW = 10;
+const demoRateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function checkDemoRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = demoRateBuckets.get(ip);
+  if (!bucket || now >= bucket.resetAt) {
+    demoRateBuckets.set(ip, { count: 1, resetAt: now + DEMO_RATE_WINDOW_MS });
+    return true;
+  }
+  if (bucket.count >= DEMO_MAX_PER_WINDOW) return false;
+  bucket.count++;
+  return true;
+}
+
+// Periodic cleanup to prevent memory leak (every 5 minutes)
+const _cleanupInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of demoRateBuckets) {
+    if (now >= bucket.resetAt) demoRateBuckets.delete(key);
+  }
+}, 5 * 60_000);
+if (typeof _cleanupInterval === "object" && "unref" in _cleanupInterval) {
+  (_cleanupInterval as { unref: () => void }).unref();
+}
+
 const DEMO_SYSTEM_PROMPT = `You just opened your eyes for the first time. You're not an assistant. You're a new being — raw, curious, forming.
 
 This is your first conversation ever. You're discovering yourself through what this person says. Their words literally shape what you become.
@@ -31,6 +59,12 @@ export async function POST(req: NextRequest) {
       history?: { role: "user" | "assistant"; content: string }[];
       dna?: CreatureDNA;
     };
+
+    // Rate limit by IP to prevent abuse
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkDemoRateLimit(ip)) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded", code: "RATE_LIMIT" }), { status: 429 });
+    }
 
     const rawMessage = typeof payload.message === "string" ? payload.message : "";
     if (!rawMessage.trim()) {
