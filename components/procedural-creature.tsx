@@ -17,6 +17,9 @@ interface ProceduralCreatureProps {
   creatureActivity?: CreatureActivity;
   excitePulse?: number;
   pointerNorm?: { x: number; y: number };
+  isListening?: boolean;
+  mood?: string | null;
+  vitality?: number;
 }
 
 const SPHERE_DETAIL = 4; // icosahedron subdivision level
@@ -71,15 +74,21 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   creatureActivity = "awake",
   excitePulse = 0,
   pointerNorm,
+  isListening = false,
+  mood,
+  vitality = 1,
 }: ProceduralCreatureProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
   const eyeLRef = useRef<THREE.Mesh>(null);
   const eyeRRef = useRef<THREE.Mesh>(null);
   const crownRef = useRef<THREE.Mesh>(null);
   const sideLeftRef = useRef<THREE.Mesh>(null);
   const sideRightRef = useRef<THREE.Mesh>(null);
   const veilRefs = useRef<(THREE.Mesh | null)[]>([null, null, null]);
+  const listeningLeanRef = useRef(0);
+  const eyeScaleRef = useRef(1);
 
   // Derive all visual parameters from DNA (memoized — only recomputes when DNA changes)
   const appearance = useMemo(() => deriveDNAAppearance(dna, species), [dna, species]);
@@ -100,6 +109,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     base.setAttribute("position", new THREE.BufferAttribute(morphed, 3));
     base.computeVertexNormals();
+    // Store base positions for vertex wave animation
+    (base.attributes.position as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions = new Float32Array(morphed);
     return base;
   }, [morphWeights, species.archetype]);
 
@@ -128,26 +139,76 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2);
 
-  // Animation: breathing, eye tracking, idle rotation
+  // Mood-based visual modifiers
+  const moodMod = useMemo(() => {
+    switch (mood) {
+      case "joyful": case "energetic": return { emissiveBoost: 0.15, speedMult: 1.3, tiltBias: 0.02 };
+      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.6, tiltBias: -0.04 };
+      case "curious": return { emissiveBoost: 0.05, speedMult: 1.1, tiltBias: 0.03 };
+      case "angry": return { emissiveBoost: 0.2, speedMult: 1.5, tiltBias: 0 };
+      default: return { emissiveBoost: 0, speedMult: 1, tiltBias: 0 };
+    }
+  }, [mood]);
+
+  // Animation: breathing, eye tracking, idle rotation, listening posture, vertex wave
   useFrame((state) => {
     if (!groupRef.current) return;
 
     const t = state.clock.elapsedTime;
+    const dt = state.clock.getDelta();
     const activityMult = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
 
-    // Breathing scale
-    const breathSin = Math.sin(breathPhase * Math.PI * 2);
+    // === LISTENING POSTURE: lean forward + eyes widen when AI is streaming ===
+    const leanTarget = isListening ? 0.12 : 0;
+    listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
+    const eyeScaleTarget = isListening ? 1.25 : 1;
+    eyeScaleRef.current += (eyeScaleTarget - eyeScaleRef.current) * 0.08;
+
+    // Breathing scale with mood influence
+    const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult);
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
     const breathScale = 1 + breathSin * appearance.breatheDepth + heartbeat + excitePulse * 0.12;
     const s = scale * appearance.scale * breathScale;
     groupRef.current.scale.lerp(new THREE.Vector3(s, s, s), 0.08);
 
-    // Idle rotation based on DNA
-    const rotSpeed = appearance.idleRotation * activityMult;
+    // Idle rotation + mood tilt + listening lean
+    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult;
     groupRef.current.rotation.y += rotSpeed * 0.01;
-    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05;
+    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias;
+    // Lean forward on Z axis when listening
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(
+      groupRef.current.rotation.z,
+      listeningLeanRef.current,
+      0.06
+    );
 
-    // Eye tracking
+    // === VERTEX WAVE: surface displacement for "living skin" effect ===
+    if (meshRef.current) {
+      const positions = meshRef.current.geometry.attributes.position;
+      if (positions && (positions as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions) {
+        const base = (positions as THREE.BufferAttribute & { _basePositions: Float32Array })._basePositions;
+        const arr = positions.array as Float32Array;
+        const waveAmp = 0.008 * activityMult * moodMod.speedMult;
+        for (let i = 0; i < arr.length; i += 3) {
+          const bx = base[i], by = base[i + 1], bz = base[i + 2];
+          const wave = Math.sin(bx * 8 + t * 2) * Math.cos(by * 6 + t * 1.5) * waveAmp;
+          arr[i] = bx + bx * wave;
+          arr[i + 1] = by + by * wave;
+          arr[i + 2] = bz + bz * wave;
+        }
+        positions.needsUpdate = true;
+      }
+    }
+
+    // === FRESNEL HALO: pulsing glow sphere ===
+    if (haloRef.current) {
+      const haloPulse = 1 + Math.sin(t * 0.8) * 0.05 + excitePulse * 0.1;
+      haloRef.current.scale.setScalar(haloPulse);
+      (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
+        (0.06 + appearance.glowIntensity * 0.08 + moodMod.emissiveBoost * 0.03) * activityDim;
+    }
+
+    // Eye tracking with listening-widened eyes
     const pn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : pointerNorm ?? { x: 0, y: 0 };
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
@@ -204,10 +265,25 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   });
 
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
-  const emissiveIntensity = appearance.glowIntensity * 0.3 * activityDim;
+  const emissiveIntensity = Math.max(0.05, (appearance.glowIntensity * 0.3 + moodMod.emissiveBoost) * activityDim);
+
+  // Dynamic eye size: widens when listening
+  const dynEyeSize = eyeSize * eyeScaleRef.current;
 
   return (
     <group ref={groupRef}>
+      {/* === FRESNEL HALO: translucent glow sphere behind creature === */}
+      <mesh ref={haloRef}>
+        <sphereGeometry args={[0.58, 24, 24]} />
+        <meshBasicMaterial
+          color={primaryColor}
+          transparent
+          opacity={0.06 + appearance.glowIntensity * 0.08}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+
       {/* Main body mesh */}
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
@@ -215,16 +291,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           emissive={primaryColor}
           emissiveIntensity={emissiveIntensity}
           transparent
-          opacity={Math.max(0.4, activityDim * 0.9)}
+          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality))}
           roughness={appearance.roughness}
           metalness={appearance.metalness}
         />
       </mesh>
 
-      {/* Left eye */}
+      {/* Left eye — scales up when listening */}
       <group position={eyePositions.left}>
         <mesh>
-          <sphereGeometry args={[eyeSize, 12, 12]} />
+          <sphereGeometry args={[dynEyeSize, 12, 12]} />
           <meshStandardMaterial
             color="#ffffff"
             emissive="#ffffff"
@@ -233,16 +309,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             opacity={0.85 * activityDim}
           />
         </mesh>
-        <mesh ref={eyeLRef} position={[0, 0, eyeSize * 0.6]}>
-          <sphereGeometry args={[eyeSize * 0.45, 10, 10]} />
+        <mesh ref={eyeLRef} position={[0, 0, dynEyeSize * 0.6]}>
+          <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
           <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
         </mesh>
       </group>
 
-      {/* Right eye */}
+      {/* Right eye — scales up when listening */}
       <group position={eyePositions.right}>
         <mesh>
-          <sphereGeometry args={[eyeSize, 12, 12]} />
+          <sphereGeometry args={[dynEyeSize, 12, 12]} />
           <meshStandardMaterial
             color="#ffffff"
             emissive="#ffffff"
@@ -251,8 +327,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             opacity={0.85 * activityDim}
           />
         </mesh>
-        <mesh ref={eyeRRef} position={[0, 0, eyeSize * 0.6]}>
-          <sphereGeometry args={[eyeSize * 0.45, 10, 10]} />
+        <mesh ref={eyeRRef} position={[0, 0, dynEyeSize * 0.6]}>
+          <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
           <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
         </mesh>
       </group>

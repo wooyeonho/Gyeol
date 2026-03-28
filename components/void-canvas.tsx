@@ -276,6 +276,7 @@ export function VoidCanvas({
           pointerNorm={pointerNorm}
           restoring3dLabel={restoring3dLabel}
           dna={dna}
+          mood={mood}
         />
       ) : (
         <CssVoidFallback
