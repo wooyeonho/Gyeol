@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
+import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
 
 const messageVariants = {
   hidden: { opacity: 0, y: 12, scale: 0.96 },
@@ -30,6 +31,8 @@ export function MessageList({
   onRetry,
   t,
   verbal,
+  simpleModeLevel,
+  locale,
 }: {
   messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }>;
   isStreaming: boolean;
@@ -49,6 +52,10 @@ export function MessageList({
   onRetry: () => void;
   t: (key: string) => string;
   verbal?: number;
+  /** Simple mode jargon masking level */
+  simpleModeLevel?: SimpleModeLevel;
+  /** Locale for jargon substitution */
+  locale?: string;
 }) {
   // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
   const visibleMessages = useMemo(
@@ -57,6 +64,16 @@ export function MessageList({
   );
   // Offset for correct index mapping when messages are capped
   const indexOffset = messages.length - visibleMessages.length;
+
+  // Jargon mask for simple mode — applies vocabulary substitution to AI messages
+  const maskJargon = useCallback(
+    (text: string) => {
+      if (!simpleModeLevel || simpleModeLevel === "off") return text;
+      const jargonLocale = locale === "ko" || locale === "ko-KR" ? "ko" : "en";
+      return applyJargonMask(text, simpleModeLevel, jargonLocale);
+    },
+    [simpleModeLevel, locale],
+  );
 
   // Verbal-based bubble style
   const v = verbal ?? 0.5;
@@ -127,7 +144,7 @@ export function MessageList({
               transition={{ duration: 0.35 }}
             >
               <p className="whitespace-pre-wrap break-words">
-                {m.content}
+                {maskJargon(m.content)}
                 {isStreaming && i === messages.length - 1 && (
                   <motion.span
                     className="ml-1 inline-block"

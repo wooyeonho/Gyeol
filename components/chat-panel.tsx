@@ -13,6 +13,7 @@ import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
+import { getSimpleModeFromAge } from "@/lib/i18n/jargon-map";
 
 function getFirstSessionConfig(t: (key: string) => string) {
   return {
@@ -72,6 +73,11 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   const config = (agentState?.config as Record<string, unknown> | undefined) ?? {};
   const verbal = (agentState?.genome as { dna?: { verbal?: number } } | undefined)?.dna?.verbal ?? 0.5;
   const isSilentMode = verbal < 0.15;
+
+  // Simple mode — jargon masking level derived from config
+  const simpleModeEnabled = config.simple_mode_enabled === true;
+  const ageGroup = (config.user_preferences as { age_group?: string } | undefined)?.age_group ?? null;
+  const simpleModeLevel = getSimpleModeFromAge(ageGroup, simpleModeEnabled);
 
   const handleSilentTouch = useCallback((action: string) => {
     if (!isStreaming) {
@@ -200,6 +206,8 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             onCopy={(index, content) => void handleCopy(index, content)}
             onRetry={retryLastMessage}
             t={t}
+            simpleModeLevel={simpleModeLevel}
+            locale={locale}
           />
         </div>
 

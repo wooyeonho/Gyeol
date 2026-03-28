@@ -57,7 +57,7 @@ export function extractPreferencesFromTurn(
   // --- Speaking style detection ---
   const msgLen = message.length;
   const hasEmoji = /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u.test(message);
-  const hasHonorific = /[습니다|세요|하세요|드릴|하겠]/u.test(message);
+  const hasHonorific = /습니다|세요|하세요|드릴게|하겠습/u.test(message);
   const hasSlang = /[ㅋㅎㅠㅜㅡ]{2,}|ㄱㄱ|ㄴㄴ|ㅇㅇ|lol|lmao|bruh|nah/i.test(message);
   const hasPoetic = /[…—·]|\.{3,}/.test(message);
 
