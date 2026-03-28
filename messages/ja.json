@@ -963,5 +963,18 @@
     "rewardTitle": "紹介報酬",
     "rewardBody": "友達があなたのコードで登録すると、お互い{reward}コインがもらえます。",
     "leaderboardTitle": "紹介ランキング"
+  },
+  "portrait": {
+    "generateTitle": "ポートレート生成",
+    "generate": "新しいポートレートを生成",
+    "generating": "ポートレート生成中...",
+    "empty": "まだポートレートがありません",
+    "emptyHint": "最初のポートレートを生成するか、進化時の自動生成をお待ちください。",
+    "context": {
+      "portrait": "ポートレート",
+      "full_body": "全身",
+      "action": "アクション",
+      "dream": "夢"
+    }
   }
 }

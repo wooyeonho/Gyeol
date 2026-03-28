@@ -963,5 +963,18 @@
     "rewardTitle": "推荐奖励",
     "rewardBody": "朋友用你的码注册后，双方各获{reward}枚金币。",
     "leaderboardTitle": "推荐排行榜"
+  },
+  "portrait": {
+    "generateTitle": "生成肖像",
+    "generate": "生成新肖像",
+    "generating": "正在生成肖像...",
+    "empty": "还没有肖像",
+    "emptyHint": "生成你的第一张肖像，或等待进化时自动生成。",
+    "context": {
+      "portrait": "肖像",
+      "full_body": "全身",
+      "action": "动作",
+      "dream": "梦境"
+    }
   }
 }

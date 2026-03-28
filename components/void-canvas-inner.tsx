@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { ProceduralCreature } from "@/components/procedural-creature";
 
 export interface InnerProps {
@@ -237,8 +238,8 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Organic firefly-like floating particles */
-function OrganicParticles({ count, color, size, motionBias = "gentle", activity = "awake" as CreatureActivity }: { count: number; color: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic"; activity?: CreatureActivity }) {
+/** Organic firefly-like floating particles — supports dual-color from DNA */
+function OrganicParticles({ count, color, secondaryColor, size, motionBias = "gentle", activity = "awake" as CreatureActivity }: { count: number; color: string; secondaryColor?: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic"; activity?: CreatureActivity }) {
   const particlesRef = useRef<THREE.InstancedMesh>(null);
   const scale = size / 30;
 
@@ -287,10 +288,30 @@ function OrganicParticles({ count, color, size, motionBias = "gentle", activity 
 
   if (count === 0) return null;
 
+  const baseOpacity = activity === "sleeping" ? 0.2 : 0.65;
+
+  // If we have a secondary color, split particles into two groups
+  if (secondaryColor && count > 2) {
+    const primaryCount = Math.ceil(count * 0.6);
+    const secondaryCount = count - primaryCount;
+    return (
+      <>
+        <instancedMesh ref={particlesRef} args={[undefined, undefined, primaryCount]}>
+          <sphereGeometry args={[1, 6, 6]} />
+          <meshBasicMaterial color={color} transparent opacity={baseOpacity} />
+        </instancedMesh>
+        <instancedMesh args={[undefined, undefined, secondaryCount]}>
+          <sphereGeometry args={[1, 6, 6]} />
+          <meshBasicMaterial color={secondaryColor} transparent opacity={baseOpacity * 0.8} />
+        </instancedMesh>
+      </>
+    );
+  }
+
   return (
     <instancedMesh ref={particlesRef} args={[undefined, undefined, count]}>
       <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial color={color} transparent opacity={activity === "sleeping" ? 0.2 : 0.65} />
+      <meshBasicMaterial color={color} transparent opacity={baseOpacity} />
     </instancedMesh>
   );
 }
@@ -322,6 +343,16 @@ function Scene({
   // Memoize deriveSpecies to avoid creating new object refs every render (~15fps),
   // which would defeat React.memo on ProceduralCreature and rebuild geometry each frame.
   const species = useMemo(() => dna ? deriveSpecies(dna) : null, [dna]);
+
+  // Derive secondary color from DNA for dual-color particles
+  const secondaryParticleColor = useMemo(() => {
+    if (!dna || !species) return undefined;
+    const appearance = deriveDNAAppearance(dna, species);
+    const h2 = Math.round((appearance.primaryHue + appearance.secondaryHueShift) % 360);
+    const s = Math.round(appearance.primarySaturation - 5);
+    const l = Math.round(appearance.primaryLightness + 5);
+    return `hsl(${h2}, ${s}%, ${l}%)`;
+  }, [dna, species]);
 
   // Organic breathing: sin wave + heartbeat double-bump
   const breathSin = Math.sin(breathPhase * Math.PI * 2);
@@ -374,7 +405,7 @@ function Scene({
         </group>
       </Float>
       {particles > 0 && (
-        <OrganicParticles count={particles} color={color} size={size} motionBias={motionBias} activity={creatureActivity} />
+        <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} />
       )}
     </>
   );

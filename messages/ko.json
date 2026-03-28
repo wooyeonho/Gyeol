@@ -1064,5 +1064,18 @@
     "rewardTitle": "추천 보상",
     "rewardBody": "친구가 당신의 코드로 가입하면 둘 다 {reward} 코인을 받습니다.",
     "leaderboardTitle": "추천 랭킹"
+  },
+  "portrait": {
+    "generateTitle": "초상화 생성",
+    "generate": "새 초상화 생성",
+    "generating": "초상화 생성 중...",
+    "empty": "아직 초상화가 없습니다",
+    "emptyHint": "첫 초상화를 생성하거나 진화 시 자동 생성을 기다려보세요.",
+    "context": {
+      "portrait": "초상화",
+      "full_body": "전신",
+      "action": "액션",
+      "dream": "꿈"
+    }
   }
 }
