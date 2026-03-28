@@ -83,6 +83,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const haloRef = useRef<THREE.Mesh>(null);
   const eyeLRef = useRef<THREE.Mesh>(null);
   const eyeRRef = useRef<THREE.Mesh>(null);
+  const eyeGroupLRef = useRef<THREE.Group>(null);
+  const eyeGroupRRef = useRef<THREE.Group>(null);
   const crownRef = useRef<THREE.Mesh>(null);
   const sideLeftRef = useRef<THREE.Mesh>(null);
   const sideRightRef = useRef<THREE.Mesh>(null);
@@ -222,6 +224,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     }
 
+    // Apply eye scale from eyeScaleRef (widens when listening)
+    const es = eyeScaleRef.current;
+    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es, es);
+    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es, es);
+
     // ── Appendage dynamic animations ──
     // Crown: sway with breathing + gentle wind oscillation
     if (crownRef.current) {
@@ -298,7 +305,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       </mesh>
 
       {/* Left eye — scales up when listening */}
-      <group position={eyePositions.left}>
+      <group ref={eyeGroupLRef} position={eyePositions.left}>
         <mesh>
           <sphereGeometry args={[dynEyeSize, 12, 12]} />
           <meshStandardMaterial
@@ -316,7 +323,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       </group>
 
       {/* Right eye — scales up when listening */}
-      <group position={eyePositions.right}>
+      <group ref={eyeGroupRRef} position={eyePositions.right}>
         <mesh>
           <sphereGeometry args={[dynEyeSize, 12, 12]} />
           <meshStandardMaterial

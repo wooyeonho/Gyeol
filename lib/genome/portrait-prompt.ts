@@ -144,13 +144,14 @@ function getColorDescription(appearance: ReturnType<typeof deriveDNAAppearance>)
     240: "deep blue", 270: "violet purple", 300: "magenta", 330: "rose pink",
   };
 
-  // Find closest named hue
+  // Find closest named hue (circular distance for hue wrapping)
   const h = appearance.primaryHue;
   let closestHue = 0;
   let closestDist = 360;
   for (const [key] of Object.entries(hueNames)) {
-    const dist = Math.abs(h - Number(key));
-    if (dist < closestDist) { closestDist = dist; closestHue = Number(key); }
+    const k = Number(key);
+    const dist = Math.min(Math.abs(h - k), 360 - Math.abs(h - k));
+    if (dist < closestDist) { closestDist = dist; closestHue = k; }
   }
   const primaryName = hueNames[closestHue] || "indigo";
 
@@ -161,8 +162,9 @@ function getColorDescription(appearance: ReturnType<typeof deriveDNAAppearance>)
   let closestSecondary = 0;
   closestDist = 360;
   for (const [key] of Object.entries(hueNames)) {
-    const dist = Math.abs(secondaryHue - Number(key));
-    if (dist < closestDist) { closestDist = dist; closestSecondary = Number(key); }
+    const k = Number(key);
+    const dist = Math.min(Math.abs(secondaryHue - k), 360 - Math.abs(secondaryHue - k));
+    if (dist < closestDist) { closestDist = dist; closestSecondary = k; }
   }
   const secondaryName = hueNames[closestSecondary] || "purple";
 

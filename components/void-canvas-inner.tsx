@@ -243,6 +243,7 @@ function mulberry32(seed: number) {
 /** Organic firefly-like floating particles — dual-color + DNA-driven behavior */
 function OrganicParticles({ count, color, secondaryColor, size, motionBias = "gentle", activity = "awake" as CreatureActivity, dna, mood }: { count: number; color: string; secondaryColor?: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic"; activity?: CreatureActivity; dna?: CreatureDNA | null; mood?: string | null }) {
   const particlesRef = useRef<THREE.InstancedMesh>(null);
+  const secondaryRef = useRef<THREE.InstancedMesh>(null);
   const scale = size / 30;
 
   const offsets = useMemo(() => {
@@ -260,8 +261,12 @@ function OrganicParticles({ count, color, secondaryColor, size, motionBias = "ge
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
+  // Compute split counts for dual-color mode
+  const hasDualColor = !!(secondaryColor && count > 2);
+  const primaryCount = hasDualColor ? Math.ceil(count * 0.6) : count;
+  const secondaryCount = hasDualColor ? count - primaryCount : 0;
+
   useFrame((state) => {
-    if (!particlesRef.current) return;
     const t = state.clock.elapsedTime;
     const activityMult = activity === "sleeping" ? 0.2 : activity === "drowsy" ? 0.5 : 1;
     const speedMult = motionBias === "kinetic" ? 1.5 : motionBias === "mystic" ? 0.6 : 1;
@@ -287,9 +292,20 @@ function OrganicParticles({ count, color, secondaryColor, size, motionBias = "ge
       const s = 0.015 + brightness * 0.025;
       dummy.scale.setScalar(s * (activity === "sleeping" ? 0.5 : 1));
       dummy.updateMatrix();
-      particlesRef.current.setMatrixAt(i, dummy.matrix);
+
+      // In dual-color mode, route to primary or secondary mesh
+      if (hasDualColor) {
+        if (i < primaryCount) {
+          particlesRef.current?.setMatrixAt(i, dummy.matrix);
+        } else {
+          secondaryRef.current?.setMatrixAt(i - primaryCount, dummy.matrix);
+        }
+      } else {
+        particlesRef.current?.setMatrixAt(i, dummy.matrix);
+      }
     }
-    particlesRef.current.instanceMatrix.needsUpdate = true;
+    if (particlesRef.current) particlesRef.current.instanceMatrix.needsUpdate = true;
+    if (secondaryRef.current) secondaryRef.current.instanceMatrix.needsUpdate = true;
   });
 
   if (count === 0) return null;
@@ -297,16 +313,14 @@ function OrganicParticles({ count, color, secondaryColor, size, motionBias = "ge
   const baseOpacity = activity === "sleeping" ? 0.2 : 0.65;
 
   // If we have a secondary color, split particles into two groups
-  if (secondaryColor && count > 2) {
-    const primaryCount = Math.ceil(count * 0.6);
-    const secondaryCount = count - primaryCount;
+  if (hasDualColor) {
     return (
       <>
         <instancedMesh ref={particlesRef} args={[undefined, undefined, primaryCount]}>
           <sphereGeometry args={[1, 6, 6]} />
           <meshBasicMaterial color={color} transparent opacity={baseOpacity} />
         </instancedMesh>
-        <instancedMesh args={[undefined, undefined, secondaryCount]}>
+        <instancedMesh ref={secondaryRef} args={[undefined, undefined, secondaryCount]}>
           <sphereGeometry args={[1, 6, 6]} />
           <meshBasicMaterial color={secondaryColor} transparent opacity={baseOpacity * 0.8} />
         </instancedMesh>
