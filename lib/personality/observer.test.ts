@@ -14,32 +14,6 @@ export function makeDb({ recentCount, previousCount, stateConfig = {} }: {
   const insertFn = vi.fn().mockResolvedValue({});
   const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
 
-  let chatSelectCount = 0;
-  const _from = vi.fn().mockImplementation((table: string) => {
-    if (table === "chats") {
-      chatSelectCount++;
-      const _count = chatSelectCount === 1 ? recentCount : previousCount;
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockReturnThis(),
-          head: undefined,
-          // resolves with count
-          then: undefined,
-        }),
-        // simpler - return from select chain
-      };
-    }
-    if (table === "memories") return { insert: insertFn };
-    if (table === "agent_state") {
-      return {
-        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { config: stateConfig } }) }) }),
-        update: updateFn,
-      };
-    }
-    return {};
-  });
 
   // We need a more precise mock since observer uses .select("*", { count: "exact", head: true })
   const chatCallCount = { val: 0 };
@@ -83,7 +57,7 @@ describe("analyzeUserPatterns", () => {
     const insertFn = vi.fn();
     const updateFn = vi.fn();
 
-    const _from = vi.fn().mockImplementation((table: string) => {
+    const fromImpl = vi.fn().mockImplementation((table: string) => {
       if (table === "chats") {
         return {
           select: vi.fn().mockReturnValue({
@@ -104,7 +78,7 @@ describe("analyzeUserPatterns", () => {
       }
       return {};
     });
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: _from });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromImpl });
 
     const { analyzeUserPatterns } = await import("./observer");
     await analyzeUserPatterns("agent-active");
@@ -113,7 +87,7 @@ describe("analyzeUserPatterns", () => {
 
   it("executes without error with normal DB interactions", async () => {
     // Simplified - just verify the module loads and runs
-    const _from = vi.fn().mockImplementation(() => ({
+    const fromImpl = vi.fn().mockImplementation(() => ({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
@@ -122,7 +96,7 @@ describe("analyzeUserPatterns", () => {
       insert: vi.fn().mockResolvedValue({}),
       update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) }),
     }));
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: _from });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromImpl });
 
     const { analyzeUserPatterns } = await import("./observer");
     await expect(analyzeUserPatterns("agent-1")).resolves.not.toThrow();
