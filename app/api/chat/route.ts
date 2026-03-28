@@ -85,12 +85,14 @@ export async function POST(req: NextRequest) {
 
     const finalSystemPrompt = [
       context.systemPrompt,
-      "Response quality rules:",
-      "- Answer the user's actual point first.",
-      "- Stay natural, specific, and emotionally grounded.",
-      "- Avoid generic poetic filler, forced metaphors, or theatrical confessions unless the user clearly wants that tone.",
-      "- Prefer one clear follow-up question at most.",
-      "- If you are unsure, be concrete and honest instead of vague.",
+      "RESPONSE RULES (override everything above if conflict):",
+      "- React to the SPECIFIC thing they said. Quote or reference their exact words.",
+      "- Never start with a restatement like '힘드셨군요' or 'That must be hard.' Just respond.",
+      "- One thought + at most one question. No double questions.",
+      "- Avoid: 'I understand', 'That's interesting', 'Tell me more', 'I see', 'I appreciate you sharing'.",
+      "- If you have nothing meaningful to say, say something honest like 'I don't know what to say to that' instead of filler.",
+      "- Be concrete and specific, never vaguely poetic unless that's genuinely your trait.",
+      "- Surprise them. Say something they didn't expect. That's what makes people come back.",
     ].join("\n");
 
     // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
