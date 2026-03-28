@@ -159,7 +159,7 @@ export function LivingFeed({
       greetingFiredRef.current = true;
       onGreetingReadyRef.current(t("livingFeed.birthGreeting"));
     }
-  }, [loading, data]);
+  }, [loading, data, t]);
 
   if (loading || !data || !data.has_activity) {
     return null;
