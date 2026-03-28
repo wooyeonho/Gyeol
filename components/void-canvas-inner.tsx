@@ -9,6 +9,15 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { ProceduralCreature } from "@/components/procedural-creature";
+import {
+  classifyTouch,
+  detectBodyPart,
+  computePhysicsResponse,
+  tickPhysicsState,
+  createInitialPhysicsState,
+  applyPhysicsResponse,
+  type TouchPhysicsState,
+} from "@/lib/creature/touch-physics";
 
 export interface InnerProps {
   shape: string;
@@ -350,15 +359,26 @@ function Scene({
   const [tapBounce, setTapBounce] = useState(0);
   const tapDecay = useRef(0);
 
-  // Touch physics state for Zelda-like interaction freedom
+  // Zelda-like touch physics engine — full gesture classification + physics response
   const pointerDownTimeRef = useRef(0);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number; z: number } | null>(null);
   const pointerMoveDistRef = useRef(0);
+  const lastHitPointRef = useRef<{ x: number; y: number; z: number }>({ x: 0, y: 0, z: 0 });
+  const physicsStateRef = useRef<TouchPhysicsState>(createInitialPhysicsState());
+  const [physicsScale, setPhysicsScale] = useState(1);
+  const [physicsFlash, setPhysicsFlash] = useState(0);
 
   useFrame((_, delta) => {
     if (tapDecay.current > 0) {
       tapDecay.current = Math.max(0, tapDecay.current - delta * 4);
       setTapBounce(tapDecay.current);
+    }
+    // Tick physics decay every frame for smooth bounce/flash
+    const ps = physicsStateRef.current;
+    if (ps.scaleMult !== 1 || ps.flash > 0.01) {
+      physicsStateRef.current = tickPhysicsState(ps, delta * 1000);
+      setPhysicsScale(physicsStateRef.current.scaleMult);
+      setPhysicsFlash(physicsStateRef.current.flash);
     }
   });
 
@@ -366,7 +386,9 @@ function Scene({
     pointerDownTimeRef.current = Date.now();
     const px = e.point?.x ?? 0;
     const py = e.point?.y ?? 0;
-    pointerStartRef.current = { x: px, y: py };
+    const pz = e.point?.z ?? 0;
+    pointerStartRef.current = { x: px, y: py, z: pz };
+    lastHitPointRef.current = { x: px, y: py, z: pz };
     pointerMoveDistRef.current = 0;
     tapDecay.current = 1;
     setTapBounce(1);
@@ -374,29 +396,31 @@ function Scene({
   }, [onTap]);
 
   const handlePointerUp = useCallback(() => {
-    const duration = Date.now() - pointerDownTimeRef.current;
+    const now = Date.now();
+    const duration = now - pointerDownTimeRef.current;
     const dist = pointerMoveDistRef.current;
+    // Velocity = total distance / time (pixels per ms)
+    const velocity = duration > 0 ? (dist / duration) * 1000 : 0;
 
-    // Classify touch type and compute affinity delta
-    let affinityDelta = 0;
-    if (duration < 200 && dist < 0.1) {
-      // Tap — friendly poke
-      affinityDelta = 0.1;
-    } else if (duration > 500 && dist < 0.15) {
-      // Hold — patient presence
-      affinityDelta = 0.3;
-    } else if (dist > 0.3 && duration > 200) {
-      // Stroke — gentle affection
-      affinityDelta = 0.5;
-    } else if (dist > 0.5 && duration < 300) {
-      // Flick — playful
-      affinityDelta = 0.15;
-    } else {
-      // Generic touch
-      affinityDelta = 0.05;
-    }
+    // Full physics engine classification
+    const touchType = classifyTouch(duration, velocity, dist * 100); // scale dist to px-like units
+    const bodyPart = detectBodyPart(lastHitPointRef.current);
+    const touchEvent = {
+      type: touchType,
+      part: bodyPart,
+      duration,
+      velocity,
+      timestamp: now,
+    };
+    const response = computePhysicsResponse(touchEvent);
 
-    onCreatureTouch?.(affinityDelta);
+    // Apply physics response (bounce, flash, eye reaction)
+    physicsStateRef.current = applyPhysicsResponse(physicsStateRef.current, response, now);
+    setPhysicsScale(physicsStateRef.current.scaleMult);
+    setPhysicsFlash(response.flashIntensity);
+
+    // Report affinity delta to parent
+    onCreatureTouch?.(response.affinityDelta);
     pointerStartRef.current = null;
   }, [onCreatureTouch]);
 
@@ -407,7 +431,8 @@ function Scene({
     const dx = px - pointerStartRef.current.x;
     const dy = py - pointerStartRef.current.y;
     pointerMoveDistRef.current += Math.sqrt(dx * dx + dy * dy);
-    pointerStartRef.current = { x: px, y: py };
+    pointerStartRef.current = { x: px, y: py, z: e.point?.z ?? 0 };
+    lastHitPointRef.current = { x: px, y: py, z: e.point?.z ?? 0 };
   }, []);
 
   // Memoize deriveSpecies to avoid creating new object refs every render (~15fps),
@@ -434,11 +459,12 @@ function Scene({
   const effectiveOpacity = opacity * activityDim;
 
   const tapScale = 1 + tapBounce * 0.15;
-  const pulseScale = (isListening ? 1.1 : 1) * animScale * pulseScaleOverride * tapScale;
+  const touchPhysicsScaleMult = physicsScale;
+  const pulseScale = (isListening ? 1.1 : 1) * animScale * pulseScaleOverride * tapScale * touchPhysicsScaleMult;
   const floatSpeed = motionBias === "kinetic" ? 2.2 : motionBias === "mystic" ? 1.1 : 1.5;
   const floatIntensity = motionBias === "kinetic" ? 0.7 : motionBias === "mystic" ? 0.35 : 0.5;
   const rotationIntensity = motionBias === "kinetic" ? 0.3 : motionBias === "mystic" ? 0.12 : 0.2;
-  const tapGlow = (glow / 50 + tapBounce * 0.8) * activityDim + excitePulse * 0.6;
+  const tapGlow = (glow / 50 + tapBounce * 0.8 + physicsFlash * 0.5) * activityDim + excitePulse * 0.6;
 
   const sleepFloatMult = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
 

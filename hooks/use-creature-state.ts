@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { resolveIdleBehavior, type IdleBehavior } from "@/lib/creature/idle-behaviors";
+import { deriveAffinityMood } from "@/lib/creature/affinity-tracker";
+import type { CreatureDNA } from "@/lib/genome/dna";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";
 
@@ -33,6 +36,8 @@ export type CreatureState = {
   touchCount: number;
   /** Cumulative affinity delta from touches this session */
   sessionAffinity: number;
+  /** Affinity-derived mood (from touch/watch/ignore patterns) */
+  affinityMood: string;
 };
 
 const DROWSY_AFTER_S = 30;
@@ -50,7 +55,12 @@ function getBreathRate(vitality: number, activity: CreatureActivity): number {
   }
 }
 
-export function useCreatureState(vitality: number, isStreaming: boolean) {
+export function useCreatureState(
+  vitality: number,
+  isStreaming: boolean,
+  mood?: string | null,
+  dna?: CreatureDNA | null,
+) {
   const [state, setState] = useState<CreatureState>({
     activity: "awake",
     idleActivity: "alert",
@@ -63,7 +73,14 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     microTremor: { x: 0, y: 0 },
     touchCount: 0,
     sessionAffinity: 0,
+    affinityMood: "neutral",
   });
+
+  // Store DNA/mood in refs for access inside animation loop without re-subscribing
+  const moodRef = useRef(mood);
+  const dnaRef = useRef(dna);
+  useEffect(() => { moodRef.current = mood; }, [mood]);
+  useEffect(() => { dnaRef.current = dna; }, [dna]);
 
   const lastInteractionRef = useRef(0);
   const rafRef = useRef<number>(0);
@@ -202,13 +219,28 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
 
       if (elapsed >= SET_STATE_INTERVAL) {
         lastSetStateRef.current = now;
-        // Derive rich idle activity from basic activity + context
-        const idleActivity: IdleActivity =
-          activity === "sleeping" ? (touchCountRef.current > 5 ? "dreaming" : "sleeping") :
-          activity === "drowsy" ? "drowsy" :
-          idleSec > 15 && touchCountRef.current > 8 ? "playing" :
-          idleSec > 10 ? "daydreaming" :
-          "alert";
+        // Derive affinity mood from session interaction patterns
+        const affinityMoodValue = deriveAffinityMood({
+          watchSeconds: Math.max(0, idleSec < 30 ? idleSec : 0),
+          touchCount: touchCountRef.current,
+          touchAffinity: sessionAffinityRef.current,
+          ignoreSeconds: idleSec > 60 ? idleSec - 60 : 0,
+          lastInteractionAt: lastInteractionRef.current,
+          sessionStartAt: 0,
+        });
+
+        // Full idle behavior resolution — BG3-style: DNA + mood + affinity drive behavior
+        const resolvedIdle: IdleBehavior = resolveIdleBehavior({
+          idleSeconds: Math.floor(idleSec),
+          mood: moodRef.current ?? null,
+          dna: dnaRef.current ?? null,
+          affinityMood: affinityMoodValue,
+          recentTouchCount: touchCountRef.current,
+          isStreaming,
+        });
+
+        // Map rich idle to basic activity for backward compat
+        const idleActivity: IdleActivity = resolvedIdle;
 
         setState((s) => ({
           ...s,
@@ -222,6 +254,7 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
           microTremor: { ...tremorRef.current },
           touchCount: touchCountRef.current,
           sessionAffinity: sessionAffinityRef.current,
+          affinityMood: affinityMoodValue,
         }));
       } else {
         // Still flush if activity changed (low frequency, important for UI)

@@ -96,7 +96,11 @@ export default function Home() {
   const visual: AgentVisual = agentState?.visual ?? {};
   const vitality = agentState?.vitality ?? 1;
   const { isLowDevice } = useDevicePerformance();
-  const creature = useCreatureState(vitality, isStreaming);
+  const creatureDna = useMemo(() => {
+    const genome = agentState?.genome as { dna?: Record<string, number> } | null | undefined;
+    return (genome?.dna ?? null) as import("@/lib/genome/dna").CreatureDNA | null;
+  }, [agentState?.genome]);
+  const creature = useCreatureState(vitality, isStreaming, agentState?.mood ?? null, creatureDna);
   const [circadian, setCircadian] = useState(() => getCircadianTint());
   useEffect(() => {
     const update = () => setCircadian(getCircadianTint());
@@ -302,7 +306,6 @@ export default function Home() {
     );
   }
 
-  const creatureDna = ((agentState?.genome as Record<string, unknown> | null | undefined)?.dna as CreatureDNA | null | undefined) ?? null;
   const creatureSize = Math.min(80, Math.max(20, (visual.size ?? 24) * 1.8));
 
   return (

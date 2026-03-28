@@ -45,8 +45,9 @@ export function classifyTouch(
   velocity: number,
   pointerMoveDistance: number,
 ): TouchType {
+  // Order matters: check flick BEFORE stroke since both involve movement
   if (durationMs < 150 && velocity < 2) return "tap";
-  if (durationMs < 150 && velocity >= 5) return "flick";
+  if (velocity >= 5 && durationMs < 300) return "flick"; // fast swipe = flick (checked before stroke)
   if (durationMs >= 500 && pointerMoveDistance < 20) return "hold";
   if (pointerMoveDistance >= 30 && durationMs > 100) return "stroke";
   return "poke";
