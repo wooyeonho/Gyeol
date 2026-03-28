@@ -229,7 +229,7 @@ export function useCreatureState(
         lastSetStateRef.current = now;
         // Accumulate watch time: user is "watching" when idle < 30s (page active, engaged)
         if (idleSec < 30) {
-          accumulatedWatchRef.current += (SET_STATE_INTERVAL / 1000);
+          accumulatedWatchRef.current += Math.min(elapsed, SET_STATE_INTERVAL * 3) / 1000;
         }
 
         // Derive affinity mood from session interaction patterns
