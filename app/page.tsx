@@ -31,7 +31,6 @@ import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
-import type { CreatureDNA } from "@/lib/genome/dna";
 
 export default function Home() {
   const { locale, t } = useTranslations();
