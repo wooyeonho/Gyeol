@@ -83,9 +83,9 @@ describe("crawlSite", () => {
     const html1 = `<html><head><title>Page 1</title></head><body><main>Content 1</main><a href="/page2">Link</a></body></html>`;
     const html2 = `<html><head><title>Page 2</title></head><body><main>Content 2</main></body></html>`;
 
-    const _callCount = 0;
+
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      callCount++;
+
       const url = typeof input === "string" ? input : (input as Request).url;
       const html = url.includes("page2") ? html2 : html1;
       return new Response(html, {

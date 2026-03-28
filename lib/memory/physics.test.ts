@@ -7,9 +7,8 @@ vi.mock("@/lib/supabase/service", () => ({
 import { createServiceClient } from "@/lib/supabase/service";
 
 function makeDb() {
-  const eqFn = vi.fn().mockReturnThis();
+  const _eqFn = vi.fn().mockReturnThis();
   const ltFn = vi.fn().mockResolvedValue({});
-  const _updateFn = vi.fn().mockReturnValue({ eq: eqFn });
   const selectFn = vi.fn().mockReturnValue({
     eq: vi.fn().mockReturnValue({
       single: vi.fn().mockResolvedValue({ data: { reference_count: 3 } }),
@@ -46,7 +45,7 @@ describe("runMemoryPhysics", () => {
 
   it("does not throw on error", async () => {
     const from = vi.fn().mockImplementation(() => ({
-      update: vi.fn().mockImplementation(() => {
+      update: _updateFn.mockImplementation(() => {
         throw new Error("column not found");
       }),
     }));

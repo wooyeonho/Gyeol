@@ -53,7 +53,7 @@ async function runOptionalStep(
   }
 }
 
-async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl", _cronSecret: string) {
+async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl", _secret?: string) {
   try {
     if (action === "learner") {
       const { executeLearner } = await import("@/lib/cron-core/learner");
