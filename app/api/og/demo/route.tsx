@@ -15,6 +15,7 @@ export const runtime = "edge";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const dnaParam = searchParams.get("dna") || "";
+  const reading = searchParams.get("reading") || "";
 
   // Parse DNA from comma-separated values
   const values = dnaParam.split(",").map(Number);
@@ -121,6 +122,23 @@ export async function GET(req: NextRequest) {
           <span>·</span>
           <span>{rarityLabel}</span>
         </div>
+
+        {/* Soul reading */}
+        {reading && (
+          <div
+            style={{
+              fontSize: "18px",
+              color: "rgba(255,255,255,0.65)",
+              fontStyle: "italic",
+              lineHeight: "1.6",
+              textAlign: "center",
+              maxWidth: "700px",
+              marginBottom: "24px",
+            }}
+          >
+            &ldquo;{reading}&rdquo;
+          </div>
+        )}
 
         {/* Dominant traits */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "30px" }}>

@@ -35,6 +35,8 @@ export interface InnerProps {
   restoring3dLabel?: string;
   /** Creature DNA for procedural rendering */
   dna?: CreatureDNA | null;
+  /** Current mood for visual modulation */
+  mood?: string | null;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -237,8 +239,8 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Organic firefly-like floating particles */
-function OrganicParticles({ count, color, size, motionBias = "gentle", activity = "awake" as CreatureActivity }: { count: number; color: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic"; activity?: CreatureActivity }) {
+/** Organic firefly-like floating particles — DNA-driven behavior */
+function OrganicParticles({ count, color, size, motionBias = "gentle", activity = "awake" as CreatureActivity, dna, mood }: { count: number; color: string; size: number; motionBias?: "gentle" | "kinetic" | "mystic"; activity?: CreatureActivity; dna?: CreatureDNA | null; mood?: string | null }) {
   const particlesRef = useRef<THREE.InstancedMesh>(null);
   const scale = size / 30;
 
@@ -262,13 +264,17 @@ function OrganicParticles({ count, color, size, motionBias = "gentle", activity 
     const t = state.clock.elapsedTime;
     const activityMult = activity === "sleeping" ? 0.2 : activity === "drowsy" ? 0.5 : 1;
     const speedMult = motionBias === "kinetic" ? 1.5 : motionBias === "mystic" ? 0.6 : 1;
+    // DNA-driven particle behavior
+    const dnaSpeedBoost = dna ? (dna.intensity * 0.4 + dna.playfulness * 0.3) : 0;
+    const dnaDriftBoost = dna ? (dna.independence * 0.3 + dna.openness * 0.2) : 0;
+    const moodSpeedMod = mood === "joyful" || mood === "energetic" ? 1.3 : mood === "melancholy" ? 0.5 : 1;
 
     for (let i = 0; i < count; i++) {
       const o = offsets[i];
-      const angle = o.angle + t * o.speed * 0.15 * speedMult * activityMult;
-      const r = o.radius * scale;
-      const wobbleX = Math.sin(t * o.wobble * 10 + o.phase) * 0.08 * scale;
-      const wobbleY = Math.cos(t * o.wobble * 8 + o.phase) * 0.06 * scale;
+      const angle = o.angle + t * o.speed * 0.15 * speedMult * activityMult * (1 + dnaSpeedBoost) * moodSpeedMod;
+      const r = o.radius * scale * (1 + dnaDriftBoost * 0.3);
+      const wobbleX = Math.sin(t * o.wobble * 10 + o.phase) * 0.08 * scale * (1 + dnaSpeedBoost * 0.5);
+      const wobbleY = Math.cos(t * o.wobble * 8 + o.phase) * 0.06 * scale * (1 + dnaSpeedBoost * 0.5);
 
       dummy.position.set(
         Math.cos(angle) * r + wobbleX,
@@ -299,7 +305,7 @@ function Scene({
   shape, color, size, glow, animation, particles, vitality, isListening,
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
-  dna,
+  dna, mood,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -360,6 +366,9 @@ function Scene({
               creatureActivity={creatureActivity}
               excitePulse={excitePulse}
               pointerNorm={creatureActivity !== "sleeping" ? pointerNorm : undefined}
+              isListening={isListening}
+              mood={mood}
+              vitality={vitality}
             />
           ) : (
             <CoreShape
@@ -374,7 +383,7 @@ function Scene({
         </group>
       </Float>
       {particles > 0 && (
-        <OrganicParticles count={particles} color={color} size={size} motionBias={motionBias} activity={creatureActivity} />
+        <OrganicParticles count={particles} color={color} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} />
       )}
     </>
   );

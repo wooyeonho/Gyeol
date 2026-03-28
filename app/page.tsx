@@ -51,6 +51,32 @@ export default function Home() {
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
 
+  // Transfer demo DNA to new account (runs once after first agent creation)
+  const dnaSeededRef = useRef(false);
+  useEffect(() => {
+    if (dnaSeededRef.current || loading || !agentState) return;
+    try {
+      const raw = sessionStorage.getItem("gyeol_demo_dna");
+      if (!raw) return;
+      dnaSeededRef.current = true;
+      const demoDna = JSON.parse(raw);
+      fetch("/api/agent/seed-dna", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dna: demoDna }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.seeded) fetchAgentState({ silent: true });
+        })
+        .catch(() => {})
+        .finally(() => {
+          sessionStorage.removeItem("gyeol_demo_dna");
+          sessionStorage.removeItem("gyeol_demo_reading");
+        });
+    } catch {}
+  }, [loading, agentState, fetchAgentState]);
+
   // Inject greeting once history is loaded — no rAF polling needed
   useEffect(() => {
     if (!historyLoaded || !pendingGreeting || greetingInjectedRef.current) return;
