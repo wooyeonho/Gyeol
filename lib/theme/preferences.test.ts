@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   isThemeMode,
   isFontSize,
@@ -6,8 +6,6 @@ import {
   readStoredHighContrast,
   readStoredFontSize,
   readStoredReduceMotion,
-  applyThemePreferenceToDocument,
-  writeThemePreference,
   THEME_STORAGE_KEYS,
   THEME_CHANGE_EVENT,
 } from "./preferences";

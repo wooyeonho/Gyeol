@@ -32,10 +32,10 @@ describe("dream integration", () => {
     (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
     const { executeDream } = await import("./dream");
-    const result = await executeDream();
+    const _result = await executeDream();
 
-    expect(result.processed).toBe(0);
-    expect(result.skipped).toBe("lock");
+    expect(_result.processed).toBe(0);
+    expect(_result.skipped).toBe("lock");
     expect(releaseCronLock).not.toHaveBeenCalled();
   });
 
@@ -47,9 +47,9 @@ describe("dream integration", () => {
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromMock });
 
     const { executeDream } = await import("./dream");
-    const result = await executeDream();
+    const _result = await executeDream();
 
-    expect(result.processed).toBe(0);
+    expect(_result.processed).toBe(0);
     expect(releaseCronLock).toHaveBeenCalledWith("cron:dream");
   });
 
@@ -136,7 +136,7 @@ describe("dream integration", () => {
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromMock });
 
     const { executeDream } = await import("./dream");
-    const result = await executeDream();
+    const _result = await executeDream();
 
     // All 3 generateJSON stages were called
     expect(jsonCallCount).toBe(3);
@@ -212,9 +212,9 @@ describe("dream integration", () => {
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromMock });
 
     const { executeDream } = await import("./dream");
-    const result = await executeDream();
+    const _result = await executeDream();
 
     // Dream was skipped because stage 1 returned null
-    expect(result.processed).toBe(0);
+    expect(_result.processed).toBe(0);
   });
 });

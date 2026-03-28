@@ -9,7 +9,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 function makeDb() {
   const eqFn = vi.fn().mockReturnThis();
   const ltFn = vi.fn().mockResolvedValue({});
-  const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
+  const _updateFn = vi.fn().mockReturnValue({ eq: eqFn });
   const selectFn = vi.fn().mockReturnValue({
     eq: vi.fn().mockReturnValue({
       single: vi.fn().mockResolvedValue({ data: { reference_count: 3 } }),
@@ -65,20 +65,20 @@ describe("incrementReferenceCounts", () => {
 
   it("increments reference count for each memory ID", async () => {
     const updateEq = vi.fn().mockResolvedValue({});
-    const updateFn = vi.fn().mockReturnValue({ eq: updateEq });
+    const _updateFn = vi.fn().mockReturnValue({ eq: updateEq });
     const selectFn = vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({ data: { reference_count: 2 } }),
       }),
     });
-    const from = vi.fn().mockReturnValue({ select: selectFn, update: updateFn });
+    const from = vi.fn().mockReturnValue({ select: selectFn, update: _updateFn });
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from });
 
     const { incrementReferenceCounts } = await import("./physics");
     await incrementReferenceCounts("agent-1", ["mem-1", "mem-2"]);
 
-    expect(updateFn).toHaveBeenCalledWith({ reference_count: 3 });
-    expect(updateFn).toHaveBeenCalledTimes(2);
+    expect(_updateFn).toHaveBeenCalledWith({ reference_count: 3 });
+    expect(_updateFn).toHaveBeenCalledTimes(2);
   });
 
   it("handles empty ids array", async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
@@ -23,11 +23,11 @@ const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, { label: string; color: str
 
 export default function ChallengesPage() {
   const { t } = useTranslations();
-  const [state, setState] = useState<DailyChallengeState | null>(() => {
+  const [state] = useState<DailyChallengeState | null>(() => {
     if (typeof window === "undefined") return null;
     return initOrRefreshDailyChallenges();
   });
-  const [definitions, setDefinitions] = useState<ReturnType<typeof generateDailyChallenges>>(() => {
+  const [definitions] = useState<ReturnType<typeof generateDailyChallenges>>(() => {
     if (typeof window === "undefined") return [];
     return generateDailyChallenges(getTodayDateString());
   });

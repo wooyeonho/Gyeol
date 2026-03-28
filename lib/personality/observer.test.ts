@@ -6,7 +6,7 @@ vi.mock("@/lib/supabase/service", () => ({
 
 import { createServiceClient } from "@/lib/supabase/service";
 
-function makeDb({ recentCount, previousCount, stateConfig = {} }: {
+export function makeDb({ recentCount, previousCount, stateConfig = {} }: {
   recentCount: number;
   previousCount: number;
   stateConfig?: Record<string, unknown>;
@@ -15,10 +15,10 @@ function makeDb({ recentCount, previousCount, stateConfig = {} }: {
   const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
 
   let chatSelectCount = 0;
-  const from = vi.fn().mockImplementation((table: string) => {
+  const _from = vi.fn().mockImplementation((table: string) => {
     if (table === "chats") {
       chatSelectCount++;
-      const count = chatSelectCount === 1 ? recentCount : previousCount;
+      const _count = chatSelectCount === 1 ? recentCount : previousCount;
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnThis(),
@@ -83,7 +83,7 @@ describe("analyzeUserPatterns", () => {
     const insertFn = vi.fn();
     const updateFn = vi.fn();
 
-    const from = vi.fn().mockImplementation((table: string) => {
+    const _from = vi.fn().mockImplementation((table: string) => {
       if (table === "chats") {
         return {
           select: vi.fn().mockReturnValue({
@@ -104,7 +104,7 @@ describe("analyzeUserPatterns", () => {
       }
       return {};
     });
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: _from });
 
     const { analyzeUserPatterns } = await import("./observer");
     await analyzeUserPatterns("agent-active");
@@ -113,7 +113,7 @@ describe("analyzeUserPatterns", () => {
 
   it("executes without error with normal DB interactions", async () => {
     // Simplified - just verify the module loads and runs
-    const from = vi.fn().mockImplementation(() => ({
+    const _from = vi.fn().mockImplementation(() => ({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
@@ -122,7 +122,7 @@ describe("analyzeUserPatterns", () => {
       insert: vi.fn().mockResolvedValue({}),
       update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) }),
     }));
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from });
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: _from });
 
     const { analyzeUserPatterns } = await import("./observer");
     await expect(analyzeUserPatterns("agent-1")).resolves.not.toThrow();
