@@ -150,6 +150,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
   }, [mood]);
 
+  const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
+  const emissiveIntensity = Math.max(0.05, (appearance.glowIntensity * 0.3 + moodMod.emissiveBoost) * activityDim);
+
   // Animation: breathing, eye tracking, idle rotation, listening posture, vertex wave
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -264,11 +267,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
   });
 
-  const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
-  const emissiveIntensity = Math.max(0.05, (appearance.glowIntensity * 0.3 + moodMod.emissiveBoost) * activityDim);
-
-  // Dynamic eye size: widens when listening
-  const dynEyeSize = eyeSize * eyeScaleRef.current;
+  // Base eye size (dynamic scaling handled in useFrame via eyeScaleRef)
+  const dynEyeSize = eyeSize;
 
   return (
     <group ref={groupRef}>
