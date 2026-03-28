@@ -25,6 +25,43 @@ interface ProceduralCreatureProps {
 const SPHERE_DETAIL = 4; // icosahedron subdivision level
 
 /**
+ * Multi-mesh system: select base geometry per archetype.
+ * Each archetype gets a fundamentally different silhouette.
+ */
+function createArchetypeGeometry(
+  archetype: string,
+  radius: number,
+): THREE.BufferGeometry {
+  switch (archetype) {
+    case "crystalline":
+      // Octahedron — sharp faceted crystal
+      return new THREE.OctahedronGeometry(radius, 1);
+    case "mechanical":
+      // Dodecahedron — geometric precision
+      return new THREE.DodecahedronGeometry(radius, 1);
+    case "volcanic":
+      // Low-poly icosahedron — spiky rough surface
+      return new THREE.IcosahedronGeometry(radius, 1);
+    case "fluid":
+      // High-detail sphere — smooth flowing surface
+      return new THREE.SphereGeometry(radius, 24, 16);
+    case "spectral":
+      // Tetrahedron base — ethereal minimal form
+      return new THREE.TetrahedronGeometry(radius, 2);
+    case "verdant":
+      // Dodecahedron — organic faceted leaf-like form
+      return new THREE.DodecahedronGeometry(radius, 2);
+    case "ethereal":
+      // High-detail icosahedron — smooth ethereal body
+      return new THREE.IcosahedronGeometry(radius, SPHERE_DETAIL + 1);
+    case "organic":
+    default:
+      // Standard icosahedron — classic organic form
+      return new THREE.IcosahedronGeometry(radius, SPHERE_DETAIL);
+  }
+}
+
+/**
  * A fully procedural creature mesh driven entirely by DNA.
  * Uses morph targets on an icosahedron to create unique body shapes,
  * with DNA-derived colors, glow, and animation parameters.
@@ -46,6 +83,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const haloRef = useRef<THREE.Mesh>(null);
   const eyeLRef = useRef<THREE.Mesh>(null);
   const eyeRRef = useRef<THREE.Mesh>(null);
+  const crownRef = useRef<THREE.Mesh>(null);
+  const sideLeftRef = useRef<THREE.Mesh>(null);
+  const sideRightRef = useRef<THREE.Mesh>(null);
+  const veilRefs = useRef<(THREE.Mesh | null)[]>([null, null, null]);
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
 
@@ -54,8 +95,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const morphWeights = useMemo(() => deriveMorphWeights(dna, species), [dna, species]);
 
   // Create the deformed geometry with morph targets applied at init time
+  // Uses archetype-specific base geometry for unique silhouettes
   const geometry = useMemo(() => {
-    const base = new THREE.IcosahedronGeometry(0.42, SPHERE_DETAIL);
+    const base = createArchetypeGeometry(species.archetype, 0.42);
     const positions = base.attributes.position.array as Float32Array;
 
     // Compute and apply displacement
@@ -70,7 +112,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Store base positions for vertex wave animation
     (base.attributes.position as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions = new Float32Array(morphed);
     return base;
-  }, [morphWeights]);
+  }, [morphWeights, species.archetype]);
 
   // Colors from appearance
   const primaryColor = useMemo(() => {
@@ -176,6 +218,50 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         eyeRef.current.position.y = THREE.MathUtils.lerp(eyeRef.current.position.y, targetY, 0.08);
       }
     }
+
+    // ── Appendage dynamic animations ──
+    // Crown: sway with breathing + gentle wind oscillation
+    if (crownRef.current) {
+      const windPhase = t * 1.2 + 0.5;
+      const sway = Math.sin(windPhase) * 0.12 * activityMult;
+      const breathTilt = breathSin * 0.06;
+      crownRef.current.rotation.x = sway + breathTilt;
+      crownRef.current.rotation.z = Math.cos(windPhase * 0.7) * 0.08 * activityMult;
+      // Subtle scale pulse with breathing
+      const crownPulse = 1 + breathSin * 0.05;
+      crownRef.current.scale.setScalar(crownPulse);
+    }
+
+    // Side appendages: flap/bob with breathing + asymmetric wind
+    if (sideLeftRef.current) {
+      const flapPhase = t * 0.8;
+      const flapAngle = Math.sin(flapPhase) * 0.15 * activityMult;
+      const breathLift = breathSin * 0.08;
+      sideLeftRef.current.rotation.z = 0.4 + flapAngle + breathLift;
+      sideLeftRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
+    }
+    if (sideRightRef.current) {
+      const flapPhase = t * 0.8 + Math.PI * 0.3; // slightly offset for organic feel
+      const flapAngle = Math.sin(flapPhase) * 0.15 * activityMult;
+      const breathLift = breathSin * 0.08;
+      sideRightRef.current.rotation.z = -0.4 - flapAngle - breathLift;
+      sideRightRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
+    }
+
+    // Veil tendrils: undulate like seaweed in a current
+    for (let vi = 0; vi < 3; vi++) {
+      const veilMesh = veilRefs.current[vi];
+      if (!veilMesh) continue;
+      const phase = t * 0.6 + vi * (Math.PI * 2 / 3);
+      const swingX = Math.sin(phase) * 0.2 * activityMult;
+      const swingZ = Math.cos(phase * 0.8 + 0.5) * 0.15 * activityMult;
+      const breathSwing = breathSin * 0.1;
+      veilMesh.rotation.x = swingX + breathSwing;
+      veilMesh.rotation.z = swingZ;
+      // Gentle stretch with breathing
+      const veilPulse = 1 + breathSin * 0.04;
+      veilMesh.scale.y = veilPulse;
+    }
   });
 
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
@@ -247,9 +333,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       </group>
 
-      {/* Crown appendage for high-creativity creatures */}
+      {/* Crown appendage for high-creativity creatures — animated sway */}
       {morphWeights.crownGrowth > 0.3 && (
-        <mesh position={[0, 0.42 + morphWeights.crownGrowth * 0.2, 0]}>
+        <mesh ref={crownRef} position={[0, 0.42 + morphWeights.crownGrowth * 0.2, 0]}>
           <coneGeometry args={[0.06 + morphWeights.crownGrowth * 0.04, 0.15 + morphWeights.crownGrowth * 0.2, 5]} />
           <meshStandardMaterial
             color={primaryColor}
@@ -261,10 +347,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       )}
 
-      {/* Side appendages for assertive creatures */}
+      {/* Side appendages for assertive creatures — animated flap */}
       {morphWeights.sideSpread > 0.35 && (
         <>
-          <mesh position={[-0.38 - morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, 0.4]}>
+          <mesh ref={sideLeftRef} position={[-0.38 - morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, 0.4]}>
             <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
             <meshStandardMaterial
               color={primaryColor}
@@ -274,7 +360,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
               opacity={0.6 * activityDim}
             />
           </mesh>
-          <mesh position={[0.38 + morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, -0.4]}>
+          <mesh ref={sideRightRef} position={[0.38 + morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, -0.4]}>
             <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
             <meshStandardMaterial
               color={primaryColor}
@@ -287,7 +373,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </>
       )}
 
-      {/* Veil drape tendrils for open/empathic creatures */}
+      {/* Veil drape tendrils for open/empathic creatures — animated undulation */}
       {morphWeights.veilDrape > 0.3 && (
         <>
           {[0, 1, 2].map((i) => {
@@ -296,6 +382,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             return (
               <mesh
                 key={i}
+                ref={(el) => { veilRefs.current[i] = el; }}
                 position={[
                   Math.cos(angle) * 0.15,
                   -0.35 - morphWeights.veilDrape * 0.15,

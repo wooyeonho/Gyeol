@@ -963,5 +963,18 @@
     "rewardTitle": "Recompensa de referido",
     "rewardBody": "Cuando tu amigo se registra con tu código, ambos reciben {reward} monedas.",
     "leaderboardTitle": "Top Referidores"
+  },
+  "portrait": {
+    "generateTitle": "Generar Retrato",
+    "generate": "Generar Nuevo Retrato",
+    "generating": "Creando retrato...",
+    "empty": "Aún no hay retratos",
+    "emptyHint": "Genera tu primer retrato o espera a que se cree automáticamente durante la evolución.",
+    "context": {
+      "portrait": "Retrato",
+      "full_body": "Cuerpo Completo",
+      "action": "Acción",
+      "dream": "Sueño"
+    }
   }
 }

@@ -1064,5 +1064,18 @@
     "rewardTitle": "Referral Reward",
     "rewardBody": "Both you and your friend get {reward} coins when they sign up with your code.",
     "leaderboardTitle": "Top Referrers"
+  },
+  "portrait": {
+    "generateTitle": "Generate Portrait",
+    "generate": "Generate New Portrait",
+    "generating": "Creating portrait...",
+    "empty": "No portraits yet",
+    "emptyHint": "Generate your first portrait or wait for an evolution to create one automatically.",
+    "context": {
+      "portrait": "Portrait",
+      "full_body": "Full Body",
+      "action": "Action",
+      "dream": "Dream"
+    }
   }
 }
