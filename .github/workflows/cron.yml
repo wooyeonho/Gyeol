@@ -46,7 +46,7 @@ jobs:
         run: |
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/heartbeat" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            --max-time 60
+            --max-time 300
 
   time_capsule:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 * * * *'
