@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateInitialDNA, applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { generateInitialDNA, applySoftMutation, type CreatureDNA, DNA_AXES } from "@/lib/genome/dna";
 import { DNAReveal } from "@/components/demo/dna-reveal";
 
 type Message = {
@@ -13,9 +13,9 @@ type Message = {
 const DEMO_MAX_TURNS = 3;
 
 const STARTER_PROMPTS = [
-  "I've been thinking about what makes me... me",
-  "Tell me something unexpected",
-  "What do you see when you look at me?",
+  "I feel like nobody really knows me",
+  "What's the point of all this?",
+  "I had the weirdest dream last night",
 ];
 
 export default function DemoPage() {
@@ -27,6 +27,7 @@ export default function DemoPage() {
     generateInitialDNA(`demo-${Date.now()}`)
   );
   const [userTurns, setUserTurns] = useState(0);
+  const [soulReading, setSoulReading] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -130,9 +131,21 @@ export default function DemoPage() {
         setIsStreaming(false);
         abortRef.current = null;
 
-        // Trigger reveal after 3rd turn
+        // Trigger reveal after 3rd turn — fetch soul reading first
         if (newTurnCount >= DEMO_MAX_TURNS) {
-          setTimeout(() => setPhase("reveal"), 1500);
+          fetch("/api/demo/reading", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dna: newDna, history: newMessages }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.reading) setSoulReading(data.reading);
+            })
+            .catch(() => {})
+            .finally(() => {
+              setTimeout(() => setPhase("reveal"), 1500);
+            });
         }
       }
     },
@@ -162,14 +175,9 @@ export default function DemoPage() {
   }, []);
 
   const handleShare = useCallback(() => {
-    const dnaValues = [
-      "analytical", "intuitive", "verbal", "spatial",
-      "warmth", "intensity", "stability", "openness",
-      "assertiveness", "empathy", "playfulness", "independence",
-      "curiosity", "persistence", "adaptability", "creativity",
-    ].map((axis) => dna[axis as keyof CreatureDNA].toFixed(3)).join(",");
-
-    const text = `I just discovered my Gyeol — a living AI being shaped by my words. Try it:`;
+    const text = soulReading
+      ? `"${soulReading}" — my AI-generated soul reading from 3 messages. Try it:`
+      : "I just discovered my Gyeol — a living AI being shaped by my words. Try it:";
     const url = window.location.origin + "/demo";
 
     if (navigator.share) {
@@ -179,7 +187,7 @@ export default function DemoPage() {
         alert("Link copied!");
       }).catch(() => {});
     }
-  }, [dna]);
+  }, [soulReading]);
 
   // Intro screen
   if (phase === "intro") {
@@ -237,6 +245,7 @@ export default function DemoPage() {
     return (
       <DNAReveal
         dna={dna}
+        soulReading={soulReading}
         onContinue={handleContinue}
         onShare={handleShare}
       />

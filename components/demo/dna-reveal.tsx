@@ -9,6 +9,7 @@ import { deriveDNAAppearance } from "@/lib/genome/appearance";
 
 type DNARevealProps = {
   dna: CreatureDNA;
+  soulReading?: string | null;
   onContinue: () => void;
   onShare: () => void;
 };
@@ -190,7 +191,7 @@ function DescribeDNA(dna: CreatureDNA): string {
   return `A being shaped by ${parts[0]}.`;
 }
 
-export function DNAReveal({ dna, onContinue, onShare }: DNARevealProps) {
+export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealProps) {
   const [phase, setPhase] = useState<"intro" | "chart" | "traits" | "cta">("intro");
   const species = useMemo(() => deriveSpecies(dna), [dna]);
   const traits = useMemo(() => getTraitProfile(dna).slice(0, 4), [dna]);
@@ -276,9 +277,14 @@ export function DNAReveal({ dna, onContinue, onShare }: DNARevealProps) {
                 <span className="w-1 h-1 rounded-full bg-white/30" />
                 <span>{species.rarity > 0.7 ? "Rare" : species.rarity > 0.5 ? "Uncommon" : "Common"}</span>
               </div>
-              <p className="mt-3 text-sm text-white/60 leading-relaxed max-w-xs mx-auto">
-                {description}
-              </p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 1 }}
+                className="mt-4 text-sm text-white/70 leading-relaxed max-w-xs mx-auto italic"
+              >
+                {soulReading || description}
+              </motion.p>
             </motion.div>
           )}
         </AnimatePresence>
