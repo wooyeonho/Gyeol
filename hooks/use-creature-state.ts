@@ -85,7 +85,7 @@ export function useCreatureState(
   useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
 
   const lastInteractionRef = useRef(0);
-  const sessionStartRef = useRef(Date.now());
+  const sessionStartRef = useRef(0);
   const accumulatedWatchRef = useRef(0);
   const rafRef = useRef<number>(0);
   const prevTimeRef = useRef(0);
@@ -98,10 +98,14 @@ export function useCreatureState(
   const lastSetStateRef = useRef(0);
   const SET_STATE_INTERVAL = 66; // ~15fps — throttle React re-renders
 
-  // Initialize lastInteraction on mount (avoids calling Date.now() during render)
+  // Initialize lastInteraction + sessionStart on mount (avoids calling Date.now() during render)
   useEffect(() => {
+    const now = Date.now();
     if (lastInteractionRef.current === 0) {
-      lastInteractionRef.current = Date.now();
+      lastInteractionRef.current = now;
+    }
+    if (sessionStartRef.current === 0) {
+      sessionStartRef.current = now;
     }
   }, []);
 
