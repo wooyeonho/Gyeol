@@ -2,6 +2,7 @@ import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
 import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
+import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
 
 type AgentLexiconEntry = { word: string; meaning?: string };
 type AgentStatePrompt = {
@@ -16,6 +17,8 @@ type AgentStatePrompt = {
     vitality_stage?: string;
     pending_question?: string;
     pending_concern?: string;
+    user_preferences?: UserPreferences;
+    simple_mode_enabled?: boolean;
   };
   intimacy_score?: number;
   vitality?: number;
@@ -164,6 +167,22 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
 
   // 17. role
   if (s.role) parts.push(L.role(s.role));
+
+  // 17b. User preference personalization (BG3-style: accumulated choices shape personality)
+  if (s.config?.user_preferences) {
+    const prefFragment = buildPreferencePromptFragment(s.config.user_preferences, p.locale ?? "ko");
+    if (prefFragment) parts.push(prefFragment);
+  }
+
+  // 17c. Simple mode — softer vocabulary for younger users
+  if (s.config?.simple_mode_enabled) {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    parts.push(
+      isKo
+        ? "[간단 모드] 전문 용어 대신 쉬운 말로 설명해. DNA→마법 레시피, 진화→레벨업, 특성→특기 등으로 바꿔서 말해."
+        : "[Simple Mode] Use friendly vocabulary instead of technical terms. Say 'magic recipe' instead of 'DNA', 'level up' instead of 'evolution', 'special skill' instead of 'trait'."
+    );
+  }
 
   // 18. lexicon
   const lexicon = s.lexicon as { entries?: { word: string; meaning?: string }[] } | undefined;

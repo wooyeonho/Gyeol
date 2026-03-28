@@ -321,6 +321,8 @@
     "dream": "Dream engine",
     "social": "Social",
     "publicSocial": "参与公开社交信息流",
+    "simpleMode": "简单模式",
+    "simpleModeBody": "用通俗易懂的语言代替专业术语。DNA→魔法配方，进化→升级等。",
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",

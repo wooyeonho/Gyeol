@@ -20,6 +20,8 @@ interface VoidCanvasProps {
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
   onTap?: () => void;
+  /** Called when creature is touched with affinity delta */
+  onCreatureTouch?: (affinityDelta: number) => void;
   enableThree?: boolean;
   /** Render in contained mode (absolute) instead of full-screen fixed */
   contained?: boolean;
@@ -205,6 +207,7 @@ export function VoidCanvas({
   motionBias = "gentle",
   pulseScale = 1,
   onTap,
+  onCreatureTouch,
   enableThree = false,
   contained = false,
   breathPhase,
@@ -277,6 +280,7 @@ export function VoidCanvas({
           restoring3dLabel={restoring3dLabel}
           dna={dna}
           mood={mood}
+          onCreatureTouch={onCreatureTouch}
         />
       ) : (
         <CssVoidFallback

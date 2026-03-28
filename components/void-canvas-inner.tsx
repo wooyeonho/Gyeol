@@ -24,6 +24,8 @@ export interface InnerProps {
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
   onTap?: () => void;
+  /** Called when creature is touched with affinity delta */
+  onCreatureTouch?: (affinityDelta: number) => void;
   /** Creature breathing phase 0..1 */
   breathPhase?: number;
   /** Creature activity state */
@@ -339,6 +341,7 @@ function OrganicParticles({ count, color, secondaryColor, size, motionBias = "ge
 function Scene({
   shape, color, size, glow, animation, particles, vitality, isListening,
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
+  onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
   dna, mood,
 }: InnerProps) {
@@ -347,6 +350,11 @@ function Scene({
   const [tapBounce, setTapBounce] = useState(0);
   const tapDecay = useRef(0);
 
+  // Touch physics state for Zelda-like interaction freedom
+  const pointerDownTimeRef = useRef(0);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerMoveDistRef = useRef(0);
+
   useFrame((_, delta) => {
     if (tapDecay.current > 0) {
       tapDecay.current = Math.max(0, tapDecay.current - delta * 4);
@@ -354,11 +362,53 @@ function Scene({
     }
   });
 
-  const handlePointerDown = useCallback(() => {
+  const handlePointerDown = useCallback((e: { point?: { x: number; y: number; z: number }; clientX?: number; clientY?: number }) => {
+    pointerDownTimeRef.current = Date.now();
+    const px = e.point?.x ?? 0;
+    const py = e.point?.y ?? 0;
+    pointerStartRef.current = { x: px, y: py };
+    pointerMoveDistRef.current = 0;
     tapDecay.current = 1;
     setTapBounce(1);
     onTap?.();
   }, [onTap]);
+
+  const handlePointerUp = useCallback(() => {
+    const duration = Date.now() - pointerDownTimeRef.current;
+    const dist = pointerMoveDistRef.current;
+
+    // Classify touch type and compute affinity delta
+    let affinityDelta = 0;
+    if (duration < 200 && dist < 0.1) {
+      // Tap — friendly poke
+      affinityDelta = 0.1;
+    } else if (duration > 500 && dist < 0.15) {
+      // Hold — patient presence
+      affinityDelta = 0.3;
+    } else if (dist > 0.3 && duration > 200) {
+      // Stroke — gentle affection
+      affinityDelta = 0.5;
+    } else if (dist > 0.5 && duration < 300) {
+      // Flick — playful
+      affinityDelta = 0.15;
+    } else {
+      // Generic touch
+      affinityDelta = 0.05;
+    }
+
+    onCreatureTouch?.(affinityDelta);
+    pointerStartRef.current = null;
+  }, [onCreatureTouch]);
+
+  const handlePointerMove = useCallback((e: { point?: { x: number; y: number; z: number } }) => {
+    if (!pointerStartRef.current) return;
+    const px = e.point?.x ?? 0;
+    const py = e.point?.y ?? 0;
+    const dx = px - pointerStartRef.current.x;
+    const dy = py - pointerStartRef.current.y;
+    pointerMoveDistRef.current += Math.sqrt(dx * dx + dy * dy);
+    pointerStartRef.current = { x: px, y: py };
+  }, []);
 
   // Memoize deriveSpecies to avoid creating new object refs every render (~15fps),
   // which would defeat React.memo on ProceduralCreature and rebuild geometry each frame.
@@ -401,7 +451,7 @@ function Scene({
         rotationIntensity={rotationIntensity * sleepFloatMult}
         floatIntensity={floatIntensity * sleepFloatMult}
       >
-        <group scale={pulseScale} onPointerDown={handlePointerDown}>
+        <group scale={pulseScale} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove}>
           {dna && species ? (
             <ProceduralCreature
               dna={dna}

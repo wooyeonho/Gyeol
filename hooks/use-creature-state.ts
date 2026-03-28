@@ -4,9 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";
 
+/** Extended idle behavior for rich creature states */
+export type IdleActivity =
+  | "alert" | "curious" | "daydreaming" | "playing"
+  | "restless" | "meditating" | "nesting" | "drowsy"
+  | "sleeping" | "dreaming";
+
 export type CreatureState = {
   /** Current activity level */
   activity: CreatureActivity;
+  /** Rich idle behavior — more granular than activity */
+  idleActivity: IdleActivity;
   /** Breathing phase 0..1 (for organic breathing animation) */
   breathPhase: number;
   /** Breathing rate in cycles per second — varies with vitality & activity */
@@ -21,6 +29,10 @@ export type CreatureState = {
   pointerNorm: { x: number; y: number };
   /** Micro-tremor offset for organic jitter — tiny random displacement */
   microTremor: { x: number; y: number };
+  /** Touch interaction count this session */
+  touchCount: number;
+  /** Cumulative affinity delta from touches this session */
+  sessionAffinity: number;
 };
 
 const DROWSY_AFTER_S = 30;
@@ -41,6 +53,7 @@ function getBreathRate(vitality: number, activity: CreatureActivity): number {
 export function useCreatureState(vitality: number, isStreaming: boolean) {
   const [state, setState] = useState<CreatureState>({
     activity: "awake",
+    idleActivity: "alert",
     breathPhase: 0,
     breathRate: getBreathRate(vitality, "awake"),
     isTyping: false,
@@ -48,6 +61,8 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     idleSeconds: 0,
     pointerNorm: { x: 0, y: 0 },
     microTremor: { x: 0, y: 0 },
+    touchCount: 0,
+    sessionAffinity: 0,
   });
 
   const lastInteractionRef = useRef(0);
@@ -69,9 +84,19 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     }
   }, []);
 
+  const touchCountRef = useRef(0);
+  const sessionAffinityRef = useRef(0);
+
   // Mark interaction
   const touch = useCallback(() => {
     lastInteractionRef.current = Date.now();
+  }, []);
+
+  // Record a creature touch with affinity delta
+  const recordCreatureTouch = useCallback((affinityDelta: number) => {
+    lastInteractionRef.current = Date.now();
+    touchCountRef.current += 1;
+    sessionAffinityRef.current += affinityDelta;
   }, []);
 
   // Typing state
@@ -177,15 +202,26 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
 
       if (elapsed >= SET_STATE_INTERVAL) {
         lastSetStateRef.current = now;
+        // Derive rich idle activity from basic activity + context
+        const idleActivity: IdleActivity =
+          activity === "sleeping" ? (touchCountRef.current > 5 ? "dreaming" : "sleeping") :
+          activity === "drowsy" ? "drowsy" :
+          idleSec > 15 && touchCountRef.current > 8 ? "playing" :
+          idleSec > 10 ? "daydreaming" :
+          "alert";
+
         setState((s) => ({
           ...s,
           activity,
+          idleActivity,
           breathPhase: breathAccumRef.current % 1,
           breathRate: rate,
           idleSeconds: Math.floor(idleSec),
           excitePulse: exciteRef.current,
           pointerNorm: pointerNormRef.current,
           microTremor: { ...tremorRef.current },
+          touchCount: touchCountRef.current,
+          sessionAffinity: sessionAffinityRef.current,
         }));
       } else {
         // Still flush if activity changed (low frequency, important for UI)
@@ -204,5 +240,5 @@ export function useCreatureState(vitality: number, isStreaming: boolean) {
     };
   }, [vitality]);
 
-  return { state, touch, markTyping, excite, updatePointer };
+  return { state, touch, markTyping, excite, updatePointer, recordCreatureTouch };
 }

@@ -534,6 +534,12 @@ export default function SettingsPage() {
       },
     },
     {
+      label: t("settings.simpleMode"),
+      description: t("settings.simpleModeBody"),
+      enabled: Boolean(config.simple_mode_enabled),
+      onToggle: () => toggleConfig("simple_mode_enabled", !config.simple_mode_enabled),
+    },
+    {
       label: t("settings.performanceMinimal"),
       description: t("settings.performanceMinimalBody"),
       enabled: Boolean(config.performance_minimal),

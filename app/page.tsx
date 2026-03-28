@@ -162,6 +162,14 @@ export default function Home() {
     creature.excite();
   }, [creature]);
 
+  // Zelda-like touch freedom: every gesture type affects creature affinity
+  const handleCreatureTouch = useCallback((affinityDelta: number) => {
+    creature.recordCreatureTouch(affinityDelta);
+    // Haptic feedback varies by touch intensity
+    if (affinityDelta >= 0.3) haptic("success");
+    else if (affinityDelta >= 0.1) haptic("send");
+  }, [creature]);
+
   // Onboarding state — show once per device
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -351,6 +359,7 @@ export default function Home() {
           motionBias={appearance.scene.motionBias}
           pulseScale={appearance.scene.pulseScale}
           onTap={handleCanvasTap}
+          onCreatureTouch={handleCreatureTouch}
           enableThree={!performanceMinimal}
           contained
           breathPhase={creature.state.breathPhase}

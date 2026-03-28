@@ -321,6 +321,8 @@
     "dream": "Dream engine",
     "social": "Social",
     "publicSocial": "公開ソーシャルフィード参加",
+    "simpleMode": "かんたんモード",
+    "simpleModeBody": "専門用語の代わりにやさしい言葉で説明します。DNA→魔法のレシピ、進化→レベルアップなど。",
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",

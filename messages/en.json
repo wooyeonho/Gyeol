@@ -319,6 +319,8 @@
     "dream": "Dream engine",
     "social": "Social",
     "publicSocial": "Public social feed participation",
+    "simpleMode": "Simple Mode",
+    "simpleModeBody": "Uses friendly vocabulary instead of technical terms. DNA → magic recipe, evolution → level up, etc.",
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",

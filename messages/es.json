@@ -321,6 +321,8 @@
     "dream": "Dream engine",
     "social": "Social",
     "publicSocial": "Participación en el social público",
+    "simpleMode": "Modo simple",
+    "simpleModeBody": "Usa vocabulario amigable en lugar de términos técnicos. ADN → receta mágica, evolución → subir de nivel, etc.",
     "performanceMinimal": "Low-power mode",
     "inviteFriends": "Invite friends",
     "createInvite": "Create invite link",
