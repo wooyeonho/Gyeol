@@ -1079,5 +1079,11 @@
       "action": "Action",
       "dream": "Dream"
     }
+  },
+  "push": {
+    "promptTitle": "Get notified when your creature talks?",
+    "promptBody": "Your creature lives autonomously while you're away. Turn on notifications to see its messages instantly.",
+    "promptAllow": "Turn on",
+    "promptLater": "Later"
   }
 }

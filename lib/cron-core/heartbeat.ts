@@ -399,6 +399,24 @@ export async function executeHeartbeat(): Promise<CronResult> {
             const duplicated = recentMsgs.length > 0 ? isRepetitiveOutput(proMsg, recentMsgs, 0.7) : false;
             if (!duplicated) {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
+              // Send push notification with the actual creature message
+              await runOptionalStep("push-notification", async () => {
+                const selfName = typeof state.self_name === "string" ? state.self_name : "GYEOL";
+                const baseUrl = getBaseUrl();
+                await fetch(`${baseUrl}/api/push/send`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${process.env.CRON_SECRET}`,
+                  },
+                  body: JSON.stringify({
+                    agentId,
+                    title: selfName,
+                    body: proMsg,
+                    url: "/",
+                  }),
+                });
+              });
             }
           }
         }
