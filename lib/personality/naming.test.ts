@@ -90,6 +90,24 @@ describe("checkSelfNaming", () => {
     expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ action_type: "self_naming" }));
   });
 
+  it("does nothing when AI returns a sentinel name like '결'", async () => {
+    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "결", reason: "It means texture" });
+    const updateFn = vi.fn();
+
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === "agent_state") return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { self_name: null, total_messages: 25, config: {} } }) }) }), update: updateFn };
+        if (table === "memories") return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnThis(), order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [] }) }) }) };
+        if (table === "autonomous_logs") return { insert: vi.fn() };
+        return {};
+      }),
+    });
+
+    const { checkSelfNaming } = await import("./naming");
+    await checkSelfNaming("agent-1");
+    expect(updateFn).not.toHaveBeenCalled();
+  });
+
   it("does nothing when AI returns no name", async () => {
     (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: null });
     const updateFn = vi.fn();
