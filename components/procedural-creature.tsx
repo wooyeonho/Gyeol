@@ -92,6 +92,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
 
+  // Blink state
+  const blinkPhaseRef = useRef(0);            // 0=fully open, 1=fully closed
+  const blinkTimerRef = useRef(2 + Math.random() * 3);
+  const blinkStateRef = useRef<"idle" | "closing" | "opening">("idle");
+
+  // Look-around: creature occasionally glances away from pointer
+  const lookTimerRef = useRef(4 + Math.random() * 6);
+  const lookTargetRef = useRef({ x: 0, y: 0 });
+  const lookCurrentRef = useRef({ x: 0, y: 0 });
+  const lookActiveRef = useRef(false);
+  const lookReturnTimerRef = useRef(0);
+
   // Derive all visual parameters from DNA (memoized — only recomputes when DNA changes)
   const appearance = useMemo(() => deriveDNAAppearance(dna, species), [dna, species]);
   const morphWeights = useMemo(() => deriveMorphWeights(dna, species), [dna, species]);
@@ -169,6 +181,53 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const eyeScaleTarget = isListening ? 1.25 : 1;
     eyeScaleRef.current += (eyeScaleTarget - eyeScaleRef.current) * 0.08;
 
+    // === BLINKING: natural periodic blink ===
+    // Blink faster when excited/joyful, slower when drowsy/sleeping
+    const blinkSpeed = creatureActivity === "sleeping" ? 0.5 : creatureActivity === "drowsy" ? 0.7 : 1;
+    blinkTimerRef.current -= dt;
+    if (blinkTimerRef.current <= 0 && blinkStateRef.current === "idle") {
+      blinkStateRef.current = "closing";
+    }
+    if (blinkStateRef.current === "closing") {
+      blinkPhaseRef.current = Math.min(1, blinkPhaseRef.current + dt / 0.07 * blinkSpeed);
+      if (blinkPhaseRef.current >= 1) blinkStateRef.current = "opening";
+    } else if (blinkStateRef.current === "opening") {
+      blinkPhaseRef.current = Math.max(0, blinkPhaseRef.current - dt / 0.12 * blinkSpeed);
+      if (blinkPhaseRef.current <= 0) {
+        blinkStateRef.current = "idle";
+        // Shorter interval when joyful/excited, longer when calm
+        const baseInterval = mood === "joyful" || mood === "energetic" ? 2 : mood === "melancholy" ? 6 : 3.5;
+        blinkTimerRef.current = baseInterval + Math.random() * 3;
+      }
+    }
+    // Eye Y scale: 1=fully open, 0=fully closed; squint when joyful
+    const moodSquint = (mood === "joyful" || mood === "energetic") ? 0.72 : 1;
+    const eyeOpenY = (1 - blinkPhaseRef.current) * moodSquint;
+
+    // === LOOK-AROUND: creature occasionally glances elsewhere ===
+    lookTimerRef.current -= dt;
+    if (lookTimerRef.current <= 0 && !lookActiveRef.current && creatureActivity === "awake") {
+      lookActiveRef.current = true;
+      lookReturnTimerRef.current = 1.2 + Math.random() * 1.6;
+      lookTargetRef.current = {
+        x: (Math.random() - 0.5) * 1.2,
+        y: (Math.random() - 0.5) * 0.5,
+      };
+    }
+    if (lookActiveRef.current) {
+      lookCurrentRef.current.x = THREE.MathUtils.lerp(lookCurrentRef.current.x, lookTargetRef.current.x, 0.04);
+      lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, lookTargetRef.current.y, 0.04);
+      lookReturnTimerRef.current -= dt;
+      if (lookReturnTimerRef.current <= 0) {
+        lookActiveRef.current = false;
+        lookTimerRef.current = 5 + Math.random() * 8;
+        lookTargetRef.current = { x: 0, y: 0 };
+      }
+    } else {
+      lookCurrentRef.current.x = THREE.MathUtils.lerp(lookCurrentRef.current.x, 0, 0.06);
+      lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, 0, 0.06);
+    }
+
     // Breathing scale with mood influence
     const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult);
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
@@ -213,8 +272,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         (0.08 + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04) * activityDim;
     }
 
-    // Eye tracking with listening-widened eyes
-    const pn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : pointerNorm ?? { x: 0, y: 0 };
+    // Eye tracking: blend pointer + look-around offset
+    const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : pointerNorm ?? { x: 0, y: 0 };
+    const pn = {
+      x: rawPn.x + lookCurrentRef.current.x,
+      y: rawPn.y + lookCurrentRef.current.y,
+    };
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
         const targetX = pn.x * eyeSize * 0.3;
@@ -224,10 +287,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     }
 
-    // Apply eye scale from eyeScaleRef (widens when listening)
+    // Apply eye scale: X=listening-widened, Y=blink+squint, Z=normal
     const es = eyeScaleRef.current;
-    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es, es);
-    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es, es);
+    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY, es);
+    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY, es);
 
     // ── Appendage dynamic animations ──
     // Crown: sway with breathing + gentle wind oscillation
