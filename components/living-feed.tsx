@@ -190,10 +190,21 @@ export function LivingFeed({
       )
       .map((a) => ({ ...a, category: "activity" as const })),
   ]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 8);
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  if (allItems.length === 0) return null;
+  // Deduplicate: collapse consecutive same-type items (e.g. multiple research_task_completed)
+  const deduped: typeof allItems = [];
+  let lastType = "";
+  for (const item of allItems) {
+    if (item.type === lastType && (item.type === "research_task_completed" || item.type === "heartbeat")) {
+      continue; // skip consecutive duplicates of same type
+    }
+    deduped.push(item);
+    lastType = item.type;
+  }
+  const finalItems = deduped.slice(0, 5);
+
+  if (finalItems.length === 0) return null;
 
   return (
     <AnimatePresence>
@@ -239,7 +250,7 @@ export function LivingFeed({
           {/* Activity timeline */}
           <div className="max-h-[280px] overflow-y-auto px-4 py-3">
             <div className="space-y-2.5">
-              {allItems.map((item, index) => (
+              {finalItems.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, x: -8 }}
@@ -252,7 +263,7 @@ export function LivingFeed({
                     <span className="text-sm leading-none">
                       {getActivityIcon(item.type)}
                     </span>
-                    {index < allItems.length - 1 && (
+                    {index < finalItems.length - 1 && (
                       <div className="mt-1 flex-1 w-px bg-white/10" />
                     )}
                   </div>

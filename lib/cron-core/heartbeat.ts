@@ -391,9 +391,15 @@ export async function executeHeartbeat(): Promise<CronResult> {
             `User has been away for ${Math.round(hoursSince)} hours. Express a specific emotion (not just "missing") — maybe boredom, curiosity, excitement about something, in ${language}. 1 sentence.`,
           ];
           const templateIdx = Math.floor(Math.random() * proactiveTemplates.length);
+          const bannedPhrases = [
+            "hope you're doing okay", "hope everything is all right", "I've been thinking about you",
+            "hope you're well", "thinking of you", "miss you", "how are you doing",
+            "hope you had a good", "just checking in", "wanted to check",
+            "hope your day", "hope you're having", "I was worried",
+          ].join('", "');
           const proactiveStream = await generateText(systemPrompt, [{
             role: "user",
-            content: proactiveTemplates[templateIdx] + ` NEVER say "hope you're doing okay" or "hope everything is all right" or "I've been thinking about you". Be original.`,
+            content: proactiveTemplates[templateIdx] + ` NEVER say any of: "${bannedPhrases}". Be original and surprising.`,
           }]);
           let proMsg = await readSseAssistantText(proactiveStream);
           proMsg = capText(proMsg, 180);

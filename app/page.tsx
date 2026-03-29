@@ -306,7 +306,8 @@ export default function Home() {
     );
   }
 
-  const creatureSize = Math.min(80, Math.max(20, (visual.size ?? 24) * 1.8));
+  // Larger creature = more alive feel; scale up base size for desktop presence
+  const creatureSize = Math.min(100, Math.max(28, (visual.size ?? 24) * 2.5));
 
   return (
     <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>

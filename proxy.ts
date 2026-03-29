@@ -125,8 +125,12 @@ export async function proxy(request: NextRequest) {
     request: { headers: requestHeaders },
   });
 
-  // Set CSP header
+  // ── Security response headers ──
   response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()");
+  response.headers.set("X-DNS-Prefetch-Control", "on");
 
   // Set locale cookie if missing or mismatched
   if (

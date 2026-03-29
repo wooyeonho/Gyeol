@@ -6,7 +6,10 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 export async function checkSelfNaming(agentId: string) {
   const db = createServiceClient();
   const { data: state } = await db.from("agent_state").select("self_name, total_messages, config").eq("agent_id", agentId).single();
-  if (!state || state.self_name || (state.total_messages || 0) < 5) return;
+  if (!state) return;
+  // Treat null, empty, or default "GYEOL"/"결" as unnamed so existing creatures get renamed
+  const isUnnamed = !state.self_name || state.self_name === "GYEOL" || state.self_name === "결";
+  if (!isUnnamed || (state.total_messages || 0) < 5) return;
   const locale = resolveGenerationLocale({ config: state.config });
   const language = getLanguageName(locale);
 
