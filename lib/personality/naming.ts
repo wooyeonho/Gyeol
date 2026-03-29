@@ -6,7 +6,7 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 export async function checkSelfNaming(agentId: string) {
   const db = createServiceClient();
   const { data: state } = await db.from("agent_state").select("self_name, total_messages, config").eq("agent_id", agentId).single();
-  if (!state || state.self_name || (state.total_messages || 0) < 20) return;
+  if (!state || state.self_name || (state.total_messages || 0) < 5) return;
   const locale = resolveGenerationLocale({ config: state.config });
   const language = getLanguageName(locale);
 
