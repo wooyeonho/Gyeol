@@ -401,20 +401,23 @@ export async function executeHeartbeat(): Promise<CronResult> {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
               // Send push notification with the actual creature message
               await runOptionalStep("push-notification", agentId, async () => {
-                const selfName = typeof state.self_name === "string" ? state.self_name : "GYEOL";
-                const baseUrl = getBaseUrl();
+                const creatureName =
+                  typeof state.self_name === "string" && state.self_name
+                    ? state.self_name
+                    : locale === "ko" ? "결" : "GYEOL";
                 await fetch(`${baseUrl}/api/push/send`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.CRON_SECRET}`,
+                    Authorization: `Bearer ${cronSecret}`,
                   },
                   body: JSON.stringify({
                     agentId,
-                    title: selfName,
+                    title: creatureName,
                     body: proMsg,
                     url: "/",
                   }),
+                  signal: AbortSignal.timeout(10_000),
                 });
               });
             }

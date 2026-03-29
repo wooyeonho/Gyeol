@@ -16,7 +16,7 @@ describe("router integration", () => {
     let callCount = 0;
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
       callCount++;
-      if (url.includes("groq") && callCount <= 2) {
+      if (url.includes("groq") && callCount <= 1) {
         throw new Error("Groq timeout");
       }
       if (url.includes("groq")) {
@@ -36,16 +36,16 @@ describe("router integration", () => {
     const stream = await generateText("system", [{ role: "user", content: "hi" }]);
 
     expect(stream).toBeDefined();
-    // At least 2 calls failed before the 3rd succeeded
-    expect(callCount).toBeGreaterThanOrEqual(3);
+    // 1 call failed before the 2nd succeeded (2-model cascade: scout → llama-3.1-8b)
+    expect(callCount).toBeGreaterThanOrEqual(2);
   });
 
   it("generateJSON retries once after 500ms backoff", async () => {
     let attempt = 0;
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
       attempt++;
-      if (attempt <= 3) {
-        // First pass: all 3 models fail
+      if (attempt <= 2) {
+        // First pass: all 2 models fail
         throw new Error("model timeout");
       }
       // Second pass: first model succeeds
@@ -65,8 +65,8 @@ describe("router integration", () => {
     expect(result).toEqual({ key: "value" });
     // Verify the 500ms backoff happened
     expect(elapsed).toBeGreaterThanOrEqual(400);
-    // Total calls: 3 (first pass) + 1 (second pass success) = 4
-    expect(attempt).toBe(4);
+    // Total calls: 2 (first pass) + 1 (second pass success) = 3
+    expect(attempt).toBe(3);
   });
 
   it("generateJSON returns null when all retries fail", async () => {

@@ -22,7 +22,7 @@ const BLOCK_PATTERNS = [
   // SQL injection (expanded)
   /(?:drop\s+table|delete\s+from|truncate|alter\s+table|;\s*(?:select|insert|update|delete)\b|union\s+(?:all\s+)?select|(?:or|and)\s+['"]?\d+['"]?\s*=\s*['"]?\d+)/i,
   // XSS / script injection (expanded)
-  /(?:<\s*script|java\s*script\s*[:=]|on(?:error|load|click|focus|mouseover|mouseout|keydown|keyup|submit|change|input|abort|blur)\s*=|<\s*img[^>]+src\s*=\s*['"]?\s*(?:java|data):|<\s*(?:iframe|object|embed|form|base|link|meta|svg|math)\b)/i,
+  /(?:<\s*script|\bscript\s*=|java\s*script\s*[:=]|on(?:error|load|click|focus|mouseover|mouseout|keydown|keyup|submit|change|input|abort|blur)\s*=|<\s*img[^>]+src\s*=\s*['"]?\s*(?:java|data):|<\s*(?:iframe|object|embed|form|base|link|meta|svg|math)\b)/i,
   // Path traversal (expanded for double-encoding)
   /(?:\.\.\/|\.\.\\|%2e%2e|%252e%252e|\.\.%2f|%2e%2e\/|%c0%ae)/i,
   // Base64 encoded payloads (common obfuscation)

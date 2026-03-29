@@ -13,12 +13,31 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+// Sliding-window rate limiter — Groq free plan: 30 req/min
+const GROQ_RPM_LIMIT = 28; // 2 buffer below the 30 cap
+const groqCallTimestamps: number[] = [];
+
+async function acquireGroqSlot(): Promise<void> {
+  const now = Date.now();
+  while (groqCallTimestamps.length > 0 && now - groqCallTimestamps[0] >= 60_000) {
+    groqCallTimestamps.shift();
+  }
+  if (groqCallTimestamps.length >= GROQ_RPM_LIMIT) {
+    const waitMs = 60_000 - (now - groqCallTimestamps[0]) + 100;
+    console.log(`[AI] Groq rpm cap (${groqCallTimestamps.length}/${GROQ_RPM_LIMIT}), waiting ${waitMs}ms`);
+    await new Promise<void>((r) => setTimeout(r, waitMs));
+    return acquireGroqSlot();
+  }
+  groqCallTimestamps.push(Date.now());
+}
+
 const MODELS = [
   { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 15000 },
   { name: "llama-3.1-8b-instant", timeout: 10000 },
 ];
 
 async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {
+  await acquireGroqSlot();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
