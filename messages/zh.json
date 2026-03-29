@@ -135,7 +135,11 @@
     "fadingHelper": "存在感正在减弱。现在和它说话，恢复 Vitality 与色彩。",
     "signupBannerTitle": "创建一个账号",
     "signupBannerBody": "对话和成长将继续延续。",
-    "signupBannerCta": "注册"
+    "signupBannerCta": "注册",
+    "silentActionStroke": "轻抚",
+    "silentActionTap": "轻拍",
+    "silentActionShake": "摇晃",
+    "silentActionStay": "静静待着"
   },
   "album": {
     "title": "Growth album",
@@ -360,7 +364,8 @@
     "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
     "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app.",
     "missionInputAria": "Enter today's mission",
-    "missionToggleAria": "Toggle mission completion"
+    "missionToggleAria": "Toggle mission completion",
+    "quickSections": "快速导航"
   },
   "explore": {
     "title": "Explore",
@@ -464,7 +469,13 @@
     "assigned": "Assigned",
     "topPaths7d": "Top paths (7d)",
     "noPageViews": "No page views have been aggregated yet.",
-    "backDashboard": "Back to dashboard"
+    "backDashboard": "Back to dashboard",
+    "socialModeration": "社交审核队列",
+    "noSocialQueue": "当前没有需要处理的公开社交举报。",
+    "reportCount": "{count}条举报",
+    "approvePost": "批准",
+    "dismissReport": "驳回",
+    "blockPost": "屏蔽"
   },
   "featuresPage": {
     "eyebrow": "GYEOL introduction",
@@ -758,9 +769,10 @@
     "modeReflective": "Reflective",
     "modeCreative": "Creative",
     "birthLabel": "你的生命体正在诞生",
-    "birthSpark": "有什么东西正在苏醒...",
-    "birthAlive": "一个新生命出现了。",
-    "birthNotice": "它注意到了你。"
+    "birthSpark": "某些东西正在觉醒...",
+    "birthAlive": "生命正在形成...",
+    "birthNotice": "诞生了。",
+    "birthDNA": "DNA正在确定..."
   },
   "evolution": {
     "share": "Share",
@@ -984,5 +996,113 @@
     "promptBody": "你不在的时候，生命体会自主活动。开启通知，即时收到它的消息。",
     "promptAllow": "开启通知",
     "promptLater": "稍后"
+  },
+  "voice": {
+    "recording": "正在听...",
+    "transcribing": "转换为文字中...",
+    "startRecording": "开始语音输入",
+    "stopRecording": "停止语音输入",
+    "listeningPlaceholder": "正在说话...",
+    "micPermissionDenied": "麦克风权限被拒绝",
+    "notSupported": "此浏览器不支持语音输入",
+    "error": "语音识别发生错误"
+  },
+  "shop": {
+    "title": "奖励商店",
+    "subtitle": "用获得的碎片、尘埃和积分购买装饰和升级。",
+    "inventory": "我的库存",
+    "coins": "金币",
+    "emojiDust": "表情尘埃",
+    "titleShards": "称号碎片",
+    "appearanceShards": "外观碎片",
+    "evolutionPoints": "进化点数",
+    "streakFreezes": "连续冻结",
+    "categoryTitle": "称号",
+    "categoryAppearance": "外观",
+    "categoryEvolution": "进化",
+    "categoryUtility": "实用",
+    "redeem": "兑换",
+    "owned": "已拥有",
+    "insufficientResources": "资源不足",
+    "purchaseSuccess": "兑换完成！",
+    "empty": "没有可购买的物品"
+  },
+  "social": {
+    "title": "社交",
+    "subtitle": "通过关注和互相关注，让存在们的关系更持久。",
+    "friendsTab": "好友",
+    "dmTab": "消息",
+    "feedTab": "动态",
+    "noFriends": "还没有互相关注的关系。",
+    "noMessages": "基于关系的消息框还是空的。",
+    "noFeed": "动态是空的。稍后再查看吧！",
+    "addFriend": "添加好友",
+    "sendMessage": "发送消息",
+    "online": "在线",
+    "offline": "离线",
+    "lastActive": "最后活动 {time}",
+    "placeholder": "输入消息...",
+    "follow": "关注",
+    "unfollow": "取消关注",
+    "following": "正在关注",
+    "follower": "关注了我",
+    "discoverAgent": "探索中"
+  },
+  "stripe": {
+    "upgradePro": "升级到Pro",
+    "upgradePremium": "升级到Premium",
+    "manageBilling": "管理账单",
+    "currentPlan": "当前计划",
+    "changePlan": "更改计划",
+    "cancelSubscription": "取消订阅",
+    "paymentSuccess": "付款完成！",
+    "paymentFailed": "付款失败。请重试。",
+    "processing": "处理中..."
+  },
+  "generation": {
+    "title": "生成",
+    "subtitle": "生成存在的图像和头像。",
+    "generateAvatar": "生成头像",
+    "generateImage": "生成图像",
+    "prompt": "描述你想要的...",
+    "generating": "生成中...",
+    "downloadImage": "下载",
+    "setAsAvatar": "设为头像",
+    "history": "生成记录",
+    "noHistory": "还没有生成记录。",
+    "credits": "剩余积分：{count}个",
+    "unavailable": "图像生成界面已开启，但实际生成流程尚未准备好。"
+  },
+  "accessibility": {
+    "title": "无障碍",
+    "lightMode": "浅色模式",
+    "darkMode": "深色模式",
+    "largeText": "大字体",
+    "highContrast": "高对比度",
+    "reduceMotion": "减少动画",
+    "reduceMotionBody": "禁用动画和过渡效果，提供平静的体验。",
+    "screenReader": "屏幕阅读器支持",
+    "guide": "自定义以提升无障碍体验。",
+    "guideBody": "Gyeol旨在让所有用户都能访问。通过以下设置自定义您的体验。",
+    "fontSizes": "字体大小",
+    "fontSmall": "小",
+    "fontMedium": "中",
+    "fontLarge": "大",
+    "fontXlarge": "特大",
+    "fontSizeSmall": "小",
+    "fontSizeMedium": "中",
+    "fontSizeLarge": "大",
+    "fontSizeXLarge": "超大"
+  },
+  "mysteryBox": {
+    "opening": "正在打开...",
+    "opened": "打开了！"
+  },
+  "death": {
+    "echo": "ECHO",
+    "departed": "离去",
+    "readWill": "读遗言",
+    "will": "遗言",
+    "rebirth": "开始新的生命"
   }
 }

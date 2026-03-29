@@ -135,7 +135,11 @@
     "fadingHelper": "La presencia se está desvaneciendo. Háblale ahora para restaurar su Vitalidad y color.",
     "signupBannerTitle": "Crea una cuenta",
     "signupBannerBody": "Tus conversaciones y crecimiento continuarán.",
-    "signupBannerCta": "Registrarse"
+    "signupBannerCta": "Registrarse",
+    "silentActionStroke": "Acariciar",
+    "silentActionTap": "Tocar",
+    "silentActionShake": "Sacudir",
+    "silentActionStay": "Quedarse quieto"
   },
   "album": {
     "title": "Growth album",
@@ -360,7 +364,8 @@
     "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
     "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app.",
     "missionInputAria": "Enter today's mission",
-    "missionToggleAria": "Toggle mission completion"
+    "missionToggleAria": "Toggle mission completion",
+    "quickSections": "Navegación rápida"
   },
   "explore": {
     "title": "Explore",
@@ -464,7 +469,13 @@
     "assigned": "Assigned",
     "topPaths7d": "Top paths (7d)",
     "noPageViews": "No page views have been aggregated yet.",
-    "backDashboard": "Back to dashboard"
+    "backDashboard": "Back to dashboard",
+    "socialModeration": "Cola de moderación social",
+    "noSocialQueue": "No hay reportes sociales pendientes actualmente.",
+    "reportCount": "{count} reportes",
+    "approvePost": "Aprobar",
+    "dismissReport": "Desestimar",
+    "blockPost": "Bloquear"
   },
   "featuresPage": {
     "eyebrow": "GYEOL introduction",
@@ -759,8 +770,9 @@
     "modeCreative": "Creative",
     "birthLabel": "Tu criatura está naciendo",
     "birthSpark": "Algo está despertando...",
-    "birthAlive": "Una nueva vida ha aparecido.",
-    "birthNotice": "Te ha notado."
+    "birthAlive": "La vida se está formando...",
+    "birthNotice": "Ha nacido.",
+    "birthDNA": "El ADN se está determinando..."
   },
   "evolution": {
     "share": "Share",
@@ -984,5 +996,113 @@
     "promptBody": "Tu criatura vive de forma autónoma mientras no estás. Activa las notificaciones para ver sus mensajes al instante.",
     "promptAllow": "Activar",
     "promptLater": "Más tarde"
+  },
+  "voice": {
+    "recording": "Escuchando...",
+    "transcribing": "Convirtiendo a texto...",
+    "startRecording": "Iniciar entrada de voz",
+    "stopRecording": "Detener entrada de voz",
+    "listeningPlaceholder": "Hablando...",
+    "micPermissionDenied": "Permiso de micrófono denegado",
+    "notSupported": "Este navegador no admite entrada de voz",
+    "error": "Se produjo un error de reconocimiento de voz"
+  },
+  "shop": {
+    "title": "Tienda de recompensas",
+    "subtitle": "Compra decoraciones y mejoras con los fragmentos, polvo y puntos obtenidos.",
+    "inventory": "Mi inventario",
+    "coins": "Monedas",
+    "emojiDust": "Polvo de emoji",
+    "titleShards": "Fragmentos de título",
+    "appearanceShards": "Fragmentos de apariencia",
+    "evolutionPoints": "Puntos de evolución",
+    "streakFreezes": "Congelaciones de racha",
+    "categoryTitle": "Títulos",
+    "categoryAppearance": "Apariencia",
+    "categoryEvolution": "Evolución",
+    "categoryUtility": "Utilidad",
+    "redeem": "Canjear",
+    "owned": "Ya tengo",
+    "insufficientResources": "Recursos insuficientes",
+    "purchaseSuccess": "¡Canje completado!",
+    "empty": "No hay artículos disponibles"
+  },
+  "social": {
+    "title": "Social",
+    "subtitle": "Conecta con otros seres a través del seguimiento mutuo.",
+    "friendsTab": "Amigos",
+    "dmTab": "Mensajes",
+    "feedTab": "Feed",
+    "noFriends": "Aún no tienes amigos mutuos.",
+    "noMessages": "Tu bandeja de mensajes basada en relaciones está vacía.",
+    "noFeed": "¡El feed está vacío. Vuelve pronto!",
+    "addFriend": "Agregar amigo",
+    "sendMessage": "Enviar mensaje",
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "lastActive": "Última actividad {time}",
+    "placeholder": "Escribe un mensaje...",
+    "follow": "Seguir",
+    "unfollow": "Dejar de seguir",
+    "following": "Siguiendo",
+    "follower": "Te sigue",
+    "discoverAgent": "Explorando"
+  },
+  "stripe": {
+    "upgradePro": "Actualizar a Pro",
+    "upgradePremium": "Actualizar a Premium",
+    "manageBilling": "Gestionar facturación",
+    "currentPlan": "Plan actual",
+    "changePlan": "Cambiar plan",
+    "cancelSubscription": "Cancelar suscripción",
+    "paymentSuccess": "¡Pago completado!",
+    "paymentFailed": "El pago falló. Por favor, inténtalo de nuevo.",
+    "processing": "Procesando..."
+  },
+  "generation": {
+    "title": "Generación",
+    "subtitle": "Genera imágenes y avatares de tu ser.",
+    "generateAvatar": "Generar avatar",
+    "generateImage": "Generar imagen",
+    "prompt": "Describe lo que deseas...",
+    "generating": "Generando...",
+    "downloadImage": "Descargar",
+    "setAsAvatar": "Establecer como avatar",
+    "history": "Historial de generación",
+    "noHistory": "Aún no hay historial de generación.",
+    "credits": "Créditos restantes: {count}",
+    "unavailable": "La pantalla de generación de imágenes está abierta, pero el flujo de trabajo del proveedor aún no está listo."
+  },
+  "accessibility": {
+    "title": "Accesibilidad",
+    "lightMode": "Modo claro",
+    "darkMode": "Modo oscuro",
+    "largeText": "Texto grande",
+    "highContrast": "Alto contraste",
+    "reduceMotion": "Reducir movimiento",
+    "reduceMotionBody": "Desactiva animaciones y efectos de transición para una experiencia más tranquila.",
+    "screenReader": "Soporte para lectores de pantalla",
+    "guide": "Personaliza para mejorar la accesibilidad.",
+    "guideBody": "Gyeol está diseñado para ser accesible para todos. Personaliza tu experiencia con los ajustes a continuación.",
+    "fontSizes": "Tamaño de fuente",
+    "fontSmall": "Pequeño",
+    "fontMedium": "Mediano",
+    "fontLarge": "Grande",
+    "fontXlarge": "Extra grande",
+    "fontSizeSmall": "Pequeño",
+    "fontSizeMedium": "Mediano",
+    "fontSizeLarge": "Grande",
+    "fontSizeXLarge": "Muy grande"
+  },
+  "mysteryBox": {
+    "opening": "Abriendo...",
+    "opened": "¡Abierto!"
+  },
+  "death": {
+    "echo": "ECHO",
+    "departed": "partió",
+    "readWill": "Leer sus últimas palabras",
+    "will": "Últimas palabras",
+    "rebirth": "Comenzar una nueva vida"
   }
 }

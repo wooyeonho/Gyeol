@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { type MysteryBox, type BoxRarity } from "@/lib/engagement/mystery-box";
+import { useTranslations } from "@/components/i18n-provider";
 
 interface MysteryBoxOverlayProps {
   box: MysteryBox;
@@ -18,6 +19,7 @@ const RARITY_STYLE: Record<BoxRarity, { glow: string; color: string; label: stri
 };
 
 export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
+  const { t } = useTranslations();
   const [phase, setPhase] = useState<"shake" | "crack" | "reveal">("shake");
   const style = RARITY_STYLE[box.rarity];
 
@@ -141,7 +143,7 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
 
         {phase !== "reveal" && (
           <p className="text-sm text-white/40 animate-pulse">
-            {phase === "shake" ? "열리고 있어..." : "열렸어!"}
+            {phase === "shake" ? t("mysteryBox.opening") : t("mysteryBox.opened")}
           </p>
         )}
       </div>

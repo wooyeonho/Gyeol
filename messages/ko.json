@@ -132,7 +132,11 @@
     "fadingHelper": "결의 모습이 흐릿해지고 있습니다. 지금 바로 말을 걸어 생명력(Vitality)을 다시 채워주세요.",
     "signupBannerTitle": "계정을 만들어 보세요",
     "signupBannerBody": "대화 기록과 성장이 계속 이어집니다.",
-    "signupBannerCta": "가입하기"
+    "signupBannerCta": "가입하기",
+    "silentActionStroke": "쓰다듬기",
+    "silentActionTap": "두드리기",
+    "silentActionShake": "흔들기",
+    "silentActionStay": "가만히 있기"
   },
   "album": {
     "title": "성장 앨범",
@@ -762,9 +766,10 @@
     "modeReflective": "사색적인",
     "modeCreative": "창의적인",
     "birthLabel": "당신의 생명체가 태어나고 있습니다",
-    "birthSpark": "무언가 깨어나고 있어요...",
-    "birthAlive": "새로운 생명이 나타났습니다.",
-    "birthNotice": "당신을 알아챘어요."
+    "birthSpark": "무언가 깨어나고 있어...",
+    "birthAlive": "생명이 형성되고 있어...",
+    "birthNotice": "탄생했어.",
+    "birthDNA": "DNA가 결정되고 있어..."
   },
   "evolution": {
     "share": "자랑하기",
@@ -1085,5 +1090,16 @@
     "promptBody": "당신이 없는 동안 생명체가 자율적으로 활동합니다. 알림을 켜면 생명체의 메시지를 바로 받아볼 수 있어요.",
     "promptAllow": "알림 켜기",
     "promptLater": "나중에"
+  },
+  "mysteryBox": {
+    "opening": "열리고 있어...",
+    "opened": "열렸어!"
+  },
+  "death": {
+    "echo": "ECHO",
+    "departed": "떠남",
+    "readWill": "유언 읽기",
+    "will": "유언",
+    "rebirth": "새 생명 시작하기"
   }
 }

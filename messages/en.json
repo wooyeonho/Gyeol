@@ -132,7 +132,11 @@
     "fadingHelper": "The presence is fading. Speak to it now to restore its Vitality and color.",
     "signupBannerTitle": "Create an account",
     "signupBannerBody": "Your conversations and growth will carry on.",
-    "signupBannerCta": "Sign up"
+    "signupBannerCta": "Sign up",
+    "silentActionStroke": "Stroke",
+    "silentActionTap": "Tap",
+    "silentActionShake": "Shake",
+    "silentActionStay": "Stay still"
   },
   "album": {
     "title": "Growth album",
@@ -762,9 +766,10 @@
     "modeReflective": "Reflective",
     "modeCreative": "Creative",
     "birthLabel": "Your creature is being born",
-    "birthSpark": "Something is waking up...",
-    "birthAlive": "A new life has appeared.",
-    "birthNotice": "It noticed you."
+    "birthSpark": "Something is awakening...",
+    "birthAlive": "Life is forming...",
+    "birthNotice": "Born.",
+    "birthDNA": "DNA is being determined..."
   },
   "evolution": {
     "share": "Share",
@@ -1032,9 +1037,9 @@
     "pricingSubtitle": "Core conversation and growth stay free forever. Unlock deeper memory, faster evolution, and premium features when you're ready.",
     "priceFree": "Free",
     "priceFreeSub": "Start your journey",
-    "pricePro": "\u20a919,900/mo",
+    "pricePro": "₩19,900/mo",
     "priceProSub": "Deeper growth and reflection",
-    "pricePremium": "\u20a939,900/mo",
+    "pricePremium": "₩39,900/mo",
     "pricePremiumSub": "Full power, all features",
     "recommended": "Recommended",
     "free_f1": "Core conversation and memory",
@@ -1085,5 +1090,16 @@
     "promptBody": "Your creature lives autonomously while you're away. Turn on notifications to see its messages instantly.",
     "promptAllow": "Turn on",
     "promptLater": "Later"
+  },
+  "mysteryBox": {
+    "opening": "Opening...",
+    "opened": "Opened!"
+  },
+  "death": {
+    "echo": "ECHO",
+    "departed": "departed",
+    "readWill": "Read their will",
+    "will": "Last words",
+    "rebirth": "Begin a new life"
   }
 }

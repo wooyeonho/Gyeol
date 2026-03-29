@@ -214,20 +214,28 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         {/* Silent mode — verbal < 0.15: touch interaction instead of text */}
         {isSilentMode && (
           <div className="mx-auto mb-4 max-w-3xl text-center">
-            <p className="text-xs text-white/25 mb-3">{t("chat.silentMode") || "말이 없는 존재예요. 터치로 교감해요."}</p>
+            <p className="text-xs text-white/50 mb-3">{t("chat.silentMode")}</p>
             <div className="flex justify-center gap-3 flex-wrap">
-              {["쓰다듬기", "두드리기", "흔들기", "가만히 있기"].map((action) => (
+              {([
+                ["silentActionStroke", "쓰다듬기"],
+                ["silentActionTap", "두드리기"],
+                ["silentActionShake", "흔들기"],
+                ["silentActionStay", "가만히 있기"],
+              ] as [string, string][]).map(([key, fallback]) => {
+                const label = t(`chat.${key}`) || fallback;
+                return (
                 <motion.button
-                  key={action}
+                  key={key}
                   type="button"
-                  onClick={() => handleSilentTouch(`[${action}]`)}
+                  onClick={() => handleSilentTouch(`[${label}]`)}
                   disabled={isStreaming}
                   whileTap={{ scale: 0.92 }}
                   className="rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm text-white/60 hover:border-white/30 hover:text-white/90 transition-all disabled:opacity-40"
                 >
-                  {action}
+                  {label}
                 </motion.button>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -249,7 +257,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
                 type="button"
                 onClick={() => setSignupBannerDismissed(true)}
                 className="text-white/40 hover:text-white/70 transition-colors text-xs"
-                aria-label="닫기"
+                aria-label={t("common.close")}
               >
                 ✕
               </button>

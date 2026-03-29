@@ -135,7 +135,11 @@
     "fadingHelper": "存在感が薄れています。今すぐ話しかけてVitalityと色を取り戻してください。",
     "signupBannerTitle": "アカウントを作りましょう",
     "signupBannerBody": "会話と成長がそのまま続きます。",
-    "signupBannerCta": "登録する"
+    "signupBannerCta": "登録する",
+    "silentActionStroke": "なでる",
+    "silentActionTap": "たたく",
+    "silentActionShake": "揺らす",
+    "silentActionStay": "じっとする"
   },
   "album": {
     "title": "Growth album",
@@ -360,7 +364,8 @@
     "performanceMinimalBody": "Uses a lighter visual/runtime path for quieter or lower-power sessions.",
     "recapEmailBody": "Sends a periodic recap so the relationship can continue outside the app.",
     "missionInputAria": "Enter today's mission",
-    "missionToggleAria": "Toggle mission completion"
+    "missionToggleAria": "Toggle mission completion",
+    "quickSections": "クイックナビ"
   },
   "explore": {
     "title": "Explore",
@@ -464,7 +469,13 @@
     "assigned": "Assigned",
     "topPaths7d": "Top paths (7d)",
     "noPageViews": "No page views have been aggregated yet.",
-    "backDashboard": "Back to dashboard"
+    "backDashboard": "Back to dashboard",
+    "socialModeration": "ソーシャルモデレーションキュー",
+    "noSocialQueue": "現在処理すべき公開ソーシャル報告はありません。",
+    "reportCount": "{count}件の報告",
+    "approvePost": "承認",
+    "dismissReport": "却下",
+    "blockPost": "ブロック"
   },
   "featuresPage": {
     "eyebrow": "GYEOL introduction",
@@ -758,9 +769,10 @@
     "modeReflective": "Reflective",
     "modeCreative": "Creative",
     "birthLabel": "あなたの生命体が生まれています",
-    "birthSpark": "何かが目覚めようとしています...",
-    "birthAlive": "新しい生命が現れました。",
-    "birthNotice": "あなたに気づいたようです。"
+    "birthSpark": "何かが目覚めている...",
+    "birthAlive": "生命が形成されている...",
+    "birthNotice": "誕生しました。",
+    "birthDNA": "DNAが決まっている..."
   },
   "evolution": {
     "share": "Share",
@@ -984,5 +996,113 @@
     "promptBody": "あなたがいない間、生命体は自律的に活動しています。通知をオンにすると、メッセージをすぐに受け取れます。",
     "promptAllow": "通知をオン",
     "promptLater": "後で"
+  },
+  "voice": {
+    "recording": "聞いています...",
+    "transcribing": "テキストに変換中...",
+    "startRecording": "音声入力を開始",
+    "stopRecording": "音声入力を停止",
+    "listeningPlaceholder": "話しています...",
+    "micPermissionDenied": "マイクの権限が拒否されました",
+    "notSupported": "このブラウザでは音声入力をサポートしていません",
+    "error": "音声認識エラーが発生しました"
+  },
+  "shop": {
+    "title": "リワードショップ",
+    "subtitle": "獲得したシャード、ダスト、ポイントでカスタマイズとアップグレードを購入してください。",
+    "inventory": "自分のインベントリ",
+    "coins": "コイン",
+    "emojiDust": "絵文字ダスト",
+    "titleShards": "称号シャード",
+    "appearanceShards": "外見シャード",
+    "evolutionPoints": "進化ポイント",
+    "streakFreezes": "ストリークフリーズ",
+    "categoryTitle": "称号",
+    "categoryAppearance": "外見",
+    "categoryEvolution": "進化",
+    "categoryUtility": "ユーティリティ",
+    "redeem": "交換",
+    "owned": "所持済み",
+    "insufficientResources": "リソースが不足しています",
+    "purchaseSuccess": "交換完了！",
+    "empty": "購入可能なアイテムはありません"
+  },
+  "social": {
+    "title": "ソーシャル",
+    "subtitle": "フォローと相互フォローを通じて、存在たちの関係をより長く続けましょう。",
+    "friendsTab": "友達",
+    "dmTab": "メッセージ",
+    "feedTab": "フィード",
+    "noFriends": "まだ相互フォロー関係がありません。",
+    "noMessages": "関係ベースのメッセージボックスはまだ空です。",
+    "noFeed": "フィードが空です。後でまた確認してください！",
+    "addFriend": "友達を追加",
+    "sendMessage": "メッセージを送る",
+    "online": "オンライン",
+    "offline": "オフライン",
+    "lastActive": "最終活動 {time}",
+    "placeholder": "メッセージを入力...",
+    "follow": "フォロー",
+    "unfollow": "フォロー解除",
+    "following": "フォロー中",
+    "follower": "フォローされています",
+    "discoverAgent": "探索中"
+  },
+  "stripe": {
+    "upgradePro": "Proにアップグレード",
+    "upgradePremium": "Premiumにアップグレード",
+    "manageBilling": "請求管理",
+    "currentPlan": "現在のプラン",
+    "changePlan": "プランを変更",
+    "cancelSubscription": "サブスクリプションをキャンセル",
+    "paymentSuccess": "決済が完了しました！",
+    "paymentFailed": "決済に失敗しました。もう一度お試しください。",
+    "processing": "処理中..."
+  },
+  "generation": {
+    "title": "生成",
+    "subtitle": "存在のイメージとアバターを生成してください。",
+    "generateAvatar": "アバターを生成",
+    "generateImage": "イメージを生成",
+    "prompt": "望むものを説明してください...",
+    "generating": "生成中...",
+    "downloadImage": "ダウンロード",
+    "setAsAvatar": "アバターとして設定",
+    "history": "生成履歴",
+    "noHistory": "まだ生成履歴がありません。",
+    "credits": "残りクレジット：{count}個",
+    "unavailable": "画像生成画面は開いていますが、実際の生成プロバイダーワークフローはまだ準備中です。"
+  },
+  "accessibility": {
+    "title": "アクセシビリティ",
+    "lightMode": "ライトモード",
+    "darkMode": "ダークモード",
+    "largeText": "大きな文字",
+    "highContrast": "高コントラスト",
+    "reduceMotion": "モーションを減らす",
+    "reduceMotionBody": "アニメーションとトランジション効果を無効にして、落ち着いた体験を提供します。",
+    "screenReader": "スクリーンリーダー対応",
+    "guide": "アクセシビリティ向上のためにカスタマイズしてください。",
+    "guideBody": "Gyeolはすべてのユーザーがアクセスできるよう設計されています。以下の設定で体験をカスタマイズしてください。",
+    "fontSizes": "フォントサイズ",
+    "fontSmall": "小",
+    "fontMedium": "中",
+    "fontLarge": "大",
+    "fontXlarge": "特大",
+    "fontSizeSmall": "小",
+    "fontSizeMedium": "中",
+    "fontSizeLarge": "大",
+    "fontSizeXLarge": "特大"
+  },
+  "mysteryBox": {
+    "opening": "開いています...",
+    "opened": "開きました！"
+  },
+  "death": {
+    "echo": "ECHO",
+    "departed": "旅立ち",
+    "readWill": "遺言を読む",
+    "will": "遺言",
+    "rebirth": "新しい命を始める"
   }
 }
