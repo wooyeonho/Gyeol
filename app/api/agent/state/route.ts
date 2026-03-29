@@ -24,12 +24,16 @@ export async function GET() {
     // Backfill genome for pre-existing agents that were created before DNA system
     const stateRow = state as Record<string, unknown> | null;
     if (stateRow && !stateRow.genome) {
-      const initialDNA = generateInitialDNA(agentId);
-      const initialSpecies = deriveSpecies(initialDNA);
-      const genome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
-      await service.from("agent_state").update({ genome }).eq("agent_id", agentId);
-      stateRow.genome = genome;
-      console.log(`[AgentState] Backfilled genome for agent ${agentId}`);
+      try {
+        const initialDNA = generateInitialDNA(agentId);
+        const initialSpecies = deriveSpecies(initialDNA);
+        const genome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
+        await service.from("agent_state").update({ genome }).eq("agent_id", agentId);
+        stateRow.genome = genome;
+        console.log(`[AgentState] Backfilled genome for agent ${agentId}`);
+      } catch (backfillErr) {
+        console.error("[AgentState] Genome backfill failed (non-fatal)", backfillErr);
+      }
     }
 
     return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple });
