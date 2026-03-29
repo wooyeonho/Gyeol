@@ -399,6 +399,29 @@ export async function executeHeartbeat(): Promise<CronResult> {
             const duplicated = recentMsgs.length > 0 ? isRepetitiveOutput(proMsg, recentMsgs, 0.7) : false;
             if (!duplicated) {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
+              // Notify the user their creature just said something
+              try {
+                const creatureName =
+                  typeof state.self_name === "string" && state.self_name
+                    ? state.self_name
+                    : locale === "ko" ? "결" : "GYEOL";
+                await fetch(`${baseUrl}/api/push/send`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${cronSecret}`,
+                  },
+                  body: JSON.stringify({
+                    agentId,
+                    title: creatureName,
+                    body: proMsg,
+                    url: "/",
+                  }),
+                  signal: AbortSignal.timeout(10_000),
+                });
+              } catch (pushErr) {
+                console.warn(`[Heartbeat] push failed for ${agentId}:`, pushErr instanceof Error ? pushErr.message : pushErr);
+              }
             }
           }
         }
