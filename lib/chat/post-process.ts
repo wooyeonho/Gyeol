@@ -4,7 +4,7 @@ import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
-import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -146,7 +146,17 @@ export async function persistChatTurn(params: {
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
 
   // Evolve creature DNA based on conversation signals
-  const currentGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
+  // Backfill: if genome was never initialized (pre-existing agent), generate it now
+  const originalGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
+  let currentGenome = originalGenome;
+  let genomeBackfilled = false;
+  if (!currentGenome?.dna) {
+    const initialDNA = generateInitialDNA(params.agentId);
+    const initialSpecies = deriveSpecies(initialDNA);
+    currentGenome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
+    genomeBackfilled = true;
+    console.log(`[PostProcess] Backfilled genome for agent ${params.agentId}`);
+  }
   let nextGenome = currentGenome;
   let mutationChangedAxes: string[] = [];
   if (currentGenome?.dna) {
@@ -173,7 +183,7 @@ export async function persistChatTurn(params: {
     intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
     vitality: newVitality,
     config: nextConfig,
-    ...(nextGenome !== currentGenome ? { genome: nextGenome } : {}),
+    ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
   }).eq("agent_id", params.agentId);
 
   const goalSignal = await applyGoalLoop({
