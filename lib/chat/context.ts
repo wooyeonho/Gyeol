@@ -1,6 +1,8 @@
 import type { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
+import type { UserPreferences } from "@/lib/creature/preference-memory";
+import type { FeatureBehaviorProfile } from "@/lib/ai/system-prompt";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
@@ -120,6 +122,9 @@ export async function buildChatPromptContext(params: {
       vitality_stage: typeof promptConfig.vitality_stage === "string" ? promptConfig.vitality_stage : undefined,
       pending_question: typeof promptConfig.pending_question === "string" ? promptConfig.pending_question : undefined,
       pending_concern: typeof promptConfig.pending_concern === "string" ? promptConfig.pending_concern : undefined,
+      user_preferences: promptConfig.user_preferences as UserPreferences | undefined,
+      simple_mode_enabled: promptConfig.simple_mode_enabled === true ? true : undefined,
+      feature_behavior_profile: promptConfig.feature_behavior_profile as FeatureBehaviorProfile | undefined,
     },
     system_prompt: { base: undefined, fragments: agentState?.fragments ?? [] },
   };

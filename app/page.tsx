@@ -326,7 +326,7 @@ export default function Home() {
       {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
       <div
         className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "38vh", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
+        style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
         {/* Circadian time-of-day tint overlay */}
         <div

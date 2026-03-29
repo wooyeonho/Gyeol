@@ -26,11 +26,11 @@ describe("checkSelfNaming", () => {
     expect(generateJSON).not.toHaveBeenCalled();
   });
 
-  it("does nothing if total_messages < 20", async () => {
+  it("does nothing if total_messages < 5", async () => {
     const updateFn = vi.fn();
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
       from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { self_name: null, total_messages: 10, config: {} } }) }) }),
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { self_name: null, total_messages: 3, config: {} } }) }) }),
         update: updateFn,
       }),
     });

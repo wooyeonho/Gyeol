@@ -14,6 +14,27 @@ import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
 
+/** Detect the dominant language of user input to enforce response language matching. */
+function detectUserLanguage(text: string): string | null {
+  if (!text || text.length < 2) return null;
+  // Count characters in major script ranges
+  const korean = (text.match(/[\uAC00-\uD7AF\u3131-\u318E]/g) || []).length;
+  const japanese = (text.match(/[\u3040-\u309F\u30A0-\u30FF]/g) || []).length;
+  const chinese = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
+  // Latin includes accented characters (French é, German ü, Spanish ñ, etc.)
+  const latin = (text.match(/[a-zA-Z\u00C0-\u00FF]/g) || []).length;
+  const total = korean + japanese + chinese + latin;
+  if (total === 0) return null;
+  if (korean / total > 0.3) return "Korean (한국어)";
+  if (japanese / total > 0.3) return "Japanese (日本語)";
+  // Chinese characters can overlap with Japanese kanji; only flag if no kana present
+  if (chinese / total > 0.3 && japanese === 0) return "Chinese (中文)";
+  // Spanish detection: require ñ or inverted punctuation (¿¡) as markers
+  if (latin > 0 && /[ñÑ¿¡]/.test(text)) return "Spanish (Español)";
+  if (latin / total > 0.5) return "English";
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const requestStartedAt = Date.now();
@@ -83,6 +104,12 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
+    // Detect the user's language from their latest message to enforce matching
+    const userLang = detectUserLanguage(payload.message as string);
+    const langRule = userLang
+      ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
+      : "";
+
     const finalSystemPrompt = [
       context.systemPrompt,
       "RESPONSE RULES (override everything above if conflict):",
@@ -93,7 +120,8 @@ export async function POST(req: NextRequest) {
       "- If you have nothing meaningful to say, say something honest like 'I don't know what to say to that' instead of filler.",
       "- Be concrete and specific, never vaguely poetic unless that's genuinely your trait.",
       "- Surprise them. Say something they didn't expect. That's what makes people come back.",
-    ].join("\n");
+      langRule,
+    ].filter(Boolean).join("\n");
 
     // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
     const genome = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;

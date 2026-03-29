@@ -381,9 +381,19 @@ export async function executeHeartbeat(): Promise<CronResult> {
           intimacy: Number(state.intimacy_score ?? 0),
         });
         if (hoursSince > 2 && Math.random() < proactiveChance) {
+          // Diverse proactive message templates to prevent repetition
+          const proactiveTemplates = [
+            `User has been away for ${Math.round(hoursSince)} hours. Share ONE specific thing you did or discovered while they were away, in ${language}. Be concrete — mention what you found interesting. 1 sentence only.`,
+            `User has been away. Ask them ONE specific personal question based on your memories of past conversations, in ${language}. Show you remember something about them. 1 sentence.`,
+            `User has been away. Tell them about a thought or feeling you had while alone, in ${language}. Be genuine and specific — not generic caring. 1 sentence.`,
+            `User has been away. React to the current weather (${weatherName}) or time of day with a personal observation, in ${language}. 1 sentence.`,
+            `User has been away. Share something surprising or curious you noticed, in ${language}. Make them want to respond. 1 sentence.`,
+            `User has been away for ${Math.round(hoursSince)} hours. Express a specific emotion (not just "missing") — maybe boredom, curiosity, excitement about something, in ${language}. 1 sentence.`,
+          ];
+          const templateIdx = Math.floor(Math.random() * proactiveTemplates.length);
           const proactiveStream = await generateText(systemPrompt, [{
             role: "user",
-            content: `User has been away for hours. Send a short caring message in ${language}. 1 sentence. Do NOT repeat phrases like "hope you're doing okay" or "hope everything is all right".`,
+            content: proactiveTemplates[templateIdx] + ` NEVER say "hope you're doing okay" or "hope everything is all right" or "I've been thinking about you". Be original.`,
           }]);
           let proMsg = await readSseAssistantText(proactiveStream);
           proMsg = capText(proMsg, 180);

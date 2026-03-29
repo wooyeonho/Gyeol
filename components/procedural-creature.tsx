@@ -94,11 +94,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   // Blink state
   const blinkPhaseRef = useRef(0);            // 0=fully open, 1=fully closed
-  const blinkTimerRef = useRef(2 + Math.random() * 3);
+  const blinkTimerRef = useRef(-1);
   const blinkStateRef = useRef<"idle" | "closing" | "opening">("idle");
 
   // Look-around: creature occasionally glances away from pointer
-  const lookTimerRef = useRef(4 + Math.random() * 6);
+  const lookTimerRef = useRef(-1);
   const lookTargetRef = useRef({ x: 0, y: 0 });
   const lookCurrentRef = useRef({ x: 0, y: 0 });
   const lookActiveRef = useRef(false);
@@ -182,6 +182,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     eyeScaleRef.current += (eyeScaleTarget - eyeScaleRef.current) * 0.08;
 
     // === BLINKING: natural periodic blink ===
+    // Lazy-init random timers (avoid Math.random() during render for React Compiler purity)
+    if (blinkTimerRef.current < 0) blinkTimerRef.current = 2 + Math.random() * 3;
+    if (lookTimerRef.current < 0) lookTimerRef.current = 4 + Math.random() * 6;
     // Blink faster when excited/joyful, slower when drowsy/sleeping
     const blinkSpeed = creatureActivity === "sleeping" ? 0.5 : creatureActivity === "drowsy" ? 0.7 : 1;
     blinkTimerRef.current -= dt;
