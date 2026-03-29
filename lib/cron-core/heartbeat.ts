@@ -400,7 +400,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
             if (!duplicated) {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
               // Send push notification with the actual creature message
-              await runOptionalStep("push-notification", async () => {
+              await runOptionalStep("push-notification", agentId, async () => {
                 const selfName = typeof state.self_name === "string" ? state.self_name : "GYEOL";
                 const baseUrl = getBaseUrl();
                 await fetch(`${baseUrl}/api/push/send`, {
