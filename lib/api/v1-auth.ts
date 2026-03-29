@@ -76,11 +76,19 @@ export async function authorizeV1ApiKey(
   }
 
   // Backward compatibility: legacy single env key (timing-safe comparison).
+  // DEPRECATED: This auth method has no tenant binding and will be removed.
+  // Migrate to database-bound API keys (api_keys table) for proper per-user scoping.
   const envKey = process.env.GYEOL_ENGINE_API_KEY;
   if (envKey && envKey.length === raw.length) {
     const a = Buffer.from(raw);
     const b = Buffer.from(envKey);
     if (crypto.timingSafeEqual(a, b)) {
+      console.warn(
+        "[V1Auth] DEPRECATED: Legacy env-based API key used. " +
+        "This method lacks tenant binding and will be removed in a future release. " +
+        "Please migrate to database-bound API keys (api_keys table). " +
+        `Identifier: ${getApiKeyIdentifier(request)}`
+      );
       return {
         id: null,
         identifier: getApiKeyIdentifier(request),

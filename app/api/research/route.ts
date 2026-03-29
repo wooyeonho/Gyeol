@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -5,7 +6,8 @@ function checkResearchAuth(req: NextRequest): boolean {
   const expected = process.env.RESEARCH_API_KEY;
   if (!expected) return false;
   const key = req.headers.get("x-api-key") || req.headers.get("authorization")?.replace("Bearer ", "");
-  return key === expected;
+  if (!key || key.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expected));
 }
 
 export async function GET(req: NextRequest) {

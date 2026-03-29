@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
-import { isOpsAdminUser } from "@/lib/security/ops-access";
+import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
 
 const REQUIRED_ENV_KEYS = [
   "CRON_SECRET",
@@ -29,8 +29,11 @@ export async function GET(request?: NextRequest) {
   if (!user && !cronAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!cronAuthorized && !isOpsAdminUser(user)) {
+  if (!cronAuthorized && !(await isOpsAdminUserAsync(user))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (user?.id) {
+    logOpsAudit({ userId: user.id, action: "ops:readiness:view", ipAddress: request?.headers.get("x-forwarded-for") ?? undefined });
   }
 
   try {
