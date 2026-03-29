@@ -379,21 +379,20 @@ export async function executeHeartbeat(): Promise<CronResult> {
         if (hoursSince > 2 && Math.random() < proactiveChance) {
           const proactiveStream = await generateText(systemPrompt, [{
             role: "user",
-            content: `User has been away for hours. Send a short caring message in ${language}. 1 sentence.`,
+            content: `User has been away for hours. Send a short caring message in ${language}. 1 sentence. Do NOT repeat phrases like "hope you're doing okay" or "hope everything is all right".`,
           }]);
           let proMsg = await readSseAssistantText(proactiveStream);
           proMsg = capText(proMsg, 180);
           if (proMsg) {
-            const { data: lastAssistant } = await db
+            const { data: recentAssistants } = await db
               .from("chats")
               .select("content")
               .eq("agent_id", agentId)
               .eq("role", "assistant")
               .order("created_at", { ascending: false })
-              .limit(1)
-              .single();
-            const lastAssistantMsg = (lastAssistant as ChatRow | null)?.content;
-            const duplicated = lastAssistantMsg ? isRepetitiveOutput(proMsg, [lastAssistantMsg], 0.85) : false;
+              .limit(5);
+            const recentMsgs = ((recentAssistants || []) as ChatRow[]).map((r) => r.content).filter(Boolean);
+            const duplicated = recentMsgs.length > 0 ? isRepetitiveOutput(proMsg, recentMsgs, 0.7) : false;
             if (!duplicated) {
               await db.from("chats").insert({ agent_id: agentId, role: "assistant", content: proMsg });
             }

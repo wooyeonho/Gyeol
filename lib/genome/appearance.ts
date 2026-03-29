@@ -62,8 +62,8 @@ export function deriveDNAAppearance(
     dna.intuitive * 260       // intuitive → indigo
     ) / 8;
 
-  const saturation = 55 + dna.intensity * 25 + dna.playfulness * 10;
-  const lightness = 45 + dna.warmth * 15 + dna.openness * 10 - dna.independence * 8;
+  const saturation = 62 + dna.intensity * 22 + dna.playfulness * 10;
+  const lightness = 48 + dna.warmth * 14 + dna.openness * 10 - dna.independence * 6;
 
   const secondaryHueShift = 30 + dna.creativity * 60 - dna.stability * 20;
 
@@ -90,13 +90,13 @@ export function deriveDNAAppearance(
     species.archetype === "volcanic" ? 1.4 :
     species.archetype === "spectral" ? 1.2 : 1.0;
 
-  const glowIntensity = (0.3 + dna.openness * 0.3 + dna.creativity * 0.2) * archetypeGlowMod;
+  const glowIntensity = (0.45 + dna.openness * 0.25 + dna.creativity * 0.2) * archetypeGlowMod;
   const glowPulseSpeed = 0.5 + dna.intensity * 0.8 + dna.playfulness * 0.4;
 
-  // Particles
-  const particleCount = Math.round(8 + dna.creativity * 20 + dna.openness * 12);
-  const particleDrift = 0.3 + dna.independence * 0.4 + dna.openness * 0.3;
-  const particleSize = 0.01 + dna.warmth * 0.02 + dna.empathy * 0.015;
+  // Particles — more generous counts for a lively feel
+  const particleCount = Math.round(14 + dna.creativity * 22 + dna.openness * 14);
+  const particleDrift = 0.35 + dna.independence * 0.4 + dna.openness * 0.3;
+  const particleSize = 0.012 + dna.warmth * 0.022 + dna.empathy * 0.016;
 
   // Animation
   const breatheDepth = 0.02 + dna.stability * 0.03 + dna.warmth * 0.02;
@@ -123,9 +123,9 @@ export function deriveDNAAppearance(
     bodySymmetry: clamp(bodySymmetry, 0.15, 0.85),
     roughness: clamp(roughness, 0.05, 0.8),
     metalness: clamp(metalness, 0, 0.5),
-    glowIntensity: clamp(glowIntensity, 0.2, 1.0),
+    glowIntensity: clamp(glowIntensity, 0.35, 1.0),
     glowPulseSpeed: clamp(glowPulseSpeed, 0.3, 1.8),
-    particleCount: Math.max(4, Math.min(48, particleCount)),
+    particleCount: Math.max(10, Math.min(56, particleCount)),
     particleDrift: clamp(particleDrift, 0.2, 1.0),
     particleSize: clamp(particleSize, 0.005, 0.04),
     breatheDepth: clamp(breatheDepth, 0.01, 0.08),
