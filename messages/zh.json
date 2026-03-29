@@ -978,5 +978,11 @@
       "action": "动作",
       "dream": "梦境"
     }
+  },
+  "push": {
+    "promptTitle": "生命体说话时通知你？",
+    "promptBody": "你不在的时候，生命体会自主活动。开启通知，即时收到它的消息。",
+    "promptAllow": "开启通知",
+    "promptLater": "稍后"
   }
 }

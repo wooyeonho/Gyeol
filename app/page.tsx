@@ -19,6 +19,7 @@ import { Onboarding } from "@/components/onboarding";
 import { DeathScreen } from "@/components/death-screen";
 import { LivingFeed } from "@/components/living-feed";
 import { CreatureStatusIndicator } from "@/components/creature-status";
+import { StreakDisplay } from "@/components/streak-display";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
@@ -400,6 +401,17 @@ export default function Home() {
               <>
                 <span className="h-1 w-1 rounded-full bg-white/30" />
                 <span className="text-purple-300/70">{agentState.mood}</span>
+              </>
+            )}
+            {(agentState?.streak_days ?? 0) > 0 && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <StreakDisplay
+                  days={agentState?.streak_days ?? 0}
+                  todayActive={true}
+                  locale={locale}
+                  compact
+                />
               </>
             )}
           </div>

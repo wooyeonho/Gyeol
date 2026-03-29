@@ -978,5 +978,11 @@
       "action": "Acción",
       "dream": "Sueño"
     }
+  },
+  "push": {
+    "promptTitle": "¿Notificarte cuando tu criatura hable?",
+    "promptBody": "Tu criatura vive de forma autónoma mientras no estás. Activa las notificaciones para ver sus mensajes al instante.",
+    "promptAllow": "Activar",
+    "promptLater": "Más tarde"
   }
 }
