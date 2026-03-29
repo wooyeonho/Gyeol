@@ -31,8 +31,11 @@ describe("/api/agent/state contract", () => {
       from: () => ({
         select: () => ({
           eq: () => ({
-            single: async () => ({ data: { mood: "calm", vitality: 0.8 } }),
+            single: async () => ({ data: { mood: "calm", vitality: 0.8, genome: { dna: [] } } }),
           }),
+        }),
+        update: () => ({
+          eq: () => Promise.resolve({ data: null, error: null }),
         }),
       }),
     });
