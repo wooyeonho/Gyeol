@@ -153,7 +153,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   }, [mood]);
 
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
-  const emissiveIntensity = Math.max(0.05, (appearance.glowIntensity * 0.3 + moodMod.emissiveBoost) * activityDim);
+  const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim);
 
   // Animation: breathing, eye tracking, idle rotation, listening posture, vertex wave
   useFrame((state) => {
@@ -210,7 +210,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const haloPulse = 1 + Math.sin(t * 0.8) * 0.05 + excitePulse * 0.1;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (0.06 + appearance.glowIntensity * 0.08 + moodMod.emissiveBoost * 0.03) * activityDim;
+        (0.08 + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04) * activityDim;
     }
 
     // Eye tracking with listening-widened eyes
@@ -281,11 +281,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     <group ref={groupRef}>
       {/* === FRESNEL HALO: translucent glow sphere behind creature === */}
       <mesh ref={haloRef}>
-        <sphereGeometry args={[0.58, 24, 24]} />
+        <sphereGeometry args={[0.62, 24, 24]} />
         <meshBasicMaterial
           color={primaryColor}
           transparent
-          opacity={0.06 + appearance.glowIntensity * 0.08}
+          opacity={0.08 + appearance.glowIntensity * 0.12}
           side={THREE.BackSide}
           depthWrite={false}
         />

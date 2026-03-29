@@ -97,6 +97,24 @@ export function startScheduler(config: EngineConfig): void {
   console.log(`[${ts()}] OpenClaw scheduler starting (direct execution mode)`);
   console.log(`[${ts()}] Target (HTTP fallback): ${config.appUrl}`);
   console.log(`[${ts()}] Auth mode: ${config.useHmacAuth ? "HMAC-SHA256" : "Bearer token"}`);
+
+  // Run critical jobs shortly after startup so a Koyeb restart
+  // doesn't leave agents without heartbeat/crawl until the next
+  // cron window (which could be hours away).
+  const STARTUP_CRITICAL_JOBS = ["health", "heartbeat"];
+  const STARTUP_DELAY_MS = 30_000; // 30 seconds — let DB connections settle
+  setTimeout(() => {
+    console.log(`[${ts()}] Running startup catch-up for critical jobs`);
+    for (const jobName of STARTUP_CRITICAL_JOBS) {
+      const job = DIRECT_JOBS.find((j) => j.name === jobName);
+      if (job) {
+        runDirectJob(job).catch((err) =>
+          console.error(`[${ts()}] FAIL startup ${job.name}:`, err)
+        );
+      }
+    }
+  }, STARTUP_DELAY_MS);
+
   console.log(`[${ts()}] Direct jobs:`);
 
   for (const job of DIRECT_JOBS) {
@@ -130,6 +148,7 @@ export function startScheduler(config: EngineConfig): void {
 
   const total = DIRECT_JOBS.length + HTTP_JOBS.length;
   console.log(`[${ts()}] Scheduler ready — ${DIRECT_JOBS.length} direct + ${HTTP_JOBS.length} HTTP = ${total} jobs`);
+  console.log(`[${ts()}] Startup catch-up for [${STARTUP_CRITICAL_JOBS.join(", ")}] in ${STARTUP_DELAY_MS / 1000}s`);
 }
 
 export async function runOnce(config: EngineConfig, jobName?: string): Promise<void> {
