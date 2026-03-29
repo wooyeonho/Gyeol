@@ -16,8 +16,8 @@ function padToTargetDim(vec: number[]): number[] {
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: { parts: [{ text }] } }) }
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: TARGET_DIM }) }
     );
     if (!res.ok) throw new Error(`Gemini ${res.status}`);
     const data = await res.json();

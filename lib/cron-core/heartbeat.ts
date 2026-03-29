@@ -158,13 +158,18 @@ export async function executeHeartbeat(): Promise<CronResult> {
         response = capText(response, 420);
 
         const nowIso = new Date().toISOString();
-        const nextSubjectiveTime = (state.subjective_time || 0) + 1;
+        const nextSubjectiveTime = (state.subjective_time ?? 0) + 1;
+        // Build update payload — only include subjective_time if column exists on the row
+        const hasSubjectiveTime = "subjective_time" in (state as Record<string, unknown>);
+        const baseUpdate = {
+          last_heartbeat_at: nowIso,
+          ...(hasSubjectiveTime ? { subjective_time: nextSubjectiveTime } : {}),
+        };
         if (!isMeaningfulAutonomousOutput(response)) {
           await db
             .from("agent_state")
             .update({
-              subjective_time: nextSubjectiveTime,
-              last_heartbeat_at: nowIso,
+              ...baseUpdate,
               config: { ...baseConfig, autonomy_last_skip_reason: "low_signal" },
             })
             .eq("agent_id", agentId);
@@ -195,8 +200,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
         await db
           .from("agent_state")
           .update({
-            subjective_time: nextSubjectiveTime,
-            last_heartbeat_at: nowIso,
+            ...baseUpdate,
             config: nextConfig,
           })
           .eq("agent_id", agentId);

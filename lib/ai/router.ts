@@ -14,7 +14,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const MODELS = [
-  { name: "meta-llama/llama-4-maverick-17b-128e-instruct", timeout: 20000 },
   { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 15000 },
   { name: "llama-3.1-8b-instant", timeout: 10000 },
 ];
