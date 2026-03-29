@@ -46,6 +46,14 @@ describe("POST /api/chat", () => {
     expect(body.error).toContain("No message");
   });
 
+  it("returns 413 when message is too long", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest({ message: "a".repeat(8001) }) as never);
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toContain("too long");
+  });
+
   it("returns 400 when electric fence blocks message", async () => {
     (checkElectricFence as ReturnType<typeof vi.fn>).mockReturnValue({ blocked: true, reason: "Blocked by safety rules" });
     const { POST } = await import("./route");
