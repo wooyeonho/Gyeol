@@ -183,19 +183,19 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // [UPGRADE 5] Emotional mouth expression
   const mouthConfig = useMemo(() => {
     switch (mood) {
-      case "joyful": case "playful": case "excited": case "grateful":
+      case "joyful": case "playful": case "excited": case "grateful": case "energetic": case "thrilled":
         return { curve: 0.8, open: 0.1, width: 1.2 };
-      case "loving": case "tender":
+      case "loving": case "tender": case "affectionate":
         return { curve: 0.5, open: 0.05, width: 1.0 };
       case "mischievous":
         return { curve: 0.6, open: 0.15, width: 0.9 };
-      case "curious":
+      case "curious": case "puzzled":
         return { curve: 0.2, open: 0.3, width: 0.8 };
       case "surprised": case "shocked":
         return { curve: 0, open: 0.9, width: 0.7 };
-      case "sad": case "melancholy": case "lonely":
+      case "sad": case "melancholy": case "lonely": case "nostalgic":
         return { curve: -0.6, open: 0.05, width: 0.9 };
-      case "angry": case "frustrated":
+      case "angry": case "frustrated": case "jealous": case "envious":
         return { curve: -0.4, open: 0.2, width: 1.1 };
       case "scared": case "anxious":
         return { curve: -0.3, open: 0.5, width: 0.8 };
@@ -205,8 +205,22 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         return { curve: -0.1, open: 0.2, width: 0.7 };
       case "confused":
         return { curve: -0.15, open: 0.15, width: 0.75 };
-      case "proud": case "inspired":
+      case "proud": case "inspired": case "confident":
         return { curve: 0.4, open: 0.1, width: 1.0 };
+      case "touched":
+        return { curve: 0.4, open: 0.08, width: 1.0 };
+      case "thoughtful": case "contemplative":
+        return { curve: 0.05, open: 0, width: 0.75 };
+      case "dreamy": case "whimsical":
+        return { curve: 0.2, open: 0.05, width: 0.85 };
+      case "focused": case "determined":
+        return { curve: 0, open: 0, width: 0.7 };
+      case "peaceful": case "serene": case "calm":
+        return { curve: 0.15, open: 0, width: 0.8 };
+      case "creative":
+        return { curve: 0.3, open: 0.1, width: 1.0 };
+      case "neutral":
+        return { curve: 0.05, open: 0, width: 0.8 };
       default:
         return { curve: 0.1, open: 0, width: 0.8 };
     }
