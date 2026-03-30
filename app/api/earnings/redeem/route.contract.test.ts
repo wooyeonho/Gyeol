@@ -8,12 +8,12 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 vi.mock("@/lib/economy/coins", () => ({
   getBalance: vi.fn(),
-  spendCoins: vi.fn(),
+  spendCoinsAtomic: vi.fn(),
 }));
 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getBalance, spendCoins } from "@/lib/economy/coins";
+import { getBalance, spendCoinsAtomic } from "@/lib/economy/coins";
 import { GET, POST } from "./route";
 
 function mockAuth(userId: string | null = "u1") {
@@ -103,7 +103,7 @@ describe("/api/earnings/redeem contract", () => {
       mockAuth();
       const { insertFn } = mockService();
       (getBalance as Mock).mockResolvedValue(500);
-      (spendCoins as Mock).mockResolvedValue(true);
+      (spendCoinsAtomic as Mock).mockResolvedValue(true);
       const req = new Request("http://localhost/api/earnings/redeem", {
         method: "POST",
         body: JSON.stringify({ coins: 200 }),

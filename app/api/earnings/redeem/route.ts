@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getBalance, spendCoins } from "@/lib/economy/coins";
+import { getBalance, spendCoinsAtomic } from "@/lib/economy/coins";
 import { NextRequest, NextResponse } from "next/server";
 
 const COIN_TO_KRW_RATE = 10;
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Insufficient coins" }, { status: 400 });
     }
 
-    const ok = await spendCoins(agentId, coins, "redeem_to_krw");
+    const ok = await spendCoinsAtomic(agentId, coins, "redeem_to_krw");
     if (!ok) return NextResponse.json({ error: "Spend failed" }, { status: 500 });
 
     const krw = coins * COIN_TO_KRW_RATE;

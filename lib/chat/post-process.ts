@@ -230,20 +230,22 @@ export async function persistChatTurn(params: {
           });
         }
 
-        // Re-read current config from DB to avoid overwriting goal data written by applyGoalLoop
+        // Atomic additive merge: re-read latest config then patch only the trait field.
+        // This avoids overwriting goal/usage_profile data written earlier in the same turn.
         const { data: freshState } = await params.writer
           .from("agent_state")
           .select("config")
           .eq("agent_id", params.agentId)
           .maybeSingle();
         const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? nextConfig;
-        const latestConfig = {
-          ...freshConfig,
-          pending_trait_notification: newTraits.map((t) => ({ id: t.id, name: t.name })),
-        };
         await params.writer
           .from("agent_state")
-          .update({ config: latestConfig })
+          .update({
+            config: {
+              ...freshConfig,
+              pending_trait_notification: newTraits.map((t) => ({ id: t.id, name: t.name })),
+            },
+          })
           .eq("agent_id", params.agentId);
       }
     }
