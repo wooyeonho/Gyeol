@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveIdleBehavior, type IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { deriveAffinityMood } from "@/lib/creature/affinity-tracker";
+import { createForceState, stepForceSimulation, type ForceState, type Vec2 } from "@/lib/creature/force-system";
 import type { CreatureDNA } from "@/lib/genome/dna";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";
@@ -40,6 +41,8 @@ export type CreatureState = {
   affinityMood: string;
   /** 0..1 conversation energy — spikes on messages, decays over time */
   conversationEnergy: number;
+  /** Force-based physics state — position, velocity, rotation driven by DNA+mood+environment */
+  forceState: ForceState;
 };
 
 const DROWSY_AFTER_S = 30;
@@ -77,6 +80,7 @@ export function useCreatureState(
     sessionAffinity: 0,
     affinityMood: "neutral",
     conversationEnergy: 0,
+    forceState: createForceState(),
   });
 
   // Store DNA/mood/isStreaming in refs for access inside animation loop without re-subscribing
@@ -103,6 +107,9 @@ export function useCreatureState(
   const messageCountRef = useRef(0); // messages sent this session
   const lastSetStateRef = useRef(0);
   const SET_STATE_INTERVAL = 66; // ~15fps — throttle React re-renders
+  // Force-based physics state — updated every frame at 60fps, synced to React at 15fps
+  const forceStateRef = useRef<ForceState>(createForceState());
+  const monotonicTimeRef = useRef(0); // monotonic clock for force simulation
 
   // Initialize lastInteraction + sessionStart on mount (avoids calling Date.now() during render)
   useEffect(() => {
@@ -241,6 +248,31 @@ export function useCreatureState(
         y: tremorRef.current.y + (tremorTargetRef.current.y - tremorRef.current.y) * 0.12,
       };
 
+      // ── Force-based physics simulation ──
+      // Step the force simulation every frame (60fps) for smooth movement.
+      // DNA + mood + environment → forces → position/velocity/rotation
+      monotonicTimeRef.current += dt;
+      if (dnaRef.current) {
+        const forceEnv = {
+          pointer: pointerNormRef.current,
+          isActive: idleSec < 5,
+          isStreaming: isStreamingRef.current,
+          idleSeconds: idleSec,
+          conversationEnergy: conversationEnergyRef.current,
+          vitality,
+          mood: moodRef.current ?? null,
+          recentTouchAffinity: sessionAffinityRef.current,
+          recentTouchCount: touchCountRef.current,
+          time: monotonicTimeRef.current,
+          dt,
+        };
+        forceStateRef.current = stepForceSimulation(
+          dnaRef.current,
+          forceEnv,
+          forceStateRef.current,
+        );
+      }
+
       // Throttle setState to ~15fps to avoid re-rendering the entire tree every frame.
       // Exception: activity changes are always flushed immediately.
       const now = time;
@@ -291,6 +323,7 @@ export function useCreatureState(
           sessionAffinity: sessionAffinityRef.current,
           affinityMood: affinityMoodValue,
           conversationEnergy: conversationEnergyRef.current,
+          forceState: { ...forceStateRef.current },
         }));
       } else {
         // Still flush if activity changed (low frequency, important for UI)

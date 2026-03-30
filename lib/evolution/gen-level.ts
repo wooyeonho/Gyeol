@@ -3,19 +3,37 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { generatePortraitPrompt } from "@/lib/genome/portrait-prompt";
 
-const RATES: Record<number, number> = { 1: 0.6, 2: 0.4, 3: 0.2, 4: 0.05 };
+/**
+ * Evolution rate by gen level.
+ * No upper cap — higher gens use diminishing but never-zero rates.
+ * Gen 1→2 is easy, Gen 10→11 is hard but possible, Gen 50→51 is very rare.
+ */
+function getEvolutionRate(genLevel: number): number {
+  // Known rates for early gens (backward compat)
+  const EARLY_RATES: Record<number, number> = { 1: 0.6, 2: 0.4, 3: 0.2, 4: 0.1, 5: 0.06 };
+  if (EARLY_RATES[genLevel] !== undefined) return EARLY_RATES[genLevel];
+  // Logarithmic decay: never reaches zero, but gets increasingly rare
+  // Gen 10: ~0.02, Gen 20: ~0.013, Gen 50: ~0.008
+  return Math.max(0.005, 0.06 / (1 + (genLevel - 5) * 0.15));
+}
+
 type VisualUpgrade = {
-  shape?: "sphere" | "polygon" | "complex" | "transcendent";
   particles?: number;
   glow?: number;
 };
 
-const VISUAL_UPGRADES: Record<number, VisualUpgrade> = {
-  2: { shape: "sphere", particles: 3 },
-  3: { shape: "polygon", particles: 8, glow: 60 },
-  4: { shape: "complex", particles: 18, glow: 80 },
-  5: { shape: "transcendent", particles: 35, glow: 100 },
-};
+/**
+ * Compute visual upgrades for any gen level (open-ended).
+ * Instead of a fixed lookup table, uses continuous scaling.
+ */
+function getVisualUpgrade(genLevel: number): VisualUpgrade {
+  if (genLevel <= 1) return {};
+  // Particles: logarithmic growth, never capped
+  const particles = Math.round(2 + Math.log2(genLevel) * 8);
+  // Glow: approaches 100 asymptotically, can exceed at very high gens
+  const glow = Math.min(100 + (genLevel - 10) * 0.5, 30 + 70 * (1 - 1 / (1 + (genLevel - 1) * 0.3)));
+  return { particles: Math.max(0, particles), glow: Math.max(0, Math.round(glow)) };
+}
 
 export async function checkEvolution(agentId: string): Promise<{ evolved: boolean; newLevel?: number; mutation?: string } | null> {
   const db = createServiceClient();
@@ -39,10 +57,10 @@ export async function checkEvolution(agentId: string): Promise<{ evolved: boolea
     return { evolved: false };
   }
 
-  const rate = RATES[state.gen_level] || 0.01;
+  const rate = getEvolutionRate(state.gen_level);
   if (Math.random() < rate) {
     const newLevel = state.gen_level + 1;
-    const upgrade = VISUAL_UPGRADES[newLevel] || {};
+    const upgrade = getVisualUpgrade(newLevel);
     const mutation = Math.random() < 0.05 ? ["empathy_master", "logic_genius", "dream_weaver", "social_butterfly", "memory_keeper"][Math.floor(Math.random() * 5)] : undefined;
 
     await db.from("agent_state").update({

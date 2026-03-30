@@ -15,12 +15,15 @@
 
 import type { CreatureDNA, DNAAxis } from "./dna";
 import { DNA_AXES } from "./dna";
+import { type ArchetypeBlend, computeArchetypeBlendWeights } from "./continuous-morphology";
 
 export type SpeciesProfile = {
   /** Generated species name, e.g. "lux-ember-wanderer" */
   name: string;
-  /** Visual archetype for 3D rendering */
+  /** Visual archetype for 3D rendering (dominant archetype for backward compat) */
   archetype: "ethereal" | "crystalline" | "organic" | "mechanical" | "fluid" | "volcanic" | "spectral" | "verdant";
+  /** Continuous archetype blend weights — enables crystalline 60% + organic 40% */
+  archetypeBlend: ArchetypeBlend;
   /** Movement style */
   motionStyle: "drift" | "pulse" | "orbit" | "tremor" | "bloom" | "spiral";
   /** Dominant element for visual effects */
@@ -131,6 +134,9 @@ export function deriveSpecies(dna: CreatureDNA): SpeciesProfile {
   const core = pickFromDNA(coreOptions, dna, emoDominant);
   const suffix = pickFromDNA(suffixOptions, dna, socialDominant);
 
+  // Continuous archetype blend — no longer picks just one
+  const archetypeBlend = computeArchetypeBlendWeights(dna);
+  // Dominant archetype for backward compat (used by geometry selection, etc.)
   const archetype = ARCHETYPES.find((a) => a.condition(dna))?.archetype ?? "organic";
   const motionStyle = MOTIONS.find((m) => m.condition(dna))?.style ?? "drift";
   const element = ELEMENTS.find((e) => e.condition(dna))?.element ?? "void";
@@ -139,6 +145,7 @@ export function deriveSpecies(dna: CreatureDNA): SpeciesProfile {
   return {
     name: `${prefix}-${core}-${suffix}`,
     archetype,
+    archetypeBlend,
     motionStyle,
     element,
     rarity,

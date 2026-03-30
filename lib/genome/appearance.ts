@@ -8,6 +8,8 @@
 
 import type { CreatureDNA } from "./dna";
 import type { SpeciesProfile } from "./species";
+import type { ArchetypeBlend } from "./continuous-morphology";
+import { getEvolutionCapacity } from "./continuous-morphology";
 
 export type DNAAppearance = {
   /** Primary color in HSL */
@@ -47,8 +49,11 @@ export type DNAAppearance = {
  */
 export function deriveDNAAppearance(
   dna: CreatureDNA,
-  species: SpeciesProfile
+  species: SpeciesProfile,
+  /** Optional gen level for evolution-capacity scaling (default 1) */
+  genLevel?: number,
 ): DNAAppearance {
+  const evo = getEvolutionCapacity(genLevel ?? 1);
   // Primary color: weighted mix of all DNA dimensions
   // This creates a continuous color space — no two DNA profiles produce the same color
   const primaryHue =
@@ -83,23 +88,31 @@ export function deriveDNAAppearance(
   const roughness = 0.1 + (1 - dna.stability) * 0.4 + dna.assertiveness * 0.2;
   const metalness = dna.analytical * 0.3 + dna.spatial * 0.2;
 
-  // Archetype modifiers
-  const archetypeGlowMod =
-    species.archetype === "ethereal" ? 1.3 :
-    species.archetype === "crystalline" ? 1.1 :
-    species.archetype === "volcanic" ? 1.4 :
-    species.archetype === "spectral" ? 1.2 : 1.0;
+  // Archetype glow modifier — continuous blend instead of discrete switch
+  // Uses archetypeBlend when available, falls back to dominant archetype
+  const blend: ArchetypeBlend | undefined = species.archetypeBlend;
+  const archetypeGlowMod = blend
+    ? 1.0
+      + blend.ethereal * 0.3
+      + blend.crystalline * 0.1
+      + blend.volcanic * 0.4
+      + blend.spectral * 0.2
+    : (species.archetype === "ethereal" ? 1.3 :
+       species.archetype === "crystalline" ? 1.1 :
+       species.archetype === "volcanic" ? 1.4 :
+       species.archetype === "spectral" ? 1.2 : 1.0);
 
-  const glowIntensity = (0.45 + dna.openness * 0.25 + dna.creativity * 0.2) * archetypeGlowMod;
+  const glowIntensity = (0.45 + dna.openness * 0.25 + dna.creativity * 0.2) * archetypeGlowMod
+    * (0.85 + evo.dnaExpressionRange * 0.15); // evolution capacity boosts glow
   const glowPulseSpeed = 0.5 + dna.intensity * 0.8 + dna.playfulness * 0.4;
 
-  // Particles — more generous counts for a lively feel
-  const particleCount = Math.round(14 + dna.creativity * 22 + dna.openness * 14);
+  // Particles — more generous counts for a lively feel, scaled by evolution
+  const particleCount = Math.round((14 + dna.creativity * 22 + dna.openness * 14) * (0.7 + evo.morphComplexity * 0.3));
   const particleDrift = 0.35 + dna.independence * 0.4 + dna.openness * 0.3;
   const particleSize = 0.012 + dna.warmth * 0.022 + dna.empathy * 0.016;
 
-  // Animation
-  const breatheDepth = 0.02 + dna.stability * 0.03 + dna.warmth * 0.02;
+  // Animation — breathe depth deepens with evolution
+  const breatheDepth = (0.02 + dna.stability * 0.03 + dna.warmth * 0.02) * (0.9 + evo.dnaExpressionRange * 0.1);
   const breatheSpeed = 0.8 + dna.playfulness * 0.6 - dna.stability * 0.3;
   const idleRotation = dna.curiosity * 0.3 + dna.playfulness * 0.2;
 

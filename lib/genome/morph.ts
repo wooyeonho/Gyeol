@@ -19,6 +19,7 @@
 
 import type { CreatureDNA } from "./dna";
 import type { SpeciesProfile } from "./species";
+import { getEvolutionCapacity } from "./continuous-morphology";
 
 export type MorphWeights = {
   bodyStretch: number;
@@ -35,36 +36,46 @@ export type MorphWeights = {
  * Derive morph target weights from DNA.
  * Each weight is 0..1, representing how much that morph should be applied.
  */
-export function deriveMorphWeights(dna: CreatureDNA, species: SpeciesProfile): MorphWeights {
+export function deriveMorphWeights(
+  dna: CreatureDNA,
+  species: SpeciesProfile,
+  /** Optional gen level for evolution-capacity scaling (default 1) */
+  genLevel?: number,
+): MorphWeights {
   const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const evo = getEvolutionCapacity(genLevel ?? 1);
+  // morphComplexity scales how strongly morphs express (0.2 at Gen 1, ~1.0 at Gen 8+)
+  const mc = evo.morphComplexity;
 
   // Archetype modifiers push certain morphs
   const archMod = ARCHETYPE_MORPH_BIAS[species.archetype] ?? {};
 
+  // Each morph weight is scaled by morphComplexity — early gens express subtly,
+  // later gens express the full range of deformation.
   return {
     bodyStretch: clamp01(
-      (dna.verbal * 0.4 + dna.spatial * 0.3 - dna.stability * 0.2 + 0.1) + (archMod.bodyStretch ?? 0)
+      ((dna.verbal * 0.4 + dna.spatial * 0.3 - dna.stability * 0.2 + 0.1) + (archMod.bodyStretch ?? 0)) * mc
     ),
     bodyBulge: clamp01(
-      (dna.warmth * 0.4 + dna.empathy * 0.25 - dna.analytical * 0.15 + 0.1) + (archMod.bodyBulge ?? 0)
+      ((dna.warmth * 0.4 + dna.empathy * 0.25 - dna.analytical * 0.15 + 0.1) + (archMod.bodyBulge ?? 0)) * mc
     ),
     crownGrowth: clamp01(
-      (dna.creativity * 0.35 + dna.intuitive * 0.3 + dna.curiosity * 0.15 - 0.15) + (archMod.crownGrowth ?? 0)
+      ((dna.creativity * 0.35 + dna.intuitive * 0.3 + dna.curiosity * 0.15 - 0.15) + (archMod.crownGrowth ?? 0)) * mc
     ),
     sideSpread: clamp01(
-      (dna.assertiveness * 0.35 + dna.independence * 0.25 + dna.intensity * 0.15 - 0.1) + (archMod.sideSpread ?? 0)
+      ((dna.assertiveness * 0.35 + dna.independence * 0.25 + dna.intensity * 0.15 - 0.1) + (archMod.sideSpread ?? 0)) * mc
     ),
     rhythmWobble: clamp01(
-      (dna.playfulness * 0.4 + dna.adaptability * 0.3 - dna.stability * 0.2) + (archMod.rhythmWobble ?? 0)
+      ((dna.playfulness * 0.4 + dna.adaptability * 0.3 - dna.stability * 0.2) + (archMod.rhythmWobble ?? 0)) * mc
     ),
     crystalFacet: clamp01(
-      (dna.analytical * 0.4 + dna.stability * 0.3 - dna.creativity * 0.15 - 0.1) + (archMod.crystalFacet ?? 0)
+      ((dna.analytical * 0.4 + dna.stability * 0.3 - dna.creativity * 0.15 - 0.1) + (archMod.crystalFacet ?? 0)) * mc
     ),
     veilDrape: clamp01(
-      (dna.openness * 0.35 + dna.empathy * 0.25 + dna.intuitive * 0.15 - 0.15) + (archMod.veilDrape ?? 0)
+      ((dna.openness * 0.35 + dna.empathy * 0.25 + dna.intuitive * 0.15 - 0.15) + (archMod.veilDrape ?? 0)) * mc
     ),
     coreConcentrate: clamp01(
-      (dna.intensity * 0.35 + dna.persistence * 0.3 - dna.openness * 0.15) + (archMod.coreConcentrate ?? 0)
+      ((dna.intensity * 0.35 + dna.persistence * 0.3 - dna.openness * 0.15) + (archMod.coreConcentrate ?? 0)) * mc
     ),
   };
 }
