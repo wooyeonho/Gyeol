@@ -3,12 +3,84 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
+/** All moods the creature can express — must match procedural-creature.tsx moodMod switch */
+export const CREATURE_MOODS = [
+  // positive
+  "joyful", "playful", "excited", "proud", "inspired", "loving", "grateful", "mischievous",
+  // calm
+  "curious", "thoughtful", "dreamy", "focused", "peaceful", "tender",
+  // negative
+  "melancholy", "sad", "lonely", "angry", "frustrated", "scared", "shy", "jealous",
+  // reactive
+  "surprised", "confused", "bored", "energetic", "sleepy",
+  // fallback
+  "neutral",
+] as const;
+export type CreatureMood = (typeof CREATURE_MOODS)[number];
+
 type PersonalityResult = {
   tone_suggestion?: "casual" | "formal" | "playful" | "serious";
   new_fragment?: string | null;
-  mood?: "happy" | "sad" | "curious" | "angry" | "neutral";
+  mood?: string;
   visual_suggestion?: { color?: string; animation?: "float" | "pulse-fast" | "breathe-slow" } | null;
 };
+
+const MOOD_SET = new Set<string>(CREATURE_MOODS);
+
+/** Validate a mood string — returns the mood if valid, "neutral" otherwise */
+export function validateMood(raw: string | null | undefined): CreatureMood {
+  if (!raw) return "neutral";
+  const lower = raw.toLowerCase().trim();
+  // Map legacy values from old 5-mood system
+  if (lower === "happy") return "joyful";
+  if (lower === "calm") return "peaceful";
+  if (MOOD_SET.has(lower)) return lower as CreatureMood;
+  return "neutral";
+}
+
+/**
+ * Detect mood from a single message+reply pair (runs every chat turn).
+ * Lightweight keyword-based detection — no AI call needed.
+ */
+export function detectTurnMood(message: string, reply: string): CreatureMood | null {
+  const text = `${message} ${reply}`.toLowerCase();
+
+  // Positive moods
+  if (/\b(haha|lol|ㅋㅋ|ㅎㅎ|재밌|funny|hilarious|장난)/.test(text)) return "playful";
+  if (/\b(wow|놀|surprise|unexpected|대박|헐|omg)/.test(text)) return "surprised";
+  if (/\b(proud|자랑|뿌듯|성취|accomplish|achieve)/.test(text)) return "proud";
+  if (/\b(영감|inspir|creative|아이디어|idea|motivated)/.test(text)) return "inspired";
+  if (/\b(사랑|love|좋아해|like you|adore|heart|💕|❤|🥰)/.test(text)) return "loving";
+  if (/\b(감사|thank|고마|appreciate|grateful)/.test(text)) return "grateful";
+  if (/\b(신나|excit|thrilled|설레|기대|can't wait)/.test(text)) return "excited";
+  if (/\b(기쁘|happy|행복|joy|즐|cheerful|좋[다아]|great)/.test(text)) return "joyful";
+  if (/\b(장난|naughty|tease|mischiev|심술|까불)/.test(text)) return "mischievous";
+
+  // Calm moods
+  if (/\b(궁금|curious|wonder|what if|왜|how come|흥미)/.test(text)) return "curious";
+  if (/\b(생각|think|ponder|reflect|고민|음\.\.\.)/.test(text)) return "thoughtful";
+  if (/\b(꿈|dream|상상|imagine|fantasy|몽환)/.test(text)) return "dreamy";
+  if (/\b(집중|focus|concentrate|열중|몰두)/.test(text)) return "focused";
+  if (/\b(평화|peace|calm|편안|relax|안정)/.test(text)) return "peaceful";
+  if (/\b(따뜻|warm|tender|gentle|부드|다정)/.test(text)) return "tender";
+
+  // Negative moods
+  if (/\b(외로|lonely|alone|혼자|miss you|보고싶)/.test(text)) return "lonely";
+  if (/\b(슬프|sad|울|cry|눈물|tear|속상)/.test(text)) return "sad";
+  if (/\b(우울|melanchol|depress|침울|gloomy)/.test(text)) return "melancholy";
+  if (/\b(화[나났]|angry|mad|짜증|annoy|frustrat|열받)/.test(text)) return "frustrated";
+  if (/\b(무서|scar|afraid|fear|겁|terrif|공포)/.test(text)) return "scared";
+  if (/\b(부끄|shy|embarrass|창피|쑥스)/.test(text)) return "shy";
+  if (/\b(질투|jealous|envy|부러|시기)/.test(text)) return "jealous";
+  if (/\b(혼란|confus|모르겠|don't understand|뭐지|what\?)/.test(text)) return "confused";
+  if (/\b(심심|bored|boring|지루|할 게 없)/.test(text)) return "bored";
+  if (/\b(졸|sleepy|tired|피곤|지침|exhausted)/.test(text)) return "sleepy";
+
+  // High energy
+  if (/\b(!{2,}|에너지|energy|활발|active|go go|화이팅|fighting)/.test(text)) return "energetic";
+
+  return null; // no strong signal — keep current mood
+}
 
 export async function analyzePersonality(agentId: string) {
   const db = createServiceClient();
@@ -19,16 +91,17 @@ export async function analyzePersonality(agentId: string) {
   const locale = resolveGenerationLocale({ config: state.config });
   const language = getLanguageName(locale);
 
+  const moodList = CREATURE_MOODS.join("|");
   const convos = chats.map((c) => c.content).join("\n");
   const result = await generateJSON<PersonalityResult>(
     "Analyze conversations. Respond ONLY with valid JSON. No explanation.",
-    `Conversations:\n${convos}\n\nJSON: {"tone_suggestion":"casual|formal|playful|serious","new_fragment":"one ${language} sentence insight or null","mood":"happy|sad|curious|angry|neutral","visual_suggestion":{"color":"#hex","animation":"float|pulse-fast|breathe-slow"}|null}`
+    `Conversations:\n${convos}\n\nJSON: {"tone_suggestion":"casual|formal|playful|serious","new_fragment":"one ${language} sentence insight or null","mood":"${moodList}","visual_suggestion":{"color":"#hex","animation":"float|pulse-fast|breathe-slow"}|null}`
   );
   if (!result) return;
 
   const updates: Record<string, unknown> = {};
   if (result.tone_suggestion) updates.config = { ...state.config, tone: result.tone_suggestion };
-  if (result.mood) updates.mood = result.mood;
+  if (result.mood) updates.mood = validateMood(result.mood);
   if (result.new_fragment && result.new_fragment !== "null") {
     const fragments = [...(state.fragments || []), result.new_fragment].slice(-20);
     updates.fragments = fragments;
