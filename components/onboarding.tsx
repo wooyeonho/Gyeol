@@ -309,8 +309,8 @@ function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => 
 
   return (
     <div className="flex flex-col items-center justify-center py-4" role="status" aria-label={t("onboarding.birthLabel")}>
-      {/* Orb */}
-      <div className="relative flex items-center justify-center" style={{ height: 100 }}>
+      {/* Orb — living creature preview with breathing animation after birth */}
+      <div className="relative flex items-center justify-center" style={{ height: 120 }}>
         <motion.div
           className="rounded-full"
           animate={{
@@ -328,16 +328,30 @@ function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => 
               phase === "expand" ? "0 0 60px rgba(34,211,238,0.5), 0 0 120px rgba(34,211,238,0.2)" :
               phase === "dna" ? "0 0 40px rgba(168,85,247,0.4), 0 0 80px rgba(168,85,247,0.2)" :
               "0 0 80px rgba(34,211,238,0.7), 0 0 160px rgba(34,211,238,0.3)",
+            // After birth: gentle breathing scale animation
+            scale: phase === "born" ? [1, 1.06, 1] : 1,
           }}
-          transition={{ duration: phase === "expand" ? 0.8 : 0.5, ease: "easeOut" }}
+          transition={phase === "born"
+            ? { scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }, duration: 0.5 }
+            : { duration: phase === "expand" ? 0.8 : 0.5, ease: "easeOut" }
+          }
         />
+        {/* Ripple rings on birth */}
         {phase === "born" && (
-          <motion.div
-            className="absolute rounded-full border border-cyan-400/40"
-            initial={{ width: 80, height: 80, opacity: 0.8 }}
-            animate={{ width: 160, height: 160, opacity: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          />
+          <>
+            <motion.div
+              className="absolute rounded-full border border-cyan-400/40"
+              initial={{ width: 80, height: 80, opacity: 0.8 }}
+              animate={{ width: 180, height: 180, opacity: 0 }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute rounded-full border border-cyan-400/20"
+              initial={{ width: 80, height: 80, opacity: 0.5 }}
+              animate={{ width: 220, height: 220, opacity: 0 }}
+              transition={{ duration: 1.5, ease: "easeOut", delay: 0.15 }}
+            />
+          </>
         )}
       </div>
 
@@ -399,10 +413,20 @@ function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => 
           </motion.p>
         )}
         {phase === "born" && (
-          <motion.p key="born" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-base font-semibold text-cyan-200">
-            {t("onboarding.birthNotice") || "탄생했어."}
-          </motion.p>
+          <motion.div key="born" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-3 text-center">
+            <p className="text-base font-semibold text-cyan-200">
+              {t("onboarding.birthNotice") || "탄생했어."}
+            </p>
+            <motion.p
+              className="mt-1.5 text-xs text-white/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              {t("onboarding.birthUnique") || "이 생명체는 세상에 단 하나뿐이야. 너만의 존재."}
+            </motion.p>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
