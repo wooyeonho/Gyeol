@@ -207,6 +207,11 @@ export default function Home() {
     else if (affinityDelta >= 0.1) haptic("send");
   }, [creature]);
 
+  const handleCelebrationEnd = useCallback(async () => {
+    await fetch("/api/agent/celebration/clear", { method: "POST" });
+    void fetchAgentState({ silent: true });
+  }, [fetchAgentState]);
+
   // Onboarding state — show once per device
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -519,10 +524,7 @@ export default function Home() {
         visible={!!agentState?.celebration_pending}
         title={agentState?.celebration_pending?.title}
         subtitle={agentState?.celebration_pending?.subtitle}
-        onEnd={() => {
-          void fetch("/api/agent/celebration/clear", { method: "POST" });
-          void fetchAgentState({ silent: true });
-        }}
+        onEnd={handleCelebrationEnd}
       />
       <BottomNav />
     </div>
