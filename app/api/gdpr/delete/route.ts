@@ -47,6 +47,7 @@ export async function DELETE() {
     await Promise.all([
       service.from("agents").delete().eq("user_id", userId),
       service.from("user_settings").delete().eq("user_id", userId),
+      service.from("user_subscriptions").delete().eq("user_id", userId),
       service.from("push_subscriptions").delete().eq("user_id", userId),
     ]);
 
