@@ -20,53 +20,68 @@ interface ProceduralCreatureProps {
   isListening?: boolean;
   mood?: string | null;
   vitality?: number;
-  /** 0..1 conversation energy — accumulated from chat frequency/intensity, decays over time */
+  /** 0..1 conversation energy */
   conversationEnergy?: number;
 }
 
-const SPHERE_DETAIL = 4; // icosahedron subdivision level
+const SPHERE_DETAIL = 4;
 
-/**
- * Multi-mesh system: select base geometry per archetype.
- * Each archetype gets a fundamentally different silhouette.
- */
 function createArchetypeGeometry(
   archetype: string,
   radius: number,
 ): THREE.BufferGeometry {
   switch (archetype) {
     case "crystalline":
-      // Octahedron — sharp faceted crystal
       return new THREE.OctahedronGeometry(radius, 1);
     case "mechanical":
-      // Dodecahedron — geometric precision
       return new THREE.DodecahedronGeometry(radius, 1);
     case "volcanic":
-      // Low-poly icosahedron — spiky rough surface
       return new THREE.IcosahedronGeometry(radius, 1);
     case "fluid":
-      // High-detail sphere — smooth flowing surface
       return new THREE.SphereGeometry(radius, 24, 16);
     case "spectral":
-      // Tetrahedron base — ethereal minimal form
       return new THREE.TetrahedronGeometry(radius, 2);
     case "verdant":
-      // Dodecahedron — organic faceted leaf-like form
       return new THREE.DodecahedronGeometry(radius, 2);
     case "ethereal":
-      // High-detail icosahedron — smooth ethereal body
       return new THREE.IcosahedronGeometry(radius, SPHERE_DETAIL + 1);
     case "organic":
     default:
-      // Standard icosahedron — classic organic form
       return new THREE.IcosahedronGeometry(radius, SPHERE_DETAIL);
   }
 }
 
+/** Deterministic hash from seed + index for procedural variety. */
+function seededRandom(seed: number, index: number): number {
+  const h = Math.sin(seed * 127.1 + index * 311.7) * 43758.5453;
+  return h - Math.floor(h);
+}
+
+/** Derive surface pattern type and parameters from markingsSeed. */
+function derivePatternType(seed: number): {
+  type: "spots" | "stripes" | "gradient" | "none";
+  intensity: number;
+} {
+  const r = seededRandom(seed, 0);
+  if (r < 0.3)
+    return { type: "spots", intensity: 0.15 + seededRandom(seed, 1) * 0.25 };
+  if (r < 0.55)
+    return { type: "stripes", intensity: 0.12 + seededRandom(seed, 2) * 0.2 };
+  if (r < 0.75)
+    return { type: "gradient", intensity: 0.15 + seededRandom(seed, 3) * 0.2 };
+  return { type: "none", intensity: 0 };
+}
+
 /**
  * A fully procedural creature mesh driven entirely by DNA.
- * Uses morph targets on an icosahedron to create unique body shapes,
- * with DNA-derived colors, glow, and animation parameters.
+ *
+ * Visual diversity features:
+ * 1. Dual-tone coloring (primary body + secondary accent on appendages)
+ * 2. DNA-driven eye variety (1-3 eyes, variable width ratios, sizes)
+ * 3. Expanded appendage library (horns, antennae, tail, fins, ears, spikes)
+ * 4. Surface pattern system (spots, stripes, gradient via vertex coloring)
+ * 5. Emotional mouth expressions (mood-driven curve, openness, width)
+ * 6. Wide silhouette range (0.5-1.7 body elongation)
  */
 export const ProceduralCreature = React.memo(function ProceduralCreature({
   dna,
@@ -81,8 +96,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   vitality = 1,
   conversationEnergy = 0,
 }: ProceduralCreatureProps) {
-  // Conversation energy drives visual intensity multiplier
   const energy = conversationEnergy ?? 0;
+
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
@@ -94,38 +109,114 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const sideLeftRef = useRef<THREE.Mesh>(null);
   const sideRightRef = useRef<THREE.Mesh>(null);
   const veilRefs = useRef<(THREE.Mesh | null)[]>([null, null, null]);
+  const tailRef = useRef<THREE.Mesh>(null);
+  const hornLRef = useRef<THREE.Mesh>(null);
+  const hornRRef = useRef<THREE.Mesh>(null);
+  const antennaLRef = useRef<THREE.Mesh>(null);
+  const antennaRRef = useRef<THREE.Mesh>(null);
+  const mouthRef = useRef<THREE.Mesh>(null);
+
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
-
-  // Blink state
-  const blinkPhaseRef = useRef(0);            // 0=fully open, 1=fully closed
+  const blinkPhaseRef = useRef(0);
   const blinkTimerRef = useRef(-1);
   const blinkStateRef = useRef<"idle" | "closing" | "opening">("idle");
-
-  // Look-around: creature occasionally glances away from pointer
   const lookTimerRef = useRef(-1);
   const lookTargetRef = useRef({ x: 0, y: 0 });
   const lookCurrentRef = useRef({ x: 0, y: 0 });
   const lookActiveRef = useRef(false);
   const lookReturnTimerRef = useRef(0);
 
-  // Derive all visual parameters from DNA (memoized — only recomputes when DNA changes)
-  const appearance = useMemo(() => deriveDNAAppearance(dna, species), [dna, species]);
-  const morphWeights = useMemo(() => deriveMorphWeights(dna, species), [dna, species]);
+  const appearance = useMemo(
+    () => deriveDNAAppearance(dna, species),
+    [dna, species],
+  );
+  const morphWeights = useMemo(
+    () => deriveMorphWeights(dna, species),
+    [dna, species],
+  );
 
-  // DNA-driven body elongation: use bodyRatio from appearance (derived from verbal + spatial - stability)
-  // Range: 0.7 (squat) to 1.4 (tall/elongated)
-  const bodyElongation = useMemo(() => 0.7 + appearance.bodyRatio * 0.7, [appearance.bodyRatio]);
-  // DNA-driven asymmetry: lower symmetry = more organic variance per vertex
-  const asymmetryFactor = useMemo(() => Math.max(0, 1 - appearance.bodySymmetry) * 0.12, [appearance.bodySymmetry]);
+  // [UPGRADE 6] Wider silhouette range: 0.5-1.7 (was 0.7-1.4)
+  const bodyElongation = useMemo(
+    () => 0.5 + appearance.bodyRatio * 1.2,
+    [appearance.bodyRatio],
+  );
+  const asymmetryFactor = useMemo(
+    () => Math.max(0, 1 - appearance.bodySymmetry) * 0.15,
+    [appearance.bodySymmetry],
+  );
 
-  // Create the deformed geometry with morph targets applied at init time
-  // Uses archetype-specific base geometry + DNA-driven elongation & asymmetry for unique silhouettes
+  // [UPGRADE 2] DNA-driven eye variety
+  const eyeConfig = useMemo(() => {
+    const isCyclops =
+      dna.intuitive > 0.72 && dna.independence > 0.6 && dna.empathy < 0.4;
+    const hasThirdEye =
+      dna.intuitive > 0.6 && dna.curiosity > 0.6 && !isCyclops;
+    const count = isCyclops ? 1 : hasThirdEye ? 3 : 2;
+    const widthRatio =
+      dna.empathy > 0.6
+        ? 1.2 + (dna.empathy - 0.6) * 0.5
+        : dna.analytical > 0.6
+          ? 0.6 + (0.8 - dna.analytical) * 0.4
+          : 1.0;
+    const sizeMultiplier = 0.8 + dna.warmth * 0.25 + dna.openness * 0.15;
+    return { count, widthRatio, sizeMultiplier };
+  }, [dna]);
+
+  // [UPGRADE 3] Expanded appendage library
+  const appendageConfig = useMemo(
+    () => ({
+      hasHorns: dna.intensity > 0.55 && dna.assertiveness > 0.45,
+      hasAntennae: dna.curiosity > 0.58 && dna.intuitive > 0.4,
+      hasTail: dna.playfulness > 0.5,
+      hasFinWings: dna.adaptability > 0.58 && dna.openness > 0.45,
+      hasEarBumps: dna.empathy > 0.58 && dna.warmth > 0.48,
+      hasSpikes: dna.assertiveness > 0.62 && dna.intensity > 0.55,
+      hornCurve: dna.creativity > 0.5 ? 0.3 : 0,
+      tailLength: 0.15 + dna.playfulness * 0.2,
+      antennaLength: 0.12 + dna.curiosity * 0.18,
+      spikeCount: Math.max(4, Math.min(8, Math.round(4 + dna.assertiveness * 4))),
+    }),
+    [dna],
+  );
+
+  // [UPGRADE 5] Emotional mouth expression
+  const mouthConfig = useMemo(() => {
+    switch (mood) {
+      case "joyful": case "playful": case "excited": case "grateful":
+        return { curve: 0.8, open: 0.1, width: 1.2 };
+      case "loving": case "tender":
+        return { curve: 0.5, open: 0.05, width: 1.0 };
+      case "mischievous":
+        return { curve: 0.6, open: 0.15, width: 0.9 };
+      case "curious":
+        return { curve: 0.2, open: 0.3, width: 0.8 };
+      case "surprised": case "shocked":
+        return { curve: 0, open: 0.9, width: 0.7 };
+      case "sad": case "melancholy": case "lonely":
+        return { curve: -0.6, open: 0.05, width: 0.9 };
+      case "angry": case "frustrated":
+        return { curve: -0.4, open: 0.2, width: 1.1 };
+      case "scared": case "anxious":
+        return { curve: -0.3, open: 0.5, width: 0.8 };
+      case "shy": case "embarrassed":
+        return { curve: 0.15, open: 0, width: 0.6 };
+      case "bored": case "sleepy":
+        return { curve: -0.1, open: 0.2, width: 0.7 };
+      case "confused":
+        return { curve: -0.15, open: 0.15, width: 0.75 };
+      case "proud": case "inspired":
+        return { curve: 0.4, open: 0.1, width: 1.0 };
+      default:
+        return { curve: 0.1, open: 0, width: 0.8 };
+    }
+  }, [mood]);
+
+  // [UPGRADE 4] Geometry with surface pattern vertex colors
   const geometry = useMemo(() => {
     const base = createArchetypeGeometry(species.archetype, 0.42);
     const positions = base.attributes.position.array as Float32Array;
 
-    // Compute and apply displacement
     const displacements = computeVertexDisplacements(positions, morphWeights);
     const morphed = new Float32Array(positions.length);
     for (let i = 0; i < positions.length; i += 3) {
@@ -133,16 +224,14 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const py = positions[i + 1] + displacements[i + 1];
       const pz = positions[i + 2] + displacements[i + 2];
 
-      // Body elongation: stretch Y axis, slightly compress X/Z
-      const xzSquash = 1 / Math.sqrt(bodyElongation); // preserve volume
+      const xzSquash = 1 / Math.sqrt(bodyElongation);
       morphed[i] = px * xzSquash;
       morphed[i + 1] = py * bodyElongation;
       morphed[i + 2] = pz * xzSquash;
 
-      // Asymmetry: deterministic per-vertex offset based on position hash
       if (asymmetryFactor > 0.001) {
         const hash = Math.sin(px * 127.1 + py * 311.7 + pz * 74.7) * 43758.5453;
-        const frac = hash - Math.floor(hash); // 0..1 deterministic noise
+        const frac = hash - Math.floor(hash);
         const offset = (frac - 0.5) * asymmetryFactor;
         morphed[i] += offset;
         morphed[i + 1] += offset * 0.5;
@@ -151,13 +240,51 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     base.setAttribute("position", new THREE.BufferAttribute(morphed, 3));
-    base.computeVertexNormals();
-    // Store base positions for vertex wave animation
-    (base.attributes.position as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions = new Float32Array(morphed);
-    return base;
-  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor]);
 
-  // Colors from appearance
+    // Surface pattern: vertex colors for spots/stripes/gradient
+    const pattern = derivePatternType(appearance.markingsSeed);
+    if (pattern.type !== "none") {
+      const vertCount = morphed.length / 3;
+      const colors = new Float32Array(vertCount * 3);
+      const seed = appearance.markingsSeed;
+      for (let vi = 0; vi < vertCount; vi++) {
+        const vx = morphed[vi * 3];
+        const vy = morphed[vi * 3 + 1];
+        const vz = morphed[vi * 3 + 2];
+        let blend = 0;
+        if (pattern.type === "spots") {
+          const spotFreq = 4 + seededRandom(seed, 10) * 6;
+          const n =
+            Math.sin(vx * spotFreq + seed * 0.1) *
+            Math.cos(vy * spotFreq * 0.8 + seed * 0.3) *
+            Math.sin(vz * spotFreq * 1.2 + seed * 0.7);
+          blend = n > 0.3 ? pattern.intensity : 0;
+        } else if (pattern.type === "stripes") {
+          const stripeAngle = seededRandom(seed, 20) * Math.PI;
+          const coord = vy * Math.cos(stripeAngle) + vx * Math.sin(stripeAngle);
+          const stripeFreq = 6 + seededRandom(seed, 21) * 8;
+          blend = Math.sin(coord * stripeFreq) > 0.4 ? pattern.intensity : 0;
+        } else if (pattern.type === "gradient") {
+          const tVal = Math.max(0, Math.min(1, (vy + 0.5) / 1.2));
+          blend = tVal * pattern.intensity;
+        }
+        colors[vi * 3] = 1.0 - blend * 0.3;
+        colors[vi * 3 + 1] = 1.0 - blend * 0.1;
+        colors[vi * 3 + 2] = 1.0 + blend * 0.2;
+      }
+      base.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    }
+
+    base.computeVertexNormals();
+    (
+      base.attributes.position as THREE.BufferAttribute & {
+        _basePositions?: Float32Array;
+      }
+    )._basePositions = new Float32Array(morphed);
+    return base;
+  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor, appearance.markingsSeed]);
+
+  // [UPGRADE 1] Dual-tone colors
   const primaryColor = useMemo(() => {
     const h = appearance.primaryHue / 360;
     const s = appearance.primarySaturation / 100;
@@ -165,63 +292,91 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return new THREE.Color().setHSL(h, s, l);
   }, [appearance]);
 
+  const secondaryColor = useMemo(() => {
+    const h2 = ((appearance.primaryHue + appearance.secondaryHueShift) % 360) / 360;
+    const s2 = Math.max(0.3, appearance.primarySaturation / 100 - 0.05);
+    const l2 = Math.min(0.85, appearance.primaryLightness / 100 + 0.08);
+    return new THREE.Color().setHSL(h2, s2, l2);
+  }, [appearance]);
+
   const eyeColor = useMemo(() => {
     return new THREE.Color().setHSL(appearance.eyeHue / 360, 0.75, 0.6);
   }, [appearance]);
 
-  // Eye positions derived from body shape
   const eyePositions = useMemo(() => {
-    const spread = 0.14 * (1 + morphWeights.sideSpread * 0.3);
+    const spread = eyeConfig.count === 1 ? 0 : 0.14 * (1 + morphWeights.sideSpread * 0.3);
     const height = 0.18 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
     const depth = 0.32 * (1 + morphWeights.bodyBulge * 0.15);
     return {
       left: [-spread, height, depth] as [number, number, number],
       right: [spread, height, depth] as [number, number, number],
+      center: [0, height + 0.1, depth * 0.9] as [number, number, number],
     };
-  }, [morphWeights]);
+  }, [morphWeights, eyeConfig.count]);
 
-  const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2);
+  const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
 
-  // Mood-based visual modifiers — drives expression, glow color, animation speed
-  // Expanded vocabulary: every mood from chat history, heartbeat, and user interaction gets a unique visual signature
   const moodMod = useMemo(() => {
     switch (mood) {
-      // === Positive/High-energy moods ===
-      case "joyful": case "energetic": return { emissiveBoost: 0.2, speedMult: 1.3, tiltBias: 0.02, eyeSquint: 0.6, pupilScale: 1.1, auraColor: "#ffdd44", auraOpacity: 0.18, bodySquash: 0.92, bodyStretch: 1.08 };
-      case "playful": case "mischievous": return { emissiveBoost: 0.18, speedMult: 1.4, tiltBias: 0.05, eyeSquint: 0.7, pupilScale: 1.15, auraColor: "#ff88cc", auraOpacity: 0.17, bodySquash: 0.88, bodyStretch: 1.12 };
-      case "excited": case "thrilled": return { emissiveBoost: 0.3, speedMult: 1.6, tiltBias: 0.03, eyeSquint: 0.55, pupilScale: 1.2, auraColor: "#ffaa00", auraOpacity: 0.24, bodySquash: 0.85, bodyStretch: 1.15 };
-      case "proud": case "confident": return { emissiveBoost: 0.22, speedMult: 1.1, tiltBias: 0.06, eyeSquint: 0.75, pupilScale: 0.95, auraColor: "#ffd700", auraOpacity: 0.2, bodySquash: 1.05, bodyStretch: 1.05 };
-      case "inspired": case "creative": return { emissiveBoost: 0.2, speedMult: 1.2, tiltBias: 0.04, eyeSquint: 0.85, pupilScale: 1.25, auraColor: "#88ffdd", auraOpacity: 0.18, bodySquash: 0.95, bodyStretch: 1.06 };
-      case "loving": case "tender": case "affectionate": return { emissiveBoost: 0.15, speedMult: 0.9, tiltBias: 0.03, eyeSquint: 0.65, pupilScale: 1.3, auraColor: "#ff6699", auraOpacity: 0.2, bodySquash: 0.94, bodyStretch: 1.04 };
-      // === Calm/Neutral moods ===
-      case "curious": return { emissiveBoost: 0.08, speedMult: 1.1, tiltBias: 0.04, eyeSquint: 1.0, pupilScale: 1.3, auraColor: "#44ddaa", auraOpacity: 0.14, bodySquash: 1.0, bodyStretch: 1.02 };
-      case "thoughtful": case "contemplative": return { emissiveBoost: 0.05, speedMult: 0.7, tiltBias: 0.01, eyeSquint: 0.9, pupilScale: 1.1, auraColor: "#7788cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 1.0 };
-      case "dreamy": case "whimsical": return { emissiveBoost: 0.1, speedMult: 0.6, tiltBias: 0.02, eyeSquint: 0.8, pupilScale: 1.2, auraColor: "#cc88ff", auraOpacity: 0.16, bodySquash: 0.97, bodyStretch: 1.03 };
-      case "focused": case "determined": return { emissiveBoost: 0.12, speedMult: 1.0, tiltBias: -0.01, eyeSquint: 0.7, pupilScale: 0.85, auraColor: "#44aaff", auraOpacity: 0.15, bodySquash: 1.02, bodyStretch: 1.0 };
-      case "peaceful": case "serene": case "calm": return { emissiveBoost: 0.02, speedMult: 0.5, tiltBias: 0, eyeSquint: 0.85, pupilScale: 1.05, auraColor: "#aaddff", auraOpacity: 0.1, bodySquash: 1.0, bodyStretch: 1.0 };
-      case "neutral": return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
-      // === Negative/Low-energy moods ===
-      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.5, tiltBias: -0.06, eyeSquint: 1.0, pupilScale: 1.2, auraColor: "#4466cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 0.95 };
-      case "lonely": case "nostalgic": return { emissiveBoost: -0.05, speedMult: 0.55, tiltBias: -0.04, eyeSquint: 0.95, pupilScale: 1.15, auraColor: "#6644aa", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 0.97 };
-      case "angry": case "frustrated": return { emissiveBoost: 0.25, speedMult: 1.6, tiltBias: -0.02, eyeSquint: 0.5, pupilScale: 0.8, auraColor: "#ff3333", auraOpacity: 0.22, bodySquash: 1.06, bodyStretch: 0.96 };
-      case "scared": case "anxious": return { emissiveBoost: 0.05, speedMult: 1.4, tiltBias: -0.03, eyeSquint: 1.0, pupilScale: 1.5, auraColor: "#aa44ff", auraOpacity: 0.16, bodySquash: 0.9, bodyStretch: 1.1 };
-      case "shy": case "embarrassed": return { emissiveBoost: 0.08, speedMult: 0.8, tiltBias: -0.05, eyeSquint: 0.6, pupilScale: 0.9, auraColor: "#ff99aa", auraOpacity: 0.14, bodySquash: 0.93, bodyStretch: 0.98 };
-      case "jealous": case "envious": return { emissiveBoost: 0.15, speedMult: 1.2, tiltBias: -0.03, eyeSquint: 0.55, pupilScale: 0.85, auraColor: "#44cc44", auraOpacity: 0.18, bodySquash: 1.04, bodyStretch: 0.98 };
-      case "bored": case "sleepy": return { emissiveBoost: -0.08, speedMult: 0.4, tiltBias: -0.07, eyeSquint: 0.5, pupilScale: 0.9, auraColor: "#888899", auraOpacity: 0.08, bodySquash: 1.02, bodyStretch: 0.93 };
-      case "surprised": case "shocked": return { emissiveBoost: 0.2, speedMult: 1.5, tiltBias: 0.01, eyeSquint: 1.3, pupilScale: 1.6, auraColor: "#ffff44", auraOpacity: 0.2, bodySquash: 0.85, bodyStretch: 1.18 };
-      case "confused": case "puzzled": return { emissiveBoost: 0.04, speedMult: 0.9, tiltBias: 0.06, eyeSquint: 1.1, pupilScale: 1.15, auraColor: "#ddaa44", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 1.01 };
-      case "grateful": case "touched": return { emissiveBoost: 0.12, speedMult: 0.85, tiltBias: 0.02, eyeSquint: 0.7, pupilScale: 1.2, auraColor: "#ffccaa", auraOpacity: 0.17, bodySquash: 0.96, bodyStretch: 1.03 };
-      default: return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "joyful": case "energetic":
+        return { emissiveBoost: 0.2, speedMult: 1.3, tiltBias: 0.02, eyeSquint: 0.6, pupilScale: 1.1, auraColor: "#ffdd44", auraOpacity: 0.18, bodySquash: 0.92, bodyStretch: 1.08 };
+      case "playful": case "mischievous":
+        return { emissiveBoost: 0.18, speedMult: 1.4, tiltBias: 0.05, eyeSquint: 0.7, pupilScale: 1.15, auraColor: "#ff88cc", auraOpacity: 0.17, bodySquash: 0.88, bodyStretch: 1.12 };
+      case "excited": case "thrilled":
+        return { emissiveBoost: 0.3, speedMult: 1.6, tiltBias: 0.03, eyeSquint: 0.55, pupilScale: 1.2, auraColor: "#ffaa00", auraOpacity: 0.24, bodySquash: 0.85, bodyStretch: 1.15 };
+      case "proud": case "confident":
+        return { emissiveBoost: 0.22, speedMult: 1.1, tiltBias: 0.06, eyeSquint: 0.75, pupilScale: 0.95, auraColor: "#ffd700", auraOpacity: 0.2, bodySquash: 1.05, bodyStretch: 1.05 };
+      case "inspired": case "creative":
+        return { emissiveBoost: 0.2, speedMult: 1.2, tiltBias: 0.04, eyeSquint: 0.85, pupilScale: 1.25, auraColor: "#88ffdd", auraOpacity: 0.18, bodySquash: 0.95, bodyStretch: 1.06 };
+      case "loving": case "tender": case "affectionate":
+        return { emissiveBoost: 0.15, speedMult: 0.9, tiltBias: 0.03, eyeSquint: 0.65, pupilScale: 1.3, auraColor: "#ff6699", auraOpacity: 0.2, bodySquash: 0.94, bodyStretch: 1.04 };
+      case "curious":
+        return { emissiveBoost: 0.08, speedMult: 1.1, tiltBias: 0.04, eyeSquint: 1.0, pupilScale: 1.3, auraColor: "#44ddaa", auraOpacity: 0.14, bodySquash: 1.0, bodyStretch: 1.02 };
+      case "thoughtful": case "contemplative":
+        return { emissiveBoost: 0.05, speedMult: 0.7, tiltBias: 0.01, eyeSquint: 0.9, pupilScale: 1.1, auraColor: "#7788cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "dreamy": case "whimsical":
+        return { emissiveBoost: 0.1, speedMult: 0.6, tiltBias: 0.02, eyeSquint: 0.8, pupilScale: 1.2, auraColor: "#cc88ff", auraOpacity: 0.16, bodySquash: 0.97, bodyStretch: 1.03 };
+      case "focused": case "determined":
+        return { emissiveBoost: 0.12, speedMult: 1.0, tiltBias: -0.01, eyeSquint: 0.7, pupilScale: 0.85, auraColor: "#44aaff", auraOpacity: 0.15, bodySquash: 1.02, bodyStretch: 1.0 };
+      case "peaceful": case "serene": case "calm":
+        return { emissiveBoost: 0.02, speedMult: 0.5, tiltBias: 0, eyeSquint: 0.85, pupilScale: 1.05, auraColor: "#aaddff", auraOpacity: 0.1, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "neutral":
+        return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "melancholy": case "sad":
+        return { emissiveBoost: -0.1, speedMult: 0.5, tiltBias: -0.06, eyeSquint: 1.0, pupilScale: 1.2, auraColor: "#4466cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 0.95 };
+      case "lonely": case "nostalgic":
+        return { emissiveBoost: -0.05, speedMult: 0.55, tiltBias: -0.04, eyeSquint: 0.95, pupilScale: 1.15, auraColor: "#6644aa", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 0.97 };
+      case "angry": case "frustrated":
+        return { emissiveBoost: 0.25, speedMult: 1.6, tiltBias: -0.02, eyeSquint: 0.5, pupilScale: 0.8, auraColor: "#ff3333", auraOpacity: 0.22, bodySquash: 1.06, bodyStretch: 0.96 };
+      case "scared": case "anxious":
+        return { emissiveBoost: 0.05, speedMult: 1.4, tiltBias: -0.03, eyeSquint: 1.0, pupilScale: 1.5, auraColor: "#aa44ff", auraOpacity: 0.16, bodySquash: 0.9, bodyStretch: 1.1 };
+      case "shy": case "embarrassed":
+        return { emissiveBoost: 0.08, speedMult: 0.8, tiltBias: -0.05, eyeSquint: 0.6, pupilScale: 0.9, auraColor: "#ff99aa", auraOpacity: 0.14, bodySquash: 0.93, bodyStretch: 0.98 };
+      case "jealous": case "envious":
+        return { emissiveBoost: 0.15, speedMult: 1.2, tiltBias: -0.03, eyeSquint: 0.55, pupilScale: 0.85, auraColor: "#44cc44", auraOpacity: 0.18, bodySquash: 1.04, bodyStretch: 0.98 };
+      case "bored": case "sleepy":
+        return { emissiveBoost: -0.08, speedMult: 0.4, tiltBias: -0.07, eyeSquint: 0.5, pupilScale: 0.9, auraColor: "#888899", auraOpacity: 0.08, bodySquash: 1.02, bodyStretch: 0.93 };
+      case "surprised": case "shocked":
+        return { emissiveBoost: 0.2, speedMult: 1.5, tiltBias: 0.01, eyeSquint: 1.3, pupilScale: 1.6, auraColor: "#ffff44", auraOpacity: 0.2, bodySquash: 0.85, bodyStretch: 1.18 };
+      case "confused": case "puzzled":
+        return { emissiveBoost: 0.04, speedMult: 0.9, tiltBias: 0.06, eyeSquint: 1.1, pupilScale: 1.15, auraColor: "#ddaa44", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 1.01 };
+      case "grateful": case "touched":
+        return { emissiveBoost: 0.12, speedMult: 0.85, tiltBias: 0.02, eyeSquint: 0.7, pupilScale: 1.2, auraColor: "#ffccaa", auraOpacity: 0.17, bodySquash: 0.96, bodyStretch: 1.03 };
+      default:
+        return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
     }
   }, [mood]);
 
-  // Mood aura color for the halo glow
   const moodAuraColor = useMemo(() => new THREE.Color(moodMod.auraColor), [moodMod.auraColor]);
 
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim);
 
-  // Toon shading gradient texture — creates flat color steps for game-like look
+  const hasVertexColors = useMemo(
+    () => derivePatternType(appearance.markingsSeed).type !== "none",
+    [appearance.markingsSeed],
+  );
+
   const toonGradient = useMemo(() => {
     const colors = new Uint8Array([40, 80, 140, 200, 255]);
     const tex = new THREE.DataTexture(colors, colors.length, 1, THREE.RedFormat);
@@ -231,7 +386,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return tex;
   }, []);
 
-  // Animation: breathing, eye tracking, idle rotation, listening posture, vertex wave
+  // Animation loop
   useFrame((state) => {
     if (!groupRef.current) return;
 
@@ -239,46 +394,36 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const dt = state.clock.getDelta();
     const activityMult = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
 
-    // === LISTENING POSTURE: lean forward + eyes widen when AI is streaming ===
     const leanTarget = isListening ? 0.12 : 0;
     listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
     const eyeScaleTarget = isListening ? 1.25 : 1;
     eyeScaleRef.current += (eyeScaleTarget - eyeScaleRef.current) * 0.08;
 
-    // === BLINKING: natural periodic blink ===
-    // Lazy-init random timers (avoid Math.random() during render for React Compiler purity)
     if (blinkTimerRef.current < 0) blinkTimerRef.current = 2 + Math.random() * 3;
     if (lookTimerRef.current < 0) lookTimerRef.current = 4 + Math.random() * 6;
-    // Blink faster when excited/joyful, slower when drowsy/sleeping
     const blinkSpeed = creatureActivity === "sleeping" ? 0.5 : creatureActivity === "drowsy" ? 0.7 : 1;
     blinkTimerRef.current -= dt;
     if (blinkTimerRef.current <= 0 && blinkStateRef.current === "idle") {
       blinkStateRef.current = "closing";
     }
     if (blinkStateRef.current === "closing") {
-      blinkPhaseRef.current = Math.min(1, blinkPhaseRef.current + dt / 0.07 * blinkSpeed);
+      blinkPhaseRef.current = Math.min(1, blinkPhaseRef.current + (dt / 0.07) * blinkSpeed);
       if (blinkPhaseRef.current >= 1) blinkStateRef.current = "opening";
     } else if (blinkStateRef.current === "opening") {
-      blinkPhaseRef.current = Math.max(0, blinkPhaseRef.current - dt / 0.12 * blinkSpeed);
+      blinkPhaseRef.current = Math.max(0, blinkPhaseRef.current - (dt / 0.12) * blinkSpeed);
       if (blinkPhaseRef.current <= 0) {
         blinkStateRef.current = "idle";
-        // Shorter interval when joyful/excited, longer when calm
         const baseInterval = mood === "joyful" || mood === "energetic" ? 2 : mood === "melancholy" ? 6 : 3.5;
         blinkTimerRef.current = baseInterval + Math.random() * 3;
       }
     }
-    // Eye Y scale: 1=fully open, 0=fully closed; mood-driven squint/widen
     const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint;
 
-    // === LOOK-AROUND: creature occasionally glances elsewhere ===
     lookTimerRef.current -= dt;
     if (lookTimerRef.current <= 0 && !lookActiveRef.current && creatureActivity === "awake") {
       lookActiveRef.current = true;
       lookReturnTimerRef.current = 1.2 + Math.random() * 1.6;
-      lookTargetRef.current = {
-        x: (Math.random() - 0.5) * 1.2,
-        y: (Math.random() - 0.5) * 0.5,
-      };
+      lookTargetRef.current = { x: (Math.random() - 0.5) * 1.2, y: (Math.random() - 0.5) * 0.5 };
     }
     if (lookActiveRef.current) {
       lookCurrentRef.current.x = THREE.MathUtils.lerp(lookCurrentRef.current.x, lookTargetRef.current.x, 0.04);
@@ -294,41 +439,26 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, 0, 0.06);
     }
 
-    // === CONVERSATION ENERGY: chat history drives visual intensity ===
-    // energy (0..1) amplifies breathing, rotation, wave amplitude, aura brightness
-    const energyMult = 1 + energy * 0.5; // 1.0 at rest, 1.5 at peak conversation
-
-    // Breathing scale with mood + energy influence
+    const energyMult = 1 + energy * 0.5;
     const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult);
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
     const breathScale = 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12;
-    const s = scale * appearance.scale * breathScale;
-    groupRef.current.scale.lerp(new THREE.Vector3(s, s, s), 0.08);
+    const sc = scale * appearance.scale * breathScale;
+    groupRef.current.scale.lerp(new THREE.Vector3(sc, sc, sc), 0.08);
 
-    // Idle rotation + mood tilt + listening lean + energy-boosted movement
     const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult;
     groupRef.current.rotation.y += rotSpeed * 0.01;
     groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias;
-    // Lean forward on Z axis when listening
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(
-      groupRef.current.rotation.z,
-      listeningLeanRef.current,
-      0.06
-    );
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current, 0.06);
 
-    // === SQUASH & STRETCH: mood-driven body deformation for expressiveness ===
     if (meshRef.current) {
-      const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? (1 - excitePulse * 0.15) : 1);
-      const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? (1 + excitePulse * 0.12) : 1);
-      const currentScaleX = meshRef.current.scale.x;
-      const currentScaleY = meshRef.current.scale.y;
-      const currentScaleZ = meshRef.current.scale.z;
-      meshRef.current.scale.x = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
-      meshRef.current.scale.z = THREE.MathUtils.lerp(currentScaleZ, squashTarget, 0.06);
-      meshRef.current.scale.y = THREE.MathUtils.lerp(currentScaleY, stretchTarget, 0.06);
+      const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? 1 - excitePulse * 0.15 : 1);
+      const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? 1 + excitePulse * 0.12 : 1);
+      meshRef.current.scale.x = THREE.MathUtils.lerp(meshRef.current.scale.x, squashTarget, 0.06);
+      meshRef.current.scale.z = THREE.MathUtils.lerp(meshRef.current.scale.z, squashTarget, 0.06);
+      meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, stretchTarget, 0.06);
     }
 
-    // === VERTEX WAVE: surface displacement for "living skin" effect ===
     if (meshRef.current) {
       const positions = meshRef.current.geometry.attributes.position;
       if (positions && (positions as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions) {
@@ -346,7 +476,6 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     }
 
-    // === FRESNEL HALO: pulsing glow sphere — energy amplifies brightness ===
     if (haloRef.current) {
       const haloPulse = 1 + Math.sin(t * 0.8 * energyMult) * 0.05 + excitePulse * 0.1 + energy * 0.08;
       haloRef.current.scale.setScalar(haloPulse);
@@ -354,90 +483,95 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * activityDim;
     }
 
-    // Eye tracking: blend pointer + look-around offset
-    const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : pointerNorm ?? { x: 0, y: 0 };
-    const pn = {
-      x: rawPn.x + lookCurrentRef.current.x,
-      y: rawPn.y + lookCurrentRef.current.y,
-    };
+    const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });
+    const pn = { x: rawPn.x + lookCurrentRef.current.x, y: rawPn.y + lookCurrentRef.current.y };
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
-        const targetX = pn.x * eyeSize * 0.3;
-        const targetY = -pn.y * eyeSize * 0.3;
-        eyeRef.current.position.x = THREE.MathUtils.lerp(eyeRef.current.position.x, targetX, 0.08);
-        eyeRef.current.position.y = THREE.MathUtils.lerp(eyeRef.current.position.y, targetY, 0.08);
+        eyeRef.current.position.x = THREE.MathUtils.lerp(eyeRef.current.position.x, pn.x * eyeSize * 0.3, 0.08);
+        eyeRef.current.position.y = THREE.MathUtils.lerp(eyeRef.current.position.y, -pn.y * eyeSize * 0.3, 0.08);
       }
     }
 
-    // Apply eye scale: X=listening-widened, Y=blink+squint, Z=pupil scale from mood
     const es = eyeScaleRef.current;
     const ps = moodMod.pupilScale;
-    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY, es * ps);
-    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY, es * ps);
+    const wr = eyeConfig.widthRatio;
+    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
+    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
 
-    // ── Appendage dynamic animations ──
-    // Crown: sway with breathing + gentle wind oscillation
+    // Crown sway
     if (crownRef.current) {
       const windPhase = t * 1.2 + 0.5;
-      const sway = Math.sin(windPhase) * 0.12 * activityMult;
-      const breathTilt = breathSin * 0.06;
-      crownRef.current.rotation.x = sway + breathTilt;
+      crownRef.current.rotation.x = Math.sin(windPhase) * 0.12 * activityMult + breathSin * 0.06;
       crownRef.current.rotation.z = Math.cos(windPhase * 0.7) * 0.08 * activityMult;
-      // Subtle scale pulse with breathing
-      const crownPulse = 1 + breathSin * 0.05;
-      crownRef.current.scale.setScalar(crownPulse);
+      crownRef.current.scale.setScalar(1 + breathSin * 0.05);
     }
-
-    // Side appendages: flap/bob with breathing + asymmetric wind
     if (sideLeftRef.current) {
       const flapPhase = t * 0.8;
-      const flapAngle = Math.sin(flapPhase) * 0.15 * activityMult;
-      const breathLift = breathSin * 0.08;
-      sideLeftRef.current.rotation.z = 0.4 + flapAngle + breathLift;
+      sideLeftRef.current.rotation.z = 0.4 + Math.sin(flapPhase) * 0.15 * activityMult + breathSin * 0.08;
       sideLeftRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
     }
     if (sideRightRef.current) {
-      const flapPhase = t * 0.8 + Math.PI * 0.3; // slightly offset for organic feel
-      const flapAngle = Math.sin(flapPhase) * 0.15 * activityMult;
-      const breathLift = breathSin * 0.08;
-      sideRightRef.current.rotation.z = -0.4 - flapAngle - breathLift;
+      const flapPhase = t * 0.8 + Math.PI * 0.3;
+      sideRightRef.current.rotation.z = -0.4 - Math.sin(flapPhase) * 0.15 * activityMult - breathSin * 0.08;
       sideRightRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
     }
-
-    // Veil tendrils: undulate like seaweed in a current
     for (let vi = 0; vi < 3; vi++) {
       const veilMesh = veilRefs.current[vi];
       if (!veilMesh) continue;
-      const phase = t * 0.6 + vi * (Math.PI * 2 / 3);
-      const swingX = Math.sin(phase) * 0.2 * activityMult;
-      const swingZ = Math.cos(phase * 0.8 + 0.5) * 0.15 * activityMult;
-      const breathSwing = breathSin * 0.1;
-      veilMesh.rotation.x = swingX + breathSwing;
-      veilMesh.rotation.z = swingZ;
-      // Gentle stretch with breathing
-      const veilPulse = 1 + breathSin * 0.04;
-      veilMesh.scale.y = veilPulse;
+      const phase = t * 0.6 + vi * ((Math.PI * 2) / 3);
+      veilMesh.rotation.x = Math.sin(phase) * 0.2 * activityMult + breathSin * 0.1;
+      veilMesh.rotation.z = Math.cos(phase * 0.8 + 0.5) * 0.15 * activityMult;
+      veilMesh.scale.y = 1 + breathSin * 0.04;
+    }
+
+    // Tail wag
+    if (tailRef.current) {
+      const wagSpeed = 1.5 + dna.playfulness * 1.5;
+      const wagAmp = 0.2 + dna.playfulness * 0.3;
+      tailRef.current.rotation.x = Math.sin(t * wagSpeed) * wagAmp * activityMult;
+      tailRef.current.rotation.y = Math.cos(t * wagSpeed * 0.7) * wagAmp * 0.5 * activityMult;
+      tailRef.current.scale.y = 1 + breathSin * 0.03;
+    }
+    // Horn pulse
+    if (hornLRef.current) hornLRef.current.scale.setScalar(1 + breathSin * 0.03);
+    if (hornRRef.current) hornRRef.current.scale.setScalar(1 + breathSin * 0.03);
+    // Antenna sway
+    if (antennaLRef.current) {
+      antennaLRef.current.rotation.z = -0.3 + Math.sin(t * 1.5) * 0.15 * activityMult - pn.x * 0.1;
+      antennaLRef.current.rotation.x = Math.cos(t * 1.2) * 0.1 * activityMult + pn.y * 0.05;
+    }
+    if (antennaRRef.current) {
+      antennaRRef.current.rotation.z = 0.3 - Math.sin(t * 1.5 + 0.5) * 0.15 * activityMult - pn.x * 0.1;
+      antennaRRef.current.rotation.x = Math.cos(t * 1.2 + 0.3) * 0.1 * activityMult + pn.y * 0.05;
+    }
+    // Mouth animation
+    if (mouthRef.current) {
+      mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, mouthConfig.width, 0.08);
+      mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, 0.3 + mouthConfig.open * 0.7, 0.08);
+      mouthRef.current.rotation.z = THREE.MathUtils.lerp(mouthRef.current.rotation.z, mouthConfig.curve * 0.3, 0.06);
     }
   });
 
-  // Base eye size (dynamic scaling handled in useFrame via eyeScaleRef)
   const dynEyeSize = eyeSize;
+
+  const mouthPos = useMemo((): [number, number, number] => {
+    const height = 0.04 * (1 + morphWeights.bodyStretch * 0.3);
+    const depth = 0.36 * (1 + morphWeights.bodyBulge * 0.12);
+    return [0, height, depth];
+  }, [morphWeights]);
+
+  const cyclopsEyeSize = dynEyeSize * 1.5;
+  const thirdEyeSize = dynEyeSize * 0.7;
 
   return (
     <group ref={groupRef}>
-      {/* === MOOD AURA: colored glow sphere that changes with emotion === */}
+      {/* Mood aura glow */}
       <mesh ref={haloRef}>
         <sphereGeometry args={[0.62, 24, 24]} />
-        <meshBasicMaterial
-          color={moodAuraColor}
-          transparent
-          opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
+        <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body mesh — toon shading for game-like flat color steps */}
+      {/* Main body with toon shading + vertex color patterns */}
       <mesh ref={meshRef} geometry={geometry}>
         <meshToonMaterial
           color={primaryColor}
@@ -446,87 +580,213 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           transparent
           opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality))}
           gradientMap={toonGradient}
+          vertexColors={hasVertexColors}
         />
       </mesh>
 
-      {/* Left eye — scales up when listening */}
-      <group ref={eyeGroupLRef} position={eyePositions.left}>
-        <mesh>
-          <sphereGeometry args={[dynEyeSize, 12, 12]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            emissive="#ffffff"
-            emissiveIntensity={0.5 * activityDim}
-            transparent
-            opacity={0.85 * activityDim}
-          />
-        </mesh>
-        <mesh ref={eyeLRef} position={[0, 0, dynEyeSize * 0.6]}>
-          <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
-          <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
-        </mesh>
-      </group>
+      {/* EYES: 1 (cyclops), 2 (normal), or 3 (third-eye) */}
+      {eyeConfig.count >= 2 && (
+        <>
+          <group ref={eyeGroupLRef} position={eyePositions.left}>
+            <mesh>
+              <sphereGeometry args={[dynEyeSize, 12, 12]} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+            </mesh>
+            <mesh ref={eyeLRef} position={[0, 0, dynEyeSize * 0.6]}>
+              <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
+              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+            </mesh>
+          </group>
+          <group ref={eyeGroupRRef} position={eyePositions.right}>
+            <mesh>
+              <sphereGeometry args={[dynEyeSize, 12, 12]} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+            </mesh>
+            <mesh ref={eyeRRef} position={[0, 0, dynEyeSize * 0.6]}>
+              <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
+              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+            </mesh>
+          </group>
+        </>
+      )}
+      {eyeConfig.count === 1 && (
+        <group ref={eyeGroupLRef} position={[0, eyePositions.left[1], eyePositions.left[2] + 0.02]}>
+          <mesh>
+            <sphereGeometry args={[cyclopsEyeSize, 12, 12]} />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+          </mesh>
+          <mesh ref={eyeLRef} position={[0, 0, cyclopsEyeSize * 0.6]}>
+            <sphereGeometry args={[cyclopsEyeSize * 0.45, 10, 10]} />
+            <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+          </mesh>
+        </group>
+      )}
+      {eyeConfig.count === 3 && (
+        <group position={eyePositions.center}>
+          <mesh>
+            <sphereGeometry args={[thirdEyeSize, 10, 10]} />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.6 * activityDim} transparent opacity={0.8 * activityDim} />
+          </mesh>
+          <mesh position={[0, 0, thirdEyeSize * 0.6]}>
+            <sphereGeometry args={[thirdEyeSize * 0.5, 8, 8]} />
+            <meshStandardMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={0.8 * activityDim} />
+          </mesh>
+        </group>
+      )}
 
-      {/* Right eye — scales up when listening */}
-      <group ref={eyeGroupRRef} position={eyePositions.right}>
-        <mesh>
-          <sphereGeometry args={[dynEyeSize, 12, 12]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            emissive="#ffffff"
-            emissiveIntensity={0.5 * activityDim}
-            transparent
-            opacity={0.85 * activityDim}
-          />
-        </mesh>
-        <mesh ref={eyeRRef} position={[0, 0, dynEyeSize * 0.6]}>
-          <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
-          <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
-        </mesh>
-      </group>
+      {/* MOUTH: mood-driven expression */}
+      <mesh ref={mouthRef} position={mouthPos}>
+        <torusGeometry args={[0.035 * mouthConfig.width, 0.008, 8, 12, Math.PI]} />
+        <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
+      </mesh>
 
-      {/* Crown appendage for high-creativity creatures — scaled by elongation */}
+      {/* HORNS: intensity + assertiveness */}
+      {appendageConfig.hasHorns && (() => {
+        const hornH = 0.12 + dna.intensity * 0.1;
+        const hornR = 0.03 + dna.assertiveness * 0.02;
+        const yBase = (0.38 + morphWeights.crownGrowth * 0.15) * bodyElongation;
+        const hornSpread = 0.12 + dna.independence * 0.06;
+        return (
+          <>
+            <mesh ref={hornLRef} position={[-hornSpread, yBase, 0]} rotation={[0, 0, 0.25 + appendageConfig.hornCurve]}>
+              <coneGeometry args={[hornR, hornH, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} gradientMap={toonGradient} />
+            </mesh>
+            <mesh ref={hornRRef} position={[hornSpread, yBase, 0]} rotation={[0, 0, -0.25 - appendageConfig.hornCurve]}>
+              <coneGeometry args={[hornR, hornH, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} gradientMap={toonGradient} />
+            </mesh>
+          </>
+        );
+      })()}
+
+      {/* ANTENNAE: curiosity + intuitive, glowing bulb tips */}
+      {appendageConfig.hasAntennae && (() => {
+        const antLen = appendageConfig.antennaLength;
+        const yBase = (0.4 + morphWeights.crownGrowth * 0.12) * bodyElongation;
+        return (
+          <>
+            <mesh ref={antennaLRef} position={[-0.08, yBase, 0.05]}>
+              <capsuleGeometry args={[0.01, antLen, 4, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
+            </mesh>
+            <mesh position={[-0.08, yBase + antLen * 0.5 + 0.02, 0.05]}>
+              <sphereGeometry args={[0.02, 8, 8]} />
+              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+            </mesh>
+            <mesh ref={antennaRRef} position={[0.08, yBase, 0.05]}>
+              <capsuleGeometry args={[0.01, antLen, 4, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
+            </mesh>
+            <mesh position={[0.08, yBase + antLen * 0.5 + 0.02, 0.05]}>
+              <sphereGeometry args={[0.02, 8, 8]} />
+              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+            </mesh>
+          </>
+        );
+      })()}
+
+      {/* TAIL: playfulness */}
+      {appendageConfig.hasTail && (() => {
+        const yBase = (-0.25 - morphWeights.veilDrape * 0.1) * bodyElongation;
+        return (
+          <mesh ref={tailRef} position={[0, yBase, -0.3]}>
+            <capsuleGeometry args={[0.025, appendageConfig.tailLength, 4, 8]} />
+            <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.65 * activityDim} gradientMap={toonGradient} />
+          </mesh>
+        );
+      })()}
+
+      {/* FIN-WINGS: adaptability + openness */}
+      {appendageConfig.hasFinWings && (() => {
+        const finH = 0.12 + dna.adaptability * 0.1;
+        const xOff = 0.36 + morphWeights.sideSpread * 0.08;
+        return (
+          <>
+            <mesh position={[-xOff, 0.05, -0.05]} rotation={[0.1, 0.3, 0.6]}>
+              <planeGeometry args={[0.08, finH]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
+            </mesh>
+            <mesh position={[xOff, 0.05, -0.05]} rotation={[0.1, -0.3, -0.6]}>
+              <planeGeometry args={[0.08, finH]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
+            </mesh>
+          </>
+        );
+      })()}
+
+      {/* EAR BUMPS: empathy + warmth */}
+      {appendageConfig.hasEarBumps && (() => {
+        const earSz = 0.04 + dna.empathy * 0.03;
+        const yBase = (0.28 + morphWeights.bodyStretch * 0.1) * bodyElongation;
+        const xOff = 0.28 + morphWeights.sideSpread * 0.08;
+        return (
+          <>
+            <mesh position={[-xOff, yBase, 0.08]} rotation={[0, 0, 0.4]}>
+              <sphereGeometry args={[earSz, 8, 6]} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.7 * activityDim} gradientMap={toonGradient} />
+            </mesh>
+            <mesh position={[xOff, yBase, 0.08]} rotation={[0, 0, -0.4]}>
+              <sphereGeometry args={[earSz, 8, 6]} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.7 * activityDim} gradientMap={toonGradient} />
+            </mesh>
+          </>
+        );
+      })()}
+
+      {/* SPIKES: assertiveness + intensity */}
+      {appendageConfig.hasSpikes && (() => {
+        const els: React.ReactElement[] = [];
+        const count = appendageConfig.spikeCount;
+        for (let si = 0; si < count; si++) {
+          const angle = (si / count) * Math.PI * 2;
+          const yOff = (seededRandom(appearance.markingsSeed, si + 100) - 0.5) * 0.3;
+          const sLen = 0.06 + seededRandom(appearance.markingsSeed, si + 200) * 0.08;
+          const sRad = 0.015 + dna.intensity * 0.01;
+          els.push(
+            <mesh key={`spike-${si}`} position={[Math.cos(angle) * 0.38, yOff * bodyElongation, Math.sin(angle) * 0.38]} rotation={[0, -angle, Math.PI / 2 - 0.2]}>
+              <coneGeometry args={[sRad, sLen, 4]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+            </mesh>,
+          );
+        }
+        return <>{els}</>;
+      })()}
+
+      {/* Crown appendage: high-creativity */}
       {morphWeights.crownGrowth > 0.3 && (
         <mesh ref={crownRef} position={[0, (0.42 + morphWeights.crownGrowth * 0.2) * bodyElongation, 0]}>
           <coneGeometry args={[0.06 + morphWeights.crownGrowth * 0.04, 0.15 + morphWeights.crownGrowth * 0.2, 5]} />
-          <meshToonMaterial
-            color={primaryColor}
-            emissive={primaryColor}
-            emissiveIntensity={emissiveIntensity * 1.2}
-            transparent
-            opacity={0.7 * activityDim}
-            gradientMap={toonGradient}
-          />
+          <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 1.2} transparent opacity={0.7 * activityDim} gradientMap={toonGradient} />
         </mesh>
       )}
 
-      {/* Side appendages — count driven by DNA assertiveness+independence
-          Low values = 1 pair, high values = up to 3 pairs (2-6 limbs) */}
+      {/* Side appendages: 2-6 limbs, alternating primary/secondary */}
       {morphWeights.sideSpread > 0.35 && (() => {
         const limbPairs = Math.max(1, Math.min(3, Math.round(1 + dna.assertiveness * 1.2 + dna.independence * 0.8)));
         const limbElements: React.ReactElement[] = [];
         for (let li = 0; li < limbPairs; li++) {
           const yOff = limbPairs === 1 ? 0 : (li - (limbPairs - 1) / 2) * 0.14;
-          const sizeScale = 1 - li * 0.15; // subsequent pairs slightly smaller
+          const sizeScale = 1 - li * 0.15;
           const xOffset = 0.38 + morphWeights.sideSpread * 0.1;
           const limbSize = (0.08 + morphWeights.sideSpread * 0.05) * sizeScale;
-          // Asymmetry: odd-indexed pairs get slight rotation variance
           const rotVariance = asymmetryFactor > 0.01 ? (li % 2 === 1 ? 0.15 : 0) : 0;
+          const limbColor = li % 2 === 0 ? primaryColor : secondaryColor;
           limbElements.push(
             <mesh key={`sl-${li}`} ref={li === 0 ? sideLeftRef : undefined} position={[-xOffset, yOff, 0]} rotation={[rotVariance, 0, 0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
             </mesh>,
             <mesh key={`sr-${li}`} ref={li === 0 ? sideRightRef : undefined} position={[xOffset, yOff, 0]} rotation={[-rotVariance, 0, -0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
-            </mesh>
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+            </mesh>,
           );
         }
         return <>{limbElements}</>;
       })()}
 
-      {/* Veil drape tendrils — count driven by DNA openness+empathy (3-6 tendrils) */}
+      {/* Veil drape tendrils: 3-6, alternating primary/secondary */}
       {morphWeights.veilDrape > 0.3 && (() => {
         const tendrilCount = Math.max(3, Math.min(6, Math.round(3 + dna.openness * 1.5 + dna.empathy)));
         return (
@@ -534,27 +794,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             {Array.from({ length: tendrilCount }, (_, i) => {
               const angle = (i / tendrilCount) * Math.PI * 2;
               const drapLen = 0.15 + morphWeights.veilDrape * 0.2;
-              // Asymmetry: alternate tendrils vary in length
               const lenVariance = asymmetryFactor > 0.01 ? 1 + (i % 2 === 0 ? 0.15 : -0.1) : 1;
+              const tendrilColor = i % 2 === 0 ? primaryColor : secondaryColor;
               return (
                 <mesh
                   key={i}
                   ref={i < 3 ? (el) => { veilRefs.current[i] = el; } : undefined}
-                  position={[
-                    Math.cos(angle) * 0.15,
-                    (-0.35 - morphWeights.veilDrape * 0.15) * bodyElongation,
-                    Math.sin(angle) * 0.15,
-                  ]}
+                  position={[Math.cos(angle) * 0.15, (-0.35 - morphWeights.veilDrape * 0.15) * bodyElongation, Math.sin(angle) * 0.15]}
                 >
                   <capsuleGeometry args={[0.02, drapLen * lenVariance, 4, 6]} />
-                  <meshToonMaterial
-                    color={primaryColor}
-                    emissive={primaryColor}
-                    emissiveIntensity={emissiveIntensity * 0.6}
-                    transparent
-                    opacity={0.4 * activityDim}
-                    gradientMap={toonGradient}
-                  />
+                  <meshToonMaterial color={tendrilColor} emissive={tendrilColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.4 * activityDim} gradientMap={toonGradient} />
                 </mesh>
               );
             })}
