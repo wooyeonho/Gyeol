@@ -293,7 +293,7 @@ export default function DiscoverPage() {
           ))}
         </motion.section>
 
-        {!loading && counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && (
+        {!loading && counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && counts.room === 0 && counts.constellation === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
