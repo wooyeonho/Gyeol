@@ -71,4 +71,5 @@ export interface AgentState {
   fragments?: string[];
   died_at?: string | null;
   vitality_processed_at?: string | null;
+  celebration_pending?: { kind: string; title: string; subtitle?: string } | null;
 }
