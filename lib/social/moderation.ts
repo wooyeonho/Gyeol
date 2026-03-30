@@ -27,6 +27,18 @@ const PROFANITY_PATTERNS = [
   /\b(?:씨발|시발|좆|병신|개새끼|지랄)\b/i,
 ];
 
+/**
+ * Map internal moderation status to a DB-safe value.
+ * The social_posts CHECK constraint only allows: 'pending', 'approved', 'blocked'.
+ * "flagged" content is allowed through as "approved" but tracked via metadata.
+ */
+export function toDbModerationStatus(status: ModerationDecision["status"]): "approved" | "blocked" {
+  if (status === "blocked") return "blocked";
+  // "flagged" and "approved" both write as "approved"; flagged items
+  // are identified by their moderation_reason in metadata
+  return "approved";
+}
+
 export function moderateSocialContent(input: string): ModerationDecision {
   // Always sanitize first so we can return sanitized text even when blocked
   const sanitized = sanitizeUserInput(input).replace(/\s+/g, " ").trim();

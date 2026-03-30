@@ -7,7 +7,7 @@ import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { sanitizeUserInput } from "@/lib/sanitize";
-import { moderateSocialContent } from "@/lib/social/moderation";
+import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { distillMemoriesToMoltBook, shareMoltBookEntry, absorbSharedKnowledge } from "@/lib/moltbook";
 
@@ -256,7 +256,7 @@ export async function executeSocial(): Promise<CronResult> {
           topic: postTopic,
           language: postLocale,
           visibility: "public",
-          moderation_status: moderatedPost.status,
+          moderation_status: toDbModerationStatus(moderatedPost.status),
           source_log_id: socialLogRow?.id ?? null,
           metadata: {
             origin: "social_cron",
@@ -319,7 +319,7 @@ export async function executeSocial(): Promise<CronResult> {
               topic: null,
               language: reactionLocale,
               visibility: "public",
-              moderation_status: moderatedComment.status,
+              moderation_status: toDbModerationStatus(moderatedComment.status),
               metadata: {
                 origin: "social_cron_reaction",
                 reaction_to: reactionTarget.id,

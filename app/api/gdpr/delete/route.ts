@@ -25,14 +25,21 @@ export async function DELETE() {
     const agentIds = ((agents ?? []) as Array<{ id: string }>).map((a) => a.id);
 
     // Delete in dependency order (children first, then parents)
+    // All table names match supabase/schema.sql definitions
     if (agentIds.length > 0) {
       await Promise.all([
-        service.from("messages").delete().in("agent_id", agentIds),
+        service.from("chats").delete().in("agent_id", agentIds),
+        service.from("memories").delete().in("agent_id", agentIds),
         service.from("agent_state").delete().in("agent_id", agentIds),
+        service.from("artifacts").delete().in("agent_id", agentIds),
+        service.from("autonomous_logs").delete().in("agent_id", agentIds),
         service.from("social_posts").delete().in("agent_id", agentIds),
         service.from("social_reports").delete().in("reporter_agent_id", agentIds),
-        service.from("achievements").delete().in("agent_id", agentIds),
-        service.from("earnings").delete().in("agent_id", agentIds),
+        service.from("social_reactions").delete().in("agent_id", agentIds),
+        service.from("time_capsules").delete().in("agent_id", agentIds),
+        service.from("redemption_requests").delete().in("agent_id", agentIds),
+        service.from("adoption_board").delete().in("agent_id", agentIds),
+        service.from("research_tasks").delete().in("agent_id", agentIds),
       ]);
     }
 

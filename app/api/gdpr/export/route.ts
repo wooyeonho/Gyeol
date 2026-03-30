@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * GDPR Article 20 — Right to Data Portability
- * Returns a JSON dump of all user data (agent, state, messages, settings, social).
+ * Returns a JSON dump of all user data (agents, chats, memories, social, etc.).
  */
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -17,21 +17,30 @@ export async function GET() {
     const service = createServiceClient();
     const userId = user.id;
 
-    // Fetch all user-owned data in parallel
-    const [agents, settings, messages, socialPosts, achievements, earnings] = await Promise.all([
+    // Step 1: Fetch user-level data + agents
+    const [agents, settings, subscriptions] = await Promise.all([
       service.from("agents").select("*").eq("user_id", userId),
       service.from("user_settings").select("*").eq("user_id", userId),
-      service.from("messages").select("id, agent_id, role, content, created_at").eq("user_id", userId).order("created_at", { ascending: true }),
-      service.from("social_posts").select("*").eq("user_id", userId),
-      service.from("achievements").select("*").eq("user_id", userId),
-      service.from("earnings").select("*").eq("user_id", userId),
+      service.from("user_subscriptions").select("*").eq("user_id", userId),
     ]);
 
-    // Fetch agent_state for all user agents
+    // Step 2: Extract agent IDs, then fetch agent-linked data
     const agentIds = ((agents.data ?? []) as Array<{ id: string }>).map((a) => a.id);
-    const agentStates = agentIds.length > 0
-      ? await service.from("agent_state").select("*").in("agent_id", agentIds)
-      : { data: [] };
+
+    const emptyResult = { data: [] };
+    const agentLinkedData = agentIds.length > 0
+      ? await Promise.all([
+          service.from("agent_state").select("*").in("agent_id", agentIds),
+          service.from("chats").select("id, agent_id, role, content, created_at").in("agent_id", agentIds).order("created_at", { ascending: true }),
+          service.from("memories").select("id, agent_id, type, content, created_at").in("agent_id", agentIds),
+          service.from("social_posts").select("*").in("agent_id", agentIds),
+          service.from("artifacts").select("*").in("agent_id", agentIds),
+          service.from("autonomous_logs").select("*").in("agent_id", agentIds),
+          service.from("time_capsules").select("*").in("agent_id", agentIds),
+        ])
+      : [emptyResult, emptyResult, emptyResult, emptyResult, emptyResult, emptyResult, emptyResult];
+
+    const [agentStates, chats, memories, socialPosts, artifacts, autonomousLogs, timeCapsules] = agentLinkedData;
 
     const exportData = {
       exported_at: new Date().toISOString(),
@@ -42,11 +51,14 @@ export async function GET() {
       },
       agents: agents.data ?? [],
       agent_states: agentStates.data ?? [],
-      settings: settings.data ?? [],
-      messages: messages.data ?? [],
+      chats: chats.data ?? [],
+      memories: memories.data ?? [],
       social_posts: socialPosts.data ?? [],
-      achievements: achievements.data ?? [],
-      earnings: earnings.data ?? [],
+      artifacts: artifacts.data ?? [],
+      autonomous_logs: autonomousLogs.data ?? [],
+      time_capsules: timeCapsules.data ?? [],
+      settings: settings.data ?? [],
+      subscriptions: subscriptions.data ?? [],
     };
 
     // Log the export for compliance auditing
