@@ -94,7 +94,21 @@
     "publicSocialTitle": "Public social note",
     "publicSocialAdult": "Adult accounts can enable public social participation from Settings.",
     "publicSocialMinor": "Minor accounts cannot post, comment, or react on the public social feed.",
-    "continue": "Continue"
+    "continue": "Continue",
+    "parentEmailLabel": "Parent/guardian email address",
+    "parentEmailPlaceholder": "parent@example.com",
+    "parentEmailHint": "Per COPPA regulations, users under 13 require verifiable parental consent. A consent confirmation will be sent to this email."
+  },
+  "gdpr": {
+    "exportTitle": "Export my data",
+    "exportBody": "Download all conversations, settings, and activity history as JSON.",
+    "exportButton": "Export data",
+    "exportSuccess": "Your data export is ready.",
+    "deleteTitle": "Delete account and data",
+    "deleteBody": "All data will be permanently deleted. This action cannot be undone.",
+    "deleteButton": "Delete account",
+    "deleteConfirm": "Are you sure you want to delete your account and all data? This cannot be undone.",
+    "deleteSuccess": "Your account has been deleted."
   },
   "chat": {
     "placeholder": "Say anything...",

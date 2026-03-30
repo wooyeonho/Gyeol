@@ -97,7 +97,21 @@
     "publicSocialTitle": "公開ソーシャル案内",
     "publicSocialAdult": "成人アカウントは設定で公開ソーシャル参加を有効にできます。",
     "publicSocialMinor": "未成年アカウントは公開ソーシャルでの投稿、コメント、リアクションが制限されます。",
-    "continue": "続ける"
+    "continue": "続ける",
+    "parentEmailLabel": "保護者のメールアドレス",
+    "parentEmailPlaceholder": "parent@example.com",
+    "parentEmailHint": "COPPA規定により、13歳未満のユーザーは保護者の確認が必要です。このメールアドレスに同意確認が送信されます。"
+  },
+  "gdpr": {
+    "exportTitle": "データをエクスポート",
+    "exportBody": "すべての会話、設定、活動履歴をJSON形式でダウンロードします。",
+    "exportButton": "データをエクスポート",
+    "exportSuccess": "データのエクスポートが準備できました。",
+    "deleteTitle": "アカウントとデータを削除",
+    "deleteBody": "すべてのデータが永久に削除されます。この操作は取り消せません。",
+    "deleteButton": "アカウントを削除",
+    "deleteConfirm": "本当にアカウントとすべてのデータを削除しますか？この操作は取り消せません。",
+    "deleteSuccess": "アカウントが削除されました。"
   },
   "chat": {
     "placeholder": "何でも話してください...",

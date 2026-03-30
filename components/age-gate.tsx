@@ -7,21 +7,25 @@ import { haptic } from "@/lib/micro-interactions";
 import type { AgeGroup } from "@/lib/safety/age-gate";
 
 type AgeGateProps = {
-  onComplete: (params: { ageGroup: AgeGroup; guardianConsent: boolean }) => void | Promise<void>;
+  onComplete: (params: { ageGroup: AgeGroup; guardianConsent: boolean; parentEmail?: string }) => void | Promise<void>;
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function AgeGate({ onComplete }: AgeGateProps) {
-  const { locale, t } = useTranslations();
+  const { t } = useTranslations();
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroup | null>(null);
   const [guardianConsent, setGuardianConsent] = useState(false);
+  const [parentEmail, setParentEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const needsGuardianConsent = selectedAgeGroup === "under_13";
+  const isValidParentEmail = EMAIL_RE.test(parentEmail.trim());
   const canContinue = useMemo(() => {
     if (!selectedAgeGroup) return false;
-    if (needsGuardianConsent) return guardianConsent;
+    if (needsGuardianConsent) return guardianConsent && isValidParentEmail;
     return true;
-  }, [guardianConsent, needsGuardianConsent, selectedAgeGroup]);
+  }, [guardianConsent, isValidParentEmail, needsGuardianConsent, selectedAgeGroup]);
 
   async function handleContinue() {
     if (!selectedAgeGroup || !canContinue) return;
@@ -31,6 +35,7 @@ export function AgeGate({ onComplete }: AgeGateProps) {
       await onComplete({
         ageGroup: selectedAgeGroup,
         guardianConsent,
+        parentEmail: needsGuardianConsent ? parentEmail.trim() : undefined,
       });
     } finally {
       setLoading(false);
@@ -84,27 +89,47 @@ export function AgeGate({ onComplete }: AgeGateProps) {
         </div>
 
         {needsGuardianConsent && (
-          <label className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-4 text-sm text-amber-50">
-            <input
-              type="checkbox"
-              checked={guardianConsent}
-              onChange={(event) => setGuardianConsent(event.target.checked)}
-              className="mt-1 h-5 w-5 rounded border-white/20 bg-black"
-            />
-            <span className="leading-6">{t("ageGate.guardianConsent")}</span>
-          </label>
+          <div className="mt-5 space-y-3">
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-4">
+              <label className="flex items-start gap-3 text-sm text-amber-50">
+                <input
+                  type="checkbox"
+                  checked={guardianConsent}
+                  onChange={(event) => setGuardianConsent(event.target.checked)}
+                  className="mt-1 h-5 w-5 rounded border-white/20 bg-black"
+                  aria-label={t("ageGate.guardianConsent")}
+                />
+                <span className="leading-6">{t("ageGate.guardianConsent")}</span>
+              </label>
+              <div className="mt-3">
+                <label htmlFor="parent-email" className="block text-xs font-medium text-amber-100/80">
+                  {t("ageGate.parentEmailLabel")}
+                </label>
+                <input
+                  id="parent-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  placeholder={t("ageGate.parentEmailPlaceholder")}
+                  className="mt-1.5 w-full rounded-xl border border-amber-300/20 bg-black/50 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-amber-300/40 focus:outline-none focus:ring-1 focus:ring-amber-300/30"
+                  aria-describedby="parent-email-hint"
+                />
+                <p id="parent-email-hint" className="mt-1.5 text-xs text-amber-100/50 leading-5">
+                  {t("ageGate.parentEmailHint")}
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-sm font-medium text-white">{t("ageGate.publicSocialTitle")}</p>
           <p className="mt-2 text-sm leading-6 text-white/72">
-            {locale === "ko"
-              ? selectedAgeGroup === "adult"
-                ? t("ageGate.publicSocialAdult")
-                : t("ageGate.publicSocialMinor")
-              : selectedAgeGroup === "adult"
-                ? t("ageGate.publicSocialAdult")
-                : t("ageGate.publicSocialMinor")}
+            {selectedAgeGroup === "adult"
+              ? t("ageGate.publicSocialAdult")
+              : t("ageGate.publicSocialMinor")}
           </p>
         </div>
 

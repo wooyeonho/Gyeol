@@ -97,7 +97,21 @@
     "publicSocialTitle": "公开社交说明",
     "publicSocialAdult": "成年账号可在设置中开启公开社交参与。",
     "publicSocialMinor": "未成年账号不能在公开社交信息流中发帖、评论或反应。",
-    "continue": "继续"
+    "continue": "继续",
+    "parentEmailLabel": "家长/监护人邮箱地址",
+    "parentEmailPlaceholder": "parent@example.com",
+    "parentEmailHint": "根据 COPPA 规定，13 岁以下用户需要家长验证同意。同意确认将发送到此邮箱。"
+  },
+  "gdpr": {
+    "exportTitle": "导出我的数据",
+    "exportBody": "以 JSON 格式下载所有对话、设置和活动记录。",
+    "exportButton": "导出数据",
+    "exportSuccess": "数据导出已准备就绪。",
+    "deleteTitle": "删除账号和数据",
+    "deleteBody": "所有数据将被永久删除，此操作不可撤销。",
+    "deleteButton": "删除账号",
+    "deleteConfirm": "确定要删除账号和所有数据吗？此操作不可撤销。",
+    "deleteSuccess": "账号已删除。"
   },
   "chat": {
     "placeholder": "随便说点什么...",
