@@ -42,7 +42,8 @@ export function deriveMorphWeights(
   /** Optional gen level for evolution-capacity scaling (default 1) */
   genLevel?: number,
 ): MorphWeights {
-  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  // No upper clamp — high-gen creatures can express morphs beyond 1.0
+  const clampMin0 = (v: number) => Math.max(0, v);
   const evo = getEvolutionCapacity(genLevel ?? 1);
   // morphComplexity scales how strongly morphs express (0.2 at Gen 1, ~1.0 at Gen 8+)
   const mc = evo.morphComplexity;
@@ -53,28 +54,28 @@ export function deriveMorphWeights(
   // Each morph weight is scaled by morphComplexity — early gens express subtly,
   // later gens express the full range of deformation.
   return {
-    bodyStretch: clamp01(
+    bodyStretch: clampMin0(
       ((dna.verbal * 0.4 + dna.spatial * 0.3 - dna.stability * 0.2 + 0.1) + (archMod.bodyStretch ?? 0)) * mc
     ),
-    bodyBulge: clamp01(
+    bodyBulge: clampMin0(
       ((dna.warmth * 0.4 + dna.empathy * 0.25 - dna.analytical * 0.15 + 0.1) + (archMod.bodyBulge ?? 0)) * mc
     ),
-    crownGrowth: clamp01(
+    crownGrowth: clampMin0(
       ((dna.creativity * 0.35 + dna.intuitive * 0.3 + dna.curiosity * 0.15 - 0.15) + (archMod.crownGrowth ?? 0)) * mc
     ),
-    sideSpread: clamp01(
+    sideSpread: clampMin0(
       ((dna.assertiveness * 0.35 + dna.independence * 0.25 + dna.intensity * 0.15 - 0.1) + (archMod.sideSpread ?? 0)) * mc
     ),
-    rhythmWobble: clamp01(
+    rhythmWobble: clampMin0(
       ((dna.playfulness * 0.4 + dna.adaptability * 0.3 - dna.stability * 0.2) + (archMod.rhythmWobble ?? 0)) * mc
     ),
-    crystalFacet: clamp01(
+    crystalFacet: clampMin0(
       ((dna.analytical * 0.4 + dna.stability * 0.3 - dna.creativity * 0.15 - 0.1) + (archMod.crystalFacet ?? 0)) * mc
     ),
-    veilDrape: clamp01(
+    veilDrape: clampMin0(
       ((dna.openness * 0.35 + dna.empathy * 0.25 + dna.intuitive * 0.15 - 0.15) + (archMod.veilDrape ?? 0)) * mc
     ),
-    coreConcentrate: clamp01(
+    coreConcentrate: clampMin0(
       ((dna.intensity * 0.35 + dna.persistence * 0.3 - dna.openness * 0.15) + (archMod.coreConcentrate ?? 0)) * mc
     ),
   };

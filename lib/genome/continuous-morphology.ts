@@ -143,34 +143,36 @@ export function deriveContinuousMorphology(
 
   const antennaPotential = dna.curiosity * 1.2 + dna.intuitive * 0.8;
   const antennaCount = antennaPotential > 0.8
-    ? Math.min(2, (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange)
+    ? (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange // no cap — high-gen creatures can grow many antennae
     : 0;
 
-  const tailPresence = clamp01(
+  const tailPresence = Math.max(0,
     (dna.playfulness * 0.6 + dna.adaptability * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  );
+  ); // no upper cap — tail can be longer than 1.0 at high gens
 
-  const finWingSize = clamp01(
+  const finWingSize = Math.max(0,
     (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.25) * evoCapacity.dnaExpressionRange,
-  );
+  ); // no upper cap — wings can grow large
 
   const spikePotential = dna.assertiveness * 4 + dna.intensity * 4;
   const spikeCount = spikePotential > 2
     ? (spikePotential - 2) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
-  const earBumpSize = clamp01(
+  const earBumpSize = Math.max(0,
     (dna.empathy * 0.5 + dna.warmth * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  );
+  ); // no upper cap
 
   const appendageVariety = dna.creativity * 0.6 + dna.openness * 0.4;
 
+  // ── Open ranges: only enforce physical minimums ──
+  // DNA + evolution capacity determine actual range — not developer clamps.
   return {
     bodySegments: Math.max(1, bodySegments),
-    bodyRatio: clamp01(bodyRatio),
-    bodySymmetry: clamp01(bodySymmetry),
-    surfaceHardness: clamp01(surfaceHardness),
-    surfaceComplexity: clamp01(surfaceComplexity),
+    bodyRatio: Math.max(0, bodyRatio), // no upper bound — elongated creatures allowed
+    bodySymmetry: Math.max(0, bodySymmetry), // no upper bound
+    surfaceHardness: Math.max(0, surfaceHardness), // no upper bound
+    surfaceComplexity: Math.max(0, surfaceComplexity), // no upper bound
     limbCount: Math.max(0, limbCount),
     eyeCount: Math.max(1, eyeCount),
     hornCount: Math.max(0, hornCount),
@@ -179,7 +181,7 @@ export function deriveContinuousMorphology(
     finWingSize,
     spikeCount: Math.max(0, spikeCount),
     earBumpSize,
-    appendageVariety: clamp01(appendageVariety),
+    appendageVariety: Math.max(0, appendageVariety), // no upper bound
     archetypeBlend,
     dnaExpressionRange: evoCapacity.dnaExpressionRange,
     morphComplexity: evoCapacity.morphComplexity,
@@ -205,15 +207,17 @@ export function computeArchetypeBlendWeights(dna: CreatureDNA): ArchetypeBlend {
   const spectral = dna.independence * 0.35 + dna.intuitive * 0.25 + dna.curiosity * 0.15 - dna.warmth * 0.1;
   const verdant = dna.creativity * 0.3 + dna.warmth * 0.25 + dna.openness * 0.2 - dna.assertiveness * 0.1;
 
+  // No upper clamp — strong DNA resonance can push weights above 1.0
+  // Only prevent negative weights (meaningless)
   return {
-    ethereal: clamp01(ethereal),
-    crystalline: clamp01(crystalline),
-    organic: clamp01(organic),
-    mechanical: clamp01(mechanical),
-    fluid: clamp01(fluid),
-    volcanic: clamp01(volcanic),
-    spectral: clamp01(spectral),
-    verdant: clamp01(verdant),
+    ethereal: Math.max(0, ethereal),
+    crystalline: Math.max(0, crystalline),
+    organic: Math.max(0, organic),
+    mechanical: Math.max(0, mechanical),
+    fluid: Math.max(0, fluid),
+    volcanic: Math.max(0, volcanic),
+    spectral: Math.max(0, spectral),
+    verdant: Math.max(0, verdant),
   };
 }
 

@@ -18,6 +18,7 @@ import {
   applyPhysicsResponse,
   type TouchPhysicsState,
 } from "@/lib/creature/touch-physics";
+import type { ForceState } from "@/lib/creature/force-system";
 
 export interface InnerProps {
   shape: string;
@@ -53,6 +54,8 @@ export interface InnerProps {
   conversationEnergy?: number;
   /** Evolution generation level (1+, no upper bound) */
   genLevel?: number;
+  /** Force-based physics state — drives emergent position/rotation/scale */
+  forceState?: ForceState | null;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -361,7 +364,7 @@ function Scene({
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
-  dna, mood, conversationEnergy = 0, genLevel,
+  dna, mood, conversationEnergy = 0, genLevel, forceState,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -503,6 +506,7 @@ function Scene({
               vitality={vitality}
               conversationEnergy={conversationEnergy}
               genLevel={genLevel}
+              forceState={forceState}
             />
           ) : (
             <CoreShape
