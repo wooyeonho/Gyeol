@@ -27,8 +27,7 @@ import { createAssistantTapStream } from "@/lib/chat/stream";
 
 /** Chainable Supabase mock that returns { data: null } by default */
 function mockServiceClient() {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  const self = {
+  const self: Record<string, unknown> = {
     from: vi.fn(() => self),
     select: vi.fn(() => self),
     eq: vi.fn(() => self),
