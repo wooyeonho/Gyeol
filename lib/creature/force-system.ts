@@ -438,12 +438,12 @@ function getMoodForce(
         y: smoothNoise(t * 2.5 + s * 0.3, t * 3) * 0.04 * dna.intensity,
       };
 
-    // Scared: jittery, retreating
+    // Scared: jittery, retreating (deterministic noise, not Math.random)
     case "scared":
     case "anxious":
       return {
-        x: (Math.random() - 0.5) * 0.02 * (1 - dna.stability),
-        y: (Math.random() - 0.5) * 0.02 * (1 - dna.stability),
+        x: smoothNoise(t * 4 + s, t * 3.5 + s * 0.7) * 0.02 * (1 - dna.stability),
+        y: smoothNoise(t * 3.5 + s * 0.3, t * 4 + s * 0.5) * 0.02 * (1 - dna.stability),
       };
 
     // Peaceful: very gentle, centered drift

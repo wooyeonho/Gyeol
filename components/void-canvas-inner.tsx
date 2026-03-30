@@ -51,6 +51,8 @@ export interface InnerProps {
   mood?: string | null;
   /** 0..1 conversation energy — accumulated from chat frequency, decays over time */
   conversationEnergy?: number;
+  /** Evolution generation level (1+, no upper bound) */
+  genLevel?: number;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -359,7 +361,7 @@ function Scene({
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
-  dna, mood, conversationEnergy = 0,
+  dna, mood, conversationEnergy = 0, genLevel,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -449,12 +451,12 @@ function Scene({
   // Derive secondary color from DNA for dual-color particles
   const secondaryParticleColor = useMemo(() => {
     if (!dna || !species) return undefined;
-    const appearance = deriveDNAAppearance(dna, species);
+    const appearance = deriveDNAAppearance(dna, species, genLevel);
     const h2 = Math.round((appearance.primaryHue + appearance.secondaryHueShift) % 360);
     const s = Math.round(appearance.primarySaturation - 5);
     const l = Math.round(appearance.primaryLightness + 5);
     return `hsl(${h2}, ${s}%, ${l}%)`;
-  }, [dna, species]);
+  }, [dna, species, genLevel]);
 
   // Organic breathing: sin wave + heartbeat double-bump
   const breathSin = Math.sin(breathPhase * Math.PI * 2);
@@ -500,6 +502,7 @@ function Scene({
               mood={mood}
               vitality={vitality}
               conversationEnergy={conversationEnergy}
+              genLevel={genLevel}
             />
           ) : (
             <CoreShape

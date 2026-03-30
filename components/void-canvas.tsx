@@ -39,6 +39,8 @@ interface VoidCanvasProps {
   dna?: CreatureDNA | null;
   /** 0..1 conversation energy — accumulated from chat frequency, decays over time */
   conversationEnergy?: number;
+  /** Evolution generation level (1+, no upper bound) */
+  genLevel?: number;
 }
 
 const VoidCanvasInner = dynamic(
@@ -219,6 +221,7 @@ export function VoidCanvas({
   restoring3dLabel,
   dna,
   conversationEnergy,
+  genLevel,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -285,6 +288,7 @@ export function VoidCanvas({
           mood={mood}
           onCreatureTouch={onCreatureTouch}
           conversationEnergy={conversationEnergy}
+          genLevel={genLevel}
         />
       ) : (
         <CssVoidFallback

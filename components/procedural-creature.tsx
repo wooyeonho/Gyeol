@@ -173,7 +173,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const fractional = contEyes - fullCount; // 0..1, opacity of the next eye
     // For backward compat: 1 eye = cyclops mode
     const count = fullCount < 2 ? 1 : fullCount;
-    const thirdEyeOpacity = count >= 2 ? fractional : 0;
+    const thirdEyeOpacity = count >= 2 ? Math.min(1, contEyes - 2) : 0;
     const widthRatio =
       dna.empathy > 0.6
         ? 1.2 + (dna.empathy - 0.6) * 0.5

@@ -266,10 +266,10 @@ export function getEvolutionCapacity(genLevel: number): EvolutionCapacity {
   const dnaExpressionRange = expressionBase + expressionGrowth;
 
   // Morphological complexity: 0.2 at Gen 1, approaches 1.0 around Gen 8
-  const morphComplexity = Math.min(
-    1 + (gen - 10) * 0.01, // can exceed 1.0 at very high gens
-    0.2 + 0.8 * (1 - 1 / (1 + (gen - 1) * 0.3)),
-  );
+  // Asymptotic base curve + linear bonus beyond Gen 10 (can exceed 1.0 at high gens)
+  const morphBase = 0.2 + 0.8 * (1 - 1 / (1 + (gen - 1) * 0.3));
+  const morphBonus = gen > 10 ? (gen - 10) * 0.01 : 0;
+  const morphComplexity = morphBase + morphBonus;
 
   return {
     dnaExpressionRange,
