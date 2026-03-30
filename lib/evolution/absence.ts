@@ -18,6 +18,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { CreatureDNA, DNAAxis } from "@/lib/genome/dna";
 import { DNA_AXES } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
 import { logWarn } from "@/lib/ops/logger";
 
 /** Maximum missed-event entries kept per creature. */
@@ -131,7 +132,8 @@ export async function processAbsenceDrift(agentId: string, hoursAbsent: number):
     if (currentDNA && DNA_AXES.every((a) => typeof currentDNA[a] === "number")) {
       const { dna: driftedDNA, changedAxes } = applyAbsenceDrift(currentDNA, hoursAbsent);
       if (changedAxes.length > 0) {
-        dnaUpdate = { ...genome, dna: driftedDNA };
+        const species = deriveSpecies(driftedDNA);
+        dnaUpdate = { ...genome, dna: driftedDNA, species: species.name, archetype: species.archetype, element: species.element };
         await db.from("autonomous_logs").insert({
           agent_id: agentId,
           action_type: "absence_drift",

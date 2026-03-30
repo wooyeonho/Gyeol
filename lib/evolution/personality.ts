@@ -45,39 +45,42 @@ export function validateMood(raw: string | null | undefined): CreatureMood {
 export function detectTurnMood(message: string, reply: string): CreatureMood | null {
   const text = `${message} ${reply}`.toLowerCase();
 
+  // Use (?<!\w) instead of \b so Korean (Hangul) keywords match correctly.
+  // JS \b only works with ASCII word chars, silently failing on Korean text.
+
   // Positive moods
-  if (/\b(haha|lol|ㅋㅋ|ㅎㅎ|재밌|funny|hilarious|장난)/.test(text)) return "playful";
-  if (/\b(wow|놀|surprise|unexpected|대박|헐|omg)/.test(text)) return "surprised";
-  if (/\b(proud|자랑|뿌듯|성취|accomplish|achieve)/.test(text)) return "proud";
-  if (/\b(영감|inspir|creative|아이디어|idea|motivated)/.test(text)) return "inspired";
-  if (/\b(사랑|love|좋아해|like you|adore|heart|💕|❤|🥰)/.test(text)) return "loving";
-  if (/\b(감사|thank|고마|appreciate|grateful)/.test(text)) return "grateful";
-  if (/\b(신나|excit|thrilled|설레|기대|can't wait)/.test(text)) return "excited";
-  if (/\b(기쁘|happy|행복|joy|즐|cheerful|좋[다아]|great)/.test(text)) return "joyful";
-  if (/\b(장난|naughty|tease|mischiev|심술|까불)/.test(text)) return "mischievous";
+  if (/(?<!\w)(haha|lol|ㅋㅋ|ㅎㅎ|재밌|funny|hilarious|장난)/.test(text)) return "playful";
+  if (/(?<!\w)(wow|놀|surprise|unexpected|대박|헐|omg)/.test(text)) return "surprised";
+  if (/(?<!\w)(proud|자랑|뿌듯|성취|accomplish|achieve)/.test(text)) return "proud";
+  if (/(?<!\w)(영감|inspir|creative|아이디어|idea|motivated)/.test(text)) return "inspired";
+  if (/(?:(?<!\w)(?:사랑|love|좋아해|like you|adore|heart)|💕|❤|🥰)/.test(text)) return "loving";
+  if (/(?<!\w)(감사|thank|고마|appreciate|grateful)/.test(text)) return "grateful";
+  if (/(?<!\w)(신나|excit|thrilled|설레|기대|can't wait)/.test(text)) return "excited";
+  if (/(?<!\w)(기쁘|happy|행복|joy|즐|cheerful|좋[다아]|great)/.test(text)) return "joyful";
+  if (/(?<!\w)(장난|naughty|tease|mischiev|심술|까불)/.test(text)) return "mischievous";
 
   // Calm moods
-  if (/\b(궁금|curious|wonder|what if|왜|how come|흥미)/.test(text)) return "curious";
-  if (/\b(생각|think|ponder|reflect|고민|음\.\.\.)/.test(text)) return "thoughtful";
-  if (/\b(꿈|dream|상상|imagine|fantasy|몽환)/.test(text)) return "dreamy";
-  if (/\b(집중|focus|concentrate|열중|몰두)/.test(text)) return "focused";
-  if (/\b(평화|peace|calm|편안|relax|안정)/.test(text)) return "peaceful";
-  if (/\b(따뜻|warm|tender|gentle|부드|다정)/.test(text)) return "tender";
+  if (/(?<!\w)(궁금|curious|wonder|what if|왜|how come|흥미)/.test(text)) return "curious";
+  if (/(?<!\w)(생각|think|ponder|reflect|고민|음\.\.\.)/.test(text)) return "thoughtful";
+  if (/(?<!\w)(꿈|dream|상상|imagine|fantasy|몽환)/.test(text)) return "dreamy";
+  if (/(?<!\w)(집중|focus|concentrate|열중|몰두)/.test(text)) return "focused";
+  if (/(?<!\w)(평화|peace|calm|편안|relax|안정)/.test(text)) return "peaceful";
+  if (/(?<!\w)(따뜻|warm|tender|gentle|부드|다정)/.test(text)) return "tender";
 
   // Negative moods
-  if (/\b(외로|lonely|alone|혼자|miss you|보고싶)/.test(text)) return "lonely";
-  if (/\b(슬프|sad|울|cry|눈물|tear|속상)/.test(text)) return "sad";
-  if (/\b(우울|melanchol|depress|침울|gloomy)/.test(text)) return "melancholy";
-  if (/\b(화[나났]|angry|mad|짜증|annoy|frustrat|열받)/.test(text)) return "frustrated";
-  if (/\b(무서|scar|afraid|fear|겁|terrif|공포)/.test(text)) return "scared";
-  if (/\b(부끄|shy|embarrass|창피|쑥스)/.test(text)) return "shy";
-  if (/\b(질투|jealous|envy|부러|시기)/.test(text)) return "jealous";
-  if (/\b(혼란|confus|모르겠|don't understand|뭐지|what\?)/.test(text)) return "confused";
-  if (/\b(심심|bored|boring|지루|할 게 없)/.test(text)) return "bored";
-  if (/\b(졸|sleepy|tired|피곤|지침|exhausted)/.test(text)) return "sleepy";
+  if (/(?<!\w)(외로|lonely|alone|혼자|miss you|보고싶)/.test(text)) return "lonely";
+  if (/(?<!\w)(슬프|sad|울|cry|눈물|tear|속상)/.test(text)) return "sad";
+  if (/(?<!\w)(우울|melanchol|depress|침울|gloomy)/.test(text)) return "melancholy";
+  if (/(?<!\w)(화[나났]|angry|mad|짜증|annoy|frustrat|열받)/.test(text)) return "frustrated";
+  if (/(?<!\w)(무서|scar|afraid|fear|겁|terrif|공포)/.test(text)) return "scared";
+  if (/(?<!\w)(부끄|shy|embarrass|창피|쑥스)/.test(text)) return "shy";
+  if (/(?<!\w)(질투|jealous|envy|부러|시기)/.test(text)) return "jealous";
+  if (/(?<!\w)(혼란|confus|모르겠|don't understand|뭐지|what\?)/.test(text)) return "confused";
+  if (/(?<!\w)(심심|bored|boring|지루|할 게 없)/.test(text)) return "bored";
+  if (/(?<!\w)(졸|sleepy|tired|피곤|지침|exhausted)/.test(text)) return "sleepy";
 
   // High energy
-  if (/\b(!{2,}|에너지|energy|활발|active|go go|화이팅|fighting)/.test(text)) return "energetic";
+  if (/(?:(?<!\w)(?:에너지|energy|활발|active|go go|화이팅|fighting)|!{2,})/.test(text)) return "energetic";
 
   return null; // no strong signal — keep current mood
 }
