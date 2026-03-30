@@ -114,8 +114,9 @@ describe("analyzePersonality", () => {
     const { analyzePersonality } = await import("./personality");
     await analyzePersonality("agent-mood");
 
+    // validateMood maps legacy "happy" → "joyful" in the 28-mood vocabulary
     expect(updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ mood: "happy" })
+      expect.objectContaining({ mood: "joyful" })
     );
   });
 
