@@ -38,6 +38,8 @@ export type CreatureState = {
   sessionAffinity: number;
   /** Affinity-derived mood (from touch/watch/ignore patterns) */
   affinityMood: string;
+  /** 0..1 conversation energy — spikes on messages, decays over time */
+  conversationEnergy: number;
 };
 
 const DROWSY_AFTER_S = 30;
@@ -74,6 +76,7 @@ export function useCreatureState(
     touchCount: 0,
     sessionAffinity: 0,
     affinityMood: "neutral",
+    conversationEnergy: 0,
   });
 
   // Store DNA/mood/isStreaming in refs for access inside animation loop without re-subscribing
@@ -95,6 +98,9 @@ export function useCreatureState(
   const tremorTargetRef = useRef({ x: 0, y: 0 });
   const tremorTimerRef = useRef(0);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Conversation energy: accumulates on message send/receive, decays over time
+  const conversationEnergyRef = useRef(0);
+  const messageCountRef = useRef(0); // messages sent this session
   const lastSetStateRef = useRef(0);
   const SET_STATE_INTERVAL = 66; // ~15fps — throttle React re-renders
 
@@ -134,9 +140,16 @@ export function useCreatureState(
     }, 1500);
   }, [touch]);
 
-  // Excite pulse on message send
+  // Excite pulse on canvas tap (visual bounce only — no conversation energy)
   const excite = useCallback(() => {
     exciteRef.current = 1;
+    touch();
+  }, [touch]);
+
+  // Boost conversation energy on actual chat message send/receive
+  const boostConversationEnergy = useCallback((amount = 0.25) => {
+    messageCountRef.current += 1;
+    conversationEnergyRef.current = Math.min(1, conversationEnergyRef.current + amount);
     touch();
   }, [touch]);
 
@@ -201,6 +214,15 @@ export function useCreatureState(
       // Decay excite pulse
       if (exciteRef.current > 0) {
         exciteRef.current = Math.max(0, exciteRef.current - dt * 2.5);
+      }
+
+      // Decay conversation energy slowly (half-life ~20s) — stays elevated during active chat
+      if (conversationEnergyRef.current > 0) {
+        conversationEnergyRef.current = Math.max(0, conversationEnergyRef.current - dt * 0.035);
+      }
+      // Streaming boosts energy slightly (creature "listens" actively)
+      if (isStreamingRef.current && conversationEnergyRef.current < 0.8) {
+        conversationEnergyRef.current = Math.min(1, conversationEnergyRef.current + dt * 0.1);
       }
 
       // Micro-tremor — tiny organic jitter that makes the creature feel alive
@@ -268,6 +290,7 @@ export function useCreatureState(
           touchCount: touchCountRef.current,
           sessionAffinity: sessionAffinityRef.current,
           affinityMood: affinityMoodValue,
+          conversationEnergy: conversationEnergyRef.current,
         }));
       } else {
         // Still flush if activity changed (low frequency, important for UI)
@@ -286,5 +309,5 @@ export function useCreatureState(
     };
   }, [vitality]);
 
-  return { state, touch, markTyping, excite, updatePointer, recordCreatureTouch };
+  return { state, touch, markTyping, excite, boostConversationEnergy, updatePointer, recordCreatureTouch };
 }

@@ -37,6 +37,8 @@ interface VoidCanvasProps {
   restoring3dLabel?: string;
   /** Creature DNA for procedural rendering */
   dna?: CreatureDNA | null;
+  /** 0..1 conversation energy — accumulated from chat frequency, decays over time */
+  conversationEnergy?: number;
 }
 
 const VoidCanvasInner = dynamic(
@@ -216,6 +218,7 @@ export function VoidCanvas({
   pointerNorm,
   restoring3dLabel,
   dna,
+  conversationEnergy,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -281,6 +284,7 @@ export function VoidCanvas({
           dna={dna}
           mood={mood}
           onCreatureTouch={onCreatureTouch}
+          conversationEnergy={conversationEnergy}
         />
       ) : (
         <CssVoidFallback

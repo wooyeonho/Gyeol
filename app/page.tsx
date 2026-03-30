@@ -161,6 +161,32 @@ export default function Home() {
   const clearReward = useChatStore((s) => s.clearReward);
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
 
+  // Boost conversation energy when new user messages are sent
+  // Gate on historyLoaded to avoid spurious boost from initial chat history hydration.
+  // Iterate all new messages to handle React batching (sendMessage appends user + assistant placeholder in one render).
+  const prevMsgCountRef = useRef(0);
+  const historySeenRef = useRef(false);
+  useEffect(() => {
+    if (!historyLoaded) return;
+    const curr = messages.length;
+    // First time historyLoaded becomes true: sync ref without boosting
+    if (!historySeenRef.current) {
+      historySeenRef.current = true;
+      prevMsgCountRef.current = curr;
+      return;
+    }
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = curr;
+    if (curr > prev) {
+      for (let i = prev; i < curr; i++) {
+        if (messages[i] && messages[i].role === "user") {
+          creature.boostConversationEnergy(0.25);
+          break;
+        }
+      }
+    }
+  }, [messages, creature, historyLoaded]);
+
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
@@ -372,6 +398,7 @@ export default function Home() {
           pointerNorm={creature.state.pointerNorm}
           restoring3dLabel={t("creature.restoring3d")}
           dna={creatureDna}
+          conversationEnergy={creature.state.conversationEnergy}
         />
 
         {/* Bottom gradient fade into chat area */}
