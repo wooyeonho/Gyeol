@@ -264,8 +264,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     // === SQUASH & STRETCH: mood-driven body deformation for expressiveness ===
     if (meshRef.current) {
-      const squashTarget = moodMod.bodySquash + (excitePulse > 0.1 ? (1 - excitePulse * 0.15) : 0);
-      const stretchTarget = moodMod.bodyStretch + (excitePulse > 0.1 ? (1 + excitePulse * 0.12) : 0);
+      const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? (1 - excitePulse * 0.15) : 1);
+      const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? (1 + excitePulse * 0.12) : 1);
       const currentScaleX = meshRef.current.scale.x;
       const currentScaleY = meshRef.current.scale.y;
       meshRef.current.scale.x = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
