@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import type { ForceState } from "@/lib/creature/force-system";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -41,6 +42,8 @@ interface VoidCanvasProps {
   conversationEnergy?: number;
   /** Evolution generation level (1+, no upper bound) */
   genLevel?: number;
+  /** Force-based physics state — drives emergent position/rotation/scale */
+  forceState?: ForceState | null;
 }
 
 const VoidCanvasInner = dynamic(
@@ -222,6 +225,7 @@ export function VoidCanvas({
   dna,
   conversationEnergy,
   genLevel,
+  forceState,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -289,6 +293,7 @@ export function VoidCanvas({
           onCreatureTouch={onCreatureTouch}
           conversationEnergy={conversationEnergy}
           genLevel={genLevel}
+          forceState={forceState}
         />
       ) : (
         <CssVoidFallback

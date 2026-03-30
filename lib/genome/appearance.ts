@@ -72,13 +72,19 @@ export function deriveDNAAppearance(
 
   const secondaryHueShift = 30 + dna.creativity * 60 - dna.stability * 20;
 
-  // Eye color from emotional axes
-  const eyeHue =
-    dna.empathy > 0.65 ? 340 :  // pink eyes for empathic
-    dna.intensity > 0.65 ? 30 :  // amber for intense
-    dna.curiosity > 0.65 ? 190 : // cyan for curious
-    dna.stability > 0.65 ? 140 : // green for stable
-    primaryHue + 180; // complementary to body
+  // Eye color: circular weighted blend of emotional DNA axes — no discrete thresholds.
+  // Uses atan2-based circular mean to handle hue wraparound (e.g. 340° pink + 20° gold = ~0° red, not 180° cyan).
+  const DEG2RAD = Math.PI / 180;
+  const eyeAxes: [number, number][] = [
+    [dna.empathy, 340], [dna.intensity, 30], [dna.curiosity, 190],
+    [dna.stability, 140], [dna.warmth, 20], [dna.creativity, 280], [dna.openness, 200],
+  ];
+  let sinSum = 0, cosSum = 0;
+  for (const [w, h] of eyeAxes) {
+    sinSum += w * Math.sin(h * DEG2RAD);
+    cosSum += w * Math.cos(h * DEG2RAD);
+  }
+  const eyeHue = ((Math.atan2(sinSum, cosSum) / DEG2RAD) + 360) % 360;
 
   // Body shape from cognitive/structural DNA
   const bodyRatio = 0.3 + dna.verbal * 0.3 + dna.spatial * 0.2 - dna.stability * 0.15;
@@ -126,26 +132,29 @@ export function deriveDNAAppearance(
   // Scale from gen-level would be applied externally, base from DNA
   const scale = 0.85 + dna.assertiveness * 0.15 + dna.persistence * 0.1;
 
+  // ── Open ranges: no artificial ceiling on expression ──
+  // Only enforce physical minimums (no negative opacity, etc.)
+  // DNA + evolution capacity determine the actual range — not developer clamps.
   return {
     primaryHue: primaryHue % 360,
-    primarySaturation: clamp(saturation, 40, 90),
-    primaryLightness: clamp(lightness, 35, 75),
-    secondaryHueShift: clamp(secondaryHueShift, 10, 90),
+    primarySaturation: Math.max(0, saturation),
+    primaryLightness: clamp(lightness, 10, 95),
+    secondaryHueShift: secondaryHueShift, // no clamp — can be any offset
     eyeHue: eyeHue % 360,
-    bodyRatio: clamp(bodyRatio, 0.15, 0.85),
-    bodySymmetry: clamp(bodySymmetry, 0.15, 0.85),
-    roughness: clamp(roughness, 0.05, 0.8),
-    metalness: clamp(metalness, 0, 0.5),
-    glowIntensity: clamp(glowIntensity, 0.35, 1.0),
-    glowPulseSpeed: clamp(glowPulseSpeed, 0.3, 1.8),
-    particleCount: Math.max(10, Math.min(56, particleCount)),
-    particleDrift: clamp(particleDrift, 0.2, 1.0),
-    particleSize: clamp(particleSize, 0.005, 0.04),
-    breatheDepth: clamp(breatheDepth, 0.01, 0.08),
-    breatheSpeed: clamp(breatheSpeed, 0.4, 1.5),
-    idleRotation: clamp(idleRotation, 0, 0.5),
+    bodyRatio: Math.max(0, bodyRatio), // no upper bound — can be very elongated
+    bodySymmetry: Math.max(0, bodySymmetry), // no upper bound
+    roughness: Math.max(0, roughness), // no upper bound — extreme textures allowed
+    metalness: Math.max(0, metalness), // no upper bound — full chrome allowed
+    glowIntensity: Math.max(0, glowIntensity), // no cap — high-gen creatures can blaze
+    glowPulseSpeed: Math.max(0.1, glowPulseSpeed), // only prevent 0 (division risk)
+    particleCount: Math.max(0, particleCount), // no upper cap
+    particleDrift: Math.max(0, particleDrift), // no upper cap
+    particleSize: Math.max(0.002, particleSize), // prevent invisible
+    breatheDepth: Math.max(0, breatheDepth), // no upper cap
+    breatheSpeed: Math.max(0.1, breatheSpeed), // prevent 0
+    idleRotation: Math.max(0, idleRotation), // no upper cap
     markingsSeed: Math.abs(markingsSeed),
-    scale: clamp(scale, 0.75, 1.15),
+    scale: Math.max(0.2, scale), // prevent invisible, no upper cap
   };
 }
 

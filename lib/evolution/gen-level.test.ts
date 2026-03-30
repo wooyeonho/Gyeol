@@ -156,17 +156,19 @@ describe("checkEvolution", () => {
       .mockReturnValueOnce(0.99) // high progress increment
       .mockReturnValueOnce(0.99) // no critical
       .mockReturnValueOnce(0.0)  // rate check passes
-      .mockReturnValueOnce(0.01) // mutation triggers (0.01 < 0.05)
-      .mockReturnValueOnce(0.0); // mutation index 0 → empathy_master
+      .mockReturnValueOnce(0.01) // mutation triggers (0.01 < 0.08)
+      .mockReturnValueOnce(0.0)  // axis index: floor(0.0 * 16) = 0 → "curiosity"
+      .mockReturnValueOnce(0.8)  // sign: 0.8 > 0.5 → "+"
+      .mockReturnValueOnce(0.5); // amount: 0.05 + 0.5 * 0.15 = 0.125 → "0.13"
 
     const { checkEvolution } = await import("./gen-level");
     const result = await checkEvolution("agent-mutation");
 
     if (result?.evolved) {
-      expect(result.mutation).toBe("empathy_master");
+      expect(result.mutation).toBe("dna_shift:curiosity:+0.13");
       expect(updateFn).toHaveBeenCalledWith(
         expect.objectContaining({
-          config: expect.objectContaining({ mutation_trait: "empathy_master" }),
+          config: expect.objectContaining({ mutation_trait: "dna_shift:curiosity:+0.13" }),
         })
       );
     }

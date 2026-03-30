@@ -61,7 +61,16 @@ export async function checkEvolution(agentId: string): Promise<{ evolved: boolea
   if (Math.random() < rate) {
     const newLevel = state.gen_level + 1;
     const upgrade = getVisualUpgrade(newLevel);
-    const mutation = Math.random() < 0.05 ? ["empathy_master", "logic_genius", "dream_weaver", "social_butterfly", "memory_keeper"][Math.floor(Math.random() * 5)] : undefined;
+    // Mutation: instead of 5 preset traits, pick a random DNA axis and shift it.
+    // This creates unpredictable evolution — no two creatures follow the same path.
+    const DNA_AXES = [
+      "curiosity", "warmth", "intensity", "stability", "playfulness",
+      "assertiveness", "empathy", "independence", "creativity", "analytical",
+      "intuitive", "persistence", "adaptability", "openness", "verbal", "spatial",
+    ] as const;
+    const mutation = Math.random() < 0.08
+      ? `dna_shift:${DNA_AXES[Math.floor(Math.random() * DNA_AXES.length)]}:${(Math.random() > 0.5 ? "+" : "-")}${(0.05 + Math.random() * 0.15).toFixed(2)}`
+      : undefined;
 
     await db.from("agent_state").update({
       gen_level: newLevel,

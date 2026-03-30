@@ -424,6 +424,7 @@ export default function Home() {
             dna={creatureDna}
             conversationEnergy={creature.state.conversationEnergy}
             genLevel={agentState?.gen_level ?? 1}
+            forceState={creature.state.forceState}
           />
         </ThreeErrorBoundary>
 
