@@ -153,19 +153,33 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2);
 
-  // Mood-based visual modifiers
+  // Mood-based visual modifiers — drives expression, glow color, animation speed
   const moodMod = useMemo(() => {
     switch (mood) {
-      case "joyful": case "energetic": return { emissiveBoost: 0.15, speedMult: 1.3, tiltBias: 0.02 };
-      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.6, tiltBias: -0.04 };
-      case "curious": return { emissiveBoost: 0.05, speedMult: 1.1, tiltBias: 0.03 };
-      case "angry": return { emissiveBoost: 0.2, speedMult: 1.5, tiltBias: 0 };
-      default: return { emissiveBoost: 0, speedMult: 1, tiltBias: 0 };
+      case "joyful": case "energetic": return { emissiveBoost: 0.2, speedMult: 1.3, tiltBias: 0.02, eyeSquint: 0.6, pupilScale: 1.1, auraColor: "#ffdd44", auraOpacity: 0.18, bodySquash: 0.92, bodyStretch: 1.08 };
+      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.5, tiltBias: -0.06, eyeSquint: 1.0, pupilScale: 1.2, auraColor: "#4466cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 0.95 };
+      case "curious": return { emissiveBoost: 0.08, speedMult: 1.1, tiltBias: 0.04, eyeSquint: 1.0, pupilScale: 1.3, auraColor: "#44ddaa", auraOpacity: 0.14, bodySquash: 1.0, bodyStretch: 1.02 };
+      case "angry": return { emissiveBoost: 0.25, speedMult: 1.6, tiltBias: -0.02, eyeSquint: 0.5, pupilScale: 0.8, auraColor: "#ff3333", auraOpacity: 0.22, bodySquash: 1.06, bodyStretch: 0.96 };
+      case "scared": case "anxious": return { emissiveBoost: 0.05, speedMult: 1.4, tiltBias: -0.03, eyeSquint: 1.0, pupilScale: 1.5, auraColor: "#aa44ff", auraOpacity: 0.16, bodySquash: 0.9, bodyStretch: 1.1 };
+      default: return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
     }
   }, [mood]);
 
+  // Mood aura color for the halo glow
+  const moodAuraColor = useMemo(() => new THREE.Color(moodMod.auraColor), [moodMod.auraColor]);
+
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim);
+
+  // Toon shading gradient texture — creates flat color steps for game-like look
+  const toonGradient = useMemo(() => {
+    const colors = new Uint8Array([40, 80, 140, 200, 255]);
+    const tex = new THREE.DataTexture(colors, colors.length, 1, THREE.RedFormat);
+    tex.minFilter = THREE.NearestFilter;
+    tex.magFilter = THREE.NearestFilter;
+    tex.needsUpdate = true;
+    return tex;
+  }, []);
 
   // Animation: breathing, eye tracking, idle rotation, listening posture, vertex wave
   useFrame((state) => {
@@ -203,9 +217,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         blinkTimerRef.current = baseInterval + Math.random() * 3;
       }
     }
-    // Eye Y scale: 1=fully open, 0=fully closed; squint when joyful
-    const moodSquint = (mood === "joyful" || mood === "energetic") ? 0.72 : 1;
-    const eyeOpenY = (1 - blinkPhaseRef.current) * moodSquint;
+    // Eye Y scale: 1=fully open, 0=fully closed; mood-driven squint/widen
+    const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint;
 
     // === LOOK-AROUND: creature occasionally glances elsewhere ===
     lookTimerRef.current -= dt;
@@ -249,6 +262,17 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       0.06
     );
 
+    // === SQUASH & STRETCH: mood-driven body deformation for expressiveness ===
+    if (meshRef.current) {
+      const squashTarget = moodMod.bodySquash + (excitePulse > 0.1 ? (1 - excitePulse * 0.15) : 0);
+      const stretchTarget = moodMod.bodyStretch + (excitePulse > 0.1 ? (1 + excitePulse * 0.12) : 0);
+      const currentScaleX = meshRef.current.scale.x;
+      const currentScaleY = meshRef.current.scale.y;
+      meshRef.current.scale.x = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
+      meshRef.current.scale.z = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
+      meshRef.current.scale.y = THREE.MathUtils.lerp(currentScaleY, stretchTarget, 0.06);
+    }
+
     // === VERTEX WAVE: surface displacement for "living skin" effect ===
     if (meshRef.current) {
       const positions = meshRef.current.geometry.attributes.position;
@@ -290,10 +314,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     }
 
-    // Apply eye scale: X=listening-widened, Y=blink+squint, Z=normal
+    // Apply eye scale: X=listening-widened, Y=blink+squint, Z=pupil scale from mood
     const es = eyeScaleRef.current;
-    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY, es);
-    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY, es);
+    const ps = moodMod.pupilScale;
+    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es * ps, es * eyeOpenY, es);
+    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es * ps, es * eyeOpenY, es);
 
     // ── Appendage dynamic animations ──
     // Crown: sway with breathing + gentle wind oscillation
@@ -345,28 +370,27 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   return (
     <group ref={groupRef}>
-      {/* === FRESNEL HALO: translucent glow sphere behind creature === */}
+      {/* === MOOD AURA: colored glow sphere that changes with emotion === */}
       <mesh ref={haloRef}>
         <sphereGeometry args={[0.62, 24, 24]} />
         <meshBasicMaterial
-          color={primaryColor}
+          color={moodAuraColor}
           transparent
-          opacity={0.08 + appearance.glowIntensity * 0.12}
+          opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12}
           side={THREE.BackSide}
           depthWrite={false}
         />
       </mesh>
 
-      {/* Main body mesh */}
+      {/* Main body mesh — toon shading for game-like flat color steps */}
       <mesh ref={meshRef} geometry={geometry}>
-        <meshStandardMaterial
+        <meshToonMaterial
           color={primaryColor}
           emissive={primaryColor}
           emissiveIntensity={emissiveIntensity}
           transparent
           opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality))}
-          roughness={appearance.roughness}
-          metalness={appearance.metalness}
+          gradientMap={toonGradient}
         />
       </mesh>
 
@@ -410,12 +434,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       {morphWeights.crownGrowth > 0.3 && (
         <mesh ref={crownRef} position={[0, 0.42 + morphWeights.crownGrowth * 0.2, 0]}>
           <coneGeometry args={[0.06 + morphWeights.crownGrowth * 0.04, 0.15 + morphWeights.crownGrowth * 0.2, 5]} />
-          <meshStandardMaterial
+          <meshToonMaterial
             color={primaryColor}
             emissive={primaryColor}
             emissiveIntensity={emissiveIntensity * 1.2}
             transparent
             opacity={0.7 * activityDim}
+            gradientMap={toonGradient}
           />
         </mesh>
       )}
@@ -425,22 +450,24 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <>
           <mesh ref={sideLeftRef} position={[-0.38 - morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, 0.4]}>
             <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
-            <meshStandardMaterial
+            <meshToonMaterial
               color={primaryColor}
               emissive={primaryColor}
               emissiveIntensity={emissiveIntensity * 0.8}
               transparent
               opacity={0.6 * activityDim}
+              gradientMap={toonGradient}
             />
           </mesh>
           <mesh ref={sideRightRef} position={[0.38 + morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, -0.4]}>
             <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
-            <meshStandardMaterial
+            <meshToonMaterial
               color={primaryColor}
               emissive={primaryColor}
               emissiveIntensity={emissiveIntensity * 0.8}
               transparent
               opacity={0.6 * activityDim}
+              gradientMap={toonGradient}
             />
           </mesh>
         </>
@@ -463,12 +490,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
                 ]}
               >
                 <capsuleGeometry args={[0.02, drapLen, 4, 6]} />
-                <meshStandardMaterial
+                <meshToonMaterial
                   color={primaryColor}
                   emissive={primaryColor}
                   emissiveIntensity={emissiveIntensity * 0.6}
                   transparent
                   opacity={0.4 * activityDim}
+                  gradientMap={toonGradient}
                 />
               </mesh>
             );

@@ -470,7 +470,9 @@ function Scene({
 
   return (
     <>
-      <ambientLight intensity={0.08 * activityDim} />
+      {/* Enhanced lighting for toon shading — stronger directional + ambient for flat color steps */}
+      <ambientLight intensity={0.25 * activityDim} />
+      <directionalLight position={[2, 3, 4]} intensity={0.6 * activityDim} />
       <pointLight color={color} intensity={tapGlow} />
       <Float
         speed={floatSpeed * sleepFloatMult}
