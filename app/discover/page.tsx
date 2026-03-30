@@ -323,6 +323,12 @@ export default function DiscoverPage() {
             >
               {t("compare.title")}
             </Link>
+            <Link
+              href="/time-travel"
+              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            >
+              {t("timeTravel.title")}
+            </Link>
           </div>
         </section>
       </div>

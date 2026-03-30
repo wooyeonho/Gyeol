@@ -33,6 +33,7 @@ import { WorldClassHub } from "@/components/world-class-hub";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
+import Celebration from "@/components/celebration";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 
@@ -513,6 +514,15 @@ export default function Home() {
         reward={lastReward}
         locale={locale}
         onDismiss={handleDismissReward}
+      />
+      <Celebration
+        visible={!!agentState?.celebration_pending}
+        title={agentState?.celebration_pending?.title}
+        subtitle={agentState?.celebration_pending?.subtitle}
+        onEnd={() => {
+          void fetch("/api/agent/celebration/clear", { method: "POST" });
+          void fetchAgentState({ silent: true });
+        }}
       />
       <BottomNav />
     </div>
