@@ -797,7 +797,9 @@
     "itemsCount": "{count} items",
     "open": "Open",
     "moreWays": "More ways to explore",
-    "allEmpty": "会話を重ねるほど、ここが埋まっていきます。活動記録、成長アルバム、ソーシャルが一つずつ現れます。"
+    "allEmpty": "会話を重ねるほど、ここが埋まっていきます。活動記録、成長アルバム、ソーシャルが一つずつ現れます。",
+    "roomBody": "記憶がオブジェクトになる空間を探索しましょう。",
+    "constellationBody": "記憶の星たちが作る星座を確認しましょう。"
   },
   "weeklyEvent": {
     "label": "Weekly event",

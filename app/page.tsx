@@ -30,6 +30,9 @@ import { ChatPanel } from "@/components/chat-panel";
 import { BottomNav } from "@/components/bottom-nav";
 import { EvolutionCeremony } from "@/components/evolution-ceremony";
 import { WorldClassHub } from "@/components/world-class-hub";
+import { ThreeErrorBoundary } from "@/components/three-error-boundary";
+import { GlobalFeedTicker } from "@/components/global-feed-ticker";
+import { WorldWeather } from "@/components/world-weather";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 
@@ -378,31 +381,42 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
-        <VoidCanvas
-          shape={appearance.visual.shape as AgentVisual["shape"]}
-          color={appearance.visual.color}
-          size={creatureSize}
-          glow={Math.min(100, Math.max(0, appearance.visual.glow))}
-          animation={appearance.visual.animation}
-          particles={appearance.visual.particles}
-          background={appearance.visual.background}
-          vitality={vitality}
-          mood={agentState?.mood ?? undefined}
-          isListening={isStreaming}
-          motionBias={appearance.scene.motionBias}
-          pulseScale={appearance.scene.pulseScale}
-          onTap={handleCanvasTap}
-          onCreatureTouch={handleCreatureTouch}
-          enableThree={!performanceMinimal}
-          contained
-          breathPhase={creature.state.breathPhase}
-          creatureActivity={creature.state.activity}
-          excitePulse={creature.state.excitePulse}
-          pointerNorm={creature.state.pointerNorm}
-          restoring3dLabel={t("creature.restoring3d")}
-          dna={creatureDna}
-          conversationEnergy={creature.state.conversationEnergy}
-        />
+        <ThreeErrorBoundary
+          fallback={
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+              <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center">
+                <span className="text-2xl">&#x1F30C;</span>
+              </div>
+              <p className="text-sm text-white/50">{t("creature.restoring3d")}</p>
+            </div>
+          }
+        >
+          <VoidCanvas
+            shape={appearance.visual.shape as AgentVisual["shape"]}
+            color={appearance.visual.color}
+            size={creatureSize}
+            glow={Math.min(100, Math.max(0, appearance.visual.glow))}
+            animation={appearance.visual.animation}
+            particles={appearance.visual.particles}
+            background={appearance.visual.background}
+            vitality={vitality}
+            mood={agentState?.mood ?? undefined}
+            isListening={isStreaming}
+            motionBias={appearance.scene.motionBias}
+            pulseScale={appearance.scene.pulseScale}
+            onTap={handleCanvasTap}
+            onCreatureTouch={handleCreatureTouch}
+            enableThree={!performanceMinimal}
+            contained
+            breathPhase={creature.state.breathPhase}
+            creatureActivity={creature.state.activity}
+            excitePulse={creature.state.excitePulse}
+            pointerNorm={creature.state.pointerNorm}
+            restoring3dLabel={t("creature.restoring3d")}
+            dna={creatureDna}
+            conversationEnergy={creature.state.conversationEnergy}
+          />
+        </ThreeErrorBoundary>
 
         {/* Bottom gradient fade into chat area */}
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
@@ -451,9 +465,13 @@ export default function Home() {
 
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">
+        <GlobalFeedTicker />
         <WorldClassHub />
         <LivingFeed onGreetingReady={handleGreetingReady} />
       </div>
+
+      {/* World weather indicator */}
+      <WorldWeather />
 
       {/* ===== CHAT AREA — fills remaining space ===== */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">

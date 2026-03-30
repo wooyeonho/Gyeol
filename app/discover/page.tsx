@@ -43,6 +43,24 @@ function CardIcon({ type }: { type: string }) {
           <path d="m10 14 5-5-2 6-6 2 3-3Z" />
         </svg>
       );
+    case "room":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5Z" />
+          <path d="M9 21V14h6v7" />
+        </svg>
+      );
+    case "constellation":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="6" cy="12" r="1.5" />
+          <circle cx="18" cy="12" r="1.5" />
+          <circle cx="9" cy="19" r="1.5" />
+          <circle cx="16" cy="18" r="1.5" />
+          <path d="M12 6.5L6 10.5M12 6.5l6 4M6 13.5l3 4M18 13.5l-2 3.5M9.5 18.5l5.5-1" opacity=".5" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -53,6 +71,8 @@ const CARD_GRADIENTS = [
   "from-purple-500/20 to-fuchsia-500/5",
   "from-amber-500/20 to-orange-500/5",
   "from-emerald-500/20 to-teal-500/5",
+  "from-indigo-500/20 to-violet-500/5",
+  "from-rose-500/20 to-pink-500/5",
 ];
 
 const cardVariants = {
@@ -69,6 +89,8 @@ type DiscoverCounts = {
   album: number;
   social: number;
   explore: number;
+  room: number;
+  constellation: number;
 };
 
 export default function DiscoverPage() {
@@ -79,6 +101,8 @@ export default function DiscoverPage() {
     album: 0,
     social: 0,
     explore: 0,
+    room: 0,
+    constellation: 0,
   });
   const [loading, setLoading] = useState(true);
   const [challengeCompleted, setChallengeCompleted] = useState(0);
@@ -95,20 +119,24 @@ export default function DiscoverPage() {
 
     async function load() {
       try {
-        const [activityRes, albumRes, socialRes, exploreRes] = await Promise.all([
+        const [activityRes, albumRes, socialRes, exploreRes, roomRes, constellationRes] = await Promise.all([
           fetch("/api/activity"),
           fetch("/api/album"),
           fetch("/api/social"),
           fetch("/api/explore"),
+          fetch("/api/room"),
+          fetch("/api/constellation"),
         ]);
 
-        const [activityJson, albumJson, socialJson, exploreJson] = await Promise.all([
+        const [activityJson, albumJson, socialJson, exploreJson, roomJson, constellationJson] = await Promise.all([
           activityRes.ok ? activityRes.json().catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
           albumRes.ok ? albumRes.json().catch(() => ({ milestones: [] })) : Promise.resolve({ milestones: [] }),
           socialRes.ok
             ? socialRes.json().catch(() => ({ socialLogs: [], socialPosts: [], otherAgents: [] }))
             : Promise.resolve({ socialLogs: [], socialPosts: [], otherAgents: [] }),
           exploreRes.ok ? exploreRes.json().catch(() => ({ profiles: [] })) : Promise.resolve({ profiles: [] }),
+          roomRes.ok ? roomRes.json().catch(() => ({ objects: [] })) : Promise.resolve({ objects: [] }),
+          constellationRes.ok ? constellationRes.json().catch(() => ({ stars: [] })) : Promise.resolve({ stars: [] }),
         ]);
 
         if (!cancelled) {
@@ -120,6 +148,8 @@ export default function DiscoverPage() {
               (Array.isArray(socialJson.socialPosts) ? socialJson.socialPosts.length : 0) +
               (Array.isArray(socialJson.otherAgents) ? socialJson.otherAgents.length : 0),
             explore: Array.isArray(exploreJson.profiles) ? exploreJson.profiles.length : 0,
+            room: Array.isArray(roomJson.objects) ? roomJson.objects.length : 0,
+            constellation: Array.isArray(constellationJson.stars) ? constellationJson.stars.length : 0,
           });
         }
       } finally {
@@ -169,8 +199,24 @@ export default function DiscoverPage() {
         iconType: "explore",
         gradient: CARD_GRADIENTS[3],
       },
+      {
+        href: "/room",
+        count: counts.room,
+        title: t("roomPage.title"),
+        body: t("discover.roomBody"),
+        iconType: "room",
+        gradient: CARD_GRADIENTS[4],
+      },
+      {
+        href: "/constellation",
+        count: counts.constellation,
+        title: t("constellationPage.title"),
+        body: t("discover.constellationBody"),
+        iconType: "constellation",
+        gradient: CARD_GRADIENTS[5],
+      },
     ],
-    [counts.activity, counts.album, counts.social, counts.explore, t],
+    [counts.activity, counts.album, counts.social, counts.explore, counts.room, counts.constellation, t],
   );
 
   return (
