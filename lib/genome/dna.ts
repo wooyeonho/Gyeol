@@ -226,6 +226,32 @@ export function getRecessiveTraits(dna: CreatureDNA, n = 3): DNAAxis[] {
     .slice(0, n);
 }
 
+/**
+ * Parse and apply a dna_shift mutation string to a DNA profile.
+ * Format: "dna_shift:{axis}:{+|-}{amount}" e.g. "dna_shift:curiosity:+0.12"
+ * Returns the mutated DNA, or the original if the string is not a valid dna_shift.
+ */
+export function applyDnaShift(
+  currentDNA: CreatureDNA,
+  mutation: string,
+): { dna: CreatureDNA; axis: DNAAxis | null; delta: number } {
+  const match = mutation.match(/^dna_shift:(\w+):([+-])(\d+\.?\d*)$/);
+  if (!match) return { dna: currentDNA, axis: null, delta: 0 };
+
+  const [, axisStr, sign, amountStr] = match;
+  const axis = axisStr as DNAAxis;
+  if (!DNA_AXES.includes(axis)) return { dna: currentDNA, axis: null, delta: 0 };
+
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount)) return { dna: currentDNA, axis: null, delta: 0 };
+
+  const delta = sign === "+" ? amount : -amount;
+  const next = { ...currentDNA };
+  next[axis] = clamp(next[axis] + delta, 0, 1);
+
+  return { dna: next, axis, delta };
+}
+
 // --- helpers ---
 
 function clamp(v: number, min: number, max: number) {

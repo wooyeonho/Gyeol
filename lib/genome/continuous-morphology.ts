@@ -317,8 +317,8 @@ export function blendGeometryParams(
   subdivisions += morphComplexity * 1.5;
 
   return {
-    subdivisions: Math.round(Math.max(1, Math.min(6, subdivisions))),
-    faceting: clamp01(faceting),
+    subdivisions: Math.round(Math.max(1, subdivisions)),
+    faceting: Math.max(0, faceting),
     radius: 0.42,
   };
 }

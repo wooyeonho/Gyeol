@@ -69,14 +69,35 @@ export interface ForceEnvironment {
 
 // ─── Constants ───────────────────────────────────────────────────────
 
-/** Viewport bounds for creature movement (normalized -1..1) */
-const BOUNDS = 0.35;
+/** Base viewport bounds — DNA can expand this range */
+const BASE_BOUNDS = 0.35;
 /** Damping factor — how quickly velocity decays (0 = no damping, 1 = instant stop) */
 const LINEAR_DAMPING = 0.92;
 const ANGULAR_DAMPING = 0.88;
-/** Maximum velocity to prevent wild movement */
-const MAX_VELOCITY = 0.8;
+/** Base max velocity — DNA can push beyond this */
+const BASE_MAX_VELOCITY = 0.8;
 const MAX_ANGULAR_VELOCITY = 2.0;
+
+/**
+ * Derive effective movement bounds from DNA.
+ * Curious, independent, playful creatures roam wider.
+ * Stable, warm creatures stay closer to center.
+ */
+function getEffectiveBounds(dna: CreatureDNA): number {
+  const expansion = dna.curiosity * 0.15 + dna.independence * 0.1 + dna.playfulness * 0.08
+    - dna.stability * 0.05;
+  return BASE_BOUNDS + Math.max(0, expansion);
+}
+
+/**
+ * Derive effective max velocity from DNA.
+ * Intense, energetic creatures move faster.
+ */
+function getEffectiveMaxVelocity(dna: CreatureDNA): number {
+  const boost = dna.intensity * 0.3 + dna.playfulness * 0.2 + dna.curiosity * 0.15
+    - dna.stability * 0.1;
+  return BASE_MAX_VELOCITY + Math.max(0, boost);
+}
 
 // ─── Perlin-like noise ───────────────────────────────────────────────
 
@@ -227,7 +248,7 @@ export function computeForces(
 
   // ── 6. Boundary Repulsion ─────────────────────────────────────────
   // Soft walls — force increases exponentially near edges.
-  const boundaryForce = computeBoundaryForce(state.position);
+  const boundaryForce = computeBoundaryForce(state.position, dna);
   fx += boundaryForce.x;
   fy += boundaryForce.y;
 
@@ -330,10 +351,11 @@ export function stepForceSimulation(
   let vx = prev.velocity.x * LINEAR_DAMPING + force.x * dt;
   let vy = prev.velocity.y * LINEAR_DAMPING + force.y * dt;
 
-  // Clamp velocity
+  // Clamp velocity — DNA-dependent max speed
+  const maxVel = getEffectiveMaxVelocity(dna);
   const speed = Math.sqrt(vx * vx + vy * vy);
-  if (speed > MAX_VELOCITY) {
-    const scale = MAX_VELOCITY / speed;
+  if (speed > maxVel) {
+    const scale = maxVel / speed;
     vx *= scale;
     vy *= scale;
   }
@@ -341,8 +363,9 @@ export function stepForceSimulation(
   let px = prev.position.x + vx * dt;
   let py = prev.position.y + vy * dt;
 
-  // Hard clamp position to bounds (safety net)
-  const hardBound = BOUNDS * 1.2;
+  // Hard clamp position to bounds (safety net) — DNA-dependent
+  const bounds = getEffectiveBounds(dna);
+  const hardBound = bounds * 1.2;
   px = Math.max(-hardBound, Math.min(hardBound, px));
   py = Math.max(-hardBound, Math.min(hardBound, py));
 
@@ -520,25 +543,26 @@ function getMoodForce(
  * Soft boundary repulsion — exponentially stronger near edges.
  * Creates an invisible "soft wall" that the creature bounces off of.
  */
-function computeBoundaryForce(position: Vec2): Vec2 {
+function computeBoundaryForce(position: Vec2, dna: CreatureDNA): Vec2 {
   let fx = 0;
   let fy = 0;
 
-  const margin = BOUNDS * 0.3; // Start pushing at 70% of bounds
+  const bounds = getEffectiveBounds(dna);
+  const margin = bounds * 0.3; // Start pushing at 70% of bounds
 
-  if (position.x > BOUNDS - margin) {
-    const penetration = (position.x - (BOUNDS - margin)) / margin;
+  if (position.x > bounds - margin) {
+    const penetration = (position.x - (bounds - margin)) / margin;
     fx -= penetration * penetration * 0.3;
-  } else if (position.x < -(BOUNDS - margin)) {
-    const penetration = (-(BOUNDS - margin) - position.x) / margin;
+  } else if (position.x < -(bounds - margin)) {
+    const penetration = (-(bounds - margin) - position.x) / margin;
     fx += penetration * penetration * 0.3;
   }
 
-  if (position.y > BOUNDS - margin) {
-    const penetration = (position.y - (BOUNDS - margin)) / margin;
+  if (position.y > bounds - margin) {
+    const penetration = (position.y - (bounds - margin)) / margin;
     fy -= penetration * penetration * 0.3;
-  } else if (position.y < -(BOUNDS - margin)) {
-    const penetration = (-(BOUNDS - margin) - position.y) / margin;
+  } else if (position.y < -(bounds - margin)) {
+    const penetration = (-(bounds - margin) - position.y) / margin;
     fy += penetration * penetration * 0.3;
   }
 
