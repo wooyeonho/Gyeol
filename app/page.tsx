@@ -208,7 +208,9 @@ export default function Home() {
   }, [creature]);
 
   const handleCelebrationEnd = useCallback(async () => {
-    await fetch("/api/agent/celebration/clear", { method: "POST" });
+    try {
+      await fetch("/api/agent/celebration/clear", { method: "POST" });
+    } catch { /* network error — best-effort clear */ }
     void fetchAgentState({ silent: true });
   }, [fetchAgentState]);
 
