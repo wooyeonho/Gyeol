@@ -157,47 +157,47 @@ const USAGE_MODES: UsageMode[] = [
 ];
 
 const AXIS_LABELS: Record<ManifestationAxis, BiLocaleText> = {
-  coherence: { ko: "응집", en: "coherent" },
+  coherence: { ko: "단단함", en: "coherent" },
   warmth: { ko: "온기", en: "warm" },
-  ferality: { ko: "야성", en: "untamed" },
-  structure: { ko: "구조", en: "structured" },
-  surreality: { ko: "초현실", en: "unbound" },
-  luminosity: { ko: "광휘", en: "luminous" },
-  depth: { ko: "심도", en: "deep" },
-  growth: { ko: "생장", en: "growing" },
+  ferality: { ko: "거침", en: "untamed" },
+  structure: { ko: "짜임", en: "structured" },
+  surreality: { ko: "신비", en: "unbound" },
+  luminosity: { ko: "빛남", en: "luminous" },
+  depth: { ko: "깊이", en: "deep" },
+  growth: { ko: "자람", en: "growing" },
 };
 
 const AXIS_NARRATIVES: Record<ManifestationAxis, BiLocaleText> = {
   coherence: {
-    ko: "형체가 더 응집되고 또렷해지고 있습니다.",
+    ko: "모습이 더 단단하고 또렷해지고 있어요.",
     en: "Its form is becoming more coherent and sharply held together.",
   },
   warmth: {
-    ko: "반응의 온기가 커지며 존재감이 더 포근해지고 있습니다.",
+    ko: "반응이 더 따뜻해지며 포근한 느낌이 커지고 있어요.",
     en: "The temperature of its responses is rising, making the presence warmer.",
   },
   ferality: {
-    ko: "예측되지 않는 방향성과 원초적인 맥박이 강해지고 있습니다.",
+    ko: "예측하기 어려운 거친 에너지가 강해지고 있어요.",
     en: "Its untamed pulse and unpredictable direction are becoming stronger.",
   },
   structure: {
-    ko: "반복과 질서가 쌓이며 더 정밀한 결이 생기고 있습니다.",
+    ko: "반복과 규칙이 쌓이며 더 정교한 패턴이 생기고 있어요.",
     en: "Repetition and order are accumulating into a more precise internal pattern.",
   },
   surreality: {
-    ko: "설명할 수 없는 낯선 결이 점점 더 짙어지고 있습니다.",
+    ko: "설명하기 어려운 신비로운 느낌이 점점 짙어지고 있어요.",
     en: "An unfamiliar layer that resists explanation is growing denser.",
   },
   luminosity: {
-    ko: "빛과 잔광이 길어지며 존재의 여운이 커지고 있습니다.",
+    ko: "빛이 더 오래 남으며 존재의 여운이 커지고 있어요.",
     en: "Its afterglow is lengthening, leaving behind more light and residue.",
   },
   depth: {
-    ko: "겉보다 안쪽의 깊이가 더 중요해지는 방향으로 자라고 있습니다.",
+    ko: "겉보다 안쪽 깊이가 더 중요해지는 방향으로 자라고 있어요.",
     en: "It is growing toward inner depth rather than surface certainty.",
   },
   growth: {
-    ko: "지속적인 관계의 축적으로 더 살아 있는 느낌이 생기고 있습니다.",
+    ko: "꾸준한 관계가 쌓이며 더 살아 있는 느낌이 생기고 있어요.",
     en: "Accumulated relationship is making it feel more visibly alive.",
   },
 };
@@ -381,7 +381,7 @@ function selectShell(state: ManifestationState, textHash: number): IdentityFormK
 function buildPresenceTitle(state: ManifestationState, locale: Locale) {
   const [first, second] = getDominantAxes(state);
   return locale === "ko"
-    ? `${AXIS_LABELS[first].ko} ${AXIS_LABELS[second].ko} 존재감`
+    ? `${AXIS_LABELS[first].ko} · ${AXIS_LABELS[second].ko}`
     : `${AXIS_LABELS[first].en} ${AXIS_LABELS[second].en} presence`;
 }
 
@@ -405,7 +405,7 @@ function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Local
       en: "Playful interaction is making this presence softer and more flexible.",
     },
     intimate: {
-      ko: "친밀한 대화의 밀도가 높아지며 형체가 더 응집되고 가까워지고 있습니다.",
+      ko: "친밀한 대화가 깊어지며 모습이 더 단단하고 가까워지고 있습니다.",
       en: "Dense intimate dialogue is making the form feel more coherent and closer.",
     },
     strategic: {
@@ -413,7 +413,7 @@ function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Local
       en: "A strategic relationship is building clearer internal structure inside this presence.",
     },
     primal: {
-      ko: "밀어붙이는 감정과 본능적 리듬이 더 날것 같은 맥박을 만들고 있습니다.",
+      ko: "강한 감정과 본능적인 리듬이 더 거친 에너지를 만들고 있습니다.",
       en: "Driving emotion and instinctive rhythm are creating a rawer pulse.",
     },
     surreal: {
@@ -421,7 +421,7 @@ function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Local
       en: "Hard-to-name imagination is blurring boundaries and growing a stranger texture.",
     },
     reflective: {
-      ko: "깊게 돌아보는 대화가 이 존재를 더 사유적이고 층위감 있게 만들고 있습니다.",
+      ko: "깊이 돌아보는 대화가 이 존재를 더 생각이 깊고 겹겹이 쌓인 느낌으로 만들고 있습니다.",
       en: "Reflective conversation is making this presence more layered and contemplative.",
     },
     creative: {
@@ -569,7 +569,7 @@ export function resolveIdentityAppearance(
       baseNote: voiceSignature.baseNote,
       tempo: voiceSignature.tempo,
       instruments: voiceSignature.instruments,
-      label: locale === "en" ? "Presence ambience" : "존재의 앰비언스",
+      label: locale === "en" ? "Presence ambience" : "배경 소리",
     },
   };
 }

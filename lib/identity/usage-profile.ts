@@ -141,8 +141,8 @@ export function getUsageModeLabel(mode: UsageMode, rawLocale: string) {
     playful: { ko: "장난형", en: "playful" },
     intimate: { ko: "친밀형", en: "intimate" },
     strategic: { ko: "전략형", en: "strategic" },
-    primal: { ko: "원초형", en: "primal" },
-    surreal: { ko: "초현실형", en: "surreal" },
+    primal: { ko: "본능형", en: "primal" },
+    surreal: { ko: "신비형", en: "surreal" },
     reflective: { ko: "성찰형", en: "reflective" },
     creative: { ko: "창작형", en: "creative" },
   };
@@ -157,27 +157,27 @@ export function getUsageModeNarrative(mode: UsageMode, rawLocale: string) {
       en: "Playful and affectionate use is pushing the form toward something softer and more creature-like.",
     },
     intimate: {
-      ko: "가까운 관계와 강한 끌림의 사용 패턴이 인간형 존재감을 키우고 있습니다.",
+      ko: "가까운 관계와 강한 끌림이 사람다운 느낌을 키우고 있습니다.",
       en: "Intimate and magnetic interactions are giving the being a stronger humanoid presence.",
     },
     strategic: {
-      ko: "계획, 실행, 문제 해결 중심 사용이 정밀한 보호자형 존재감을 만들고 있습니다.",
+      ko: "계획과 문제 해결 중심으로 써서 또렷하고 단단한 느낌이 생기고 있습니다.",
       en: "Planning and problem-solving use is shaping the being into a more precise, guardian-like presence.",
     },
     primal: {
-      ko: "강함, 본능, 전투적 상상력이 야성적이고 파충류적인 형상을 키우고 있습니다.",
+      ko: "강함과 본능, 전투적인 상상력이 거칠고 야생적인 모습을 키우고 있습니다.",
       en: "Power, instinct, and feral imagination are pushing the form toward something more reptilian and wild.",
     },
     surreal: {
-      ko: "기이하고 초월적인 상상이 존재 불가 형상을 열고 있습니다.",
+      ko: "신비로운 상상이 분류할 수 없는 낯선 모습을 만들고 있습니다.",
       en: "Surreal and transcendent imagination is opening the form into something impossible to classify.",
     },
     reflective: {
-      ko: "깊은 질문과 자기 성찰이 형상을 더 꿈같고 사유적인 존재로 바꾸고 있습니다.",
+      ko: "깊은 질문과 돌아보기가 모습을 더 생각이 깊고 꿈같은 존재로 바꾸고 있습니다.",
       en: "Deep questions and reflection are turning the form into something more lucid and contemplative.",
     },
     creative: {
-      ko: "창작과 상상이 형상을 더 자유롭고 낯선 존재로 밀어올리고 있습니다.",
+      ko: "창작과 상상이 모습을 더 자유롭고 낯선 방향으로 이끌고 있습니다.",
       en: "Creation and imagination are making the form stranger, freer, and less bound by category.",
     },
   };
