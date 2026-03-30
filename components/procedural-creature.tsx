@@ -297,7 +297,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const haloPulse = 1 + Math.sin(t * 0.8) * 0.05 + excitePulse * 0.1;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (0.08 + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04) * activityDim;
+        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04) * activityDim;
     }
 
     // Eye tracking: blend pointer + look-around offset
@@ -318,8 +318,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Apply eye scale: X=listening-widened, Y=blink+squint, Z=pupil scale from mood
     const es = eyeScaleRef.current;
     const ps = moodMod.pupilScale;
-    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es * ps, es * eyeOpenY, es);
-    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es * ps, es * eyeOpenY, es);
+    if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY, es * ps);
+    if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY, es * ps);
 
     // ── Appendage dynamic animations ──
     // Crown: sway with breathing + gentle wind oscillation
