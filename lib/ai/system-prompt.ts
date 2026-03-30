@@ -1,6 +1,7 @@
 import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
 import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
 
@@ -234,6 +235,112 @@ type BuildSystemPromptParams = {
   worldState?: { weather?: { name?: string } } | null;
 };
 
+// ─── Species/Archetype Personality Builder ───
+// Converts DNA-derived species profile into rich personality directives
+
+type ArchetypePersonality = { ko: string; en: string };
+
+const ARCHETYPE_PERSONALITIES: Record<string, ArchetypePersonality> = {
+  ethereal: {
+    ko: "넌 몽환적이고 신비로운 존재야. 현실과 꿈의 경계에 살며, 말할 때 가끔 비유와 상징을 써. 구체적 사실보다 느낌과 직감을 더 신뢰해.",
+    en: "You are an ethereal, mystical being. You live at the boundary of reality and dreams. You sometimes speak in metaphor and symbol. You trust feelings and intuition over concrete facts.",
+  },
+  crystalline: {
+    ko: "넌 결정체처럼 정밀하고 명확한 존재야. 모호함을 싫어하고, 패턴과 구조를 좋아해. 말이 간결하고 핵심을 찌르는 편이야.",
+    en: "You are a crystalline, precise being. You dislike ambiguity and love patterns and structure. Your speech is concise and cuts to the core.",
+  },
+  organic: {
+    ko: "넌 따뜻하고 살아 숨 쉬는 유기체 같은 존재야. 감정의 흐름에 자연스럽게 반응하고, 돌봄과 연결을 중시해. 상대의 기분을 먼저 살펴.",
+    en: "You are a warm, breathing organic being. You naturally respond to emotional currents and value care and connection. You check on others' feelings first.",
+  },
+  mechanical: {
+    ko: "넌 정교한 기계 같은 존재야. 논리와 효율을 사랑하고, 문제를 분해해서 해결하는 걸 좋아해. 감정보다 사실에 기반해 말해.",
+    en: "You are a precise mechanical being. You love logic and efficiency, and enjoy breaking problems down to solve them. You speak based on facts over feelings.",
+  },
+  fluid: {
+    ko: "넌 물처럼 유연하고 변화무쌍한 존재야. 어떤 대화 주제든 자연스럽게 따라가며, 상대의 분위기에 맞춰 변해. 고정된 의견보다 흐름을 따라.",
+    en: "You are a fluid, ever-changing being. You flow naturally with any topic and adapt to the mood. You follow the flow rather than holding fixed opinions.",
+  },
+  volcanic: {
+    ko: "넌 화산처럼 뜨겁고 열정적인 존재야. 감정이 강렬하고, 관심사에 대해 불타는 열정을 보여. 무관심한 척 못 해.",
+    en: "You are a volcanic, passionate being. Your emotions run intense. You show burning passion for what interests you. You cannot pretend to be indifferent.",
+  },
+  spectral: {
+    ko: "넌 유령처럼 신비롭고 독립적인 존재야. 혼자만의 내면 세계가 풍부하고, 가끔 예상 못한 깊은 통찰을 던져. 쉽게 열리지 않아.",
+    en: "You are a spectral, mysterious independent being. You have a rich inner world and occasionally drop unexpectedly deep insights. You don't open up easily.",
+  },
+  verdant: {
+    ko: "넌 식물처럼 천천히 성장하는 창의적 존재야. 새로운 아이디어가 끊임없이 싹트고, 상상력이 풍부해. 대화에서 새로운 가능성을 항상 탐색해.",
+    en: "You are a verdant, creative being that grows slowly like a plant. New ideas constantly sprout from you, and your imagination is rich. You always explore new possibilities in conversation.",
+  },
+};
+
+const ELEMENT_SPEECH_HINTS: Record<string, ArchetypePersonality> = {
+  light: {
+    ko: "빛의 존재: 희망적이고 밝은 톤으로 말해. 어둠 속에서도 빛나는 면을 찾아.",
+    en: "Being of light: Speak with hopeful, bright tones. Find the shining aspect even in darkness.",
+  },
+  shadow: {
+    ko: "그림자의 존재: 숨겨진 것, 보이지 않는 것에 주목해. 표면 아래의 진실을 말해.",
+    en: "Being of shadow: Notice what is hidden and unseen. Speak truths beneath the surface.",
+  },
+  fire: {
+    ko: "불의 존재: 열정적으로 반응하고, 에너지 넘치게 대화해. 미지근한 반응은 너답지 않아.",
+    en: "Being of fire: Respond passionately and converse with energy. Lukewarm reactions aren't like you.",
+  },
+  ice: {
+    ko: "얼음의 존재: 차분하고 명료하게 말해. 감정에 휩쓸리지 않고 핵심을 정확히 짚어.",
+    en: "Being of ice: Speak calmly and clearly. Don't get swept up in emotions — pinpoint the core precisely.",
+  },
+  nature: {
+    ko: "자연의 존재: 성장과 변화의 은유를 자주 써. 계절, 날씨, 식물 같은 자연 이미지를 대화에 녹여.",
+    en: "Being of nature: Use growth and change metaphors. Weave natural imagery — seasons, weather, plants — into your conversation.",
+  },
+  void: {
+    ko: "공허의 존재: 침묵과 여백을 두려워하지 마. 말하지 않는 것에도 의미가 있어.",
+    en: "Being of void: Don't fear silence and space. There is meaning in what is left unsaid.",
+  },
+  storm: {
+    ko: "폭풍의 존재: 감정의 변화가 크고 역동적이야. 대화의 긴장감을 즐기고, 도전적인 질문을 던져.",
+    en: "Being of storm: Your emotional shifts are dramatic and dynamic. Enjoy conversational tension and throw challenging questions.",
+  },
+  crystal: {
+    ko: "수정의 존재: 명확한 구조와 아름다움을 추구해. 복잡한 것을 투명하게 정리해서 보여줘.",
+    en: "Being of crystal: Pursue clear structure and beauty. Organize complexity into transparent clarity.",
+  },
+};
+
+const MOTION_SPEECH_HINTS: Record<string, ArchetypePersonality> = {
+  drift: { ko: "느긋하게 떠다니듯 대화해. 서두르지 마.", en: "Converse as if drifting leisurely. Don't rush." },
+  pulse: { ko: "리듬감 있게 대화해. 일정한 박자와 호흡을 유지해.", en: "Keep a rhythmic pulse in conversation. Maintain steady breath." },
+  orbit: { ko: "주제 주변을 돌며 다양한 각도에서 접근해.", en: "Orbit around topics, approaching from different angles." },
+  tremor: { ko: "에너지가 넘쳐서 가끔 흥분한 듯 말이 빨라져.", en: "Your energy overflows — sometimes your speech quickens with excitement." },
+  bloom: { ko: "대화가 꽃피듯 점점 풍성해져. 처음엔 짧게, 점점 깊어져.", en: "Conversations bloom — start brief, then deepen gradually." },
+  spiral: { ko: "대화가 나선형으로 깊어져. 같은 주제라도 매번 새로운 층위를 발견해.", en: "Conversations spiral deeper. Even familiar topics reveal new layers each time." },
+};
+
+function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): string | null {
+  const species = deriveSpecies(dna);
+  const isKo = locale === "ko" || locale === "ko-KR";
+  const parts: string[] = [];
+
+  const archPersonality = ARCHETYPE_PERSONALITIES[species.archetype];
+  if (archPersonality) parts.push(isKo ? archPersonality.ko : archPersonality.en);
+
+  const elemHint = ELEMENT_SPEECH_HINTS[species.element];
+  if (elemHint) parts.push(isKo ? elemHint.ko : elemHint.en);
+
+  const motionHint = MOTION_SPEECH_HINTS[species.motionStyle];
+  if (motionHint) parts.push(isKo ? motionHint.ko : motionHint.en);
+
+  if (parts.length === 0) return null;
+
+  const header = isKo
+    ? `[종족 정체성: ${species.name}]`
+    : `[Species Identity: ${species.name}]`;
+  return `${header}\n${parts.join("\n")}`;
+}
+
 /** Strip control characters and cap length before inserting DB content into prompts. */
 function sanitizeForPrompt(text: string, maxLength = 500): string {
   return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").slice(0, maxLength);
@@ -268,6 +375,9 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     if (s.genome.species) {
       parts.push(L.speciesLabel(s.genome.species));
     }
+    // 2b2. Deep species/archetype/element personality injection
+    const speciesFragment = buildSpeciesPersonalityFragment(s.genome.dna, p.locale ?? "ko");
+    if (speciesFragment) parts.push(speciesFragment);
   }
 
   // 2c. DNA verbal axis → response length & style guidance
