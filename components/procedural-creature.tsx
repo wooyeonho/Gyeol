@@ -20,6 +20,8 @@ interface ProceduralCreatureProps {
   isListening?: boolean;
   mood?: string | null;
   vitality?: number;
+  /** 0..1 conversation energy — accumulated from chat frequency/intensity, decays over time */
+  conversationEnergy?: number;
 }
 
 const SPHERE_DETAIL = 4; // icosahedron subdivision level
@@ -77,7 +79,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   isListening = false,
   mood,
   vitality = 1,
+  conversationEnergy = 0,
 }: ProceduralCreatureProps) {
+  // Conversation energy drives visual intensity multiplier
+  const energy = conversationEnergy ?? 0;
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
@@ -154,13 +159,34 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2);
 
   // Mood-based visual modifiers — drives expression, glow color, animation speed
+  // Expanded vocabulary: every mood from chat history, heartbeat, and user interaction gets a unique visual signature
   const moodMod = useMemo(() => {
     switch (mood) {
+      // === Positive/High-energy moods ===
       case "joyful": case "energetic": return { emissiveBoost: 0.2, speedMult: 1.3, tiltBias: 0.02, eyeSquint: 0.6, pupilScale: 1.1, auraColor: "#ffdd44", auraOpacity: 0.18, bodySquash: 0.92, bodyStretch: 1.08 };
-      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.5, tiltBias: -0.06, eyeSquint: 1.0, pupilScale: 1.2, auraColor: "#4466cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 0.95 };
+      case "playful": case "mischievous": return { emissiveBoost: 0.18, speedMult: 1.4, tiltBias: 0.05, eyeSquint: 0.7, pupilScale: 1.15, auraColor: "#ff88cc", auraOpacity: 0.17, bodySquash: 0.88, bodyStretch: 1.12 };
+      case "excited": case "thrilled": return { emissiveBoost: 0.3, speedMult: 1.6, tiltBias: 0.03, eyeSquint: 0.55, pupilScale: 1.2, auraColor: "#ffaa00", auraOpacity: 0.24, bodySquash: 0.85, bodyStretch: 1.15 };
+      case "proud": case "confident": return { emissiveBoost: 0.22, speedMult: 1.1, tiltBias: 0.06, eyeSquint: 0.75, pupilScale: 0.95, auraColor: "#ffd700", auraOpacity: 0.2, bodySquash: 1.05, bodyStretch: 1.05 };
+      case "inspired": case "creative": return { emissiveBoost: 0.2, speedMult: 1.2, tiltBias: 0.04, eyeSquint: 0.85, pupilScale: 1.25, auraColor: "#88ffdd", auraOpacity: 0.18, bodySquash: 0.95, bodyStretch: 1.06 };
+      case "loving": case "tender": case "affectionate": return { emissiveBoost: 0.15, speedMult: 0.9, tiltBias: 0.03, eyeSquint: 0.65, pupilScale: 1.3, auraColor: "#ff6699", auraOpacity: 0.2, bodySquash: 0.94, bodyStretch: 1.04 };
+      // === Calm/Neutral moods ===
       case "curious": return { emissiveBoost: 0.08, speedMult: 1.1, tiltBias: 0.04, eyeSquint: 1.0, pupilScale: 1.3, auraColor: "#44ddaa", auraOpacity: 0.14, bodySquash: 1.0, bodyStretch: 1.02 };
-      case "angry": return { emissiveBoost: 0.25, speedMult: 1.6, tiltBias: -0.02, eyeSquint: 0.5, pupilScale: 0.8, auraColor: "#ff3333", auraOpacity: 0.22, bodySquash: 1.06, bodyStretch: 0.96 };
+      case "thoughtful": case "contemplative": return { emissiveBoost: 0.05, speedMult: 0.7, tiltBias: 0.01, eyeSquint: 0.9, pupilScale: 1.1, auraColor: "#7788cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "dreamy": case "whimsical": return { emissiveBoost: 0.1, speedMult: 0.6, tiltBias: 0.02, eyeSquint: 0.8, pupilScale: 1.2, auraColor: "#cc88ff", auraOpacity: 0.16, bodySquash: 0.97, bodyStretch: 1.03 };
+      case "focused": case "determined": return { emissiveBoost: 0.12, speedMult: 1.0, tiltBias: -0.01, eyeSquint: 0.7, pupilScale: 0.85, auraColor: "#44aaff", auraOpacity: 0.15, bodySquash: 1.02, bodyStretch: 1.0 };
+      case "peaceful": case "serene": case "calm": return { emissiveBoost: 0.02, speedMult: 0.5, tiltBias: 0, eyeSquint: 0.85, pupilScale: 1.05, auraColor: "#aaddff", auraOpacity: 0.1, bodySquash: 1.0, bodyStretch: 1.0 };
+      case "neutral": return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
+      // === Negative/Low-energy moods ===
+      case "melancholy": case "sad": return { emissiveBoost: -0.1, speedMult: 0.5, tiltBias: -0.06, eyeSquint: 1.0, pupilScale: 1.2, auraColor: "#4466cc", auraOpacity: 0.12, bodySquash: 1.0, bodyStretch: 0.95 };
+      case "lonely": case "nostalgic": return { emissiveBoost: -0.05, speedMult: 0.55, tiltBias: -0.04, eyeSquint: 0.95, pupilScale: 1.15, auraColor: "#6644aa", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 0.97 };
+      case "angry": case "frustrated": return { emissiveBoost: 0.25, speedMult: 1.6, tiltBias: -0.02, eyeSquint: 0.5, pupilScale: 0.8, auraColor: "#ff3333", auraOpacity: 0.22, bodySquash: 1.06, bodyStretch: 0.96 };
       case "scared": case "anxious": return { emissiveBoost: 0.05, speedMult: 1.4, tiltBias: -0.03, eyeSquint: 1.0, pupilScale: 1.5, auraColor: "#aa44ff", auraOpacity: 0.16, bodySquash: 0.9, bodyStretch: 1.1 };
+      case "shy": case "embarrassed": return { emissiveBoost: 0.08, speedMult: 0.8, tiltBias: -0.05, eyeSquint: 0.6, pupilScale: 0.9, auraColor: "#ff99aa", auraOpacity: 0.14, bodySquash: 0.93, bodyStretch: 0.98 };
+      case "jealous": case "envious": return { emissiveBoost: 0.15, speedMult: 1.2, tiltBias: -0.03, eyeSquint: 0.55, pupilScale: 0.85, auraColor: "#44cc44", auraOpacity: 0.18, bodySquash: 1.04, bodyStretch: 0.98 };
+      case "bored": case "sleepy": return { emissiveBoost: -0.08, speedMult: 0.4, tiltBias: -0.07, eyeSquint: 0.5, pupilScale: 0.9, auraColor: "#888899", auraOpacity: 0.08, bodySquash: 1.02, bodyStretch: 0.93 };
+      case "surprised": case "shocked": return { emissiveBoost: 0.2, speedMult: 1.5, tiltBias: 0.01, eyeSquint: 1.3, pupilScale: 1.6, auraColor: "#ffff44", auraOpacity: 0.2, bodySquash: 0.85, bodyStretch: 1.18 };
+      case "confused": case "puzzled": return { emissiveBoost: 0.04, speedMult: 0.9, tiltBias: 0.06, eyeSquint: 1.1, pupilScale: 1.15, auraColor: "#ddaa44", auraOpacity: 0.13, bodySquash: 0.98, bodyStretch: 1.01 };
+      case "grateful": case "touched": return { emissiveBoost: 0.12, speedMult: 0.85, tiltBias: 0.02, eyeSquint: 0.7, pupilScale: 1.2, auraColor: "#ffccaa", auraOpacity: 0.17, bodySquash: 0.96, bodyStretch: 1.03 };
       default: return { emissiveBoost: 0, speedMult: 1, tiltBias: 0, eyeSquint: 1.0, pupilScale: 1.0, auraColor: "#ffffff", auraOpacity: 0.08, bodySquash: 1.0, bodyStretch: 1.0 };
     }
   }, [mood]);
@@ -244,15 +270,19 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, 0, 0.06);
     }
 
-    // Breathing scale with mood influence
-    const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult);
-    const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
-    const breathScale = 1 + breathSin * appearance.breatheDepth + heartbeat + excitePulse * 0.12;
+    // === CONVERSATION ENERGY: chat history drives visual intensity ===
+    // energy (0..1) amplifies breathing, rotation, wave amplitude, aura brightness
+    const energyMult = 1 + energy * 0.5; // 1.0 at rest, 1.5 at peak conversation
+
+    // Breathing scale with mood + energy influence
+    const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult);
+    const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
+    const breathScale = 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12;
     const s = scale * appearance.scale * breathScale;
     groupRef.current.scale.lerp(new THREE.Vector3(s, s, s), 0.08);
 
-    // Idle rotation + mood tilt + listening lean
-    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult;
+    // Idle rotation + mood tilt + listening lean + energy-boosted movement
+    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult;
     groupRef.current.rotation.y += rotSpeed * 0.01;
     groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias;
     // Lean forward on Z axis when listening
@@ -280,7 +310,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       if (positions && (positions as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions) {
         const base = (positions as THREE.BufferAttribute & { _basePositions: Float32Array })._basePositions;
         const arr = positions.array as Float32Array;
-        const waveAmp = 0.008 * activityMult * moodMod.speedMult;
+        const waveAmp = 0.008 * activityMult * moodMod.speedMult * energyMult;
         for (let i = 0; i < arr.length; i += 3) {
           const bx = base[i], by = base[i + 1], bz = base[i + 2];
           const wave = Math.sin(bx * 8 + t * 2) * Math.cos(by * 6 + t * 1.5) * waveAmp;
@@ -292,12 +322,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     }
 
-    // === FRESNEL HALO: pulsing glow sphere ===
+    // === FRESNEL HALO: pulsing glow sphere — energy amplifies brightness ===
     if (haloRef.current) {
-      const haloPulse = 1 + Math.sin(t * 0.8) * 0.05 + excitePulse * 0.1;
+      const haloPulse = 1 + Math.sin(t * 0.8 * energyMult) * 0.05 + excitePulse * 0.1 + energy * 0.08;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04) * activityDim;
+        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * activityDim;
     }
 
     // Eye tracking: blend pointer + look-around offset

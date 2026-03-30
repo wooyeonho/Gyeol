@@ -372,6 +372,7 @@ export default function Home() {
           pointerNorm={creature.state.pointerNorm}
           restoring3dLabel={t("creature.restoring3d")}
           dna={creatureDna}
+          conversationEnergy={creature.state.conversationEnergy}
         />
 
         {/* Bottom gradient fade into chat area */}
