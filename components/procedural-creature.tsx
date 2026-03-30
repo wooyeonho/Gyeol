@@ -268,8 +268,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? (1 + excitePulse * 0.12) : 1);
       const currentScaleX = meshRef.current.scale.x;
       const currentScaleY = meshRef.current.scale.y;
+      const currentScaleZ = meshRef.current.scale.z;
       meshRef.current.scale.x = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
-      meshRef.current.scale.z = THREE.MathUtils.lerp(currentScaleX, squashTarget, 0.06);
+      meshRef.current.scale.z = THREE.MathUtils.lerp(currentScaleZ, squashTarget, 0.06);
       meshRef.current.scale.y = THREE.MathUtils.lerp(currentScaleY, stretchTarget, 0.06);
     }
 
