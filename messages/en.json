@@ -769,6 +769,7 @@
     "birthSpark": "Something is awakening...",
     "birthAlive": "Life is forming...",
     "birthNotice": "Born.",
+    "birthUnique": "This creature is the only one of its kind in the world. Yours alone.",
     "birthDNA": "DNA is being determined..."
   },
   "evolution": {

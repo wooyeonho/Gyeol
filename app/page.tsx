@@ -136,26 +136,29 @@ export default function Home() {
     locale
   );
   // Derive emotion-based sound profile dynamically from agent state
+  // Now passes creature mood directly for richer 28-mood sound mapping
   const emotionMood = useMemo(() => {
     const v = agentState?.vitality ?? 0.5;
     const trust = agentState?.intimacy_score ?? 0.3;
-    const mood = agentState?.mood;
-    const tone = mood === "joyful" || mood === "energetic" ? "positive" as const
-      : mood === "melancholy" ? "negative" as const
-      : mood ? "neutral" as const
+    const creatureMood = agentState?.mood ?? null;
+    const tone = creatureMood === "joyful" || creatureMood === "energetic" ? "positive" as const
+      : creatureMood === "melancholy" ? "negative" as const
+      : creatureMood ? "neutral" as const
       : null;
-    return deriveEmotionMood(v, trust, tone);
+    return deriveEmotionMood(v, trust, tone, creatureMood);
   }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
 
   const soundProfile = useMemo(() => {
-    const emotionProfile = getEmotionSoundProfile(emotionMood);
+    const energyMult = 1 + (creature.state.conversationEnergy ?? 0) * 0.5;
+    const emotionProfile = getEmotionSoundProfile(emotionMood, energyMult);
     return {
       base_note: emotionProfile.base_note,
       tempo: emotionProfile.tempo,
       instruments: emotionProfile.instruments,
       scale: emotionProfile.scale,
+      volume: emotionProfile.volume,
     };
-  }, [emotionMood]);
+  }, [emotionMood, creature.state.conversationEnergy]);
 
   const lastReward = useChatStore((s) => s.lastReward);
   const clearReward = useChatStore((s) => s.clearReward);

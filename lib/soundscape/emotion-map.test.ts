@@ -18,14 +18,14 @@ describe("deriveEmotionMood", () => {
     expect(deriveEmotionMood(0.6, 0.7, null)).toBe("curious");
   });
 
-  it("returns reflective for very low vitality", () => {
-    expect(deriveEmotionMood(0.2, 0.3, null)).toBe("reflective");
+  it("returns thoughtful for very low vitality", () => {
+    expect(deriveEmotionMood(0.2, 0.3, null)).toBe("thoughtful");
   });
 
-  it("returns calm as default", () => {
-    expect(deriveEmotionMood(0.5, 0.4, "neutral")).toBe("calm");
-    expect(deriveEmotionMood(0.5, 0.4, null)).toBe("calm");
-    expect(deriveEmotionMood(0.5, 0.4)).toBe("calm");
+  it("returns peaceful as default", () => {
+    expect(deriveEmotionMood(0.5, 0.4, "neutral")).toBe("peaceful");
+    expect(deriveEmotionMood(0.5, 0.4, null)).toBe("peaceful");
+    expect(deriveEmotionMood(0.5, 0.4)).toBe("peaceful");
   });
 
   it("handles boundary values for joyful check", () => {
@@ -36,7 +36,7 @@ describe("deriveEmotionMood", () => {
 });
 
 describe("getEmotionSoundProfile", () => {
-  const moods = ["calm", "curious", "joyful", "melancholy", "energetic", "reflective"] as const;
+  const moods = ["peaceful", "curious", "joyful", "melancholy", "energetic", "thoughtful", "playful", "scared", "sleepy"] as const;
 
   for (const mood of moods) {
     it(`returns valid profile for ${mood}`, () => {
@@ -46,14 +46,27 @@ describe("getEmotionSoundProfile", () => {
       expect(profile.tempo).toBeGreaterThan(0);
       expect(profile.instruments.length).toBeGreaterThan(0);
       expect(profile.scale.length).toBeGreaterThan(0);
+      expect(profile.volume).toBeGreaterThan(0);
+      expect(profile.volume).toBeLessThanOrEqual(1);
     });
   }
 
-  it("calm has slow tempo", () => {
-    expect(getEmotionSoundProfile("calm").tempo).toBe(60);
+  it("peaceful has slow tempo", () => {
+    expect(getEmotionSoundProfile("peaceful").tempo).toBeLessThan(70);
   });
 
   it("energetic has fast tempo", () => {
-    expect(getEmotionSoundProfile("energetic").tempo).toBe(120);
+    expect(getEmotionSoundProfile("energetic").tempo).toBeGreaterThan(100);
+  });
+
+  it("legacy mood 'calm' maps to peaceful", () => {
+    expect(getEmotionSoundProfile("calm").mood).toBe("peaceful");
+  });
+
+  it("energy multiplier boosts tempo and volume", () => {
+    const base = getEmotionSoundProfile("neutral", 1);
+    const boosted = getEmotionSoundProfile("neutral", 2);
+    expect(boosted.tempo).toBeGreaterThan(base.tempo);
+    expect(boosted.volume).toBeGreaterThanOrEqual(base.volume);
   });
 });

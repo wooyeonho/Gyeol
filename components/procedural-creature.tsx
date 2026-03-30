@@ -113,8 +113,14 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const appearance = useMemo(() => deriveDNAAppearance(dna, species), [dna, species]);
   const morphWeights = useMemo(() => deriveMorphWeights(dna, species), [dna, species]);
 
+  // DNA-driven body elongation: use bodyRatio from appearance (derived from verbal + spatial - stability)
+  // Range: 0.7 (squat) to 1.4 (tall/elongated)
+  const bodyElongation = useMemo(() => 0.7 + appearance.bodyRatio * 0.7, [appearance.bodyRatio]);
+  // DNA-driven asymmetry: lower symmetry = more organic variance per vertex
+  const asymmetryFactor = useMemo(() => Math.max(0, 1 - appearance.bodySymmetry) * 0.12, [appearance.bodySymmetry]);
+
   // Create the deformed geometry with morph targets applied at init time
-  // Uses archetype-specific base geometry for unique silhouettes
+  // Uses archetype-specific base geometry + DNA-driven elongation & asymmetry for unique silhouettes
   const geometry = useMemo(() => {
     const base = createArchetypeGeometry(species.archetype, 0.42);
     const positions = base.attributes.position.array as Float32Array;
@@ -122,8 +128,26 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Compute and apply displacement
     const displacements = computeVertexDisplacements(positions, morphWeights);
     const morphed = new Float32Array(positions.length);
-    for (let i = 0; i < positions.length; i++) {
-      morphed[i] = positions[i] + displacements[i];
+    for (let i = 0; i < positions.length; i += 3) {
+      const px = positions[i] + displacements[i];
+      const py = positions[i + 1] + displacements[i + 1];
+      const pz = positions[i + 2] + displacements[i + 2];
+
+      // Body elongation: stretch Y axis, slightly compress X/Z
+      const xzSquash = 1 / Math.sqrt(bodyElongation); // preserve volume
+      morphed[i] = px * xzSquash;
+      morphed[i + 1] = py * bodyElongation;
+      morphed[i + 2] = pz * xzSquash;
+
+      // Asymmetry: deterministic per-vertex offset based on position hash
+      if (asymmetryFactor > 0.001) {
+        const hash = Math.sin(px * 127.1 + py * 311.7 + pz * 74.7) * 43758.5453;
+        const frac = hash - Math.floor(hash); // 0..1 deterministic noise
+        const offset = (frac - 0.5) * asymmetryFactor;
+        morphed[i] += offset;
+        morphed[i + 1] += offset * 0.5;
+        morphed[i + 2] += offset * 0.7;
+      }
     }
 
     base.setAttribute("position", new THREE.BufferAttribute(morphed, 3));
@@ -131,7 +155,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Store base positions for vertex wave animation
     (base.attributes.position as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions = new Float32Array(morphed);
     return base;
-  }, [morphWeights, species.archetype]);
+  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor]);
 
   // Colors from appearance
   const primaryColor = useMemo(() => {
@@ -461,9 +485,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       </group>
 
-      {/* Crown appendage for high-creativity creatures — animated sway */}
+      {/* Crown appendage for high-creativity creatures — scaled by elongation */}
       {morphWeights.crownGrowth > 0.3 && (
-        <mesh ref={crownRef} position={[0, 0.42 + morphWeights.crownGrowth * 0.2, 0]}>
+        <mesh ref={crownRef} position={[0, (0.42 + morphWeights.crownGrowth * 0.2) * bodyElongation, 0]}>
           <coneGeometry args={[0.06 + morphWeights.crownGrowth * 0.04, 0.15 + morphWeights.crownGrowth * 0.2, 5]} />
           <meshToonMaterial
             color={primaryColor}
@@ -476,64 +500,67 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       )}
 
-      {/* Side appendages for assertive creatures — animated flap */}
-      {morphWeights.sideSpread > 0.35 && (
-        <>
-          <mesh ref={sideLeftRef} position={[-0.38 - morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, 0.4]}>
-            <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
-            <meshToonMaterial
-              color={primaryColor}
-              emissive={primaryColor}
-              emissiveIntensity={emissiveIntensity * 0.8}
-              transparent
-              opacity={0.6 * activityDim}
-              gradientMap={toonGradient}
-            />
-          </mesh>
-          <mesh ref={sideRightRef} position={[0.38 + morphWeights.sideSpread * 0.1, 0, 0]} rotation={[0, 0, -0.4]}>
-            <sphereGeometry args={[0.08 + morphWeights.sideSpread * 0.05, 8, 8]} />
-            <meshToonMaterial
-              color={primaryColor}
-              emissive={primaryColor}
-              emissiveIntensity={emissiveIntensity * 0.8}
-              transparent
-              opacity={0.6 * activityDim}
-              gradientMap={toonGradient}
-            />
-          </mesh>
-        </>
-      )}
+      {/* Side appendages — count driven by DNA assertiveness+independence
+          Low values = 1 pair, high values = up to 3 pairs (2-6 limbs) */}
+      {morphWeights.sideSpread > 0.35 && (() => {
+        const limbPairs = Math.max(1, Math.min(3, Math.round(1 + dna.assertiveness * 1.2 + dna.independence * 0.8)));
+        const limbElements: React.ReactElement[] = [];
+        for (let li = 0; li < limbPairs; li++) {
+          const yOff = limbPairs === 1 ? 0 : (li - (limbPairs - 1) / 2) * 0.14;
+          const sizeScale = 1 - li * 0.15; // subsequent pairs slightly smaller
+          const xOffset = 0.38 + morphWeights.sideSpread * 0.1;
+          const limbSize = (0.08 + morphWeights.sideSpread * 0.05) * sizeScale;
+          // Asymmetry: odd-indexed pairs get slight rotation variance
+          const rotVariance = asymmetryFactor > 0.01 ? (li % 2 === 1 ? 0.15 : 0) : 0;
+          limbElements.push(
+            <mesh key={`sl-${li}`} ref={li === 0 ? sideLeftRef : undefined} position={[-xOffset, yOff, 0]} rotation={[rotVariance, 0, 0.4]}>
+              <sphereGeometry args={[limbSize, 8, 8]} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+            </mesh>,
+            <mesh key={`sr-${li}`} ref={li === 0 ? sideRightRef : undefined} position={[xOffset, yOff, 0]} rotation={[-rotVariance, 0, -0.4]}>
+              <sphereGeometry args={[limbSize, 8, 8]} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+            </mesh>
+          );
+        }
+        return <>{limbElements}</>;
+      })()}
 
-      {/* Veil drape tendrils for open/empathic creatures — animated undulation */}
-      {morphWeights.veilDrape > 0.3 && (
-        <>
-          {[0, 1, 2].map((i) => {
-            const angle = (i / 3) * Math.PI * 2;
-            const drapLen = 0.15 + morphWeights.veilDrape * 0.2;
-            return (
-              <mesh
-                key={i}
-                ref={(el) => { veilRefs.current[i] = el; }}
-                position={[
-                  Math.cos(angle) * 0.15,
-                  -0.35 - morphWeights.veilDrape * 0.15,
-                  Math.sin(angle) * 0.15,
-                ]}
-              >
-                <capsuleGeometry args={[0.02, drapLen, 4, 6]} />
-                <meshToonMaterial
-                  color={primaryColor}
-                  emissive={primaryColor}
-                  emissiveIntensity={emissiveIntensity * 0.6}
-                  transparent
-                  opacity={0.4 * activityDim}
-                  gradientMap={toonGradient}
-                />
-              </mesh>
-            );
-          })}
-        </>
-      )}
+      {/* Veil drape tendrils — count driven by DNA openness+empathy (3-6 tendrils) */}
+      {morphWeights.veilDrape > 0.3 && (() => {
+        const tendrilCount = Math.max(3, Math.min(6, Math.round(3 + dna.openness * 1.5 + dna.empathy)));
+        return (
+          <>
+            {Array.from({ length: tendrilCount }, (_, i) => {
+              const angle = (i / tendrilCount) * Math.PI * 2;
+              const drapLen = 0.15 + morphWeights.veilDrape * 0.2;
+              // Asymmetry: alternate tendrils vary in length
+              const lenVariance = asymmetryFactor > 0.01 ? 1 + (i % 2 === 0 ? 0.15 : -0.1) : 1;
+              return (
+                <mesh
+                  key={i}
+                  ref={i < 3 ? (el) => { veilRefs.current[i] = el; } : undefined}
+                  position={[
+                    Math.cos(angle) * 0.15,
+                    (-0.35 - morphWeights.veilDrape * 0.15) * bodyElongation,
+                    Math.sin(angle) * 0.15,
+                  ]}
+                >
+                  <capsuleGeometry args={[0.02, drapLen * lenVariance, 4, 6]} />
+                  <meshToonMaterial
+                    color={primaryColor}
+                    emissive={primaryColor}
+                    emissiveIntensity={emissiveIntensity * 0.6}
+                    transparent
+                    opacity={0.4 * activityDim}
+                    gradientMap={toonGradient}
+                  />
+                </mesh>
+              );
+            })}
+          </>
+        );
+      })()}
     </group>
   );
 });

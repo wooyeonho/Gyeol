@@ -8,6 +8,7 @@ import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/g
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
+import { detectTurnMood } from "@/lib/evolution/personality";
 
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
 type AgentStateRow = Record<string, unknown> & {
@@ -178,11 +179,15 @@ export async function persistChatTurn(params: {
     user_preferences: updatedPrefs,
   };
 
+  // Real-time mood detection from this turn (lightweight, no AI call)
+  const turnMood = detectTurnMood(params.message, params.reply);
+
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,
     intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
     vitality: newVitality,
     config: nextConfig,
+    ...(turnMood ? { mood: turnMood } : {}),
     ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
   }).eq("agent_id", params.agentId);
 

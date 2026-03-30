@@ -772,6 +772,7 @@
     "birthSpark": "Algo está despertando...",
     "birthAlive": "La vida se está formando...",
     "birthNotice": "Ha nacido.",
+    "birthUnique": "Esta criatura es la única en el mundo. Solo tuya.",
     "birthDNA": "El ADN se está determinando..."
   },
   "evolution": {
