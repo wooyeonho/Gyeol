@@ -547,11 +547,14 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full">
+    <div ref={wrapperRef} className="relative w-full h-full" style={{ imageRendering: "pixelated" }}>
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
-        dpr={[1, 1.5]}
+        dpr={0.2}
         gl={{ antialias: false, powerPreference: "low-power" }}
+        onCreated={({ gl }) => {
+          gl.domElement.style.imageRendering = "pixelated";
+        }}
       >
         <Scene {...props} />
       </Canvas>
