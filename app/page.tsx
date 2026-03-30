@@ -161,6 +161,21 @@ export default function Home() {
   const clearReward = useChatStore((s) => s.clearReward);
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
 
+  // Boost conversation energy when new user messages are sent
+  const prevMsgCountRef = useRef(messages.length);
+  useEffect(() => {
+    const prev = prevMsgCountRef.current;
+    const curr = messages.length;
+    prevMsgCountRef.current = curr;
+    if (curr > prev) {
+      // Check if the newest message is from the user (not assistant/system)
+      const newest = messages[curr - 1];
+      if (newest && newest.role === "user") {
+        creature.boostConversationEnergy(0.25);
+      }
+    }
+  }, [messages, creature]);
+
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();

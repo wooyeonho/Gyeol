@@ -140,12 +140,16 @@ export function useCreatureState(
     }, 1500);
   }, [touch]);
 
-  // Excite pulse on message send + conversation energy boost
+  // Excite pulse on canvas tap (visual bounce only — no conversation energy)
   const excite = useCallback(() => {
     exciteRef.current = 1;
+    touch();
+  }, [touch]);
+
+  // Boost conversation energy on actual chat message send/receive
+  const boostConversationEnergy = useCallback((amount = 0.25) => {
     messageCountRef.current += 1;
-    // Each message boosts conversation energy (capped at 1.0)
-    conversationEnergyRef.current = Math.min(1, conversationEnergyRef.current + 0.25);
+    conversationEnergyRef.current = Math.min(1, conversationEnergyRef.current + amount);
     touch();
   }, [touch]);
 
@@ -305,5 +309,5 @@ export function useCreatureState(
     };
   }, [vitality]);
 
-  return { state, touch, markTyping, excite, updatePointer, recordCreatureTouch };
+  return { state, touch, markTyping, excite, boostConversationEnergy, updatePointer, recordCreatureTouch };
 }
