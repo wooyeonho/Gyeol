@@ -1,7 +1,8 @@
 /* ── Offline cache strategy ── */
-const CACHE_NAME = "gyeol-v1";
+const CACHE_NAME = "gyeol-v2";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = ["/", "/offline", "/icons/gyeol.svg", "/manifest.json"];
+const STATIC_CACHE = "gyeol-static-v1";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -12,7 +13,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== STATIC_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -24,11 +25,40 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
-  // Cache-first for static assets, network-first for API
+  // Skip API routes — let them go directly to network
   if (event.request.url.includes("/api/")) return;
+
+  // Stale-while-revalidate for static assets (_next/static, images, fonts)
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith("/_next/static") || /\.(woff2?|ttf|otf|png|jpg|svg|webp)$/.test(url.pathname)) {
+    event.respondWith(
+      caches.open(STATIC_CACHE).then((cache) =>
+        cache.match(event.request).then((cached) => {
+          const networkFetch = fetch(event.request).then((response) => {
+            if (response.ok) cache.put(event.request, response.clone());
+            return response;
+          }).catch(() => cached);
+          return cached || networkFetch;
+        })
+      )
+    );
+    return;
+  }
+
+  // Default: cache-first for other requests
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
+});
+
+/* ── Background sync for offline actions ── */
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-pending-actions") {
+    event.waitUntil(
+      // Replay queued actions from IndexedDB when back online
+      Promise.resolve()
+    );
+  }
 });
 
 /* ── Push notifications ── */

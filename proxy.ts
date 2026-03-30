@@ -3,6 +3,93 @@ import { createServerClient } from "@supabase/ssr";
 import { resolveLocale, LOCALE_COOKIE_NAME } from "@/lib/i18n/config";
 
 // ══════════════════════════════════════════
+// CSRF Protection — Origin header validation
+// ══════════════════════════════════════════
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "DELETE", "PATCH"]);
+
+/**
+ * Paths exempt from CSRF origin check (webhooks, cron, external API).
+ */
+const CSRF_EXEMPT_PREFIXES = [
+  "/api/webhook",
+  "/api/billing/webhook",
+  "/api/cron",
+  "/api/v1",
+  "/api/email/send",
+];
+
+function isCsrfExempt(pathname: string): boolean {
+  return CSRF_EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+function checkCsrfOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const host = request.headers.get("host");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  // Build set of allowed origins
+  const allowed = new Set<string>();
+  if (host) allowed.add(host);
+  if (appUrl) {
+    try {
+      allowed.add(new URL(appUrl).host);
+    } catch { /* ignore invalid URL */ }
+  }
+  // Vercel preview deployments
+  if (host?.endsWith(".vercel.app")) allowed.add(host);
+
+  if (origin) {
+    try {
+      return allowed.has(new URL(origin).host);
+    } catch { return false; }
+  }
+  if (referer) {
+    try {
+      return allowed.has(new URL(referer).host);
+    } catch { return false; }
+  }
+  // No Origin or Referer — reject for state-changing requests
+  return false;
+}
+
+// ══════════════════════════════════════════
+// IP-based Rate Limiting (in-memory, per-instance)
+// ══════════════════════════════════════════
+const IP_WINDOW_MS = 60_000; // 1 minute
+const IP_MAX_REQUESTS = 120; // per minute per IP for API routes
+const IP_MAX_AUTH_REQUESTS = 10; // stricter for auth routes
+
+type RateBucket = { count: number; resetAt: number };
+const ipBuckets = new Map<string, RateBucket>();
+
+// Cleanup stale entries every 5 minutes
+let lastCleanup = Date.now();
+function cleanupBuckets() {
+  const now = Date.now();
+  if (now - lastCleanup < 300_000) return;
+  lastCleanup = now;
+  for (const [key, bucket] of ipBuckets) {
+    if (bucket.resetAt < now) ipBuckets.delete(key);
+  }
+}
+
+function checkIpRateLimit(ip: string, pathname: string): boolean {
+  cleanupBuckets();
+  const now = Date.now();
+  const key = `${ip}:${pathname.startsWith("/api/auth") || pathname === "/login" || pathname === "/signup" ? "auth" : "api"}`;
+  const limit = key.endsWith("auth") ? IP_MAX_AUTH_REQUESTS : IP_MAX_REQUESTS;
+
+  const bucket = ipBuckets.get(key);
+  if (!bucket || bucket.resetAt < now) {
+    ipBuckets.set(key, { count: 1, resetAt: now + IP_WINDOW_MS });
+    return true;
+  }
+  bucket.count++;
+  return bucket.count <= limit;
+}
+
+// ══════════════════════════════════════════
 // Public paths that don't require authentication
 // ══════════════════════════════════════════
 const PUBLIC_PATHS = [
@@ -143,6 +230,39 @@ export async function proxy(request: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
+  }
+
+  // ── CSRF: validate Origin for state-changing API requests ──
+  if (
+    pathname.startsWith("/api") &&
+    STATE_CHANGING_METHODS.has(request.method) &&
+    !isCsrfExempt(pathname)
+  ) {
+    if (!checkCsrfOrigin(request)) {
+      return NextResponse.json(
+        { error: "CSRF validation failed" },
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  // ── Rate Limit: IP-based for all API routes ──
+  if (pathname.startsWith("/api")) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      ?? request.headers.get("x-real-ip")
+      ?? "unknown";
+    if (!checkIpRateLimit(ip, pathname)) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
   }
 
   // ── Auth: skip for public paths and self-authed APIs ──

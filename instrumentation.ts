@@ -1,7 +1,13 @@
+import * as Sentry from "@sentry/nextjs";
 import { emitSystemAlert } from "@/lib/ops/alerts";
 
 export async function register() {
-  // Can be used to run code on server startup
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./sentry.server.config");
+  }
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("./sentry.edge.config");
+  }
 }
 
 export async function onRequestError(err: Error, request: { url?: string }, context: { routerKind?: string; isAction?: boolean }) {
@@ -11,6 +17,10 @@ export async function onRequestError(err: Error, request: { url?: string }, cont
     const path = request?.url || context?.routerKind || "unknown-path";
 
     console.error("[Next.js Error]", err);
+
+    Sentry.captureException(err, {
+      extra: { path, routerKind: context?.routerKind, isAction: context?.isAction },
+    });
 
     await emitSystemAlert(
       {

@@ -30,5 +30,37 @@
       "purpose": "any maskable"
     }
   ],
-  "prefer_related_applications": false
+  "shortcuts": [
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "url": "/",
+      "icons": [{ "src": "/icons/gyeol.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Discover",
+      "short_name": "Discover",
+      "url": "/discover",
+      "icons": [{ "src": "/icons/gyeol.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Activity",
+      "short_name": "Activity",
+      "url": "/activity",
+      "icons": [{ "src": "/icons/gyeol.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
