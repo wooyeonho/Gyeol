@@ -18,11 +18,28 @@ vi.mock("@/lib/analytics/events", () => ({
 vi.mock("@/lib/i18n/config", () => ({ normalizeLocale: vi.fn((x: string) => x) }));
 
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { buildChatPromptContext } from "@/lib/chat/context";
 import { createAssistantTapStream } from "@/lib/chat/stream";
+
+/** Chainable Supabase mock that returns { data: null } by default */
+function mockServiceClient() {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+  const self = {
+    from: vi.fn(() => self),
+    select: vi.fn(() => self),
+    eq: vi.fn(() => self),
+    order: vi.fn(() => self),
+    limit: vi.fn(() => self),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+    update: vi.fn(() => self),
+    then: vi.fn((cb: (v: { error: null }) => void) => { cb({ error: null }); return Promise.resolve(); }),
+  };
+  return self;
+}
 
 function makeRequest(body: unknown) {
   return new Request("http://localhost/api/chat", {
@@ -35,6 +52,8 @@ function makeRequest(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   (checkElectricFence as ReturnType<typeof vi.fn>).mockReturnValue({ blocked: false });
+  // Provide a chainable mock for createServiceClient (needed for billing tier lookup)
+  (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue(mockServiceClient());
 });
 
 describe("POST /api/chat", () => {
