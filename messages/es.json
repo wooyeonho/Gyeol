@@ -97,7 +97,21 @@
     "publicSocialTitle": "Nota sobre social público",
     "publicSocialAdult": "Las cuentas adultas pueden activar la participación en el social público desde Ajustes.",
     "publicSocialMinor": "Las cuentas de menores no pueden publicar, comentar ni reaccionar en el social público.",
-    "continue": "Continuar"
+    "continue": "Continuar",
+    "parentEmailLabel": "Correo del padre/tutor",
+    "parentEmailPlaceholder": "parent@example.com",
+    "parentEmailHint": "Según las regulaciones COPPA, los usuarios menores de 13 años requieren el consentimiento verificable de un padre. Se enviará una confirmación a este correo."
+  },
+  "gdpr": {
+    "exportTitle": "Exportar mis datos",
+    "exportBody": "Descarga todas las conversaciones, configuraciones e historial de actividad en formato JSON.",
+    "exportButton": "Exportar datos",
+    "exportSuccess": "Tu exportación de datos está lista.",
+    "deleteTitle": "Eliminar cuenta y datos",
+    "deleteBody": "Todos los datos se eliminarán permanentemente. Esta acción no se puede deshacer.",
+    "deleteButton": "Eliminar cuenta",
+    "deleteConfirm": "¿Seguro que quieres eliminar tu cuenta y todos los datos? Esta acción no se puede deshacer.",
+    "deleteSuccess": "Tu cuenta ha sido eliminada."
   },
   "chat": {
     "placeholder": "Di cualquier cosa...",

@@ -74,6 +74,28 @@ export async function upsertSubscriptionFromStripe(
   );
 }
 
+/** Default trial duration in days for new users. */
+export const FREE_TRIAL_DAYS = 7;
+
+/**
+ * Check if a user is currently within their free trial window.
+ * Trial starts at account creation and lasts FREE_TRIAL_DAYS.
+ */
+export function isWithinFreeTrial(createdAt: string | null | undefined): boolean {
+  if (!createdAt) return false;
+  const trialEnd = new Date(createdAt);
+  trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+  return new Date() < trialEnd;
+}
+
+export function getTrialDaysRemaining(createdAt: string | null | undefined): number {
+  if (!createdAt) return 0;
+  const trialEnd = new Date(createdAt);
+  trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+  const remaining = Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, remaining);
+}
+
 export async function getResolvedBillingState(
   db: DbClient,
   userId: string,
@@ -82,6 +104,10 @@ export async function getResolvedBillingState(
   const subscription = await getLatestSubscription(db, userId);
   const planTier: PlanTier = isPlanTier(subscription?.plan_tier) ? subscription.plan_tier : "free";
   const status: SubscriptionStatus = isSubscriptionStatus(subscription?.status) ? subscription.status : "active";
+
+  // If user is on free plan with trialing status, check trial window
+  const isTrial = status === "trialing" || (planTier === "free" && isWithinFreeTrial(subscription?.created_at));
+  const trialDaysRemaining = isTrial ? getTrialDaysRemaining(subscription?.created_at) : 0;
 
   return {
     entitlements: resolveEntitlements(planTier),
@@ -93,6 +119,10 @@ export async function getResolvedBillingState(
       provider_customer_id: subscription?.provider_customer_id ?? null,
       provider: subscription?.provider ?? null,
       status,
+    },
+    trial: {
+      active: isTrial,
+      daysRemaining: trialDaysRemaining,
     },
   };
 }

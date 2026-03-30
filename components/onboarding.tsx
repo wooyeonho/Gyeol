@@ -19,7 +19,7 @@ const PERSONALITY_MODES = [
   { key: "creative", emoji: "🎨" },
 ] as const;
 
-const TOTAL_STEPS = 5; // Added birth sequence step
+const TOTAL_STEPS = 3; // Birth (auto) → Personality → Rewards
 
 const slideVariants = {
   enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
@@ -92,9 +92,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             className="text-center"
           >
             {step === 0 && <StepBirth t={t} onReady={goNext} />}
-            {step === 1 && <StepWelcome t={t} />}
-            {step === 2 && <StepAlive t={t} />}
-            {step === 3 && (
+            {step === 1 && (
               <StepPersonality
                 t={t}
                 selectedMode={selectedMode}
@@ -104,7 +102,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 }}
               />
             )}
-            {step === 4 && <StepRewards t={t} />}
+            {step === 2 && <StepRewards t={t} />}
           </motion.div>
         </AnimatePresence>
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
-import { moderateSocialContent } from "@/lib/social/moderation";
+import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         topic: topic || null,
         language,
         visibility: "public",
-        moderation_status: moderated.status,
+        moderation_status: toDbModerationStatus(moderated.status),
         metadata: {
           origin: "user_post",
           moderation_reason: moderated.reason,
