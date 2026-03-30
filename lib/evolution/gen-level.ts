@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { applyDnaShift } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { generatePortraitPrompt } from "@/lib/genome/portrait-prompt";
 
@@ -37,7 +38,7 @@ function getVisualUpgrade(genLevel: number): VisualUpgrade {
 
 export async function checkEvolution(agentId: string): Promise<{ evolved: boolean; newLevel?: number; mutation?: string } | null> {
   const db = createServiceClient();
-  const { data: state } = await db.from("agent_state").select("progress, gen_level, visual, config, total_messages").eq("agent_id", agentId).single();
+  const { data: state } = await db.from("agent_state").select("progress, gen_level, visual, config, total_messages, genome").eq("agent_id", agentId).single();
   if (!state) return null;
 
   // Base progress + behavior-based bonus
@@ -72,11 +73,24 @@ export async function checkEvolution(agentId: string): Promise<{ evolved: boolea
       ? `dna_shift:${DNA_AXES[Math.floor(Math.random() * DNA_AXES.length)]}:${(Math.random() > 0.5 ? "+" : "-")}${(0.05 + Math.random() * 0.15).toFixed(2)}`
       : undefined;
 
+    // Apply dna_shift mutation to the actual genome if present
+    let genomeUpdate: Record<string, unknown> | undefined;
+    if (mutation) {
+      const genome = state.genome as { dna?: CreatureDNA } | null;
+      if (genome?.dna) {
+        const { dna: mutatedDna, axis } = applyDnaShift(genome.dna, mutation);
+        if (axis) {
+          genomeUpdate = { ...genome, dna: mutatedDna };
+        }
+      }
+    }
+
     await db.from("agent_state").update({
       gen_level: newLevel,
       progress: 0,
       visual: { ...state.visual, ...upgrade },
       config: { ...state.config, ...(mutation ? { mutation_trait: mutation } : {}), total_messages_at_last_evo: currentTotal },
+      ...(genomeUpdate ? { genome: genomeUpdate } : {}),
     }).eq("agent_id", agentId);
 
     await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "evolution", summary: `Evolved to Gen ${newLevel}${mutation ? ` (${mutation})` : ""}` });
