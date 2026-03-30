@@ -262,7 +262,16 @@ export default function DiscoverPage() {
           )}
         </Link>
 
-        {/* 2×2 Bento Grid */}
+        {/* Section label */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-white/[0.06]" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30">
+            {t("discover.eyebrow")}
+          </span>
+          <div className="h-px flex-1 bg-white/[0.06]" />
+        </div>
+
+        {/* 2×3 Bento Grid */}
         <motion.section
           className="grid grid-cols-2 gap-3"
           initial="hidden"
@@ -306,30 +315,31 @@ export default function DiscoverPage() {
           </motion.div>
         )}
 
-        <section className="theme-panel rounded-[1.75rem] p-5">
-          <p className="text-sm font-medium">
+        {/* More Ways divider */}
+        <div className="flex items-center gap-2 px-1 pt-2">
+          <div className="h-px flex-1 bg-white/[0.06]" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30">
             {t("discover.moreWays")}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          </span>
+          <div className="h-px flex-1 bg-white/[0.06]" />
+        </div>
+
+        <section className="grid grid-cols-3 gap-2">
+          {[
+            { href: "/leaderboard", label: t("leaderboard.title"), icon: "🏆" },
+            { href: "/compare", label: t("compare.title"), icon: "⚔️" },
+            { href: "/time-travel", label: t("timeTravel.title"), icon: "⏳" },
+          ].map((item) => (
             <Link
-              href="/leaderboard"
-              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              key={item.href}
+              href={item.href}
+              onClick={() => haptic("tap")}
+              className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-4 text-center transition-all hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
-              {t("leaderboard.title")}
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-xs font-medium text-white/70">{item.label}</span>
             </Link>
-            <Link
-              href="/compare"
-              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-            >
-              {t("compare.title")}
-            </Link>
-            <Link
-              href="/time-travel"
-              className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-            >
-              {t("timeTravel.title")}
-            </Link>
-          </div>
+          ))}
         </section>
       </div>
       <BottomNav />
