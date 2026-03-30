@@ -46,12 +46,11 @@ export async function DELETE() {
     // Delete user-level data
     await Promise.all([
       service.from("agents").delete().eq("user_id", userId),
-      service.from("user_settings").delete().eq("user_id", userId),
       service.from("user_subscriptions").delete().eq("user_id", userId),
       service.from("push_subscriptions").delete().eq("user_id", userId),
     ]);
 
-    // Log the deletion for compliance auditing (before deleting user)
+    // Log the deletion for compliance auditing (before deleting auth user)
     await service.from("system_alerts").insert({
       level: "info",
       source: "gdpr",
@@ -64,8 +63,9 @@ export async function DELETE() {
       },
     }).then(() => {}, () => {});
 
-    // Sign out the user
-    await supabase.auth.signOut();
+    // Delete the auth user record — triggers ON DELETE CASCADE for
+    // user_connections, api_keys, rate_limits, product_events, etc.
+    await service.auth.admin.deleteUser(userId);
 
     return NextResponse.json({ ok: true, deleted_at: new Date().toISOString() });
   } catch (error) {

@@ -18,9 +18,8 @@ export async function GET() {
     const userId = user.id;
 
     // Step 1: Fetch user-level data + agents
-    const [agents, settings, subscriptions] = await Promise.all([
+    const [agents, subscriptions] = await Promise.all([
       service.from("agents").select("*").eq("user_id", userId),
-      service.from("user_settings").select("*").eq("user_id", userId),
       service.from("user_subscriptions").select("*").eq("user_id", userId),
     ]);
 
@@ -57,7 +56,6 @@ export async function GET() {
       artifacts: artifacts.data ?? [],
       autonomous_logs: autonomousLogs.data ?? [],
       time_capsules: timeCapsules.data ?? [],
-      settings: settings.data ?? [],
       subscriptions: subscriptions.data ?? [],
     };
 
