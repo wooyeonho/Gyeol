@@ -237,7 +237,7 @@ export async function persistChatTurn(params: {
           .select("config")
           .eq("agent_id", params.agentId)
           .maybeSingle();
-        const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? {};
+        const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? nextConfig;
         await params.writer
           .from("agent_state")
           .update({
