@@ -162,19 +162,30 @@ export default function Home() {
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
 
   // Boost conversation energy when new user messages are sent
-  const prevMsgCountRef = useRef(messages.length);
+  // Gate on historyLoaded to avoid spurious boost from initial chat history hydration.
+  // Iterate all new messages to handle React batching (sendMessage appends user + assistant placeholder in one render).
+  const prevMsgCountRef = useRef(0);
+  const historySeenRef = useRef(false);
   useEffect(() => {
-    const prev = prevMsgCountRef.current;
+    if (!historyLoaded) return;
     const curr = messages.length;
+    // First time historyLoaded becomes true: sync ref without boosting
+    if (!historySeenRef.current) {
+      historySeenRef.current = true;
+      prevMsgCountRef.current = curr;
+      return;
+    }
+    const prev = prevMsgCountRef.current;
     prevMsgCountRef.current = curr;
     if (curr > prev) {
-      // Check if the newest message is from the user (not assistant/system)
-      const newest = messages[curr - 1];
-      if (newest && newest.role === "user") {
-        creature.boostConversationEnergy(0.25);
+      for (let i = prev; i < curr; i++) {
+        if (messages[i] && messages[i].role === "user") {
+          creature.boostConversationEnergy(0.25);
+          break;
+        }
       }
     }
-  }, [messages, creature]);
+  }, [messages, creature, historyLoaded]);
 
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
