@@ -423,6 +423,7 @@ export default function Home() {
             restoring3dLabel={t("creature.restoring3d")}
             dna={creatureDna}
             conversationEnergy={creature.state.conversationEnergy}
+            genLevel={agentState?.gen_level ?? 1}
           />
         </ThreeErrorBoundary>
 

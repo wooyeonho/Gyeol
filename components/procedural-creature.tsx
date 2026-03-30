@@ -7,7 +7,9 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
+import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
+import type { ForceState } from "@/lib/creature/force-system";
 
 interface ProceduralCreatureProps {
   dna: CreatureDNA;
@@ -22,6 +24,10 @@ interface ProceduralCreatureProps {
   vitality?: number;
   /** 0..1 conversation energy */
   conversationEnergy?: number;
+  /** Force-based physics state — drives emergent position/rotation/scale */
+  forceState?: ForceState | null;
+  /** Evolution generation level (1+, no upper bound) */
+  genLevel?: number;
 }
 
 const SPHERE_DETAIL = 4;
@@ -95,6 +101,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   mood,
   vitality = 1,
   conversationEnergy = 0,
+  forceState,
+  genLevel = 1,
 }: ProceduralCreatureProps) {
   const energy = conversationEnergy ?? 0;
 
@@ -128,12 +136,22 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const lookReturnTimerRef = useRef(0);
 
   const appearance = useMemo(
-    () => deriveDNAAppearance(dna, species),
-    [dna, species],
+    () => deriveDNAAppearance(dna, species, genLevel),
+    [dna, species, genLevel],
   );
   const morphWeights = useMemo(
-    () => deriveMorphWeights(dna, species),
-    [dna, species],
+    () => deriveMorphWeights(dna, species, genLevel),
+    [dna, species, genLevel],
+  );
+
+  // Continuous morphology — fractional appendage counts, blended geometry params
+  const conMorph: ContinuousMorphology = useMemo(
+    () => deriveContinuousMorphology(dna, genLevel),
+    [dna, genLevel],
+  );
+  const blendedGeo = useMemo(
+    () => blendGeometryParams(conMorph.archetypeBlend, conMorph.morphComplexity),
+    [conMorph],
   );
 
   // [UPGRADE 6] Wider silhouette range: 0.5-1.7 (was 0.7-1.4)
@@ -146,13 +164,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     [appearance.bodySymmetry],
   );
 
-  // [UPGRADE 2] DNA-driven eye variety
+  // [UPGRADE 2] DNA-driven eye variety — now uses continuous eye count
   const eyeConfig = useMemo(() => {
-    const isCyclops =
-      dna.intuitive > 0.72 && dna.independence > 0.6 && dna.empathy < 0.4;
-    const hasThirdEye =
-      dna.intuitive > 0.6 && dna.curiosity > 0.6 && !isCyclops;
-    const count = isCyclops ? 1 : hasThirdEye ? 3 : 2;
+    // Continuous eye count from morphology (e.g. 2.3 = third eye at 30% opacity)
+    const contEyes = conMorph.eyeCount;
+    // Floor = how many full eyes; fractional part = partial eye opacity
+    const fullCount = Math.floor(Math.min(contEyes, 5));
+    const fractional = contEyes - fullCount; // 0..1, opacity of the next eye
+    // For backward compat: 1 eye = cyclops mode
+    const count = fullCount < 2 ? 1 : fullCount;
+    const thirdEyeOpacity = count >= 2 ? Math.min(1, contEyes - 2) : 0;
     const widthRatio =
       dna.empathy > 0.6
         ? 1.2 + (dna.empathy - 0.6) * 0.5
@@ -160,24 +181,32 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           ? 0.6 + (0.8 - dna.analytical) * 0.4
           : 1.0;
     const sizeMultiplier = 0.8 + dna.warmth * 0.25 + dna.openness * 0.15;
-    return { count, widthRatio, sizeMultiplier };
-  }, [dna]);
+    return { count, widthRatio, sizeMultiplier, thirdEyeOpacity };
+  }, [dna, conMorph.eyeCount]);
 
-  // [UPGRADE 3] Expanded appendage library
+  // [UPGRADE 3] Expanded appendage library — continuous presence from morphology
   const appendageConfig = useMemo(
     () => ({
-      hasHorns: dna.intensity > 0.55 && dna.assertiveness > 0.45,
-      hasAntennae: dna.curiosity > 0.58 && dna.intuitive > 0.4,
-      hasTail: dna.playfulness > 0.5,
-      hasFinWings: dna.adaptability > 0.58 && dna.openness > 0.45,
-      hasEarBumps: dna.empathy > 0.58 && dna.warmth > 0.48,
-      hasSpikes: dna.assertiveness > 0.62 && dna.intensity > 0.55,
+      // Continuous: presence > 0.1 means visible, opacity = presence value
+      hornPresence: Math.min(1, conMorph.hornCount / 2), // 0..1
+      antennaPresence: Math.min(1, conMorph.antennaCount), // 0..1
+      tailPresence: conMorph.tailPresence, // 0..1
+      finWingPresence: conMorph.finWingSize, // 0..1
+      earBumpPresence: conMorph.earBumpSize, // 0..1
+      spikePresence: Math.min(1, conMorph.spikeCount / 4), // 0..1
+      // Backward-compat booleans (threshold at 0.15)
+      hasHorns: conMorph.hornCount > 0.3,
+      hasAntennae: conMorph.antennaCount > 0.3,
+      hasTail: conMorph.tailPresence > 0.15,
+      hasFinWings: conMorph.finWingSize > 0.15,
+      hasEarBumps: conMorph.earBumpSize > 0.15,
+      hasSpikes: conMorph.spikeCount > 1,
       hornCurve: dna.creativity > 0.5 ? 0.3 : 0,
       tailLength: 0.15 + dna.playfulness * 0.2,
       antennaLength: 0.12 + dna.curiosity * 0.18,
-      spikeCount: Math.max(4, Math.min(8, Math.round(4 + dna.assertiveness * 4))),
+      spikeCount: Math.max(2, Math.min(12, Math.round(conMorph.spikeCount))),
     }),
-    [dna],
+    [dna, conMorph],
   );
 
   // [UPGRADE 5] Emotional mouth expression
@@ -226,9 +255,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
   }, [mood]);
 
-  // [UPGRADE 4] Geometry with surface pattern vertex colors
+  // [UPGRADE 4] Geometry with surface pattern vertex colors + blended params
   const geometry = useMemo(() => {
-    const base = createArchetypeGeometry(species.archetype, 0.42);
+    // Use blended geometry radius and select geometry based on faceting level
+    const base = blendedGeo.faceting > 0.5
+      ? createArchetypeGeometry(species.archetype, blendedGeo.radius)
+      : createArchetypeGeometry(species.archetype, blendedGeo.radius);
     const positions = base.attributes.position.array as Float32Array;
 
     const displacements = computeVertexDisplacements(positions, morphWeights);
@@ -296,7 +328,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     )._basePositions = new Float32Array(morphed);
     return base;
-  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor, appearance.markingsSeed]);
+  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor, appearance.markingsSeed, blendedGeo]);
 
   // [UPGRADE 1] Dual-tone colors
   const primaryColor = useMemo(() => {
@@ -457,14 +489,29 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const energyMult = 1 + energy * 0.5;
     const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult);
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
-    const breathScale = 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12;
+
+    // Scale: use force-driven scale pulse when available, fallback to legacy breathing
+    const forceScalePulse = forceState ? forceState.scalePulse : 1;
+    const breathScale = forceState
+      ? forceScalePulse + excitePulse * 0.12
+      : 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12;
     const sc = scale * appearance.scale * breathScale;
     groupRef.current.scale.lerp(new THREE.Vector3(sc, sc, sc), 0.08);
 
+    // Position: force-driven movement — creature physically moves around the scene
+    if (forceState) {
+      const targetX = forceState.position.x * 1.5; // scale normalized to scene units
+      const targetY = forceState.position.y * 1.2;
+      groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.08);
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
+    }
+
+    // Rotation: force-driven rotation blended with legacy rotation
     const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult;
-    groupRef.current.rotation.y += rotSpeed * 0.01;
+    const forceRotation = forceState ? forceState.rotation * 0.15 : 0; // subtle force-driven rotation
+    groupRef.current.rotation.y += rotSpeed * 0.01 + forceRotation * 0.02;
     groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias;
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current, 0.06);
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current + forceRotation * 0.3, 0.06);
 
     if (meshRef.current) {
       const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? 1 - excitePulse * 0.15 : 1);
@@ -651,15 +698,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           </mesh>
         </group>
       )}
-      {eyeConfig.count === 3 && (
+      {/* Third eye: continuous opacity (e.g. 2.3 eyes → third eye at 30% opacity) */}
+      {eyeConfig.count >= 2 && eyeConfig.thirdEyeOpacity > 0.05 && (
         <group position={eyePositions.center}>
           <mesh>
             <sphereGeometry args={[thirdEyeSize, 10, 10]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.6 * activityDim} transparent opacity={0.8 * activityDim} />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.6 * activityDim} transparent opacity={eyeConfig.thirdEyeOpacity * 0.8 * activityDim} />
           </mesh>
           <mesh position={[0, 0, thirdEyeSize * 0.6]}>
             <sphereGeometry args={[thirdEyeSize * 0.5, 8, 8]} />
-            <meshStandardMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={0.8 * activityDim} />
+            <meshStandardMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={0.8 * activityDim} transparent opacity={eyeConfig.thirdEyeOpacity * activityDim} />
           </mesh>
         </group>
       )}
@@ -670,35 +718,37 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
       </mesh>
 
-      {/* HORNS: intensity + assertiveness */}
+      {/* HORNS: continuous presence — opacity scales with hornPresence */}
       {appendageConfig.hasHorns && (() => {
-        const hornH = 0.12 + dna.intensity * 0.1;
-        const hornR = 0.03 + dna.assertiveness * 0.02;
+        const hp = appendageConfig.hornPresence;
+        const hornH = (0.12 + dna.intensity * 0.1) * hp;
+        const hornR = (0.03 + dna.assertiveness * 0.02) * (0.5 + hp * 0.5);
         const yBase = (0.38 + morphWeights.crownGrowth * 0.15) * bodyElongation;
         const hornSpread = 0.12 + dna.independence * 0.06;
         return (
           <>
             <mesh ref={hornLRef} position={[-hornSpread, yBase, 0]} rotation={[0, 0, 0.25 + appendageConfig.hornCurve]}>
               <coneGeometry args={[hornR, hornH, 6]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} gradientMap={toonGradient} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} transparent opacity={hp * activityDim} gradientMap={toonGradient} />
             </mesh>
             <mesh ref={hornRRef} position={[hornSpread, yBase, 0]} rotation={[0, 0, -0.25 - appendageConfig.hornCurve]}>
               <coneGeometry args={[hornR, hornH, 6]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} gradientMap={toonGradient} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.9} transparent opacity={hp * activityDim} gradientMap={toonGradient} />
             </mesh>
           </>
         );
       })()}
 
-      {/* ANTENNAE: curiosity + intuitive, glowing bulb tips */}
+      {/* ANTENNAE: continuous presence */}
       {appendageConfig.hasAntennae && (() => {
-        const antLen = appendageConfig.antennaLength;
+        const ap = appendageConfig.antennaPresence;
+        const antLen = appendageConfig.antennaLength * (0.5 + ap * 0.5);
         const yBase = (0.4 + morphWeights.crownGrowth * 0.12) * bodyElongation;
         return (
           <>
             <mesh ref={antennaLRef} position={[-0.08, yBase, 0.05]}>
               <capsuleGeometry args={[0.01, antLen, 4, 6]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={ap * 0.75 * activityDim} gradientMap={toonGradient} />
               <mesh position={[0, antLen * 0.5 + 0.02, 0]}>
                 <sphereGeometry args={[0.02, 8, 8]} />
                 <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
@@ -706,7 +756,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             </mesh>
             <mesh ref={antennaRRef} position={[0.08, yBase, 0.05]}>
               <capsuleGeometry args={[0.01, antLen, 4, 6]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={ap * 0.75 * activityDim} gradientMap={toonGradient} />
               <mesh position={[0, antLen * 0.5 + 0.02, 0]}>
                 <sphereGeometry args={[0.02, 8, 8]} />
                 <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
@@ -716,67 +766,71 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         );
       })()}
 
-      {/* TAIL: playfulness */}
+      {/* TAIL: continuous presence */}
       {appendageConfig.hasTail && (() => {
+        const tp = appendageConfig.tailPresence;
         const yBase = (-0.25 - morphWeights.veilDrape * 0.1) * bodyElongation;
         return (
           <mesh ref={tailRef} position={[0, yBase, -0.3]}>
-            <capsuleGeometry args={[0.025, appendageConfig.tailLength, 4, 8]} />
-            <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.65 * activityDim} gradientMap={toonGradient} />
+            <capsuleGeometry args={[0.025 * (0.5 + tp * 0.5), appendageConfig.tailLength * tp, 4, 8]} />
+            <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={tp * 0.65 * activityDim} gradientMap={toonGradient} />
           </mesh>
         );
       })()}
 
-      {/* FIN-WINGS: adaptability + openness */}
+      {/* FIN-WINGS: continuous presence */}
       {appendageConfig.hasFinWings && (() => {
-        const finH = 0.12 + dna.adaptability * 0.1;
+        const fp = appendageConfig.finWingPresence;
+        const finH = (0.12 + dna.adaptability * 0.1) * fp;
         const xOff = 0.36 + morphWeights.sideSpread * 0.08;
         return (
           <>
             <mesh position={[-xOff, 0.05, -0.05]} rotation={[0.1, 0.3, 0.6]}>
-              <planeGeometry args={[0.08, finH]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
+              <planeGeometry args={[0.08 * fp, finH]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={fp * 0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
             </mesh>
             <mesh position={[xOff, 0.05, -0.05]} rotation={[0.1, -0.3, -0.6]}>
-              <planeGeometry args={[0.08, finH]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
+              <planeGeometry args={[0.08 * fp, finH]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.5} transparent opacity={fp * 0.4 * activityDim} side={THREE.DoubleSide} gradientMap={toonGradient} />
             </mesh>
           </>
         );
       })()}
 
-      {/* EAR BUMPS: empathy + warmth */}
+      {/* EAR BUMPS: continuous presence */}
       {appendageConfig.hasEarBumps && (() => {
-        const earSz = 0.04 + dna.empathy * 0.03;
+        const ep = appendageConfig.earBumpPresence;
+        const earSz = (0.04 + dna.empathy * 0.03) * (0.5 + ep * 0.5);
         const yBase = (0.28 + morphWeights.bodyStretch * 0.1) * bodyElongation;
         const xOff = 0.28 + morphWeights.sideSpread * 0.08;
         return (
           <>
             <mesh position={[-xOff, yBase, 0.08]} rotation={[0, 0, 0.4]}>
               <sphereGeometry args={[earSz, 8, 6]} />
-              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.7 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={ep * 0.7 * activityDim} gradientMap={toonGradient} />
             </mesh>
             <mesh position={[xOff, yBase, 0.08]} rotation={[0, 0, -0.4]}>
               <sphereGeometry args={[earSz, 8, 6]} />
-              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.7 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={ep * 0.7 * activityDim} gradientMap={toonGradient} />
             </mesh>
           </>
         );
       })()}
 
-      {/* SPIKES: assertiveness + intensity */}
+      {/* SPIKES: continuous presence */}
       {appendageConfig.hasSpikes && (() => {
+        const sp = appendageConfig.spikePresence;
         const els: React.ReactElement[] = [];
         const count = appendageConfig.spikeCount;
         for (let si = 0; si < count; si++) {
           const angle = (si / count) * Math.PI * 2;
           const yOff = (seededRandom(appearance.markingsSeed, si + 100) - 0.5) * 0.3;
-          const sLen = 0.06 + seededRandom(appearance.markingsSeed, si + 200) * 0.08;
-          const sRad = 0.015 + dna.intensity * 0.01;
+          const sLen = (0.06 + seededRandom(appearance.markingsSeed, si + 200) * 0.08) * sp;
+          const sRad = (0.015 + dna.intensity * 0.01) * (0.5 + sp * 0.5);
           els.push(
             <mesh key={`spike-${si}`} position={[Math.cos(angle) * 0.38, yOff * bodyElongation, Math.sin(angle) * 0.38]} rotation={[0, -angle, Math.PI / 2 - 0.2]}>
               <coneGeometry args={[sRad, sLen, 4]} />
-              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.6} transparent opacity={sp * 0.6 * activityDim} gradientMap={toonGradient} />
             </mesh>,
           );
         }
