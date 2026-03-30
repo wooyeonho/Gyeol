@@ -318,9 +318,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   }, [appearance]);
 
   const eyePositions = useMemo(() => {
-    const spread = eyeConfig.count === 1 ? 0 : 0.14 * (1 + morphWeights.sideSpread * 0.3);
-    const height = 0.18 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
-    const depth = 0.32 * (1 + morphWeights.bodyBulge * 0.15);
+    const spread = eyeConfig.count === 1 ? 0 : 0.16 * (1 + morphWeights.sideSpread * 0.3);
+    const height = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
+    const depth = 0.34 * (1 + morphWeights.bodyBulge * 0.15);
     return {
       left: [-spread, height, depth] as [number, number, number],
       right: [spread, height, depth] as [number, number, number],
@@ -328,7 +328,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     };
   }, [morphWeights, eyeConfig.count]);
 
-  const eyeSize = 0.055 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
+  // Larger eyes = instantly recognizable as a character (was 0.055)
+  const eyeSize = 0.095 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
 
   const moodMod = useMemo(() => {
     switch (mood) {
@@ -569,8 +570,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const dynEyeSize = eyeSize;
 
   const mouthPos = useMemo((): [number, number, number] => {
-    const height = 0.04 * (1 + morphWeights.bodyStretch * 0.3);
-    const depth = 0.36 * (1 + morphWeights.bodyBulge * 0.12);
+    const height = 0.06 * (1 + morphWeights.bodyStretch * 0.3);
+    const depth = 0.38 * (1 + morphWeights.bodyBulge * 0.12);
     return [0, height, depth];
   }, [morphWeights]);
 
@@ -604,21 +605,31 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           <group ref={eyeGroupLRef} position={eyePositions.left}>
             <mesh>
               <sphereGeometry args={[dynEyeSize, 12, 12]} />
-              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.9 * activityDim} />
             </mesh>
             <mesh ref={eyeLRef} position={[0, 0, dynEyeSize * 0.6]}>
-              <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
+              <sphereGeometry args={[dynEyeSize * 0.5, 10, 10]} />
               <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+            </mesh>
+            {/* Specular highlight dot — makes eyes feel alive */}
+            <mesh position={[dynEyeSize * 0.18, dynEyeSize * 0.2, dynEyeSize * 0.85]}>
+              <sphereGeometry args={[dynEyeSize * 0.15, 8, 8]} />
+              <meshBasicMaterial color="#ffffff" />
             </mesh>
           </group>
           <group ref={eyeGroupRRef} position={eyePositions.right}>
             <mesh>
               <sphereGeometry args={[dynEyeSize, 12, 12]} />
-              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.9 * activityDim} />
             </mesh>
             <mesh ref={eyeRRef} position={[0, 0, dynEyeSize * 0.6]}>
-              <sphereGeometry args={[dynEyeSize * 0.45, 10, 10]} />
+              <sphereGeometry args={[dynEyeSize * 0.5, 10, 10]} />
               <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+            </mesh>
+            {/* Specular highlight dot */}
+            <mesh position={[dynEyeSize * 0.18, dynEyeSize * 0.2, dynEyeSize * 0.85]}>
+              <sphereGeometry args={[dynEyeSize * 0.15, 8, 8]} />
+              <meshBasicMaterial color="#ffffff" />
             </mesh>
           </group>
         </>
@@ -627,11 +638,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <group ref={eyeGroupLRef} position={[0, eyePositions.left[1], eyePositions.left[2] + 0.02]}>
           <mesh>
             <sphereGeometry args={[cyclopsEyeSize, 12, 12]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.85 * activityDim} />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5 * activityDim} transparent opacity={0.9 * activityDim} />
           </mesh>
           <mesh ref={eyeLRef} position={[0, 0, cyclopsEyeSize * 0.6]}>
-            <sphereGeometry args={[cyclopsEyeSize * 0.45, 10, 10]} />
+            <sphereGeometry args={[cyclopsEyeSize * 0.5, 10, 10]} />
             <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={0.6 * activityDim} />
+          </mesh>
+          {/* Specular highlight dot */}
+          <mesh position={[cyclopsEyeSize * 0.18, cyclopsEyeSize * 0.2, cyclopsEyeSize * 0.85]}>
+            <sphereGeometry args={[cyclopsEyeSize * 0.15, 8, 8]} />
+            <meshBasicMaterial color="#ffffff" />
           </mesh>
         </group>
       )}
@@ -648,9 +664,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </group>
       )}
 
-      {/* MOUTH: mood-driven expression */}
+      {/* MOUTH: mood-driven expression — enlarged for visibility */}
       <mesh ref={mouthRef} position={mouthPos}>
-        <torusGeometry args={[0.035, 0.008, 8, 12, Math.PI]} />
+        <torusGeometry args={[0.055, 0.012, 8, 16, Math.PI]} />
         <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
       </mesh>
 
