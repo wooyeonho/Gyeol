@@ -53,7 +53,7 @@ export function detectTurnMood(message: string, reply: string): CreatureMood | n
   if (/(?<!\w)(wow|놀|surprise|unexpected|대박|헐|omg)/.test(text)) return "surprised";
   if (/(?<!\w)(proud|자랑|뿌듯|성취|accomplish|achieve)/.test(text)) return "proud";
   if (/(?<!\w)(영감|inspir|creative|아이디어|idea|motivated)/.test(text)) return "inspired";
-  if (/(?<!\w)(사랑|love|좋아해|like you|adore|heart|💕|❤|🥰)/.test(text)) return "loving";
+  if (/(?:(?<!\w)(?:사랑|love|좋아해|like you|adore|heart)|💕|❤|🥰)/.test(text)) return "loving";
   if (/(?<!\w)(감사|thank|고마|appreciate|grateful)/.test(text)) return "grateful";
   if (/(?<!\w)(신나|excit|thrilled|설레|기대|can't wait)/.test(text)) return "excited";
   if (/(?<!\w)(기쁘|happy|행복|joy|즐|cheerful|좋[다아]|great)/.test(text)) return "joyful";
@@ -80,7 +80,7 @@ export function detectTurnMood(message: string, reply: string): CreatureMood | n
   if (/(?<!\w)(졸|sleepy|tired|피곤|지침|exhausted)/.test(text)) return "sleepy";
 
   // High energy
-  if (/(?<!\w)(!{2,}|에너지|energy|활발|active|go go|화이팅|fighting)/.test(text)) return "energetic";
+  if (/(?:(?<!\w)(?:에너지|energy|활발|active|go go|화이팅|fighting)|!{2,})/.test(text)) return "energetic";
 
   return null; // no strong signal — keep current mood
 }
