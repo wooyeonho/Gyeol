@@ -149,7 +149,7 @@ export default function Home() {
   }, [agentState?.vitality, agentState?.intimacy_score, agentState?.mood]);
 
   const soundProfile = useMemo(() => {
-    const energyMult = 1 + (creature.conversationEnergy ?? 0) * 0.5;
+    const energyMult = 1 + (creature.state.conversationEnergy ?? 0) * 0.5;
     const emotionProfile = getEmotionSoundProfile(emotionMood, energyMult);
     return {
       base_note: emotionProfile.base_note,
@@ -158,7 +158,7 @@ export default function Home() {
       scale: emotionProfile.scale,
       volume: emotionProfile.volume,
     };
-  }, [emotionMood, creature.conversationEnergy]);
+  }, [emotionMood, creature.state.conversationEnergy]);
 
   const lastReward = useChatStore((s) => s.lastReward);
   const clearReward = useChatStore((s) => s.clearReward);
