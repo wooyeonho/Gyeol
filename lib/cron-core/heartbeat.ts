@@ -299,6 +299,10 @@ export async function executeHeartbeat(): Promise<CronResult> {
           const { processScar } = await import("@/lib/evolution/scars");
           await processScar(agentId);
         });
+        await runOptionalStep("processAbsenceDrift", agentId, async () => {
+          const { processAbsenceDrift } = await import("@/lib/evolution/absence");
+          await processAbsenceDrift(agentId, hoursSince);
+        });
         await runOptionalStep("checkSelfNaming", agentId, async () => {
           const { checkSelfNaming } = await import("@/lib/personality/naming");
           await checkSelfNaming(agentId);
