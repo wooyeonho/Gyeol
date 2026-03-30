@@ -51,12 +51,27 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-    const allowed = await checkRateLimit(`chat:${user.id}`);
-    if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
 
     const service = createServiceClient();
+
+    // Resolve billing tier so paid users get higher rate limits (pro=40, premium=80 req/min)
+    let billingTier: string | null = null;
+    try {
+      const { data: sub } = await service
+        .from("user_subscriptions")
+        .select("plan_tier")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      billingTier = (sub as { plan_tier?: string } | null)?.plan_tier ?? null;
+    } catch { /* default to free tier on error */ }
+    const allowed = await checkRateLimit(`chat:${user.id}`, billingTier);
+    if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return new Response(JSON.stringify({ error: "No agent" }), { status: 404 });
+
     recordServerEvent(PRODUCT_EVENT.chatRequestReceived, {
       agentId,
       messageLength: message.length,
