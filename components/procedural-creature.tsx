@@ -636,7 +636,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
       {/* MOUTH: mood-driven expression */}
       <mesh ref={mouthRef} position={mouthPos}>
-        <torusGeometry args={[0.035 * mouthConfig.width, 0.008, 8, 12, Math.PI]} />
+        <torusGeometry args={[0.035, 0.008, 8, 12, Math.PI]} />
         <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
       </mesh>
 
@@ -669,18 +669,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             <mesh ref={antennaLRef} position={[-0.08, yBase, 0.05]}>
               <capsuleGeometry args={[0.01, antLen, 4, 6]} />
               <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
-            </mesh>
-            <mesh position={[-0.08, yBase + antLen * 0.5 + 0.02, 0.05]}>
-              <sphereGeometry args={[0.02, 8, 8]} />
-              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+              <mesh position={[0, antLen * 0.5 + 0.02, 0]}>
+                <sphereGeometry args={[0.02, 8, 8]} />
+                <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+              </mesh>
             </mesh>
             <mesh ref={antennaRRef} position={[0.08, yBase, 0.05]}>
               <capsuleGeometry args={[0.01, antLen, 4, 6]} />
               <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={emissiveIntensity * 0.7} transparent opacity={0.75 * activityDim} gradientMap={toonGradient} />
-            </mesh>
-            <mesh position={[0.08, yBase + antLen * 0.5 + 0.02, 0.05]}>
-              <sphereGeometry args={[0.02, 8, 8]} />
-              <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+              <mesh position={[0, antLen * 0.5 + 0.02, 0]}>
+                <sphereGeometry args={[0.02, 8, 8]} />
+                <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1.2 * activityDim} />
+              </mesh>
             </mesh>
           </>
         );
