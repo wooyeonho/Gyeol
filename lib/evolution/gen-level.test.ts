@@ -89,7 +89,7 @@ describe("checkEvolution", () => {
         expect.objectContaining({
           gen_level: 2,
           progress: 0,
-          visual: expect.objectContaining({ shape: "sphere", particles: 3 }),
+          visual: expect.objectContaining({ particles: 10, glow: 46 }),
         })
       );
       expect(insertFn).toHaveBeenCalledWith(
@@ -140,7 +140,7 @@ describe("checkEvolution", () => {
     if (result?.evolved) {
       expect(updateFn).toHaveBeenCalledWith(
         expect.objectContaining({
-          visual: expect.objectContaining({ shape: "polygon", particles: 8, glow: 60 }),
+          visual: expect.objectContaining({ particles: 15, glow: 56 }),
         })
       );
     }
