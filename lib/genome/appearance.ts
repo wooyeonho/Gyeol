@@ -72,17 +72,19 @@ export function deriveDNAAppearance(
 
   const secondaryHueShift = 30 + dna.creativity * 60 - dna.stability * 20;
 
-  // Eye color: continuous weighted blend of emotional DNA axes — no discrete thresholds.
-  // Each axis pulls toward its characteristic hue proportionally to its strength.
-  const eyeHue = (
-    dna.empathy * 340 +    // empathy → pink
-    dna.intensity * 30 +   // intensity → amber
-    dna.curiosity * 190 +  // curiosity → cyan
-    dna.stability * 140 +  // stability → green
-    dna.warmth * 20 +      // warmth → warm gold
-    dna.creativity * 280 + // creativity → purple
-    dna.openness * 200     // openness → teal
-  ) / (dna.empathy + dna.intensity + dna.curiosity + dna.stability + dna.warmth + dna.creativity + dna.openness + 0.001);
+  // Eye color: circular weighted blend of emotional DNA axes — no discrete thresholds.
+  // Uses atan2-based circular mean to handle hue wraparound (e.g. 340° pink + 20° gold = ~0° red, not 180° cyan).
+  const DEG2RAD = Math.PI / 180;
+  const eyeAxes: [number, number][] = [
+    [dna.empathy, 340], [dna.intensity, 30], [dna.curiosity, 190],
+    [dna.stability, 140], [dna.warmth, 20], [dna.creativity, 280], [dna.openness, 200],
+  ];
+  let sinSum = 0, cosSum = 0;
+  for (const [w, h] of eyeAxes) {
+    sinSum += w * Math.sin(h * DEG2RAD);
+    cosSum += w * Math.cos(h * DEG2RAD);
+  }
+  const eyeHue = ((Math.atan2(sinSum, cosSum) / DEG2RAD) + 360) % 360;
 
   // Body shape from cognitive/structural DNA
   const bodyRatio = 0.3 + dna.verbal * 0.3 + dna.spatial * 0.2 - dna.stability * 0.15;
