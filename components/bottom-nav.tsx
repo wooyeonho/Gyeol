@@ -53,6 +53,8 @@ const DISCOVER_PATHS = new Set([
   "/compare",
   "/adopt",
   "/market",
+  "/room",
+  "/constellation",
 ]);
 
 function isTabActive(pathname: string, tabPath: string) {

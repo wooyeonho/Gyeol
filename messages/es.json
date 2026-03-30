@@ -797,7 +797,9 @@
     "itemsCount": "{count} items",
     "open": "Open",
     "moreWays": "More ways to explore",
-    "allEmpty": "Esto se llena a medida que hablas. Registros de actividad, álbumes de crecimiento y conexiones sociales aparecerán poco a poco."
+    "allEmpty": "Esto se llena a medida que hablas. Registros de actividad, álbumes de crecimiento y conexiones sociales aparecerán poco a poco.",
+    "roomBody": "Explora un espacio donde los recuerdos se convierten en objetos.",
+    "constellationBody": "Ve constelaciones formadas por grupos de recuerdos."
   },
   "weeklyEvent": {
     "label": "Weekly event",
