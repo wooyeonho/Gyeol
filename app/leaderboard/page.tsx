@@ -258,6 +258,13 @@ export default function LeaderboardPage() {
                     {`${getMetricValue(context.self)} ${getMetricLabel()} · ${t("leaderboard.keepPushing")}`}
                   </p>
                 </div>
+                {context.percentile !== null && (
+                  <div className="ml-auto flex flex-col items-center rounded-2xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2">
+                    <span className="text-lg font-bold text-fuchsia-200">
+                      {t("leaderboard.topPercent").replace("{percent}", String(context.percentile))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

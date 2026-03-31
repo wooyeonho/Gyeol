@@ -34,10 +34,10 @@ export async function getActiveUserCount(): Promise<number> {
       Date.now() - ACTIVE_WINDOW_MINUTES * 60_000,
     ).toISOString();
 
-    // Count distinct agent_ids with user messages in the window
-    const { count, error } = await db
+    // Fetch distinct agent_ids with user messages in the window
+    const { data, error } = await db
       .from("chats")
-      .select("agent_id", { count: "exact", head: true })
+      .select("agent_id")
       .eq("role", "user")
       .gte("created_at", windowStart);
 
@@ -46,10 +46,11 @@ export async function getActiveUserCount(): Promise<number> {
       return MIN_DISPLAY_COUNT;
     }
 
-    // The count here is total rows, not distinct. We use a heuristic:
-    // average user sends ~3 messages per window, so divide by 3.
-    const rawRows = count ?? 0;
-    const estimatedUsers = Math.max(1, Math.ceil(rawRows / 3));
+    // Count unique agent_ids from the result set
+    const uniqueAgents = new Set(
+      ((data ?? []) as Array<{ agent_id: string }>).map((row) => row.agent_id),
+    );
+    const estimatedUsers = uniqueAgents.size;
 
     // Add small jitter for organic feel
     const jitter = Math.floor(Math.random() * MAX_JITTER);

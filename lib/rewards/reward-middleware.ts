@@ -5,10 +5,13 @@
 import { useAgentStore } from "@/store/agent-store";
 import {
   applyRewardToInventory,
+  consumeComebackMultiplier,
   createWeeklyEventReward,
+  getPlanRewardMultiplier,
   getRewardProgress,
   readRewardInventory,
   rollReward,
+  writeLastRewardAt,
   writeRewardInventory,
   writeMessagesSinceReward,
   type RewardInventory,
@@ -39,15 +42,31 @@ export function processMessageReward(
   const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
   const nextMessagesSinceReward = currentProgress.messagesSinceReward + 1;
   const guaranteedProgress = getRewardProgress(nextMessagesSinceReward, streakDays);
+
+  // Consume one-time comeback multiplier (set by ComebackBanner on return)
+  const comebackMul = consumeComebackMultiplier();
+
+  // Apply plan-tier multiplier (Pro=1.5x, Premium=2x)
+  const planTier = useAgentStore.getState().planTier;
+  const planMul = getPlanRewardMultiplier(planTier);
+
+  // Effective comeback multiplier combines plan bonus
+  const effectiveComebackMul = Math.max(comebackMul, planMul);
+
   const reward = rollReward(streakDays, {
     forceReward: guaranteedProgress.messagesUntilGuaranteed === 0,
     source: "message",
+    comebackMultiplier: effectiveComebackMul,
   });
 
   if (reward.tier !== "none") {
     const freshInventory = readRewardInventory();
     const nextInventory = applyRewardToInventory(freshInventory, reward);
     persistRewardState(nextInventory, 0);
+    // Record reward timestamp for expiry countdown
+    writeLastRewardAt();
+    // Fire-and-forget: persist to server for server-side expiry checks
+    fetch("/api/reward/track", { method: "POST" }).catch(() => {});
 
     if (reward.tier === "jackpot") {
       haptic("jackpot");
