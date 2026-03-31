@@ -1121,5 +1121,15 @@
     "readWill": "Leer sus últimas palabras",
     "will": "Últimas palabras",
     "rebirth": "Comenzar una nueva vida"
+  },
+  "presence": {
+    "activeNow": "{count} personas cuidando criaturas ahora",
+    "activeCompact": "{count} activos"
+  },
+  "comeback": {
+    "title": "¡Bienvenido/a de vuelta!",
+    "multiplier": "{multiplier}x recompensas",
+    "description": "Estuviste ausente un tiempo — tu primera recompensa se multiplica por {multiplier}.",
+    "claim": "Reclamar recompensa"
   }
 }

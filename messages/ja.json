@@ -1121,5 +1121,15 @@
     "readWill": "遺言を読む",
     "will": "遺言",
     "rebirth": "新しい命を始める"
+  },
+  "presence": {
+    "activeNow": "今{count}人が生き物の世話をしています",
+    "activeCompact": "{count}人アクティブ"
+  },
+  "comeback": {
+    "title": "おかえりなさい！",
+    "multiplier": "{multiplier}x 報酬",
+    "description": "しばらく離れていたので、最初の報酬が{multiplier}倍になります。",
+    "claim": "報酬を受け取る"
   }
 }

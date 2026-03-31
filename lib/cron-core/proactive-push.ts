@@ -1,8 +1,11 @@
 // Extracted proactive-push logic — pure TypeScript, zero Next.js dependencies.
+// Enhanced with personalized creature-name push templates (retention feature).
 
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { buildPersonalizedPush } from "@/lib/retention/personalized-push";
+import type { PushContext } from "@/lib/retention/personalized-push";
 
 export async function executeProactivePush(): Promise<CronResult> {
   try {
@@ -14,7 +17,7 @@ export async function executeProactivePush(): Promise<CronResult> {
     // Find agents with vitality < 0.4 or who haven't chatted today (streak at risk)
     const { data: agents } = await service
       .from("agent_state")
-      .select("agent_id, user_id, vitality, self_name, total_messages, config")
+      .select("agent_id, user_id, vitality, self_name, total_messages, config, streak_days")
       .lt("vitality", 0.4)
       .limit(100);
 
@@ -45,30 +48,38 @@ export async function executeProactivePush(): Promise<CronResult> {
 
         if (!subs || subs.length === 0) continue;
 
-        const locale = resolveGenerationLocale({ config: agent.config });
-        const isKo = locale === "ko";
-        const isJa = locale === "ja";
-        const isZh = locale === "zh";
-        const isEs = locale === "es";
+        // Determine hours since last user message for personalization
+        const { data: lastChat } = await service
+          .from("chats")
+          .select("created_at")
+          .eq("agent_id", agent.agent_id)
+          .eq("role", "user")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const hoursAbsent = lastChat
+          ? (Date.now() - new Date((lastChat as { created_at: string }).created_at).getTime()) / 3600000
+          : 48;
 
-        const title = typeof agent.self_name === "string" && agent.self_name
+        const locale = resolveGenerationLocale({ config: agent.config });
+        const creatureName = typeof agent.self_name === "string" && agent.self_name
           ? agent.self_name
-          : isKo ? "결" : "GYEOL";
+          : locale === "ko" ? "결" : "GYEOL";
 
         const vitalityPct = Math.round((agent.vitality ?? 1) * 100);
-        const isLowVitality = vitalityPct < 50;
+        const streakDays = typeof (agent as Record<string, unknown>).streak_days === "number"
+          ? (agent as Record<string, unknown>).streak_days as number
+          : 0;
 
-        const body = isLowVitality
-          ? isKo ? `활력이 ${vitalityPct}%까지 떨어졌어요. 짧은 대화 한 마디면 다시 살아날 수 있어요.`
-            : isJa ? `活力が${vitalityPct}%まで下がりました。一言話しかけるだけで元気になれます。`
-            : isZh ? `活力降到了${vitalityPct}%。说一句话就能恢复。`
-            : isEs ? `La vitalidad bajó al ${vitalityPct}%. Una breve charla puede revivirme.`
-            : `Vitality dropped to ${vitalityPct}%. A short chat can bring me back.`
-          : isKo ? "오늘 아직 대화가 없었어요. 한 마디 건네면 연속 기록이 이어집니다."
-            : isJa ? "今日はまだ会話がありません。一言で連続記録が続きます。"
-            : isZh ? "今天还没有对话。说一句话就能延续连续记录。"
-            : isEs ? "Aún no hemos hablado hoy. Un mensaje mantiene tu racha."
-            : "We haven't talked today. A quick message keeps your streak going.";
+        // Build personalized push using creature name + emotional context
+        const pushCtx: PushContext = {
+          creatureName,
+          vitalityPct,
+          streakDays,
+          hoursAbsent,
+          locale: locale as PushContext["locale"],
+        };
+        const { title, body } = buildPersonalizedPush(pushCtx, agent.agent_id);
 
         // Use internal push endpoint
         const pushRes = await fetch(
