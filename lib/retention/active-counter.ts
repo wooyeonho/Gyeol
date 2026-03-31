@@ -34,12 +34,15 @@ export async function getActiveUserCount(): Promise<number> {
       Date.now() - ACTIVE_WINDOW_MINUTES * 60_000,
     ).toISOString();
 
-    // Fetch distinct agent_ids with user messages in the window
+    // Fetch agent_ids with user messages in the window.
+    // Use an explicit large limit to avoid Supabase's default 1000-row cap
+    // silently truncating the result set.
     const { data, error } = await db
       .from("chats")
       .select("agent_id")
       .eq("role", "user")
-      .gte("created_at", windowStart);
+      .gte("created_at", windowStart)
+      .limit(10_000);
 
     if (error) {
       logWarn("getActiveUserCount query failed", { error: error.message });

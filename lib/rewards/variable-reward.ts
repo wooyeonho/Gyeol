@@ -366,18 +366,23 @@ export function writeComebackMultiplier(multiplier: number) {
 }
 
 /**
- * Read and consume the stored comeback multiplier.
+ * Read the stored comeback multiplier without clearing it.
  * Returns 1 (no bonus) if none is stored.
  */
-export function consumeComebackMultiplier(): number {
+export function readComebackMultiplier(): number {
   const raw = readStorageString(REWARD_STORAGE_KEYS.comebackMultiplier);
   if (!raw) return 1;
   const value = Number(raw);
-  // Clear after reading — one-time use
+  return Number.isFinite(value) && value > 1 ? value : 1;
+}
+
+/**
+ * Clear the stored comeback multiplier (call after a reward is actually granted).
+ */
+export function clearComebackMultiplier() {
   if (isBrowser()) {
     try { window.localStorage.removeItem(REWARD_STORAGE_KEYS.comebackMultiplier); } catch { /* ignore */ }
   }
-  return Number.isFinite(value) && value > 1 ? value : 1;
 }
 
 // ---------------------------------------------------------------------------
