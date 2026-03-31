@@ -6,7 +6,7 @@ import * as THREE from "three";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
-import { deriveDNAAppearance } from "@/lib/genome/appearance";
+import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
@@ -134,10 +134,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const lookCurrentRef = useRef({ x: 0, y: 0 });
   const lookActiveRef = useRef(false);
   const lookReturnTimerRef = useRef(0);
+  // Smoothly interpolated activity parameters — prevents discrete jumps between awake/drowsy/sleeping
+  const activityDimRef = useRef(1);
+  const activityMultRef = useRef(1);
 
-  const appearance = useMemo(
+  const baseAppearance = useMemo(
     () => deriveDNAAppearance(dna, species, genLevel),
     [dna, species, genLevel],
+  );
+  // Devolution visual: vitality < 1 desaturates, dims glow, shrinks particles/scale
+  const appearance = useMemo(
+    () => applyVitalityRegression(baseAppearance, vitality),
+    [baseAppearance, vitality],
   );
   const morphWeights = useMemo(
     () => deriveMorphWeights(dna, species, genLevel),
@@ -446,7 +454,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   const moodAuraColor = useMemo(() => new THREE.Color(moodMod.auraColor), [moodMod.auraColor]);
 
-  const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
+  // activityDim/Mult are smoothly interpolated inside useFrame (no discrete jumps)
+  const activityDimTarget = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
+  const activityMultTarget = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
+  const activityDim = activityDimTarget; // static fallback for JSX outside useFrame
   // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
 
@@ -485,7 +496,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     const t = state.clock.elapsedTime;
     const dt = state.clock.getDelta();
-    const activityMult = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
+    // Smoothly lerp activity parameters toward target (no discrete jumps between states)
+    activityDimRef.current += (activityDimTarget - activityDimRef.current) * 0.04;
+    activityMultRef.current += (activityMultTarget - activityMultRef.current) * 0.04;
+    const activityMult = activityMultRef.current;
+    const smoothActivityDim = activityDimRef.current;
 
     const leanTarget = isListening ? 0.12 : 0;
     listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
@@ -588,7 +603,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const haloPulse = 1 + Math.sin(t * 0.8 * energyMult) * 0.05 + excitePulse * 0.1 + energy * 0.08;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * activityDim;
+        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim;
     }
 
     const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });

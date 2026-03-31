@@ -76,7 +76,24 @@ const LINEAR_DAMPING = 0.92;
 const ANGULAR_DAMPING = 0.88;
 /** Base max velocity — DNA can push beyond this */
 const BASE_MAX_VELOCITY = 0.8;
-const MAX_ANGULAR_VELOCITY = 2.0;
+
+/**
+ * Smooth activation function — replaces binary if/else thresholds.
+ * Returns 0 when x <= edge0, 1 when x >= edge1, smooth interpolation between.
+ * This is the key to converting discrete gates → continuous behavior.
+ */
+function smoothActivation(x: number, edge0: number, edge1: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t); // Hermite smoothstep
+}
+
+/**
+ * DNA-dependent max angular velocity.
+ * Playful, intense creatures spin faster. Stable ones are calmer.
+ */
+function getEffectiveMaxAngularVelocity(dna: CreatureDNA): number {
+  return 1.5 + dna.playfulness * 0.8 + dna.intensity * 0.5 - dna.stability * 0.3;
+}
 
 /**
  * Derive effective movement bounds from DNA.
@@ -191,27 +208,34 @@ export function computeForces(
     const ndx = dx / dist;
     const ndy = dy / dist;
 
-    // Attraction: warmth + empathy pull toward pointer
+    // Attraction: warmth + empathy pull toward pointer — continuous activation
+    // socialPull smoothly activates from 0→1 across [-0.1, 0.3] range (no binary gate)
     const socialPull = dna.warmth * 0.35 + dna.empathy * 0.25 - dna.independence * 0.2;
-
-    if (socialPull > 0.1) {
+    const pullActivation = smoothActivation(socialPull, -0.1, 0.3);
+    {
       // Approach but don't overlap — inverse-square falloff at close range
-      const approachForce = socialPull * Math.min(1, dist * 2) * 0.08;
+      const approachForce = socialPull * pullActivation * Math.min(1, dist * 2) * 0.08;
       fx += ndx * approachForce;
       fy += ndy * approachForce;
     }
 
-    // Repulsion: if recently touched negatively, flee
-    if (env.recentTouchAffinity < -0.3 && dna.stability < 0.5) {
-      const fleeStrength = (1 - dna.assertiveness) * 0.12;
+    // Repulsion: negative touch + low stability → flee (continuous product, no binary gates)
+    // fleeActivation = how negative the touch was × how unstable the creature is
+    const touchNeg = smoothActivation(-env.recentTouchAffinity, 0.1, 0.5); // negative affinity → positive activation
+    const instability = smoothActivation(1 - dna.stability, 0.3, 0.8);
+    {
+      const fleeStrength = touchNeg * instability * (1 - dna.assertiveness) * 0.12;
       fx -= ndx * fleeStrength;
       fy -= ndy * fleeStrength;
     }
 
-    // Curiosity: oscillate around pointer (not directly toward it)
-    if (dna.curiosity > 0.5 && dist > 0.1) {
+    // Curiosity: oscillate around pointer — continuous strength (no threshold)
+    // orbitStrength rises smoothly from curiosity 0.2→0.7 and distance 0→0.2
+    const orbitActivation = smoothActivation(dna.curiosity, 0.2, 0.7);
+    const distActivation = smoothActivation(dist, 0.02, 0.2);
+    {
       const orbitAngle = Math.atan2(dy, dx) + Math.PI / 2;
-      const orbitStrength = (dna.curiosity - 0.5) * 0.06;
+      const orbitStrength = dna.curiosity * orbitActivation * distActivation * 0.06;
       fx += Math.cos(orbitAngle) * orbitStrength;
       fy += Math.sin(orbitAngle) * orbitStrength;
     }
@@ -278,13 +302,15 @@ export function computeTorque(
     torque += angleDiff * 0.3;
   }
 
-  // Playful creatures spin more
-  if (dna.playfulness > 0.6) {
-    torque += smoothNoise(env.time * 0.5 + seed, env.time * 0.3) * dna.playfulness * 0.15;
-  }
+  // Playful creatures spin more — continuous activation (no binary gate)
+  // Even slightly playful creatures (0.3) contribute a small spin
+  const playfulSpin = smoothActivation(dna.playfulness, 0.2, 0.7);
+  torque += smoothNoise(env.time * 0.5 + seed, env.time * 0.3) * dna.playfulness * playfulSpin * 0.15;
 
-  // Curious creatures tilt toward pointer
-  if (dna.curiosity > 0.5 && env.isActive) {
+  // Curious creatures tilt toward pointer — continuous activation (no binary gate)
+  // Even mildly curious creatures (0.3) have a subtle pointer-tracking tendency
+  const curiousTilt = smoothActivation(dna.curiosity, 0.2, 0.7);
+  if (env.isActive) {
     const angleToPointer = Math.atan2(
       env.pointer.y - state.position.y,
       env.pointer.x - state.position.x,
@@ -292,7 +318,7 @@ export function computeTorque(
     let diff = angleToPointer - state.rotation;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    torque += diff * dna.curiosity * 0.1;
+    torque += diff * dna.curiosity * curiousTilt * 0.1;
   }
 
   return torque;
@@ -369,10 +395,11 @@ export function stepForceSimulation(
   px = Math.max(-hardBound, Math.min(hardBound, px));
   py = Math.max(-hardBound, Math.min(hardBound, py));
 
-  // Angular
+  // Angular — DNA-dependent max angular velocity (no hard cap)
   let av = prev.angularVelocity * ANGULAR_DAMPING + torque * dt;
-  if (Math.abs(av) > MAX_ANGULAR_VELOCITY) {
-    av = Math.sign(av) * MAX_ANGULAR_VELOCITY;
+  const maxAV = getEffectiveMaxAngularVelocity(dna);
+  if (Math.abs(av) > maxAV) {
+    av = Math.sign(av) * maxAV;
   }
   const rotation = prev.rotation + av * dt;
 
