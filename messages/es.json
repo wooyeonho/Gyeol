@@ -1123,8 +1123,7 @@
     "rebirth": "Comenzar una nueva vida"
   },
   "presence": {
-    "activeNow": "{count} personas cuidando criaturas ahora",
-    "activeCompact": "{count} activos"
+    "activeNow": "{count} personas cuidando criaturas ahora"
   },
   "comeback": {
     "title": "¡Bienvenido/a de vuelta!",

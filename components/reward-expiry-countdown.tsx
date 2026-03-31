@@ -92,7 +92,7 @@ export function RewardExpiryCountdown() {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={`mb-2 overflow-hidden rounded-xl border ${style.border} ${style.bg} px-3 py-2`}
+      className={`relative mb-2 overflow-hidden rounded-xl border ${style.border} ${style.bg} px-3 py-2`}
     >
       <div className={`absolute inset-0 animate-pulse bg-gradient-to-r ${style.glow}`} />
       <div className="relative flex items-center gap-2">

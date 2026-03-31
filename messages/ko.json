@@ -1120,8 +1120,7 @@
     "rebirth": "새 생명 시작하기"
   },
   "presence": {
-    "activeNow": "지금 {count}명이 생명체를 돌보고 있어요",
-    "activeCompact": "{count}명 활동 중"
+    "activeNow": "지금 {count}명이 생명체를 돌보고 있어요"
   },
   "comeback": {
     "title": "복귀 보너스!",
