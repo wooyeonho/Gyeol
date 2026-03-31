@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -456,7 +456,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   );
 
   // surfaceHardness drives toon gradient sharpness: soft → smooth bands, hard → crisp steps
+  const toonGradientRef = useRef<THREE.DataTexture | null>(null);
   const toonGradient = useMemo(() => {
+    if (toonGradientRef.current) {
+      toonGradientRef.current.dispose();
+    }
     const h = surfaceProps.hardness;
     // Soft (h≈0): gentle gradient [30, 70, 120, 180, 245]
     // Hard (h≈1): sharp steps [10, 40, 140, 220, 255]
@@ -472,8 +476,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     tex.minFilter = THREE.NearestFilter;
     tex.magFilter = THREE.NearestFilter;
     tex.needsUpdate = true;
+    toonGradientRef.current = tex;
     return tex;
   }, [surfaceProps.hardness]);
+  // Dispose GPU texture on unmount
+  useEffect(() => {
+    return () => { toonGradientRef.current?.dispose(); };
+  }, []);
 
   // Animation loop
   useFrame((state) => {
@@ -689,7 +698,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       </mesh>
 
       {/* Body segments: extra segment meshes stacked along Y when bodySegments > 1 */}
-      {bodySegmentsConfig.count > 1 && (() => {
+      {(bodySegmentsConfig.count > 1 || bodySegmentsConfig.fractional > 0.025) && (() => {
         const els: React.ReactElement[] = [];
         // Full segments (si=1 to count-1) at constant opacity
         for (let si = 1; si < bodySegmentsConfig.count; si++) {
