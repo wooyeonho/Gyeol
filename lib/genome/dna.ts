@@ -252,6 +252,46 @@ export function applyDnaShift(
   return { dna: next, axis, delta };
 }
 
+/**
+ * Breed two creatures — DNA crossover + small random mutation.
+ *
+ * For each of the 16 axes the child inherits from one parent (50/50 coin flip)
+ * then a small mutation (±2-5 % scaled by genLevel) is applied.
+ *
+ * @returns the child DNA and which axes were mutated beyond the crossover.
+ */
+export function breedCreatures(
+  parentA: CreatureDNA,
+  parentB: CreatureDNA,
+  genLevel: number,
+  /** Optional deterministic seed — defaults to Date.now() */
+  seed?: number,
+): { dna: CreatureDNA; mutatedAxes: DNAAxis[] } {
+  const s = seed ?? Date.now();
+  const child: Record<string, number> = {};
+  const mutated: DNAAxis[] = [];
+
+  for (let i = 0; i < DNA_AXES.length; i++) {
+    const axis = DNA_AXES[i];
+    // Deterministic coin-flip per axis using seed + index
+    const coinHash = hashString(`${s}:cross:${i}:${axis}`);
+    const inherited = coinHash % 2 === 0 ? parentA[axis] : parentB[axis];
+
+    // Mutation: ±2-5 % base, scaled up slightly with genLevel (higher gen → broader offspring variety)
+    const mutRange = 0.02 + Math.min(genLevel, 20) * 0.0015; // 2 % at gen 1, ~5 % at gen 20
+    const mutHash = hashString(`${s}:mut:${i}:${axis}`);
+    const mutFraction = (mutHash % 10000) / 10000; // 0..1
+    const mutDelta = (mutFraction * 2 - 1) * mutRange; // ±mutRange
+
+    const value = clamp(inherited + mutDelta, 0, 1);
+    child[axis] = value;
+
+    if (Math.abs(mutDelta) > 0.005) mutated.push(axis);
+  }
+
+  return { dna: child as unknown as CreatureDNA, mutatedAxes: mutated };
+}
+
 // --- helpers ---
 
 function clamp(v: number, min: number, max: number) {

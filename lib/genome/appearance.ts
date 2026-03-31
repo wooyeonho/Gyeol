@@ -179,7 +179,48 @@ export function dnaAppearanceToColors(appearance: DNAAppearance) {
   };
 }
 
-// clamp kept for potential future use
-// function clamp(v: number, min: number, max: number) {
-//   return Math.min(max, Math.max(min, v));
-// }
+/**
+ * Apply vitality-based visual regression (devolution).
+ *
+ * When vitality drops below 1.0 the creature's appearance degrades:
+ * - Colors desaturate toward grayscale
+ * - Glow and emissive intensity fade
+ * - Particle count and drift shrink
+ * - Breathe amplitude dampens
+ * - Scale contracts slightly
+ *
+ * vitality 1.0 = no change, 0.0 = fully regressed.
+ */
+export function applyVitalityRegression(
+  base: DNAAppearance,
+  vitality: number,
+): DNAAppearance {
+  // Clamp vitality to [0, 1] — values above 1 mean no regression
+  const v = Math.max(0, Math.min(1, vitality));
+  if (v >= 1) return base;
+
+  // Regression factor: 0 at full vitality, 1 at zero vitality
+  const r = 1 - v;
+
+  return {
+    ...base,
+    // Desaturate: saturation fades toward 0 as vitality drops
+    primarySaturation: Math.max(0, base.primarySaturation * (1 - r * 0.85)),
+    // Lightness shifts toward a dull grey (40%)
+    primaryLightness: base.primaryLightness + (40 - base.primaryLightness) * r * 0.6,
+    // Glow fades
+    glowIntensity: Math.max(0, base.glowIntensity * (1 - r * 0.9)),
+    glowPulseSpeed: Math.max(0.1, base.glowPulseSpeed * (1 - r * 0.5)),
+    // Particles shrink and slow
+    particleCount: Math.max(0, Math.round(base.particleCount * (1 - r * 0.7))),
+    particleDrift: Math.max(0, base.particleDrift * (1 - r * 0.6)),
+    particleSize: Math.max(0.002, base.particleSize * (1 - r * 0.4)),
+    // Breathing dampens
+    breatheDepth: Math.max(0, base.breatheDepth * (1 - r * 0.7)),
+    breatheSpeed: Math.max(0.1, base.breatheSpeed * (1 - r * 0.4)),
+    // Body shrinks slightly
+    scale: Math.max(0.2, base.scale * (1 - r * 0.15)),
+    // Idle rotation slows
+    idleRotation: Math.max(0, base.idleRotation * (1 - r * 0.6)),
+  };
+}

@@ -3,6 +3,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getPrimaryAgent } from "@/lib/agents/primary";
+import { breedCreatures } from "@/lib/genome/dna";
+import type { CreatureDNA } from "@/lib/genome/dna";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -64,10 +66,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, status: "rejected" });
     }
     if (action !== "accept") return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    return NextResponse.json(
-      { error: "Breeding accept is not yet available. It will be enabled after multi-agent support." },
-      { status: 409 }
+
+    // ── Breeding accept: DNA crossover + create offspring agent ──
+    // Fetch both parents' genome (DNA) and gen_level
+    const [parentAState, parentBState] = await Promise.all([
+      service.from("agent_state").select("genome, gen_level").eq("agent_id", record.parent_a).single(),
+      service.from("agent_state").select("genome, gen_level").eq("agent_id", record.parent_b).single(),
+    ]);
+    const dnaA = (parentAState.data?.genome as Record<string, unknown>)?.dna as CreatureDNA | undefined;
+    const dnaB = (parentBState.data?.genome as Record<string, unknown>)?.dna as CreatureDNA | undefined;
+    if (!dnaA || !dnaB) {
+      return NextResponse.json({ error: "Parent DNA not found — both parents must have genome data" }, { status: 422 });
+    }
+    const parentGenLevel = Math.max(
+      (parentAState.data?.gen_level as number) ?? 1,
+      (parentBState.data?.gen_level as number) ?? 1,
     );
+    const { dna: childDna, mutatedAxes } = breedCreatures(dnaA, dnaB, parentGenLevel);
+
+    // Create the offspring agent under the accepting user
+    const { data: childAgent, error: childErr } = await service
+      .from("agents")
+      .insert({ user_id: user.id })
+      .select("id")
+      .single();
+    if (childErr || !childAgent) {
+      return NextResponse.json({ error: "Failed to create offspring agent" }, { status: 500 });
+    }
+
+    // Initialize offspring agent_state with bred DNA at gen_level 1
+    await service.from("agent_state").insert({
+      agent_id: childAgent.id,
+      gen_level: 1,
+      genome: { dna: childDna },
+      vitality: 1,
+      progress: 0,
+      total_messages: 0,
+      intimacy_score: 0,
+    });
+
+    // Update breeding record with child reference and traits blend
+    await service.from("breeding_records").update({
+      status: "accepted",
+      child_id: childAgent.id,
+      traits_blend: { childDna, mutatedAxes, parentGenLevel },
+    }).eq("id", recordId);
+
+    return NextResponse.json({
+      ok: true,
+      status: "accepted",
+      child_id: childAgent.id,
+      mutated_axes: mutatedAxes,
+    });
   } catch (e) {
     console.error("breeding POST", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
