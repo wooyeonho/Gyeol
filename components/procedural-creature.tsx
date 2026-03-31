@@ -691,14 +691,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       {/* Body segments: extra segment meshes stacked along Y when bodySegments > 1 */}
       {bodySegmentsConfig.count > 1 && (() => {
         const els: React.ReactElement[] = [];
-        // Start from segment index 1 (segment 0 = the main body)
+        // Full segments (si=1 to count-1) at constant opacity
         for (let si = 1; si < bodySegmentsConfig.count; si++) {
-          const segScale = 1 - si * 0.12; // each segment slightly smaller
-          const yOff = -si * 0.22 * bodyElongation; // stack downward
-          const segOpacity = si < bodySegmentsConfig.count - 1
-            ? 0.75
-            : 0.75 * Math.min(1, bodySegmentsConfig.fractional * 2); // fade partial segment
-          if (segOpacity < 0.05) continue;
+          const segScale = 1 - si * 0.12;
+          const yOff = -si * 0.22 * bodyElongation;
           const segRadius = blendedGeo.radius * segScale;
           els.push(
             <mesh key={`seg-${si}`} position={[0, yOff, 0]} scale={[segScale, segScale * 0.85, segScale]}>
@@ -708,11 +704,34 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
                 emissive={si % 2 === 0 ? primaryColor : secondaryColor}
                 emissiveIntensity={emissiveIntensity * 0.7}
                 transparent
-                opacity={segOpacity * activityDim * Math.max(0.5, vitality)}
+                opacity={0.75 * activityDim * Math.max(0.5, vitality)}
                 gradientMap={toonGradient}
               />
             </mesh>,
           );
+        }
+        // Partial/growing segment — fades in as fractional approaches 1
+        if (bodySegmentsConfig.fractional > 0.025) {
+          const si = bodySegmentsConfig.count;
+          const segScale = 1 - si * 0.12;
+          const yOff = -si * 0.22 * bodyElongation;
+          const segRadius = blendedGeo.radius * segScale;
+          const partialOpacity = 0.75 * Math.min(1, bodySegmentsConfig.fractional * 2);
+          if (partialOpacity >= 0.05) {
+            els.push(
+              <mesh key={`seg-${si}`} position={[0, yOff, 0]} scale={[segScale, segScale * 0.85, segScale]}>
+                <sphereGeometry args={[segRadius, 12, 10]} />
+                <meshToonMaterial
+                  color={si % 2 === 0 ? primaryColor : secondaryColor}
+                  emissive={si % 2 === 0 ? primaryColor : secondaryColor}
+                  emissiveIntensity={emissiveIntensity * 0.7}
+                  transparent
+                  opacity={partialOpacity * activityDim * Math.max(0.5, vitality)}
+                  gradientMap={toonGradient}
+                />
+              </mesh>,
+            );
+          }
         }
         return <>{els}</>;
       })()}
