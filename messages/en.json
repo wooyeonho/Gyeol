@@ -1128,5 +1128,15 @@
     "multiplier": "{multiplier}x rewards",
     "description": "You were away for a while — your first reward is boosted {multiplier}x.",
     "claim": "Claim reward"
+  },
+  "reward": {
+    "expiryWarning": "Reward expiring soon",
+    "expiresIn": "{hours}h {minutes}m left",
+    "expiresInMinutes": "{minutes}m left"
+  },
+  "duo": {
+    "riskTitle": "Duo streak at risk!",
+    "riskBody": "Your {days}-day streak with {name} breaks in {hours}",
+    "chatNow": "Chat now"
   }
 }

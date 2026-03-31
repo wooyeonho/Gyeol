@@ -1128,5 +1128,15 @@
     "multiplier": "{multiplier}x 보상",
     "description": "오래 떨어져 있었으니 첫 보상이 {multiplier}배로 늘어납니다.",
     "claim": "보상 받기"
+  },
+  "reward": {
+    "expiryWarning": "보상이 곧 사라져요",
+    "expiresIn": "{hours}시간 {minutes}분 남음",
+    "expiresInMinutes": "{minutes}분 남음"
+  },
+  "duo": {
+    "riskTitle": "듀오 스트릭 위험!",
+    "riskBody": "{name}과(와)의 {days}일 스트릭이 {hours} 후 끊겨요",
+    "chatNow": "지금 대화하기"
   }
 }

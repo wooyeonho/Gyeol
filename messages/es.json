@@ -1131,5 +1131,15 @@
     "multiplier": "{multiplier}x recompensas",
     "description": "Estuviste ausente un tiempo — tu primera recompensa se multiplica por {multiplier}.",
     "claim": "Reclamar recompensa"
+  },
+  "reward": {
+    "expiryWarning": "Recompensa a punto de expirar",
+    "expiresIn": "{hours}h {minutes}m restantes",
+    "expiresInMinutes": "{minutes}m restantes"
+  },
+  "duo": {
+    "riskTitle": "¡Racha dúo en riesgo!",
+    "riskBody": "Tu racha de {days} días con {name} se rompe en {hours}",
+    "chatNow": "Chatear ahora"
   }
 }
