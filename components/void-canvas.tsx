@@ -63,6 +63,7 @@ function CssVoidFallback({
   breathPhase = 0,
   creatureActivity = "awake" as CreatureActivity,
   excitePulse = 0,
+  forceState,
 }: {
   color: string;
   size: number;
@@ -75,6 +76,7 @@ function CssVoidFallback({
   breathPhase?: number;
   creatureActivity?: CreatureActivity;
   excitePulse?: number;
+  forceState?: ForceState | null;
 }) {
   const secondaryColor = useMemo(() => {
     const raw = color.replace("#", "");
@@ -123,7 +125,7 @@ function CssVoidFallback({
           style={{
             width: size * 5,
             height: size * 5,
-            transform: `scale(${effectiveScale})`,
+            transform: `translate(${(forceState?.position.x ?? 0) * 100}px, ${-(forceState?.position.y ?? 0) * 100}px) scale(${effectiveScale * (forceState?.scalePulse ?? 1)})`,
             transition: "transform 80ms ease-out",
           }}
         >
@@ -308,6 +310,7 @@ export function VoidCanvas({
           breathPhase={breathPhase}
           creatureActivity={creatureActivity}
           excitePulse={excitePulse}
+          forceState={forceState}
         />
       )}
     </div>
