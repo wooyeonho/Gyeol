@@ -1131,5 +1131,15 @@
     "multiplier": "{multiplier}x 報酬",
     "description": "しばらく離れていたので、最初の報酬が{multiplier}倍になります。",
     "claim": "報酬を受け取る"
+  },
+  "reward": {
+    "expiryWarning": "報酬の期限が迫っています",
+    "expiresIn": "残り{hours}時間{minutes}分",
+    "expiresInMinutes": "残り{minutes}分"
+  },
+  "duo": {
+    "riskTitle": "デュオストリークが危険！",
+    "riskBody": "{name}との{days}日ストリークが{hours}後に途切れます",
+    "chatNow": "今すぐチャット"
   }
 }

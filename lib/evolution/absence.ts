@@ -20,6 +20,7 @@ import type { CreatureDNA, DNAAxis } from "@/lib/genome/dna";
 import { DNA_AXES } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { logWarn } from "@/lib/ops/logger";
+import { resetComebackFlag } from "@/lib/retention/comeback-reward";
 
 /** Maximum missed-event entries kept per creature. */
 const MAX_ABSENCE_EVENTS = 5;
@@ -166,6 +167,11 @@ export async function processAbsenceDrift(agentId: string, hoursAbsent: number):
     }
 
     await db.from("agent_state").update(updatePayload).eq("agent_id", agentId);
+
+    // Reset comeback bonus flag so it can be re-earned on next return
+    if (hoursAbsent >= 72) {
+      await resetComebackFlag(agentId);
+    }
   } catch (error) {
     logWarn("processAbsenceDrift failed", {
       agentId,

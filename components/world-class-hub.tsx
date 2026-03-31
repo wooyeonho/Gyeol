@@ -14,6 +14,9 @@ import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { haptic } from "@/lib/micro-interactions";
 import { ActiveCounter } from "@/components/active-counter";
+import { ComebackBanner } from "@/components/comeback-banner";
+import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
+import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
 
 export type HomeSummaryItem = {
   id: string;
@@ -216,6 +219,8 @@ export function WorldClassHub() {
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
+      <ComebackBanner />
+      <DuoStreakAlertBanner />
       <motion.section
         className="overflow-hidden rounded-[2rem] border border-white/15 bg-black/55 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl"
         layout
@@ -372,6 +377,7 @@ export function WorldClassHub() {
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <RewardExpiryCountdown />
                     <p className="text-sm font-medium text-white">{t("home.rewardLoop")}</p>
                     <p className="mt-1 text-xs text-white/65">
                       {rewardProgress.messagesUntilGuaranteed <= 0

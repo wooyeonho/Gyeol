@@ -35,7 +35,7 @@ export async function getActiveUserCount(): Promise<number> {
     ).toISOString();
 
     // Count distinct agent_ids with user messages in the window
-    const { data, error } = await db
+    const { count, error } = await db
       .from("chats")
       .select("agent_id", { count: "exact", head: true })
       .eq("role", "user")
@@ -48,7 +48,7 @@ export async function getActiveUserCount(): Promise<number> {
 
     // The count here is total rows, not distinct. We use a heuristic:
     // average user sends ~3 messages per window, so divide by 3.
-    const rawRows = typeof data === "number" ? data : 0;
+    const rawRows = count ?? 0;
     const estimatedUsers = Math.max(1, Math.ceil(rawRows / 3));
 
     // Add small jitter for organic feel
@@ -56,44 +56,6 @@ export async function getActiveUserCount(): Promise<number> {
     return Math.max(MIN_DISPLAY_COUNT, estimatedUsers + jitter);
   } catch (error) {
     logWarn("getActiveUserCount failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return MIN_DISPLAY_COUNT;
-  }
-}
-
-/**
- * Get the active count using the exact count from Supabase.
- * More accurate but slightly heavier query.
- */
-export async function getActiveUserCountExact(): Promise<number> {
-  const db = createServiceClient();
-
-  try {
-    const windowStart = new Date(
-      Date.now() - ACTIVE_WINDOW_MINUTES * 60_000,
-    ).toISOString();
-
-    // Use a distinct count via RPC or fallback to estimation
-    const { count, error } = await db
-      .from("chats")
-      .select("agent_id", { count: "exact", head: true })
-      .eq("role", "user")
-      .gte("created_at", windowStart);
-
-    if (error) {
-      logWarn("getActiveUserCountExact query failed", { error: error.message });
-      return MIN_DISPLAY_COUNT;
-    }
-
-    const rawCount = count ?? 0;
-    // Approximate distinct users: divide total messages by avg messages per session
-    const estimatedDistinct = Math.max(1, Math.ceil(rawCount / 3));
-
-    const jitter = Math.floor(Math.random() * (MAX_JITTER - 1)) + 1;
-    return Math.max(MIN_DISPLAY_COUNT, estimatedDistinct + jitter);
-  } catch (error) {
-    logWarn("getActiveUserCountExact failed", {
       error: error instanceof Error ? error.message : String(error),
     });
     return MIN_DISPLAY_COUNT;

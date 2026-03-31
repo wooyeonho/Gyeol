@@ -1131,5 +1131,15 @@
     "multiplier": "{multiplier}x 奖励",
     "description": "你离开了一段时间——第一次奖励提升{multiplier}倍。",
     "claim": "领取奖励"
+  },
+  "reward": {
+    "expiryWarning": "奖励即将过期",
+    "expiresIn": "剩余{hours}小时{minutes}分钟",
+    "expiresInMinutes": "剩余{minutes}分钟"
+  },
+  "duo": {
+    "riskTitle": "双人连胜危险！",
+    "riskBody": "与{name}的{days}天连胜将在{hours}后中断",
+    "chatNow": "立刻聊天"
   }
 }
