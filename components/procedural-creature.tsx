@@ -456,11 +456,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   );
 
   // surfaceHardness drives toon gradient sharpness: soft → smooth bands, hard → crisp steps
-  const toonGradientRef = useRef<THREE.DataTexture | null>(null);
   const toonGradient = useMemo(() => {
-    if (toonGradientRef.current) {
-      toonGradientRef.current.dispose();
-    }
     const h = surfaceProps.hardness;
     // Soft (h≈0): gentle gradient [30, 70, 120, 180, 245]
     // Hard (h≈1): sharp steps [10, 40, 140, 220, 255]
@@ -476,13 +472,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     tex.minFilter = THREE.NearestFilter;
     tex.magFilter = THREE.NearestFilter;
     tex.needsUpdate = true;
-    toonGradientRef.current = tex;
     return tex;
   }, [surfaceProps.hardness]);
-  // Dispose GPU texture on unmount
+  // Dispose previous GPU texture when hardness changes or on unmount
   useEffect(() => {
-    return () => { toonGradientRef.current?.dispose(); };
-  }, []);
+    return () => { toonGradient.dispose(); };
+  }, [toonGradient]);
 
   // Animation loop
   useFrame((state) => {
