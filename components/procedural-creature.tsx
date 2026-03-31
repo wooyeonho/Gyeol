@@ -845,9 +845,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       )}
 
-      {/* Side appendages: 2-6 limbs, alternating primary/secondary */}
-      {morphWeights.sideSpread > 0.35 && (() => {
-        const limbPairs = Math.max(1, Math.min(3, Math.round(1 + dna.assertiveness * 1.2 + dna.independence * 0.8)));
+      {/* Side appendages: limb count from continuous morphology */}
+      {conMorph.limbCount > 0.5 && (() => {
+        const limbPairs = Math.max(1, Math.round(conMorph.limbCount / 2));
+        const limbPresence = Math.min(1, conMorph.limbCount / 2); // 0..1 opacity
         const limbElements: React.ReactElement[] = [];
         for (let li = 0; li < limbPairs; li++) {
           const yOff = limbPairs === 1 ? 0 : (li - (limbPairs - 1) / 2) * 0.14;
@@ -859,11 +860,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           limbElements.push(
             <mesh key={`sl-${li}`} ref={li === 0 ? sideLeftRef : undefined} position={[-xOffset, yOff, 0]} rotation={[rotVariance, 0, 0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.6 * activityDim} gradientMap={toonGradient} />
             </mesh>,
             <mesh key={`sr-${li}`} ref={li === 0 ? sideRightRef : undefined} position={[xOffset, yOff, 0]} rotation={[-rotVariance, 0, -0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.6 * activityDim} gradientMap={toonGradient} />
             </mesh>,
           );
         }

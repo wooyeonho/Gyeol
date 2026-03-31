@@ -15,7 +15,7 @@
 
 import type { CreatureDNA, DNAAxis } from "./dna";
 import { DNA_AXES } from "./dna";
-import { type ArchetypeBlend, computeArchetypeBlendWeights } from "./continuous-morphology";
+import { type ArchetypeBlend, computeArchetypeBlendWeights, getDominantArchetype } from "./continuous-morphology";
 
 export type SpeciesProfile = {
   /** Generated species name, e.g. "lux-ember-wanderer" */
@@ -59,17 +59,6 @@ const SUFFIXES: Record<string, string[]> = {
   adaptability: ["shifter", "morph", "flux", "wave"],
   creativity: ["dreamer", "maker", "artist", "bloom"],
 };
-
-const ARCHETYPES: { condition: (dna: CreatureDNA) => boolean; archetype: SpeciesProfile["archetype"] }[] = [
-  { condition: (d) => d.analytical > 0.7 && d.stability > 0.6, archetype: "crystalline" },
-  { condition: (d) => d.intuitive > 0.7 && d.openness > 0.6, archetype: "ethereal" },
-  { condition: (d) => d.intensity > 0.7 && d.assertiveness > 0.6, archetype: "volcanic" },
-  { condition: (d) => d.warmth > 0.65 && d.empathy > 0.65, archetype: "organic" },
-  { condition: (d) => d.spatial > 0.65 && d.analytical > 0.55, archetype: "mechanical" },
-  { condition: (d) => d.openness > 0.7 && d.adaptability > 0.6, archetype: "fluid" },
-  { condition: (d) => d.independence > 0.7 && d.intuitive > 0.55, archetype: "spectral" },
-  { condition: (d) => d.creativity > 0.65 && d.warmth > 0.55, archetype: "verdant" },
-];
 
 const MOTIONS: { condition: (dna: CreatureDNA) => boolean; style: SpeciesProfile["motionStyle"] }[] = [
   { condition: (d) => d.stability > 0.7, style: "pulse" },
@@ -136,8 +125,8 @@ export function deriveSpecies(dna: CreatureDNA): SpeciesProfile {
 
   // Continuous archetype blend — no longer picks just one
   const archetypeBlend = computeArchetypeBlendWeights(dna);
-  // Dominant archetype for backward compat (used by geometry selection, etc.)
-  const archetype = ARCHETYPES.find((a) => a.condition(dna))?.archetype ?? "organic";
+  // Dominant archetype derived from continuous blend weights (not discrete thresholds)
+  const archetype = getDominantArchetype(archetypeBlend);
   const motionStyle = MOTIONS.find((m) => m.condition(dna))?.style ?? "drift";
   const element = ELEMENTS.find((e) => e.condition(dna))?.element ?? "void";
   const rarity = calculateRarity(dna);
