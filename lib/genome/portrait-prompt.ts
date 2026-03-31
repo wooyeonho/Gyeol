@@ -232,7 +232,7 @@ export function generatePortraitPrompt(
     selfName?: string;
   } = {},
 ): string {
-  const appearance = deriveDNAAppearance(dna, species);
+  const appearance = deriveDNAAppearance(dna, species, options.genLevel);
   const hash = dnaHash(dna);
 
   // 1. Base form — deterministic pick from archetype
@@ -329,8 +329,9 @@ export function generatePortraitPrompt(
 export function generateAvatarPrompt(
   dna: CreatureDNA,
   species: SpeciesProfile,
+  genLevel?: number,
 ): string {
-  const appearance = deriveDNAAppearance(dna, species);
+  const appearance = deriveDNAAppearance(dna, species, genLevel);
   const hash = dnaHash(dna);
   const forms = ARCHETYPE_FORMS[species.archetype];
   const baseForm = forms[hash % forms.length];

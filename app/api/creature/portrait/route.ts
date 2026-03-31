@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique prompt from DNA
     const prompt = context === "portrait" && !mood
-      ? generateAvatarPrompt(dna, species)
+      ? generateAvatarPrompt(dna, species, genLevel)
       : generatePortraitPrompt(dna, species, {
           genLevel,
           mood: effectiveMood,

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   });
 
   const species = deriveSpecies(dna);
-  const appearance = deriveDNAAppearance(dna, species);
+  const appearance = deriveDNAAppearance(dna, species, 1);
   const dominant = getDominantTraits(dna, 3);
 
   const h = Math.round(appearance.primaryHue);

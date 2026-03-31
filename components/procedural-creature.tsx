@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -154,14 +154,42 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     [conMorph],
   );
 
-  // [UPGRADE 6] Wider silhouette range: 0.5-1.7 (was 0.7-1.4)
+  // [UPGRADE 6] Wider silhouette range — driven by continuous morphology bodyRatio
   const bodyElongation = useMemo(
-    () => 0.5 + appearance.bodyRatio * 1.2,
-    [appearance.bodyRatio],
+    () => 0.5 + conMorph.bodyRatio * 1.2,
+    [conMorph.bodyRatio],
   );
+  // Asymmetry from continuous morphology bodySymmetry (lower symmetry = more asymmetric)
   const asymmetryFactor = useMemo(
-    () => Math.max(0, 1 - appearance.bodySymmetry) * 0.15,
-    [appearance.bodySymmetry],
+    () => Math.max(0, 1 - conMorph.bodySymmetry) * 0.15,
+    [conMorph.bodySymmetry],
+  );
+
+  // Surface properties from continuous morphology
+  const surfaceProps = useMemo(() => {
+    // surfaceHardness: 0 = soft/organic, high = crystalline/hard
+    // Affects toon gradient sharpness and emissive character
+    const hardness = Math.max(0, conMorph.surfaceHardness);
+    // surfaceComplexity: higher = more detailed vertex displacement
+    const complexity = Math.max(0, conMorph.surfaceComplexity);
+    // dnaExpressionRange: scales overall visual intensity
+    const expression = conMorph.dnaExpressionRange;
+    return { hardness, complexity, expression };
+  }, [conMorph.surfaceHardness, conMorph.surfaceComplexity, conMorph.dnaExpressionRange]);
+
+  // Body segments config — extra segment meshes when bodySegments > 1.5
+  const bodySegmentsConfig = useMemo(() => {
+    const segs = conMorph.bodySegments;
+    const fullSegments = Math.floor(Math.min(segs, 5)); // max 5 visible sub-segments
+    const fractional = segs - fullSegments; // partial next segment opacity
+    return { count: fullSegments, fractional };
+  }, [conMorph.bodySegments]);
+
+  // Appendage variety — gates how many appendage *types* are visible
+  // Higher appendageVariety = more diverse appendage types shown
+  const varietyThreshold = useMemo(
+    () => Math.max(0, 1 - conMorph.appendageVariety), // 0 = show all, 1 = show none
+    [conMorph.appendageVariety],
   );
 
   // [UPGRADE 2] DNA-driven eye variety — now uses continuous eye count
@@ -170,7 +198,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const contEyes = conMorph.eyeCount;
     // Floor = how many full eyes; fractional part = partial eye opacity
     const fullCount = Math.floor(Math.min(contEyes, 5));
-    const fractional = contEyes - fullCount; // 0..1, opacity of the next eye
+    const _fractional = contEyes - fullCount; // reserved for future partial-eye rendering
     // For backward compat: 1 eye = cyclops mode
     const count = fullCount < 2 ? 1 : fullCount;
     const thirdEyeOpacity = count >= 2 ? Math.min(1, contEyes - 2) : 0;
@@ -264,11 +292,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const positions = base.attributes.position.array as Float32Array;
 
     const displacements = computeVertexDisplacements(positions, morphWeights);
+    // surfaceComplexity scales vertex displacement amplitude
+    const complexityScale = 1 + surfaceProps.complexity * 0.8;
     const morphed = new Float32Array(positions.length);
     for (let i = 0; i < positions.length; i += 3) {
-      const px = positions[i] + displacements[i];
-      const py = positions[i + 1] + displacements[i + 1];
-      const pz = positions[i + 2] + displacements[i + 2];
+      const px = positions[i] + displacements[i] * complexityScale;
+      const py = positions[i + 1] + displacements[i + 1] * complexityScale;
+      const pz = positions[i + 2] + displacements[i + 2] * complexityScale;
 
       const xzSquash = 1 / Math.sqrt(bodyElongation);
       morphed[i] = px * xzSquash;
@@ -328,7 +358,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       }
     )._basePositions = new Float32Array(morphed);
     return base;
-  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor, appearance.markingsSeed, blendedGeo]);
+  }, [morphWeights, species.archetype, bodyElongation, asymmetryFactor, appearance.markingsSeed, blendedGeo, surfaceProps.complexity]);
 
   // [UPGRADE 1] Dual-tone colors
   const primaryColor = useMemo(() => {
@@ -417,21 +447,37 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const moodAuraColor = useMemo(() => new THREE.Color(moodMod.auraColor), [moodMod.auraColor]);
 
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
-  const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim);
+  // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more
+  const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
 
   const hasVertexColors = useMemo(
     () => derivePatternType(appearance.markingsSeed).type !== "none",
     [appearance.markingsSeed],
   );
 
+  // surfaceHardness drives toon gradient sharpness: soft → smooth bands, hard → crisp steps
   const toonGradient = useMemo(() => {
-    const colors = new Uint8Array([40, 80, 140, 200, 255]);
+    const h = surfaceProps.hardness;
+    // Soft (h≈0): gentle gradient [30, 70, 120, 180, 245]
+    // Hard (h≈1): sharp steps [10, 40, 140, 220, 255]
+    const t = Math.min(1, h);
+    const colors = new Uint8Array([
+      Math.round(30 - 20 * t),
+      Math.round(70 - 30 * t),
+      Math.round(120 + 20 * t),
+      Math.round(180 + 40 * t),
+      Math.round(245 + 10 * t),
+    ]);
     const tex = new THREE.DataTexture(colors, colors.length, 1, THREE.RedFormat);
     tex.minFilter = THREE.NearestFilter;
     tex.magFilter = THREE.NearestFilter;
     tex.needsUpdate = true;
     return tex;
-  }, []);
+  }, [surfaceProps.hardness]);
+  // Dispose previous GPU texture when hardness changes or on unmount
+  useEffect(() => {
+    return () => { toonGradient.dispose(); };
+  }, [toonGradient]);
 
   // Animation loop
   useFrame((state) => {
@@ -646,6 +692,54 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         />
       </mesh>
 
+      {/* Body segments: extra segment meshes stacked along Y when bodySegments > 1 */}
+      {(bodySegmentsConfig.count > 1 || bodySegmentsConfig.fractional > 0.025) && (() => {
+        const els: React.ReactElement[] = [];
+        // Full segments (si=1 to count-1) at constant opacity
+        for (let si = 1; si < bodySegmentsConfig.count; si++) {
+          const segScale = 1 - si * 0.12;
+          const yOff = -si * 0.22 * bodyElongation;
+          const segRadius = blendedGeo.radius * segScale;
+          els.push(
+            <mesh key={`seg-${si}`} position={[0, yOff, 0]} scale={[segScale, segScale * 0.85, segScale]}>
+              <sphereGeometry args={[segRadius, 12, 10]} />
+              <meshToonMaterial
+                color={si % 2 === 0 ? primaryColor : secondaryColor}
+                emissive={si % 2 === 0 ? primaryColor : secondaryColor}
+                emissiveIntensity={emissiveIntensity * 0.7}
+                transparent
+                opacity={0.75 * activityDim * Math.max(0.5, vitality)}
+                gradientMap={toonGradient}
+              />
+            </mesh>,
+          );
+        }
+        // Partial/growing segment — fades in as fractional approaches 1
+        if (bodySegmentsConfig.fractional > 0.025) {
+          const si = bodySegmentsConfig.count;
+          const segScale = 1 - si * 0.12;
+          const yOff = -si * 0.22 * bodyElongation;
+          const segRadius = blendedGeo.radius * segScale;
+          const partialOpacity = 0.75 * Math.min(1, bodySegmentsConfig.fractional * 2);
+          if (partialOpacity >= 0.05) {
+            els.push(
+              <mesh key={`seg-${si}`} position={[0, yOff, 0]} scale={[segScale, segScale * 0.85, segScale]}>
+                <sphereGeometry args={[segRadius, 12, 10]} />
+                <meshToonMaterial
+                  color={si % 2 === 0 ? primaryColor : secondaryColor}
+                  emissive={si % 2 === 0 ? primaryColor : secondaryColor}
+                  emissiveIntensity={emissiveIntensity * 0.7}
+                  transparent
+                  opacity={partialOpacity * activityDim * Math.max(0.5, vitality)}
+                  gradientMap={toonGradient}
+                />
+              </mesh>,
+            );
+          }
+        }
+        return <>{els}</>;
+      })()}
+
       {/* EYES: 1 (cyclops), 2 (normal), or 3 (third-eye) */}
       {eyeConfig.count >= 2 && (
         <>
@@ -718,8 +812,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
       </mesh>
 
-      {/* HORNS: continuous presence — opacity scales with hornPresence */}
-      {appendageConfig.hasHorns && (() => {
+      {/* HORNS: continuous presence — gated by appendageVariety (threshold 0.8) */}
+      {appendageConfig.hasHorns && varietyThreshold < 0.8 && (() => {
         const hp = appendageConfig.hornPresence;
         const hornH = (0.12 + dna.intensity * 0.1) * hp;
         const hornR = (0.03 + dna.assertiveness * 0.02) * (0.5 + hp * 0.5);
@@ -739,8 +833,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         );
       })()}
 
-      {/* ANTENNAE: continuous presence */}
-      {appendageConfig.hasAntennae && (() => {
+      {/* ANTENNAE: continuous presence — gated by appendageVariety (threshold 0.7) */}
+      {appendageConfig.hasAntennae && varietyThreshold < 0.7 && (() => {
         const ap = appendageConfig.antennaPresence;
         const antLen = appendageConfig.antennaLength * (0.5 + ap * 0.5);
         const yBase = (0.4 + morphWeights.crownGrowth * 0.12) * bodyElongation;
@@ -778,8 +872,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         );
       })()}
 
-      {/* FIN-WINGS: continuous presence */}
-      {appendageConfig.hasFinWings && (() => {
+      {/* FIN-WINGS: continuous presence — gated by appendageVariety (threshold 0.6) */}
+      {appendageConfig.hasFinWings && varietyThreshold < 0.6 && (() => {
         const fp = appendageConfig.finWingPresence;
         const finH = (0.12 + dna.adaptability * 0.1) * fp;
         const xOff = 0.36 + morphWeights.sideSpread * 0.08;
@@ -797,8 +891,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         );
       })()}
 
-      {/* EAR BUMPS: continuous presence */}
-      {appendageConfig.hasEarBumps && (() => {
+      {/* EAR BUMPS: continuous presence — gated by appendageVariety (threshold 0.5) */}
+      {appendageConfig.hasEarBumps && varietyThreshold < 0.5 && (() => {
         const ep = appendageConfig.earBumpPresence;
         const earSz = (0.04 + dna.empathy * 0.03) * (0.5 + ep * 0.5);
         const yBase = (0.28 + morphWeights.bodyStretch * 0.1) * bodyElongation;
@@ -817,8 +911,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         );
       })()}
 
-      {/* SPIKES: continuous presence */}
-      {appendageConfig.hasSpikes && (() => {
+      {/* SPIKES: continuous presence — gated by appendageVariety (threshold 0.65) */}
+      {appendageConfig.hasSpikes && varietyThreshold < 0.65 && (() => {
         const sp = appendageConfig.spikePresence;
         const els: React.ReactElement[] = [];
         const count = appendageConfig.spikeCount;
