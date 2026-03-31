@@ -1123,8 +1123,7 @@
     "rebirth": "新しい命を始める"
   },
   "presence": {
-    "activeNow": "今{count}人が生き物の世話をしています",
-    "activeCompact": "{count}人アクティブ"
+    "activeNow": "今{count}人が生き物の世話をしています"
   },
   "comeback": {
     "title": "おかえりなさい！",

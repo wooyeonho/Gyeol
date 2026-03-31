@@ -1123,8 +1123,7 @@
     "rebirth": "开始新的生命"
   },
   "presence": {
-    "activeNow": "现在有{count}人在照顾生命体",
-    "activeCompact": "{count}人在线"
+    "activeNow": "现在有{count}人在照顾生命体"
   },
   "comeback": {
     "title": "欢迎回来！",
