@@ -56,7 +56,7 @@ export function RewardExpiryCountdown() {
 
     async function fetchExpiry() {
       try {
-        const res = await fetch("/api/presence", { signal: AbortSignal.timeout(8000) });
+        const res = await fetch("/api/retention-status", { signal: AbortSignal.timeout(8000) });
         if (!res.ok) return;
         const data = await res.json() as { reward_expiry?: ExpiryData | null };
         if (mounted && data.reward_expiry) {
