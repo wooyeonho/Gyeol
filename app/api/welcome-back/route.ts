@@ -6,6 +6,7 @@ import { generateTextOnce } from "@/lib/ai/router";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
+import { checkComebackBonus, claimComebackBonus } from "@/lib/retention/comeback-reward";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,13 @@ type ArtifactEntry = {
   expires_at: string | null;
 };
 
+type ComebackBonusInfo = {
+  multiplier: number;
+  absentHours: number;
+  labelKo: string;
+  labelEn: string;
+};
+
 type WelcomeBackPayload = {
   has_activity: boolean;
   hours_away: number;
@@ -46,6 +54,7 @@ type WelcomeBackPayload = {
     summary: string;
     created_at: string;
   }>;
+  comeback_bonus: ComebackBonusInfo | null;
 };
 
 const GROWTH_EVENT_TYPES = [
@@ -86,6 +95,7 @@ export async function GET() {
         vitality: 1,
         greeting: null,
         growth_events: [],
+        comeback_bonus: null,
       });
     }
 
@@ -218,6 +228,17 @@ export async function GET() {
 
     const hasActivity = activities.length > 0 || dreams.length > 0 || artifacts.length > 0;
 
+    // Check for comeback reward multiplier (3d=2x, 7d=3x, 14d=5x)
+    let comebackBonus: ComebackBonusInfo | null = null;
+    if (hoursAway >= 72) {
+      const bonus = await checkComebackBonus(agentId);
+      if (bonus) {
+        comebackBonus = bonus;
+        // Auto-claim: mark as used so it only fires once per return
+        await claimComebackBonus(agentId);
+      }
+    }
+
     // Generate proactive greeting if there was meaningful activity while away
     let greeting: string | null = null;
     if (hasActivity && hoursAway > 1) {
@@ -263,6 +284,7 @@ export async function GET() {
       vitality: state?.vitality ?? 1,
       greeting,
       growth_events: growthEvents,
+      comeback_bonus: comebackBonus,
     };
 
     setTtlCache(cacheKey, payload, 30_000);

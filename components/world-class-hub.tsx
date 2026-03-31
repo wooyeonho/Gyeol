@@ -13,6 +13,7 @@ import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { formatLocalizedTime } from "@/lib/i18n/format";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { haptic } from "@/lib/micro-interactions";
+import { ActiveCounter } from "@/components/active-counter";
 
 export type HomeSummaryItem = {
   id: string;
@@ -277,7 +278,10 @@ export function WorldClassHub() {
             </div>
           </div>
 
-          <ChevronIcon expanded={expanded} className="h-4 w-4 flex-shrink-0 text-white/50" />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ActiveCounter compact />
+            <ChevronIcon expanded={expanded} className="h-4 w-4 text-white/50" />
+          </div>
         </button>
 
         {/* Expanded details */}

@@ -1118,5 +1118,15 @@
     "readWill": "유언 읽기",
     "will": "유언",
     "rebirth": "새 생명 시작하기"
+  },
+  "presence": {
+    "activeNow": "지금 {count}명이 생명체를 돌보고 있어요",
+    "activeCompact": "{count}명 활동 중"
+  },
+  "comeback": {
+    "title": "복귀 보너스!",
+    "multiplier": "{multiplier}x 보상",
+    "description": "오래 떨어져 있었으니 첫 보상이 {multiplier}배로 늘어납니다.",
+    "claim": "보상 받기"
   }
 }

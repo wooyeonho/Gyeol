@@ -248,6 +248,27 @@ export function getStreakRewardMultiplier(streakDays: number) {
   return 1;
 }
 
+/**
+ * Compute an effective reward multiplier that accounts for both the
+ * regular streak bonus AND the comeback bonus for returning users.
+ *
+ * Tiers:
+ *   3-6 days absent  → 2x
+ *   7-13 days absent  → 3x
+ *   14+ days absent   → 5x
+ *
+ * The comeback multiplier replaces (not stacks with) the streak
+ * multiplier when it is higher, ensuring returning users always
+ * receive the best possible rate.
+ */
+export function getEffectiveMultiplier(
+  streakDays: number,
+  comebackMultiplier = 1,
+): number {
+  const streakMul = getStreakRewardMultiplier(streakDays);
+  return Math.max(streakMul, comebackMultiplier);
+}
+
 export function getRewardProgress(messagesSinceReward: number, streakDays = 0): RewardProgress {
   const guaranteedEvery = GUARANTEED_REWARD_EVERY;
   return {
@@ -334,11 +355,13 @@ export function rollReward(
   options?: {
     forceReward?: boolean;
     source?: RewardSource;
+    comebackMultiplier?: number;
   },
 ): RewardResult {
   const forceReward = options?.forceReward ?? false;
   const source = options?.source ?? "message";
-  const streakMultiplier = getStreakRewardMultiplier(streakDays);
+  const comebackMul = options?.comebackMultiplier ?? 1;
+  const streakMultiplier = getEffectiveMultiplier(streakDays, comebackMul);
   const streakBonus = Math.min(Math.floor(streakDays / 3), 4);
 
   const eligibleEntries = REWARD_TABLE

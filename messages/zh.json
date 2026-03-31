@@ -1121,5 +1121,15 @@
     "readWill": "读遗言",
     "will": "遗言",
     "rebirth": "开始新的生命"
+  },
+  "presence": {
+    "activeNow": "现在有{count}人在照顾生命体",
+    "activeCompact": "{count}人在线"
+  },
+  "comeback": {
+    "title": "欢迎回来！",
+    "multiplier": "{multiplier}x 奖励",
+    "description": "你离开了一段时间——第一次奖励提升{multiplier}倍。",
+    "claim": "领取奖励"
   }
 }
