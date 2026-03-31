@@ -147,10 +147,14 @@ export async function electLeaders(): Promise<void> {
  * Apply tribe bonus to a shared-XP event.
  * When tribe members interact, the bonus from both participants' tribes stacks.
  */
-export function applyTribeXPBonus(baseXP: number, tribeBonusA: TribeBonus, tribeBonusB?: TribeBonus): number {
+export function applyTribeXPBonus(
+  baseXP: number,
+  tribeBonusA: TribeBonus & { tribe?: TribeValue },
+  tribeBonusB?: TribeBonus & { tribe?: TribeValue },
+): number {
   const bonusA = tribeBonusA.xpBonus;
   const bonusB = tribeBonusB?.xpBonus ?? 0;
   // Same-tribe interaction gets an additional 5% synergy
-  const synergy = tribeBonusB ? 0.05 : 0;
+  const synergy = tribeBonusB && tribeBonusA.tribe && tribeBonusA.tribe === tribeBonusB.tribe ? 0.05 : 0;
   return baseXP * (1 + bonusA + bonusB + synergy);
 }

@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getPrimaryAgent } from "@/lib/agents/primary";
 import { breedCreatures } from "@/lib/genome/dna";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -67,6 +68,11 @@ export async function POST(req: NextRequest) {
     }
     if (action !== "accept") return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 
+    // Only the receiving party (parent_b) can accept — prevents requester self-accept
+    if (record.parent_b !== myAgentId) {
+      return NextResponse.json({ error: "Only the receiving party can accept a breeding request" }, { status: 403 });
+    }
+
     // ── Breeding accept: DNA crossover + create offspring agent ──
     // Fetch both parents' genome (DNA) and gen_level
     const [parentAState, parentBState] = await Promise.all([
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
       (parentBState.data?.gen_level as number) ?? 1,
     );
     const { dna: childDna, mutatedAxes } = breedCreatures(dnaA, dnaB, parentGenLevel);
+    const childSpecies = deriveSpecies(childDna);
 
     // Create the offspring agent under the accepting user
     const { data: childAgent, error: childErr } = await service
@@ -94,11 +101,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create offspring agent" }, { status: 500 });
     }
 
-    // Initialize offspring agent_state with bred DNA at gen_level 1
+    // Initialize offspring agent_state with bred DNA + species metadata at gen_level 1
     await service.from("agent_state").insert({
       agent_id: childAgent.id,
       gen_level: 1,
-      genome: { dna: childDna },
+      genome: {
+        dna: childDna,
+        species: childSpecies.name,
+        archetype: childSpecies.archetype,
+        element: childSpecies.element,
+      },
       vitality: 1,
       progress: 0,
       total_messages: 0,
