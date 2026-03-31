@@ -26,7 +26,7 @@ export function DuoStreakAlertBanner() {
 
     async function fetchRisk() {
       try {
-        const res = await fetch("/api/presence", { signal: AbortSignal.timeout(8000) });
+        const res = await fetch("/api/retention-status", { signal: AbortSignal.timeout(8000) });
         if (!res.ok) return;
         const data = await res.json() as { duo_streak_risk?: DuoStreakRiskData | null };
         if (mounted && data.duo_streak_risk) {
