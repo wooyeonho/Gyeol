@@ -138,7 +138,7 @@ export function deriveDNAAppearance(
   return {
     primaryHue: primaryHue % 360,
     primarySaturation: Math.max(0, saturation),
-    primaryLightness: clamp(lightness, 10, 95),
+    primaryLightness: Math.max(0, lightness), // no upper cap — DNA determines brightness
     secondaryHueShift: secondaryHueShift, // no clamp — can be any offset
     eyeHue: eyeHue % 360,
     bodyRatio: Math.max(0, bodyRatio), // no upper bound — can be very elongated
@@ -179,6 +179,7 @@ export function dnaAppearanceToColors(appearance: DNAAppearance) {
   };
 }
 
-function clamp(v: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, v));
-}
+// clamp kept for potential future use
+// function clamp(v: number, min: number, max: number) {
+//   return Math.min(max, Math.max(min, v));
+// }

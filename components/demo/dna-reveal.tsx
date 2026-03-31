@@ -199,7 +199,7 @@ export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealPr
   const description = useMemo(() => DescribeDNA(dna), [dna]);
   let appearance: { primaryHue: number; primarySaturation: number; primaryLightness: number } | null = null;
   try {
-    appearance = deriveDNAAppearance(dna, species);
+    appearance = deriveDNAAppearance(dna, species, 1);
   } catch {
     // appearance derivation may fail if species profile format mismatches
   }

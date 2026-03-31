@@ -16,7 +16,7 @@ export function FriendPreview({ dna, reading, onTryOwn }: FriendPreviewProps) {
   const species = useMemo(() => deriveSpecies(dna), [dna]);
   let appearance: { primaryHue: number; primarySaturation: number; primaryLightness: number } | null = null;
   try {
-    appearance = deriveDNAAppearance(dna, species);
+    appearance = deriveDNAAppearance(dna, species, 1);
   } catch {}
   const color = appearance
     ? `hsl(${appearance.primaryHue}, ${appearance.primarySaturation}%, ${appearance.primaryLightness}%)`
