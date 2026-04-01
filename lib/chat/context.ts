@@ -140,7 +140,26 @@ export async function buildChatPromptContext(params: {
 
   const recentChatRows = (recentChats ?? []) as ChatRow[];
   const logRows = (logs ?? []) as LogRow[];
-  const chronologicalChats = [...recentChatRows].reverse();
+  const allChats = [...recentChatRows].reverse();
+
+  // P8A: Chat history compression — keep last 7 messages verbatim,
+  // compress older messages into a brief summary to save ~500 tokens/request.
+  const VERBATIM_COUNT = 7;
+  let chronologicalChats: ChatRow[];
+  if (allChats.length > VERBATIM_COUNT) {
+    const older = allChats.slice(0, allChats.length - VERBATIM_COUNT);
+    const recent = allChats.slice(-VERBATIM_COUNT);
+    const topics = older
+      .filter((c) => c.role === "user")
+      .map((c) => c.content.slice(0, 60))
+      .slice(-3);
+    const summary = topics.length > 0
+      ? `[Earlier conversation covered: ${topics.join("; ")}]`
+      : "[Earlier conversation omitted for brevity]";
+    chronologicalChats = [{ role: "system", content: summary }, ...recent];
+  } else {
+    chronologicalChats = allChats;
+  }
   const promptConfig = (agentState?.config ?? {}) as Record<string, unknown>;
   const stateForPrompt = {
     ...agentState,

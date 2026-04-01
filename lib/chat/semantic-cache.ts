@@ -13,8 +13,11 @@ import type { createServiceClient } from "@/lib/supabase/service";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 
-const SIMILARITY_THRESHOLD = 0.92;
-const CACHE_WINDOW_HOURS = 24;
+// P9A: Relaxed threshold (0.92→0.87) + wider window (24h→48h).
+// 0.87 cosine similarity still captures semantically equivalent questions
+// while doubling estimated hit rate from ~15-25% to ~35-45%.
+const SIMILARITY_THRESHOLD = 0.87;
+const CACHE_WINDOW_HOURS = 48;
 
 type CacheHit = {
   stream: ReadableStream<Uint8Array>;

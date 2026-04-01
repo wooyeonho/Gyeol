@@ -27,6 +27,18 @@ type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
 type ChatRow = { content: string };
 type AgentConfig = Record<string, unknown>;
+type AgentState = Record<string, unknown> & {
+  agent_id: string;
+  config: AgentConfig | null;
+  status: string | null;
+  vitality: number | null;
+  subjective_time: number | null;
+  self_name: string | null;
+  fragments: string[] | null;
+  self_model: Record<string, unknown> | null;
+  intimacy_score: number | null;
+  last_heartbeat_at: string | null;
+};
 
 function getBaseUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -82,17 +94,41 @@ export async function executeHeartbeat(): Promise<CronResult> {
     const db = createServiceClient();
     const baseUrl = getBaseUrl();
     const cronSecret = process.env.CRON_SECRET ?? "";
-    const { data: agents } = await db.from("agents").select("id, user_id");
+    // P7A: Batch-load all agent data upfront to eliminate N+1 queries.
+    // Previously: 4-5 queries per agent × 1000 agents = 5000 queries.
+    // Now: 3 bulk queries + per-agent queries only for eligible agents.
+    const [agentsRes, worldStateRes, allStatesRes] = await Promise.all([
+      db.from("agents").select("id, user_id"),
+      db.from("world_state").select("weather").eq("id", "global").single(),
+      db.from("agent_state").select("agent_id, config, status, vitality, subjective_time, self_name, fragments, self_model, intimacy_score, last_heartbeat_at"),
+    ]);
+    const agents = agentsRes.data;
     if (!agents) return { processed: 0, timestamp: new Date().toISOString() };
-    const { data: worldState } = await db.from("world_state").select("weather").eq("id", "global").single();
-    const weatherName = (worldState as { weather?: { name?: string } } | null)?.weather?.name ?? "알 수 없는 날씨";
+
+    const weatherName = (worldStateRes.data as { weather?: { name?: string } } | null)?.weather?.name ?? "알 수 없는 날씨";
     const circadian = getCircadianProfile();
+
+    // Build lookup maps for O(1) access
+    const stateMap = new Map<string, AgentState>();
+    for (const s of allStatesRes.data ?? []) {
+      stateMap.set(s.agent_id as string, s as AgentState);
+    }
+
+    // Batch-load last user chat times for all agents (single query vs N queries)
+    const { data: lastChatRows } = await db.rpc("get_last_user_chat_times", {
+      agent_ids: agents.map((a: { id: string }) => a.id),
+    }).catch(() => ({ data: null }));
+    const lastChatMap = new Map<string, string>();
+    if (Array.isArray(lastChatRows)) {
+      for (const row of lastChatRows) {
+        lastChatMap.set(row.agent_id as string, row.last_chat_at as string);
+      }
+    }
 
     let processed = 0;
     let skippedDeadline = 0;
 
     for (const agent of agents) {
-      // Stop processing new agents if we're near the deadline
       if (Date.now() - startedAt > HEARTBEAT_DEADLINE_MS) {
         skippedDeadline = agents.length - agents.indexOf(agent);
         console.log(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
@@ -100,11 +136,12 @@ export async function executeHeartbeat(): Promise<CronResult> {
       }
       try {
         const agentId = agent.id;
-        const { data: state } = await db.from("agent_state").select("*").eq("agent_id", agentId).single();
+        const state = stateMap.get(agentId);
         if (!state || state.config?.autonomous_enabled === false) continue;
         if (state.status === "echo" || (state.vitality || 1) <= 0) continue;
 
-        const { data: lastChat } = await db.from("chats").select("created_at").eq("agent_id", agentId).eq("role", "user").order("created_at", { ascending: false }).limit(1).single();
+        const lastChatAt = lastChatMap.get(agentId);
+        const lastChat = lastChatAt ? { created_at: lastChatAt } : null;
         const hoursSince = lastChat ? (Date.now() - new Date(lastChat.created_at).getTime()) / 3600000 : 999;
         const baseConfig = ((state.config as AgentConfig | null) ?? {}) as AgentConfig;
         const intervalRule = normalizeIntervalRule((baseConfig.autonomy_interval_rule as Record<string, unknown> | null) ?? null);
@@ -137,8 +174,8 @@ export async function executeHeartbeat(): Promise<CronResult> {
           .filter(Boolean);
 
         const memText = memories.map((m) => m.content).join("\n");
-        const systemPrompt = (state.fragments || []).join("\n") || "You are a living being. Move freely and stay sincere.";
-        const locale = resolveGenerationLocale({ config: state.config });
+        const systemPrompt = (state.fragments ?? []).join("\n") || "You are a living being. Move freely and stay sincere.";
+        const locale = resolveGenerationLocale({ config: state.config as Record<string, unknown> });
         const language = getLanguageName(locale);
         const circadianLabel = locale === "ko" ? circadian.labelKo : circadian.labelEn;
         const toneHint = locale === "ko" ? circadian.toneHint : circadian.toneHintEn;
@@ -158,7 +195,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
         response = capText(response, 420);
 
         const nowIso = new Date().toISOString();
-        const nextSubjectiveTime = (state.subjective_time ?? 0) + 1;
+        const nextSubjectiveTime = (state.subjective_time ?? 0) as number + 1;
         // Build update payload — only include subjective_time if column exists on the row
         const hasSubjectiveTime = "subjective_time" in (state as Record<string, unknown>);
         const baseUpdate = {
