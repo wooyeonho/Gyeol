@@ -27,6 +27,8 @@ export type MemoryMoment = {
 export type ChatPromptContext = {
   agentState: AgentStateRow | null;
   chatMessages: Array<{ role: string; content: string }>;
+  /** Pre-computed message embedding — reused by semantic cache to avoid redundant API call */
+  embedding: number[];
   /** P5A: If a strongly matching old memory was found, surface it for recall UX */
   memoryMoment?: MemoryMoment;
   promptMetrics: {
@@ -65,9 +67,9 @@ async function loadPromptMemories(params: {
     // OPT-B: Fire-and-forget reference count update — never block the hot path
     const ids = memories.filter((m) => m.id).map((m) => m.id);
     if (ids.length > 0) {
-      params.writer.rpc("batch_increment_reference_count", { p_ids: ids }).catch(() => {
+      void params.writer.rpc("batch_increment_reference_count", { p_ids: ids }).catch(() => {
         // Fallback: individual updates if RPC not deployed yet (still fire-and-forget)
-        Promise.allSettled(
+        void Promise.allSettled(
           memories
             .filter((memory) => memory.id)
             .map((memory) =>
@@ -76,7 +78,7 @@ async function loadPromptMemories(params: {
                 .update({ reference_count: memory.referenceCount + 1 })
                 .eq("id", memory.id)
             )
-        ).catch(() => {});
+        );
       });
     }
 
@@ -94,7 +96,8 @@ async function loadPromptMemories(params: {
     }
 
     return { memories, memoryMoment };
-  } catch {
+  } catch (e) {
+    console.error("[Context] Memory loading failed:", e instanceof Error ? e.message : e);
     return { memories: [] };
   }
 }
@@ -132,10 +135,13 @@ export async function buildChatPromptContext(params: {
   const worldState = (worldStateRow ?? null) as WorldStateRow;
   const recallCount = Math.max(1, Math.min(agentState?.config?.recall_count ?? 5, 10));
 
+  // Await the embedding so we can share it with semantic cache (avoids double API call)
+  const resolvedEmbedding = await embeddingPromise;
+
   // Memory loading: embedding was already started, just await the RPC result now
   const { memories, memoryMoment } = await loadPromptMemories({
     agentId: params.agentId,
-    embeddingPromise,
+    embeddingPromise: Promise.resolve(resolvedEmbedding),
     reader: params.reader,
     recallCount,
     writer: params.writer,
@@ -197,6 +203,7 @@ export async function buildChatPromptContext(params: {
       ...chronologicalChats.map((chat) => ({ role: chat.role, content: chat.content })),
       { role: "user", content: params.message },
     ],
+    embedding: resolvedEmbedding,
     memoryMoment,
     promptMetrics: {
       autonomousLogCount: logRows.length,

@@ -15,16 +15,24 @@ function padToTargetDim(vec: number[]): number[] {
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: TARGET_DIM }) }
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY ?? "" },
+        body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: TARGET_DIM }),
+        signal: ctrl.signal,
+      }
     );
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`Gemini ${res.status}`);
     const data = await res.json();
     const values: number[] = data.embedding?.values || [];
     return values.length > 0 ? padToTargetDim(values) : [];
   } catch (e) {
-    console.error("[Embed] Gemini failed:", e);
+    console.error("[Embed] Gemini failed:", e instanceof Error ? e.message : e);
   }
   const cfAccountId = process.env.CF_ACCOUNT_ID;
   const cfApiToken = process.env.CF_API_TOKEN;
@@ -61,14 +69,18 @@ export async function generateEmbeddingBatch(texts: string[]): Promise<number[][
         content: { parts: [{ text }] },
         outputDimensionality: TARGET_DIM,
       }));
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 15000);
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents?key=${apiKey}`,
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({ requests }),
+          signal: ctrl.signal,
         }
       );
+      clearTimeout(timer);
       if (!res.ok) throw new Error(`Gemini batch ${res.status}`);
       const data = await res.json();
       const embeddings: number[][] = (data.embeddings ?? []).map(

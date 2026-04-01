@@ -130,11 +130,13 @@ export async function persistChatTurn(params: {
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
 
   // Evolve creature DNA based on conversation signals
-  // Backfill: if genome was never initialized (pre-existing agent), generate it now
+  // Backfill: if genome was never initialized (pre-existing agent), generate it now.
+  // Uses deterministic seed (agentId) so concurrent backfills produce identical DNA.
   const originalGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
   let currentGenome = originalGenome;
   let genomeBackfilled = false;
   if (!currentGenome?.dna) {
+    // generateInitialDNA is deterministic on agentId, so concurrent calls converge
     const initialDNA = generateInitialDNA(params.agentId);
     const initialSpecies = deriveSpecies(initialDNA);
     currentGenome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
@@ -174,6 +176,8 @@ export async function persistChatTurn(params: {
         type: "conversation",
         content: params.message,
         embedding,
+      }).then(({ error }) => {
+        if (error) console.error("[PostProcess] Memory insert failed:", error.message);
       })
     : Promise.resolve();
 
