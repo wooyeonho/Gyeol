@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getMoodEmoji, type DiaryEntry } from "@/lib/diary/creature-diary";
 
@@ -7,12 +8,24 @@ import { getMoodEmoji, type DiaryEntry } from "@/lib/diary/creature-diary";
  * Query params: agentId, month (YYYY-MM, optional)
  */
 export async function GET(req: Request) {
+  const authClient = await createServerSupabase();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const url = new URL(req.url);
   const agentId = url.searchParams.get("agentId");
   if (!agentId) return NextResponse.json({ error: "agentId required" }, { status: 400 });
 
-  const month = url.searchParams.get("month"); // YYYY-MM
   const supabase = createServiceClient();
+  const { data: ownership } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("id", agentId)
+    .eq("user_id", user.id)
+    .single();
+  if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const month = url.searchParams.get("month"); // YYYY-MM
 
   let query = supabase
     .from("autonomous_logs")

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   groupByDate,
@@ -14,14 +15,25 @@ import {
  * Returns: DNA radar chart, memory timeline, trait history, weekly summary.
  */
 export async function GET(req: Request) {
+  const authClient = await createServerSupabase();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const url = new URL(req.url);
   const agentId = url.searchParams.get("agentId");
   if (!agentId) return NextResponse.json({ error: "agentId required" }, { status: 400 });
 
+  const supabase = createServiceClient();
+  const { data: ownership } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("id", agentId)
+    .eq("user_id", user.id)
+    .single();
+  if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const days = parseInt(url.searchParams.get("days") ?? String(DEFAULT_TIMELINE_DAYS), 10);
   const since = new Date(Date.now() - days * 86400000).toISOString();
-
-  const supabase = createServiceClient();
 
   // Parallel data fetching
   const [stateRes, logsRes, chatsRes, memoriesRes] = await Promise.all([

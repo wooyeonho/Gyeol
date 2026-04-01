@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   applyCareDecay,
@@ -10,6 +11,17 @@ import {
   type CareState,
 } from "@/lib/creature/care-loop";
 
+async function verifyOwnership(userId: string, agentId: string) {
+  const service = createServiceClient();
+  const { data } = await service
+    .from("agents")
+    .select("id")
+    .eq("id", agentId)
+    .eq("user_id", userId)
+    .single();
+  return { owned: !!data, service };
+}
+
 /**
  * GET /api/care — Get current care state (with decay applied).
  */
@@ -18,7 +30,12 @@ export async function GET(req: Request) {
   const agentId = url.searchParams.get("agentId");
   if (!agentId) return NextResponse.json({ error: "agentId required" }, { status: 400 });
 
-  const supabase = createServiceClient();
+  const authClient = await createServerSupabase();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { owned, service: supabase } = await verifyOwnership(user.id, agentId);
+  if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { data } = await supabase
     .from("agent_state")
     .select("config")
@@ -48,6 +65,10 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
+    const authClient = await createServerSupabase();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await req.json();
     const { agentId, action } = body as { agentId?: string; action?: string };
 
@@ -58,7 +79,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "action must be 'feed' or 'rest'" }, { status: 400 });
     }
 
-    const supabase = createServiceClient();
+    const { owned, service: supabase } = await verifyOwnership(user.id, agentId);
+    if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { data } = await supabase
       .from("agent_state")
       .select("config, coins")
@@ -88,10 +110,21 @@ export async function POST(req: Request) {
       newCareState = restCreature(decayed);
     }
 
+    // Build updated config with care state
+    const updatedConfig: Record<string, unknown> = { ...config, care_state: newCareState };
+
+    // Persist DNA nudge if present
+    if (dnaNudge) {
+      const genome = (config.genome ?? {}) as Record<string, unknown>;
+      const dna = { ...((genome.dna ?? {}) as Record<string, number>) };
+      dna[dnaNudge.axis] = Math.max(0, Math.min(1, (dna[dnaNudge.axis] ?? 0.5) + dnaNudge.delta));
+      updatedConfig.genome = { ...genome, dna };
+    }
+
     await supabase
       .from("agent_state")
       .update({
-        config: { ...config, care_state: newCareState },
+        config: updatedConfig,
         coins: coins - cost,
       })
       .eq("agent_id", agentId);
