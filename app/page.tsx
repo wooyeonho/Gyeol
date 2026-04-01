@@ -228,12 +228,12 @@ export default function Home() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [lastReward, creature.excite, creature.boostConversationEnergy]);
+  }, [lastReward, creature]);
 
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
-  }, [creature.excite]);
+  }, [creature]);
 
   // Zelda-like touch freedom: every gesture type affects creature affinity
   const handleCreatureTouch = useCallback((affinityDelta: number) => {
@@ -257,7 +257,7 @@ export default function Home() {
       creature.boostConversationEnergy(0.15);
     }, 1200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [creature.excite, creature.boostConversationEnergy]);
+  }, [creature]);
 
   const handleCelebrationEnd = useCallback(async () => {
     try {
