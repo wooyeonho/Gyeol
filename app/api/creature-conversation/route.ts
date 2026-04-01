@@ -109,11 +109,15 @@ export async function POST(req: Request) {
     const dnaB = (genomeB.dna ?? {}) as Record<string, number>;
     const updatedDnaA: Record<string, number> = { ...dnaA };
     const updatedDnaB: Record<string, number> = { ...dnaB };
-    for (const effect of effectsA) {
-      updatedDnaA[effect.axis] = Math.max(0, Math.min(1, (updatedDnaA[effect.axis] ?? 0.5) + effect.delta));
+    for (const [axis, delta] of Object.entries(effectsA)) {
+      if (typeof delta === "number") {
+        updatedDnaA[axis] = Math.max(0, Math.min(1, (updatedDnaA[axis] ?? 0.5) + delta));
+      }
     }
-    for (const effect of effectsB) {
-      updatedDnaB[effect.axis] = Math.max(0, Math.min(1, (updatedDnaB[effect.axis] ?? 0.5) + effect.delta));
+    for (const [axis, delta] of Object.entries(effectsB)) {
+      if (typeof delta === "number") {
+        updatedDnaB[axis] = Math.max(0, Math.min(1, (updatedDnaB[axis] ?? 0.5) + delta));
+      }
     }
 
     // Deduct coins from initiator + persist DNA for both creatures
