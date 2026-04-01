@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   calculateEditCost,
@@ -15,6 +16,10 @@ import { deriveSpecies } from "@/lib/genome/species";
  */
 export async function POST(req: Request) {
   try {
+    const authClient = await createServerSupabase();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await req.json();
     const { agentId, edits } = body as {
       agentId?: string;
@@ -26,6 +31,13 @@ export async function POST(req: Request) {
     }
 
     const supabase = createServiceClient();
+    const { data: ownership } = await supabase
+      .from("agents")
+      .select("id")
+      .eq("id", agentId)
+      .eq("user_id", user.id)
+      .single();
+    if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { data } = await supabase
       .from("agent_state")
       .select("config, coins")

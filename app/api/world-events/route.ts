@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import {
   getScheduledEvent,
   isEventActive,
@@ -11,6 +12,10 @@ import { createServiceClient } from "@/lib/supabase/service";
  * GET /api/world-events — Get current active world event (if any).
  */
 export async function GET() {
+  const authClient = await createServerSupabase();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const supabase = createServiceClient();
 
   // Check if there's a stored active event in world_state
