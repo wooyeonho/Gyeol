@@ -524,5 +524,32 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   }
   // 0.55~0.75 = normal conversation, no constraint added
 
-  return parts.join("\n");
+  // OPT-E: Token budget guard — trim to ≤3500 chars by dropping middle sections
+  // (style hints, older memories) while keeping safety + language + expression rules.
+  // Prevents token blowout on long-running creatures with many memories/traits.
+  const MAX_PROMPT_CHARS = 3500;
+  const joined = parts.join("\n");
+  if (joined.length <= MAX_PROMPT_CHARS) return joined;
+
+  // Identify "trimmable" parts: anything that is not safety/language/expression critical.
+  // Strategy: keep first 3 parts (safety + base + lang) and last 3 (lang-enforcement + expression mode + response rules)
+  // then fill the middle up to the budget.
+  const head = parts.slice(0, 3);
+  const tail = parts.slice(-3);
+  const middle = parts.slice(3, -3);
+  const headStr = head.join("\n");
+  const tailStr = tail.join("\n");
+  const budget = MAX_PROMPT_CHARS - headStr.length - tailStr.length - 4; // 4 for separating newlines
+  if (budget <= 0) return [headStr, tailStr].join("\n");
+
+  // Fill middle greedily until budget is exhausted
+  const trimmedMiddle: string[] = [];
+  let used = 0;
+  for (const part of middle) {
+    if (used + part.length + 1 > budget) break;
+    trimmedMiddle.push(part);
+    used += part.length + 1;
+  }
+
+  return [headStr, ...trimmedMiddle, tailStr].join("\n");
 }

@@ -40,13 +40,14 @@ export type ChatPromptContext = {
 
 async function loadPromptMemories(params: {
   agentId: string;
-  message: string;
+  embeddingPromise: Promise<number[]>;
   reader: DbReader;
   recallCount: number;
   writer: DbWriter;
 }): Promise<{ memories: PromptMemory[]; memoryMoment?: MemoryMoment }> {
   try {
-    const embedding = await generateEmbedding(params.message);
+    // OPT-A: Reuse pre-started embedding promise instead of starting fresh
+    const embedding = await params.embeddingPromise;
     if (embedding.length === 0) return { memories: [] };
 
     const { data } = await params.reader.rpc("match_memories", {
@@ -61,14 +62,12 @@ async function loadPromptMemories(params: {
       referenceCount: memory.reference_count ?? 0,
     }));
 
-    // P1E: Batch reference count update (N+1 → single RPC call)
+    // OPT-B: Fire-and-forget reference count update — never block the hot path
     const ids = memories.filter((m) => m.id).map((m) => m.id);
     if (ids.length > 0) {
-      try {
-        await params.writer.rpc("batch_increment_reference_count", { p_ids: ids });
-      } catch {
-        // Fallback: individual updates if RPC not deployed yet
-        await Promise.allSettled(
+      params.writer.rpc("batch_increment_reference_count", { p_ids: ids }).catch(() => {
+        // Fallback: individual updates if RPC not deployed yet (still fire-and-forget)
+        Promise.allSettled(
           memories
             .filter((memory) => memory.id)
             .map((memory) =>
@@ -77,8 +76,8 @@ async function loadPromptMemories(params: {
                 .update({ reference_count: memory.referenceCount + 1 })
                 .eq("id", memory.id)
             )
-        );
-      }
+        ).catch(() => {});
+      });
     }
 
     // P5A: Detect memory moment — similarity > 0.95 and older than 7 days
@@ -107,7 +106,11 @@ export async function buildChatPromptContext(params: {
   reader: DbReader;
   writer: DbWriter;
 }): Promise<ChatPromptContext> {
-  // P1B: Parallelize ALL 5 data-fetching queries at once
+  // OPT-A: Start embedding generation immediately (parallel with all DB fetches).
+  // Previously: waited for agentState → then started embedding (~300ms saved).
+  const embeddingPromise = generateEmbedding(params.message);
+
+  // P1B: Parallelize ALL 4 DB queries at once
   const [{ data: agentStateRow }, { data: worldStateRow }, { data: recentChats }, { data: logs }] = await Promise.all([
     params.reader.from("agent_state").select("*").eq("agent_id", params.agentId).single(),
     params.reader.from("world_state").select("*").eq("id", "global").single(),
@@ -129,10 +132,10 @@ export async function buildChatPromptContext(params: {
   const worldState = (worldStateRow ?? null) as WorldStateRow;
   const recallCount = Math.max(1, Math.min(agentState?.config?.recall_count ?? 5, 10));
 
-  // Memory loading (embedding + vector search) runs after agentState is ready for recallCount
+  // Memory loading: embedding was already started, just await the RPC result now
   const { memories, memoryMoment } = await loadPromptMemories({
     agentId: params.agentId,
-    message: params.message,
+    embeddingPromise,
     reader: params.reader,
     recallCount,
     writer: params.writer,

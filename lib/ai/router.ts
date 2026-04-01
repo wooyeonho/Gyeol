@@ -208,7 +208,9 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
   const temperature = getArchetypeTemperature(systemPrompt);
 
-  // P1D: Hedged request — start Groq primary, if no response in 3s start Gemini in parallel
+  // OPT-C: Hedged request — start Groq primary, fire Gemini in parallel after 1.5s.
+  // Groq Llama 4 Scout typically begins streaming in 200-500ms.
+  // Hedge at 1.5s (down from 3s) captures Groq timeouts 2× faster.
   const groqCtrl = new AbortController();
   const geminiCtrl = new AbortController();
 
@@ -223,8 +225,8 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     throw new Error("All Groq models failed");
   })();
 
-  // Start Gemini hedge after 3s delay
-  const HEDGE_DELAY_MS = 3000;
+  // Start Gemini hedge after 1.5s (previously 3s)
+  const HEDGE_DELAY_MS = 1500;
   const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
     const hedgeTimer = setTimeout(async () => {
       if (groqCtrl.signal.aborted) return reject(new Error("Groq already won"));
