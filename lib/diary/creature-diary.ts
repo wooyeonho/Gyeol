@@ -20,7 +20,7 @@ export interface DiaryEntry {
  */
 export function getMoodEmoji(mood: string): string {
   const map: Record<string, string> = {
-    joyful: "😊", playful: "😜", excited: "🤩", proud: "😤",
+    joyful: "😊", playful: "😜", excited: "🤩", proud: "💪",
     inspired: "✨", loving: "🥰", grateful: "🙏", mischievous: "😏",
     curious: "🤔", thoughtful: "💭", dreamy: "💫", focused: "🎯",
     peaceful: "😌", tender: "🤗", melancholy: "😢", sad: "😔",

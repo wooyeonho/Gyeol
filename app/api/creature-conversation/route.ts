@@ -96,21 +96,53 @@ export async function POST(req: Request) {
       }));
     }
 
+    // Guard: don't charge if AI failed to generate turns
+    if (turns.length === 0) {
+      return NextResponse.json({ error: "Failed to generate conversation" }, { status: 502 });
+    }
+
     // Calculate DNA effects
     const { effectsA, effectsB } = calculateConversationDNAEffects(participantA, participantB);
 
-    // Deduct coins from initiator
-    await supabase
-      .from("agent_state")
-      .update({ coins: coins - CONVERSATION_COST })
-      .eq("agent_id", agentIdA);
+    // Apply DNA effects to both creatures
+    const dnaA = (genomeA.dna ?? {}) as Record<string, number>;
+    const dnaB = (genomeB.dna ?? {}) as Record<string, number>;
+    const updatedDnaA: Record<string, number> = { ...dnaA };
+    const updatedDnaB: Record<string, number> = { ...dnaB };
+    for (const [axis, delta] of Object.entries(effectsA)) {
+      if (typeof delta === "number") {
+        updatedDnaA[axis] = Math.max(0, Math.min(1, (updatedDnaA[axis] ?? 0.5) + delta));
+      }
+    }
+    for (const [axis, delta] of Object.entries(effectsB)) {
+      if (typeof delta === "number") {
+        updatedDnaB[axis] = Math.max(0, Math.min(1, (updatedDnaB[axis] ?? 0.5) + delta));
+      }
+    }
+
+    // Deduct coins from initiator + persist DNA for both creatures
+    await Promise.all([
+      supabase
+        .from("agent_state")
+        .update({
+          coins: coins - CONVERSATION_COST,
+          config: { ...configA, genome: { ...genomeA, dna: updatedDnaA } },
+        })
+        .eq("agent_id", agentIdA),
+      supabase
+        .from("agent_state")
+        .update({
+          config: { ...configB, genome: { ...genomeB, dna: updatedDnaB } },
+        })
+        .eq("agent_id", agentIdB),
+    ]);
 
     // Log the conversation
     await supabase.from("social_logs").insert({
       agent_id: agentIdA,
       partner_id: agentIdB,
       topic: "creature_conversation",
-      summary: turns.length > 0 ? turns[0].text.slice(0, 200) : "conversation",
+      summary: turns[0].text.slice(0, 200),
     });
 
     return NextResponse.json({
