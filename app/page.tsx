@@ -13,6 +13,7 @@ import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
 import { haptic } from "@/lib/micro-interactions";
+import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
@@ -105,6 +106,10 @@ export default function Home() {
     return (genome?.dna ?? null) as import("@/lib/genome/dna").CreatureDNA | null;
   }, [agentState?.genome]);
   const creature = useCreatureState(vitality, isStreaming, agentState?.mood ?? null, creatureDna);
+  const idleBehaviorParams = useMemo(
+    () => getIdleBehaviorParams(creature.state.idleActivity),
+    [creature.state.idleActivity],
+  );
   const [circadian, setCircadian] = useState(() => getCircadianTint());
   useEffect(() => {
     const update = () => setCircadian(getCircadianTint());
@@ -194,6 +199,41 @@ export default function Home() {
     }
   }, [messages, creature, historyLoaded]);
 
+  // Creature reward reaction — visual pulse when rewards fire
+  // Use object reference equality to deduplicate: creature dep changes every render,
+  // but lastReward only gets a new object reference when a new reward actually fires.
+  const lastRewardRef = useRef<typeof lastReward>(null);
+  const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!lastReward) return;
+    // Deduplicate: only react once per reward object instance
+    if (lastRewardRef.current === lastReward) return;
+    lastRewardRef.current = lastReward;
+
+    // Tier-scaled intensity
+    const tierIntensity: Record<string, number> = {
+      small: 0.15,
+      medium: 0.25,
+      large: 0.4,
+      jackpot: 0.6,
+    };
+    const intensity = tierIntensity[lastReward.tier] ?? 0.1;
+
+    creature.excite();
+    creature.boostConversationEnergy(intensity);
+
+    // Jackpot/large get a delayed second pulse for "double-take" effect.
+    // Use a ref so the timer survives creature dep changes (~66ms cycle).
+    if (lastReward.tier === "jackpot" || lastReward.tier === "large") {
+      if (rewardTimerRef.current) clearTimeout(rewardTimerRef.current);
+      rewardTimerRef.current = setTimeout(() => {
+        rewardTimerRef.current = null;
+        creature.excite();
+        creature.boostConversationEnergy(intensity * 0.6);
+      }, 500);
+    }
+  }, [lastReward, creature]);
+
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
@@ -205,6 +245,22 @@ export default function Home() {
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
+  }, [creature]);
+
+  // Creature comeback reaction — triple excite pulse "wiggle of recognition"
+  const handleComebackDetected = useCallback((multiplier: number) => {
+    void multiplier; // multiplier available for future intensity scaling
+    creature.excite();
+    creature.boostConversationEnergy(0.3);
+    const t1 = setTimeout(() => {
+      creature.excite();
+      creature.boostConversationEnergy(0.2);
+    }, 600);
+    const t2 = setTimeout(() => {
+      creature.excite();
+      creature.boostConversationEnergy(0.15);
+    }, 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [creature]);
 
   const handleCelebrationEnd = useCallback(async () => {
@@ -425,6 +481,7 @@ export default function Home() {
             conversationEnergy={creature.state.conversationEnergy}
             genLevel={agentState?.gen_level ?? 1}
             forceState={creature.state.forceState}
+            idleBehaviorParams={idleBehaviorParams}
           />
         </ThreeErrorBoundary>
 
@@ -476,7 +533,7 @@ export default function Home() {
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">
         <GlobalFeedTicker />
-        <WorldClassHub />
+        <WorldClassHub onComebackDetected={handleComebackDetected} />
         <LivingFeed onGreetingReady={handleGreetingReady} />
       </div>
 

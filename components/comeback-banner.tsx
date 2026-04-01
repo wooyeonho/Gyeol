@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 
@@ -16,10 +16,13 @@ type ComebackBonusData = {
  * reward multiplier. Fetches from /api/welcome-back and displays
  * a glowing animated banner with the multiplier value.
  */
-export function ComebackBanner() {
+export function ComebackBanner({ onComebackDetected }: { onComebackDetected?: (multiplier: number) => void }) {
   const [bonus, setBonus] = useState<ComebackBonusData | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const { t, locale } = useTranslations();
+  const firedRef = useRef(false);
+  const callbackRef = useRef(onComebackDetected);
+  useEffect(() => { callbackRef.current = onComebackDetected; }, [onComebackDetected]);
 
   useEffect(() => {
     let mounted = true;
@@ -31,6 +34,11 @@ export function ComebackBanner() {
         const data = await res.json() as { comeback_bonus?: ComebackBonusData | null };
         if (mounted && data.comeback_bonus) {
           setBonus(data.comeback_bonus);
+          // Fire comeback detection callback once
+          if (!firedRef.current && callbackRef.current) {
+            firedRef.current = true;
+            callbackRef.current(data.comeback_bonus.multiplier);
+          }
         }
       } catch {
         // Non-critical — silently ignore
