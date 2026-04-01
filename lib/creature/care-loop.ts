@@ -66,16 +66,59 @@ export function applyCareDecay(state: CareState): CareState {
 }
 
 /**
- * Feed the creature — restores hunger and gives a tiny DNA nudge.
- * @param coinCost - coins deducted (caller handles deduction)
+ * DNA-based care response modifiers.
+ * Different DNA profiles respond differently to care actions:
+ * - High warmth creatures get more happiness from feeding
+ * - High curiosity creatures get bonus energy from rest (exploring dreams)
+ * - High stability creatures decay slower (resilient)
+ * - Low stability creatures get bigger boosts (more responsive)
+ */
+type CreatureDNAPartial = {
+  warmth?: number;
+  curiosity?: number;
+  stability?: number;
+  empathy?: number;
+};
+
+function getCareModifiers(dna?: CreatureDNAPartial) {
+  if (!dna) return { hungerRestore: 30, happinessBoost: 5, energyRestore: 25, nudgeAxis: "warmth" as const, nudgeDelta: 0.003 };
+
+  const w = dna.warmth ?? 0.5;
+  const c = dna.curiosity ?? 0.5;
+  const s = dna.stability ?? 0.5;
+
+  // Warm creatures: feeding gives more happiness (they appreciate care)
+  const happinessBoost = Math.round(5 + w * 8); // 5~13
+  // Curious creatures: feeding sparks energy (excited by the experience)
+  const hungerRestore = Math.round(25 + c * 10); // 25~35
+  // Unstable creatures: bigger boosts but also bigger decays (volatile)
+  const energyRestore = Math.round(20 + (1 - s) * 15); // 20~35
+
+  // DNA nudge axis depends on dominant trait
+  let nudgeAxis: string;
+  let nudgeDelta: number;
+  if (w >= c && w >= s) {
+    nudgeAxis = "empathy"; nudgeDelta = 0.004; // warm creatures grow empathy from care
+  } else if (c >= s) {
+    nudgeAxis = "curiosity"; nudgeDelta = 0.003; // curious creatures get more curious
+  } else {
+    nudgeAxis = "stability"; nudgeDelta = 0.005; // stable creatures become more grounded
+  }
+
+  return { hungerRestore, happinessBoost, energyRestore, nudgeAxis, nudgeDelta };
+}
+
+/**
+ * Feed the creature — restores hunger and gives a DNA nudge based on creature's DNA profile.
  * @returns updated care state + DNA nudge axis
  */
-export function feedCreature(state: CareState): {
+export function feedCreature(state: CareState, dna?: CreatureDNAPartial): {
   careState: CareState;
   dnaNudge: { axis: string; delta: number } | null;
 } {
-  const restored = Math.min(100, state.hunger + 30);
-  const happinessBoost = Math.min(100, state.happiness + 5);
+  const mod = getCareModifiers(dna);
+  const restored = Math.min(100, state.hunger + mod.hungerRestore);
+  const happinessBoost = Math.min(100, state.happiness + mod.happinessBoost);
   const now = new Date().toISOString();
 
   const careState: CareState = {
@@ -86,22 +129,22 @@ export function feedCreature(state: CareState): {
     sickSince: restored > 0 && state.energy > 0 && happinessBoost > 0 ? null : state.sickSince,
   };
 
-  // Feeding affects warmth axis slightly
-  const dnaNudge = { axis: "warmth", delta: 0.003 };
-
+  const dnaNudge = { axis: mod.nudgeAxis, delta: mod.nudgeDelta };
   return { careState, dnaNudge };
 }
 
 /**
- * Rest the creature — restores energy.
+ * Rest the creature — restores energy. DNA-aware: curious creatures dream more vividly.
  */
-export function restCreature(state: CareState): CareState {
+export function restCreature(state: CareState, dna?: CreatureDNAPartial): CareState {
+  const mod = getCareModifiers(dna);
   const now = new Date().toISOString();
+  const newEnergy = Math.min(100, state.energy + mod.energyRestore);
   return {
     ...state,
-    energy: Math.min(100, state.energy + 25),
+    energy: newEnergy,
     lastUpdatedAt: now,
-    sickSince: state.hunger > 0 && Math.min(100, state.energy + 25) > 0 && state.happiness > 0 ? null : state.sickSince,
+    sickSince: state.hunger > 0 && newEnergy > 0 && state.happiness > 0 ? null : state.sickSince,
   };
 }
 

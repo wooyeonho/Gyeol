@@ -99,15 +99,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not enough coins", required: cost, current: coins }, { status: 402 });
     }
 
+    // Extract creature DNA for DNA-aware care responses
+    const genome = (config.genome ?? {}) as Record<string, unknown>;
+    const creatureDna = (genome.dna ?? {}) as Record<string, number>;
+
     let newCareState: CareState;
     let dnaNudge: { axis: string; delta: number } | null = null;
 
     if (action === "feed") {
-      const result = feedCreature(decayed);
+      const result = feedCreature(decayed, creatureDna);
       newCareState = result.careState;
       dnaNudge = result.dnaNudge;
     } else {
-      newCareState = restCreature(decayed);
+      newCareState = restCreature(decayed, creatureDna);
     }
 
     // Build updated config with care state

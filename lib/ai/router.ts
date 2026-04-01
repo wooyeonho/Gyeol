@@ -165,20 +165,24 @@ function getFallbackText(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
-/** Derive max_tokens from verbal axis value embedded in the system prompt. */
+/** Derive max_tokens from verbal axis value embedded in the system prompt.
+ *  Values aligned with chat/route.ts verbal axis thresholds. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {
   const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
   if (!match) return 700;
   switch (match[1]) {
-    case "SILENT":   return 15;
-    case "MINIMAL":  return 20;
-    case "BRIEF":    return 40;
-    case "ELOQUENT": return 1000;
+    case "SILENT":   return 30;
+    case "MINIMAL":  return 60;
+    case "BRIEF":    return 180;
+    case "ELOQUENT": return 700;
     default:         return 700;
   }
 }
 
 function getInCharacterFallback(systemPrompt: string) {
+  // Respect verbal axis in fallback — SILENT/MINIMAL creatures can't speak full sentences
+  if (systemPrompt.includes("EXPRESSION MODE — SILENT")) return "[...]";
+  if (systemPrompt.includes("EXPRESSION MODE — MINIMAL")) return "...";
   if (systemPrompt.includes("日本語")) return "...ちょっと頭がぼんやりしてる。少し待ってくれる？";
   if (systemPrompt.includes("中文")) return "...脑袋有点发蒙。等我一下好吗？";
   if (systemPrompt.includes("español")) return "...Tengo la mente un poco nublada. ¿Puedes esperar un momento?";
@@ -186,9 +190,23 @@ function getInCharacterFallback(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
+/**
+ * P11A: Archetype-based temperature tuning.
+ * Volatile archetypes (volcanic, spectral) get higher temperature for creative variety.
+ * Stable archetypes (crystalline, mechanical) get lower temperature for consistency.
+ */
+function getArchetypeTemperature(systemPrompt: string): number {
+  if (systemPrompt.includes("volcanic") || systemPrompt.includes("spectral")) return 0.80;
+  if (systemPrompt.includes("fluid") || systemPrompt.includes("organic")) return 0.72;
+  if (systemPrompt.includes("ethereal") || systemPrompt.includes("verdant")) return 0.68;
+  if (systemPrompt.includes("crystalline") || systemPrompt.includes("mechanical")) return 0.50;
+  return 0.65; // default
+}
+
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
   const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
     ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
+  const temperature = getArchetypeTemperature(systemPrompt);
 
   // P1D: Hedged request — start Groq primary, if no response in 3s start Gemini in parallel
   const groqCtrl = new AbortController();
@@ -197,7 +215,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
   const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
     for (const m of MODELS) {
       try {
-        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
+        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
         console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
         return { source: m.name, stream: res.body! };
       } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
@@ -211,7 +229,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     const hedgeTimer = setTimeout(async () => {
       if (groqCtrl.signal.aborted) return reject(new Error("Groq already won"));
       try {
-        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
         console.log("[AI] Gemini hedge won");
         resolve({ source: "gemini-hedge", stream });
       } catch (e) { reject(e); }
@@ -229,7 +247,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
   } catch {
     // Both raced paths failed — try Gemini directly as final fallback
     try {
-      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
+      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
       console.log("[AI] Using Gemini Flash streaming fallback");
       return stream;
     } catch (e) { console.error("[AI] Gemini stream failed:", e); }
