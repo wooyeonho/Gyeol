@@ -13,6 +13,10 @@ import { createAssistantTapStream } from "@/lib/chat/stream";
 import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
+import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
+import { getExpressedTraits } from "@/lib/genome/traits";
+import { trySemanticCache } from "@/lib/chat/semantic-cache";
 
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
@@ -141,43 +145,39 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join("\n");
 
     // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
-    const genome = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
-    const verbal = genome?.dna?.verbal ?? 0.5;
+    const genomeForVerbal = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
+    const verbal = genomeForVerbal?.dna?.verbal ?? 0.5;
     const maxTokens = verbal < 0.15 ? 30
       : verbal < 0.35 ? 60
       : verbal < 0.55 ? 180
       : verbal < 0.75 ? 500
       : 700;
 
-    const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
-    let postProcessResult: { changedAxes?: string[]; newTraits?: { id: string; name: { ko: string; en: string } }[] } = {};
-    const transformStream = createAssistantTapStream(async (fullResponse) => {
-      recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
-        agentId,
-        durationMs: Date.now() - requestStartedAt,
-        replyLength: fullResponse.length,
-        userId: user.id,
-      });
-      try {
-        const result = await persistChatTurn({
-          agentId,
-          agentState: context.agentState,
-          durationMs: Date.now() - requestStartedAt,
-          message,
-          reply: fullResponse,
-          writer: service,
-        });
-        postProcessResult = { changedAxes: result.changedAxes, newTraits: result.newTraits };
-      } catch (error) {
-        recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
-          agentId,
-          durationMs: Date.now() - requestStartedAt,
-          messageLength: message.length,
-          userId: user.id,
-        });
-        console.error("[PostStream]", error);
-      }
+    // --- P2A: Semantic cache check ---
+    const cacheHit = await trySemanticCache({
+      agentId,
+      message,
+      reader: supabase,
+      systemPrompt: finalSystemPrompt,
+      maxTokens,
     });
+
+    // --- P3A: Synchronous DNA mutation (pure function, no DB) ---
+    const genome = context.agentState?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
+    let dnaShiftAxes: string[] = [];
+    let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
+    if (genome?.dna) {
+      const { dna: evolvedDNA, changedAxes } = applySoftMutation(genome.dna, message);
+      dnaShiftAxes = changedAxes;
+      if (changedAxes.length > 0) {
+        const prevTraits = getExpressedTraits(genome.dna);
+        const nextTraits = getExpressedTraits(evolvedDNA);
+        const prevIds = new Set(prevTraits.map((t) => t.id));
+        newTraits = nextTraits
+          .filter((t) => !prevIds.has(t.id))
+          .map((t) => ({ id: t.id, name: t.name }));
+      }
+    }
 
     const allowedOrigin = getAllowedChatOrigin(req.headers.get("origin"), req.nextUrl.origin);
     const headers: HeadersInit = {
@@ -190,9 +190,17 @@ export async function POST(req: NextRequest) {
       headers.Vary = "Origin";
     }
 
-    // Pipe AI stream through tap, then append dna_shift metadata event
-    const aiStream = stream.pipeThrough(transformStream);
+    // Choose stream source: cache hit (lightweight adaptation) or full LLM
+    const stream = cacheHit
+      ? cacheHit.stream
+      : await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
+
+    // Tap stream captures full response text without blocking close
+    const { transform: tapTransform, getFullResponse } = createAssistantTapStream();
+    const aiStream = stream.pipeThrough(tapTransform);
     const encoder = new TextEncoder();
+
+    // Build output stream: AI text + inline DNA/trait events (no waiting for post-processing)
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = aiStream.getReader();
@@ -205,18 +213,56 @@ export async function POST(req: NextRequest) {
         } finally {
           reader.releaseLock();
         }
-        // Append dna_shift event after the main stream completes
-        if (postProcessResult.changedAxes && postProcessResult.changedAxes.length > 0) {
-          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: postProcessResult.changedAxes });
+        // P3A: DNA shift + trait events sent inline (synchronous, no DB wait)
+        if (dnaShiftAxes.length > 0) {
+          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: dnaShiftAxes });
           controller.enqueue(encoder.encode(`data: ${dnaEvent}\n\n`));
         }
-        // Append trait_emerged event if new traits expressed
-        if (postProcessResult.newTraits && postProcessResult.newTraits.length > 0) {
-          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: postProcessResult.newTraits });
+        if (newTraits.length > 0) {
+          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: newTraits });
           controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
+        }
+        // P5A: Memory moment event (if context had a strong match)
+        if (context.memoryMoment) {
+          const mmEvent = JSON.stringify({
+            type: "memory_moment",
+            memory: context.memoryMoment.content,
+            age_days: context.memoryMoment.ageDays,
+            similarity: context.memoryMoment.similarity,
+          });
+          controller.enqueue(encoder.encode(`data: ${mmEvent}\n\n`));
         }
         controller.close();
       },
+    });
+
+    // P1A: Move ALL post-processing into after() — stream closes immediately
+    after(async () => {
+      const fullResponse = getFullResponse();
+      recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
+        agentId,
+        durationMs: Date.now() - requestStartedAt,
+        replyLength: fullResponse.length,
+        userId: user.id,
+      });
+      try {
+        await persistChatTurn({
+          agentId,
+          agentState: context.agentState,
+          durationMs: Date.now() - requestStartedAt,
+          message,
+          reply: fullResponse,
+          writer: service,
+        });
+      } catch (error) {
+        recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
+          agentId,
+          durationMs: Date.now() - requestStartedAt,
+          messageLength: message.length,
+          userId: user.id,
+        });
+        console.error("[PostStream]", error);
+      }
     });
 
     return new Response(metaStream, { headers });

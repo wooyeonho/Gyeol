@@ -28,7 +28,8 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }
+interface MemoryMomentData { memory: string; age_days: number; similarity: number }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -159,6 +160,23 @@ async function handleStreamResponse(
                 const last = msgs[msgs.length - 1];
                 if (last?.role === "assistant") {
                   msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: { ko: string; en: string } }[] };
+                }
+                return { messages: msgs };
+              });
+            } else if (parsed.type === "memory_moment" && typeof parsed.memory === "string") {
+              // P5A: Memory moment — old memory resurfaced with high similarity
+              set((s) => {
+                const msgs = [...s.messages];
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = {
+                    ...last,
+                    memoryMoment: {
+                      memory: parsed.memory as string,
+                      age_days: typeof parsed.age_days === "number" ? parsed.age_days : 0,
+                      similarity: typeof parsed.similarity === "number" ? parsed.similarity : 0,
+                    },
+                  };
                 }
                 return { messages: msgs };
               });

@@ -1,11 +1,16 @@
 import { appendAssistantContentFromDataLine } from "@/lib/ai/sse-parser";
 
-export function createAssistantTapStream(onComplete: (assistantText: string) => Promise<void>) {
+/**
+ * Tap stream that captures the full assistant response text.
+ * flush() is NON-blocking — stream closes immediately.
+ * Use `getFullResponse()` to read captured text for inline SSE events.
+ */
+export function createAssistantTapStream() {
   const decoder = new TextDecoder();
   let buffer = "";
   let fullResponse = "";
 
-  return new TransformStream<Uint8Array, Uint8Array>({
+  const transform = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
       buffer += decoder.decode(chunk, { stream: true });
       const lines = buffer.split("\n");
@@ -18,7 +23,7 @@ export function createAssistantTapStream(onComplete: (assistantText: string) => 
       }
       controller.enqueue(chunk);
     },
-    async flush() {
+    flush() {
       buffer += decoder.decode();
       for (const rawLine of buffer.split("\n")) {
         const line = rawLine.trim();
@@ -26,7 +31,12 @@ export function createAssistantTapStream(onComplete: (assistantText: string) => 
           fullResponse = appendAssistantContentFromDataLine(line, fullResponse);
         }
       }
-      await onComplete(fullResponse);
+      // No await — stream closes immediately
     },
   });
+
+  return {
+    transform,
+    getFullResponse: () => fullResponse,
+  };
 }
