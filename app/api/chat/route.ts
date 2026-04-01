@@ -13,26 +13,46 @@ import { createAssistantTapStream } from "@/lib/chat/stream";
 import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
+import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { getExpressedTraits } from "@/lib/genome/traits";
+import { checkSemanticCache } from "@/lib/chat/semantic-cache";
 
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
   if (!text || text.length < 2) return null;
-  // Count characters in major script ranges
   const korean = (text.match(/[\uAC00-\uD7AF\u3131-\u318E]/g) || []).length;
   const japanese = (text.match(/[\u3040-\u309F\u30A0-\u30FF]/g) || []).length;
   const chinese = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
-  // Latin includes accented characters (French é, German ü, Spanish ñ, etc.)
   const latin = (text.match(/[a-zA-Z\u00C0-\u00FF]/g) || []).length;
   const total = korean + japanese + chinese + latin;
   if (total === 0) return null;
   if (korean / total > 0.3) return "Korean (한국어)";
   if (japanese / total > 0.3) return "Japanese (日本語)";
-  // Chinese characters can overlap with Japanese kanji; only flag if no kana present
   if (chinese / total > 0.3 && japanese === 0) return "Chinese (中文)";
-  // Spanish detection: require ñ or inverted punctuation (¿¡) as markers
   if (latin > 0 && /[ñÑ¿¡]/.test(text)) return "Spanish (Español)";
   if (latin / total > 0.5) return "English";
   return null;
+}
+
+/**
+ * Compute DNA mutation synchronously (pure function, no DB) so we can
+ * inline the dna_shift / trait_emerged events before closing the stream.
+ */
+function computeInlineDnaShift(
+  agentState: Record<string, unknown> | null,
+  message: string,
+): { changedAxes: string[]; newTraits: { id: string; name: { ko: string; en: string } }[] } {
+  const genome = agentState?.genome as { dna?: CreatureDNA } | null;
+  if (!genome?.dna) return { changedAxes: [], newTraits: [] };
+  const { dna: evolvedDNA, changedAxes } = applySoftMutation(genome.dna, message);
+  if (changedAxes.length === 0) return { changedAxes: [], newTraits: [] };
+  const prevTraits = getExpressedTraits(genome.dna);
+  const nextTraits = getExpressedTraits(evolvedDNA);
+  const prevIds = new Set(prevTraits.map((t) => t.id));
+  const newTraits = nextTraits
+    .filter((t) => !prevIds.has(t.id))
+    .map((t) => ({ id: t.id, name: t.name }));
+  return { changedAxes, newTraits };
 }
 
 export async function POST(req: NextRequest) {
@@ -41,7 +61,6 @@ export async function POST(req: NextRequest) {
     const payload = (await req.json()) as { message?: unknown; locale?: unknown };
     const rawMessage = typeof payload.message === "string" ? payload.message : "";
     if (!rawMessage.trim()) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
-    // Prevent DOS via extremely long messages (8K chars ≈ 2K tokens)
     if (rawMessage.length > 8000) return new Response(JSON.stringify({ error: "Message too long" }), { status: 413 });
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
@@ -54,7 +73,6 @@ export async function POST(req: NextRequest) {
 
     const service = createServiceClient();
 
-    // Resolve billing tier so paid users get higher rate limits (pro=40, premium=80 req/min)
     let billingTier: string | null = null;
     try {
       const { data: sub } = await service
@@ -87,15 +105,12 @@ export async function POST(req: NextRequest) {
       writer: service,
     });
 
-    // Auto-sync detected locale to agent config so autonomous crons
-    // (heartbeat, dream, social, etc.) generate in the user's language.
-    // Uses atomic JSON merge to avoid overwriting config written by persistChatTurn.
+    // Auto-sync locale in background
     const normalizedLocale = normalizeLocale(locale);
     if (normalizedLocale && context.agentState) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
         after(async () => {
-          // Re-read latest config from DB to avoid overwriting usage_profile, goals, trait notifications
           const { data: freshRow } = await service
             .from("agent_state")
             .select("config")
@@ -121,7 +136,6 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    // Detect the user's language from their latest message to enforce matching
     const userLang = detectUserLanguage(payload.message as string);
     const langRule = userLang
       ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
@@ -140,7 +154,6 @@ export async function POST(req: NextRequest) {
       langRule,
     ].filter(Boolean).join("\n");
 
-    // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
     const genome = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
     const verbal = genome?.dna?.verbal ?? 0.5;
     const maxTokens = verbal < 0.15 ? 30
@@ -149,36 +162,97 @@ export async function POST(req: NextRequest) {
       : verbal < 0.75 ? 500
       : 700;
 
-    const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
-    let postProcessResult: { changedAxes?: string[]; newTraits?: { id: string; name: { ko: string; en: string } }[] } = {};
-    const transformStream = createAssistantTapStream(async (fullResponse) => {
+    // ── P2A: Semantic Cache — check for near-duplicate messages ──
+    const cachedResponse = await checkSemanticCache({
+      agentId,
+      message,
+      embedding: context.messageEmbedding,
+      reader: service,
+    });
+
+    // ── P3A: Compute DNA mutation synchronously (pure, no IO) ──
+    const inlineDna = computeInlineDnaShift(context.agentState, message);
+
+    // ── P5A: Memory moment — old memory recalled with high similarity ──
+    const memoryMoment = context.memoryMoment;
+
+    let responseStream: ReadableStream;
+
+    if (cachedResponse) {
+      // Cache hit: return cached response as a single-chunk stream
+      console.log("[AI] Semantic cache hit");
       recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
         agentId,
         durationMs: Date.now() - requestStartedAt,
-        replyLength: fullResponse.length,
+        replyLength: cachedResponse.length,
         userId: user.id,
+        cacheHit: true,
       });
-      try {
-        const result = await persistChatTurn({
+      const encoder = new TextEncoder();
+      responseStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cachedResponse } }] })}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      // Still persist the turn in background
+      after(async () => {
+        try {
+          await persistChatTurn({
+            agentId,
+            agentState: context.agentState,
+            durationMs: Date.now() - requestStartedAt,
+            message,
+            reply: cachedResponse,
+            writer: service,
+          });
+        } catch (error) {
+          console.error("[PostStream:cache]", error);
+        }
+      });
+    } else {
+      // Normal LLM path
+      const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
+      let capturedResponse = "";
+
+      const transformStream = createAssistantTapStream((fullResponse) => {
+        capturedResponse = fullResponse;
+        recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
           agentId,
-          agentState: context.agentState,
           durationMs: Date.now() - requestStartedAt,
-          message,
-          reply: fullResponse,
-          writer: service,
-        });
-        postProcessResult = { changedAxes: result.changedAxes, newTraits: result.newTraits };
-      } catch (error) {
-        recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
-          agentId,
-          durationMs: Date.now() - requestStartedAt,
-          messageLength: message.length,
+          replyLength: fullResponse.length,
           userId: user.id,
         });
-        console.error("[PostStream]", error);
-      }
-    });
+      });
 
+      responseStream = stream.pipeThrough(transformStream);
+
+      // ── P1A: Defer ALL heavy post-processing to after() ──
+      after(async () => {
+        try {
+          await persistChatTurn({
+            agentId,
+            agentState: context.agentState,
+            durationMs: Date.now() - requestStartedAt,
+            message,
+            reply: capturedResponse,
+            writer: service,
+          });
+        } catch (error) {
+          recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
+            agentId,
+            durationMs: Date.now() - requestStartedAt,
+            messageLength: message.length,
+            userId: user.id,
+          });
+          console.error("[PostStream]", error);
+        }
+      });
+    }
+
+    // ── Build final stream with inline metadata events ──
     const allowedOrigin = getAllowedChatOrigin(req.headers.get("origin"), req.nextUrl.origin);
     const headers: HeadersInit = {
       "Content-Type": "text/event-stream",
@@ -190,12 +264,11 @@ export async function POST(req: NextRequest) {
       headers.Vary = "Origin";
     }
 
-    // Pipe AI stream through tap, then append dna_shift metadata event
-    const aiStream = stream.pipeThrough(transformStream);
     const encoder = new TextEncoder();
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const reader = aiStream.getReader();
+        // Pipe response stream
+        const reader = responseStream.getReader();
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -205,14 +278,24 @@ export async function POST(req: NextRequest) {
         } finally {
           reader.releaseLock();
         }
-        // Append dna_shift event after the main stream completes
-        if (postProcessResult.changedAxes && postProcessResult.changedAxes.length > 0) {
-          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: postProcessResult.changedAxes });
+
+        // ── P5A: Memory moment event (old high-similarity memory recalled) ──
+        if (memoryMoment) {
+          const memoryEvent = JSON.stringify({
+            type: "memory_moment",
+            content: memoryMoment.content,
+            age_days: memoryMoment.ageDays,
+          });
+          controller.enqueue(encoder.encode(`data: ${memoryEvent}\n\n`));
+        }
+
+        // ── P3A: Inline DNA shift — computed synchronously, no waiting for DB ──
+        if (inlineDna.changedAxes.length > 0) {
+          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: inlineDna.changedAxes });
           controller.enqueue(encoder.encode(`data: ${dnaEvent}\n\n`));
         }
-        // Append trait_emerged event if new traits expressed
-        if (postProcessResult.newTraits && postProcessResult.newTraits.length > 0) {
-          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: postProcessResult.newTraits });
+        if (inlineDna.newTraits.length > 0) {
+          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: inlineDna.newTraits });
           controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
         }
         controller.close();
@@ -225,7 +308,7 @@ export async function POST(req: NextRequest) {
     if (isMissingEnvError(e)) {
       return new Response(
         JSON.stringify({ error: "Service unavailable: missing server configuration", code: "MISSING_ENV" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
+        { status: 503, headers: { "Content-Type": "application/json" } },
       );
     }
     return new Response(JSON.stringify({ error: "Internal error" }), {

@@ -28,7 +28,7 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { content: string; age_days: number } }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -159,6 +159,16 @@ async function handleStreamResponse(
                 const last = msgs[msgs.length - 1];
                 if (last?.role === "assistant") {
                   msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: { ko: string; en: string } }[] };
+                }
+                return { messages: msgs };
+              });
+            } else if (parsed.type === "memory_moment" && typeof parsed.content === "string") {
+              // P5A: Memory moment — creature recalls an old memory
+              set((s) => {
+                const msgs = [...s.messages];
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = { ...last, memoryMoment: { content: parsed.content as string, age_days: (parsed.age_days as number) ?? 0 } };
                 }
                 return { messages: msgs };
               });

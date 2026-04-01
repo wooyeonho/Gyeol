@@ -4,7 +4,6 @@ const TARGET_DIM = 768;
 /**
  * Zero-pad a vector to TARGET_DIM so that shorter fallback embeddings
  * (e.g. Cloudflare bge-small 384-dim) can be stored in the vector(768) column.
- * Vectors that are already the correct length are returned unchanged.
  */
 function padToTargetDim(vec: number[]): number[] {
   if (vec.length >= TARGET_DIM) return vec;
@@ -45,7 +44,53 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return [];
 }
 
+/**
+ * P4B: Batch embedding using Gemini batchEmbedContents endpoint.
+ * Single API call for multiple texts instead of sequential calls.
+ */
 export async function generateEmbeddingBatch(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  // Try Gemini batch endpoint first
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      const requests = texts.map((text) => ({
+        model: "models/gemini-embedding-001",
+        content: { parts: [{ text }] },
+        outputDimensionality: TARGET_DIM,
+      }));
+
+      // Process in batches of 100 (Gemini batch limit)
+      const results: number[][] = [];
+      for (let i = 0; i < requests.length; i += 100) {
+        const batch = requests.slice(i, i + 100);
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requests: batch }),
+          }
+        );
+        if (!res.ok) throw new Error(`Gemini batch ${res.status}`);
+        const data = await res.json();
+        const embeddings: Array<{ values?: number[] }> = data.embeddings || [];
+        for (const emb of embeddings) {
+          const values = emb.values || [];
+          results.push(values.length > 0 ? padToTargetDim(values) : []);
+        }
+      }
+      if (results.length === texts.length) {
+        console.log(`[Embed] Gemini batch: ${texts.length} texts`);
+        return results;
+      }
+    }
+  } catch (e) {
+    console.error("[Embed] Gemini batch failed, falling back to sequential:", e);
+  }
+
+  // Fallback: sequential (original behavior)
   const results: number[][] = [];
   for (let i = 0; i < texts.length; i += 6) {
     const batch = texts.slice(i, i + 6);

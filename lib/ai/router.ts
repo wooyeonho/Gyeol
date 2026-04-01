@@ -13,18 +13,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-// NOTE: In-memory rate limiter removed — Vercel serverless spawns independent
-// processes per request so module-level state is useless for global rate limiting.
-// Groq 429 responses are already caught and trigger the Gemini/CF fallback chain.
-
 const MODELS = [
   { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 15000 },
   { name: "llama-3.1-8b-instant", timeout: 10000 },
 ];
 
-async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {
+/** HEDGE_DELAY_MS: Start Gemini fallback after this delay if Groq hasn't responded. */
+const HEDGE_DELAY_MS = 3000;
+
+async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65, signal?: AbortSignal) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
+  // Chain external abort signal
+  if (signal) signal.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const res = await fetch(GROQ_URL, {
       method: "POST",
@@ -90,11 +91,12 @@ async function callGemini(system: string, messages: Msg[], maxTokens = 700, temp
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
-async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700, temp = 0.65): Promise<ReadableStream> {
+async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700, temp = 0.65, signal?: AbortSignal): Promise<ReadableStream> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Gemini API key not configured");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000);
+  if (signal) signal.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const contents = messages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -118,7 +120,6 @@ async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700
     );
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Gemini stream ${res.status}`);
-    // Transform Gemini SSE to Groq-compatible SSE format
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -157,15 +158,6 @@ function fallbackStream(text: string): ReadableStream {
   });
 }
 
-function getFallbackText(systemPrompt: string) {
-  if (systemPrompt.includes("日本語")) return "...頭が少しぼんやりする。少し待っていて。";
-  if (systemPrompt.includes("中文")) return "...脑子有点晕。等我一下。";
-  if (systemPrompt.includes("español")) return "...La cabeza me da vueltas. Espérame un momento.";
-  if (systemPrompt.includes("English")) return "...my head feels foggy right now. give me a moment.";
-  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
-}
-
-/** Derive max_tokens from verbal axis value embedded in the system prompt. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {
   const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
   if (!match) return 700;
@@ -186,24 +178,70 @@ function getInCharacterFallback(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
+/**
+ * P1D: Hedged streaming — fire Groq primary, start Gemini after HEDGE_DELAY_MS.
+ * Use whichever responds first, cancel the other.
+ */
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
   const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
     ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
-  for (const m of MODELS) {
-    try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
-      console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
-      return res.body!;
-    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
-  }
-  // Gemini Flash streaming fallback (higher quality than CF 1B)
+
+  const groqAbort = new AbortController();
+  const geminiAbort = new AbortController();
+  let resolved = false;
+
+  // Groq primary attempt (try both models sequentially but with hedge)
+  const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
+    for (const m of MODELS) {
+      if (resolved) throw new Error("Already resolved");
+      try {
+        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, 0.65, groqAbort.signal);
+        console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
+        return { source: m.name, stream: res.body! };
+      } catch (e) {
+        if (groqAbort.signal.aborted) throw new Error("Groq aborted");
+        console.error(`[AI] ${m.name} failed:`, e);
+      }
+    }
+    throw new Error("All Groq models failed");
+  })();
+
+  // Gemini hedge — starts after HEDGE_DELAY_MS
+  const geminiPromise = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
+    const hedgeTimer = setTimeout(async () => {
+      if (resolved) { reject(new Error("Already resolved")); return; }
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, 0.65, geminiAbort.signal);
+        console.log("[AI] Gemini hedge won");
+        resolve({ source: "gemini-hedge", stream });
+      } catch (e) {
+        reject(e);
+      }
+    }, HEDGE_DELAY_MS);
+    // If groq resolves before hedge timer, clean up
+    groqAbort.signal.addEventListener("abort", () => { clearTimeout(hedgeTimer); reject(new Error("Hedge cancelled")); }, { once: true });
+    geminiAbort.signal.addEventListener("abort", () => { clearTimeout(hedgeTimer); reject(new Error("Hedge cancelled")); }, { once: true });
+  });
+
   try {
-    const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
-    console.log("[AI] Using Gemini Flash streaming");
-    return stream;
-  } catch (e) { console.error("[AI] Gemini stream failed:", e); }
-  console.log("[AI] All models failed, using in-character fallback");
-  return fallbackStream(getInCharacterFallback(systemPrompt));
+    const winner = await Promise.race([groqPromise, geminiPromise]);
+    resolved = true;
+    // Cancel the loser
+    if (winner.source === "gemini-hedge") groqAbort.abort();
+    else geminiAbort.abort();
+    return winner.stream;
+  } catch {
+    resolved = true;
+    // Both failed — try Gemini non-hedge as direct fallback
+    try {
+      geminiAbort.abort();
+      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
+      console.log("[AI] Using Gemini Flash streaming (direct fallback)");
+      return stream;
+    } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    console.log("[AI] All models failed, using in-character fallback");
+    return fallbackStream(getInCharacterFallback(systemPrompt));
+  }
 }
 
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
@@ -217,7 +255,6 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return data.choices?.[0]?.message?.content || "";
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
-  // Gemini fallback (higher quality than CF 1B)
   try {
     const text = await callGemini(systemPrompt, messages, maxTokens, temp);
     if (text) {
@@ -225,7 +262,6 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
-  // Cloudflare as last resort
   try {
     const res = await callCF(systemPrompt, messages, false);
     const data = (await res.json()) as CloudflareCompletionResponse;
@@ -240,7 +276,6 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
 ): Promise<T | null> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
 
-  // Attempt 1: try all models
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
@@ -252,7 +287,6 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
     } catch (e) { console.error(`[JSON] ${m.name} attempt 1 failed:`, e); }
   }
 
-  // Retry once after 500ms backoff (all models again)
   await new Promise((resolve) => setTimeout(resolve, 500));
   for (const m of MODELS) {
     try {
@@ -265,7 +299,6 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
     } catch (e) { console.error(`[JSON] ${m.name} attempt 2 failed:`, e); }
   }
 
-  // Gemini Flash fallback — supports JSON output natively
   try {
     const text = await callGemini(systemPrompt, messages, 300, 0.3);
     if (text) {

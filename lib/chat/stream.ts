@@ -1,6 +1,12 @@
 import { appendAssistantContentFromDataLine } from "@/lib/ai/sse-parser";
 
-export function createAssistantTapStream(onComplete: (assistantText: string) => Promise<void>) {
+/**
+ * Creates a TransformStream that taps the AI response stream to capture the
+ * full assistant text. The captured text is returned via a promise that
+ * resolves when the stream completes — but the stream itself is NOT blocked
+ * by `onComplete`. Heavy post-processing should run inside Next.js `after()`.
+ */
+export function createAssistantTapStream(onComplete: (assistantText: string) => void) {
   const decoder = new TextDecoder();
   let buffer = "";
   let fullResponse = "";
@@ -18,7 +24,7 @@ export function createAssistantTapStream(onComplete: (assistantText: string) => 
       }
       controller.enqueue(chunk);
     },
-    async flush() {
+    flush() {
       buffer += decoder.decode();
       for (const rawLine of buffer.split("\n")) {
         const line = rawLine.trim();
@@ -26,7 +32,7 @@ export function createAssistantTapStream(onComplete: (assistantText: string) => 
           fullResponse = appendAssistantContentFromDataLine(line, fullResponse);
         }
       }
-      await onComplete(fullResponse);
+      onComplete(fullResponse);
     },
   });
 }

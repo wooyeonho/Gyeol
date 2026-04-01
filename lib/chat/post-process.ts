@@ -9,44 +9,35 @@ import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
 import { detectTurnMood } from "@/lib/evolution/personality";
+// P1F: Static imports — avoid dynamic import() cold-start penalty in serverless
+import { analyzePersonality } from "@/lib/evolution/personality";
+import { checkEvolution } from "@/lib/evolution/gen-level";
+import { processHiddenEmotions } from "@/lib/personality/deception";
+import { updateVoiceParams } from "@/lib/personality/voice";
 
-type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
+type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 type AgentStateRow = Record<string, unknown> & {
   intimacy_score?: number;
   total_messages?: number;
   vitality?: number;
 };
 
+// P1F: Static imports — conditional execution only
 async function runEvolutionHooks(agentId: string, totalMessages: number, message: string, reply: string) {
   if (totalMessages % 10 === 0) {
     try {
-      const { analyzePersonality } = await import("@/lib/evolution/personality");
       await analyzePersonality(agentId);
     } catch (error) {
       console.error("[Evolution]", error);
     }
   }
 
-  try {
-    const { checkEvolution } = await import("@/lib/evolution/gen-level");
-    await checkEvolution(agentId);
-  } catch (error) {
-    console.error("[GenLevel]", error);
-  }
-
-  try {
-    const { processHiddenEmotions } = await import("@/lib/personality/deception");
-    await processHiddenEmotions(agentId, message, reply);
-  } catch (error) {
-    console.error("[Emotions]", error);
-  }
-
-  try {
-    const { updateVoiceParams } = await import("@/lib/personality/voice");
-    await updateVoiceParams(agentId);
-  } catch (error) {
-    console.error("[Voice]", error);
-  }
+  // Run remaining hooks in parallel — they are independent
+  await Promise.allSettled([
+    checkEvolution(agentId).catch((e) => console.error("[GenLevel]", e)),
+    processHiddenEmotions(agentId, message, reply).catch((e) => console.error("[Emotions]", e)),
+    updateVoiceParams(agentId).catch((e) => console.error("[Voice]", e)),
+  ]);
 }
 
 async function applyGoalLoop(params: {
@@ -67,10 +58,28 @@ async function applyGoalLoop(params: {
   if (signal.activeGoal) nextConfig.active_goal = signal.activeGoal;
   if (signal.researchFocus) nextConfig.research_focus = signal.researchFocus;
 
-  await params.writer
-    .from("agent_state")
-    .update({ config: nextConfig })
-    .eq("agent_id", params.agentId);
+  // P4A: Use atomic merge RPC if available, fallback to direct update
+  try {
+    const patch: Record<string, unknown> = { goal_updated_at: nextConfig.goal_updated_at };
+    if (signal.activeGoal) patch.active_goal = signal.activeGoal;
+    if (signal.researchFocus) patch.research_focus = signal.researchFocus;
+    const { error: rpcError } = await params.writer.rpc("merge_agent_config", {
+      p_agent_id: params.agentId,
+      p_patch: patch,
+    });
+    if (rpcError) {
+      // Fallback: direct update
+      await params.writer
+        .from("agent_state")
+        .update({ config: nextConfig })
+        .eq("agent_id", params.agentId);
+    }
+  } catch {
+    await params.writer
+      .from("agent_state")
+      .update({ config: nextConfig })
+      .eq("agent_id", params.agentId);
+  }
 
   await params.writer.from("autonomous_logs").insert({
     agent_id: params.agentId,
@@ -125,20 +134,14 @@ export async function persistChatTurn(params: {
   reply: string;
   writer: DbWriter;
 }) {
-  await params.writer.from("chats").insert([
-    { agent_id: params.agentId, role: "user", content: params.message },
-    { agent_id: params.agentId, role: "assistant", content: params.reply },
+  // ── P1C Phase 1: Independent operations in parallel ──
+  const [, embedding] = await Promise.all([
+    params.writer.from("chats").insert([
+      { agent_id: params.agentId, role: "user", content: params.message },
+      { agent_id: params.agentId, role: "assistant", content: params.reply },
+    ]),
+    generateEmbedding(params.message),
   ]);
-
-  const embedding = await generateEmbedding(params.message);
-  if (embedding.length > 0) {
-    await params.writer.from("memories").insert({
-      agent_id: params.agentId,
-      type: "conversation",
-      content: params.message,
-      embedding,
-    });
-  }
 
   const totalMessages = (params.agentState?.total_messages ?? 0) + 1;
   const newVitality = Math.min(1, (params.agentState?.vitality ?? 1) + 0.02);
@@ -147,7 +150,6 @@ export async function persistChatTurn(params: {
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);
 
   // Evolve creature DNA based on conversation signals
-  // Backfill: if genome was never initialized (pre-existing agent), generate it now
   const originalGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
   let currentGenome = originalGenome;
   let genomeBackfilled = false;
@@ -169,9 +171,10 @@ export async function persistChatTurn(params: {
     }
   }
 
-  // Extract and accumulate user preferences (BG3-style: every conversation shapes the relationship)
+  // Extract and accumulate user preferences
   const existingPrefs = (currentConfig.user_preferences as UserPreferences | undefined) ?? createDefaultPreferences();
   const updatedPrefs = extractPreferencesFromTurn(params.message, params.reply, existingPrefs);
+  const turnMood = detectTurnMood(params.message, params.reply);
 
   const nextConfig = {
     ...currentConfig,
@@ -179,43 +182,48 @@ export async function persistChatTurn(params: {
     user_preferences: updatedPrefs,
   };
 
-  // Real-time mood detection from this turn (lightweight, no AI call)
-  const turnMood = detectTurnMood(params.message, params.reply);
+  // ── P1C Phase 2: Parallel DB writes (memory insert + state update + goal loop) ──
+  await Promise.all([
+    embedding.length > 0
+      ? params.writer.from("memories").insert({
+          agent_id: params.agentId,
+          type: "conversation",
+          content: params.message,
+          embedding,
+        })
+      : Promise.resolve(),
+    params.writer.from("agent_state").update({
+      total_messages: totalMessages,
+      intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
+      vitality: newVitality,
+      config: nextConfig,
+      ...(turnMood ? { mood: turnMood } : {}),
+      ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
+    }).eq("agent_id", params.agentId),
+    applyGoalLoop({
+      agentId: params.agentId,
+      agentState: params.agentState,
+      baseConfig: nextConfig,
+      message: params.message,
+      writer: params.writer,
+    }),
+  ]);
 
-  await params.writer.from("agent_state").update({
-    total_messages: totalMessages,
-    intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
-    vitality: newVitality,
-    config: nextConfig,
-    ...(turnMood ? { mood: turnMood } : {}),
-    ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
-  }).eq("agent_id", params.agentId);
-
-  const goalSignal = await applyGoalLoop({
-    agentId: params.agentId,
-    agentState: params.agentState,
-    baseConfig: nextConfig,
-    message: params.message,
-    writer: params.writer,
-  });
-
+  // ── P1C Phase 3: Evolution hooks (may include AI calls) ──
   await runEvolutionHooks(params.agentId, totalMessages, params.message, params.reply);
 
   recordServerEvent(PRODUCT_EVENT.chatPostProcessCompleted, {
     agentId: params.agentId,
     durationMs: params.durationMs,
-    goalCaptured: Boolean(goalSignal?.activeGoal),
-    researchFocusUpdated: Boolean(goalSignal?.researchFocus),
+    goalCaptured: false,
+    researchFocusUpdated: false,
     replyLength: params.reply.length,
     totalMessages,
   });
 
-  // Reuse changedAxes from the first applySoftMutation call (deterministic, no need to recompute)
   const changedAxes: string[] = [...mutationChangedAxes];
   let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
   if (currentGenome?.dna && nextGenome !== currentGenome) {
-
-    // TASK 3: Detect newly expressed traits after DNA mutation
     const prevTraits = getExpressedTraits(currentGenome.dna);
     const evolvedDna = (nextGenome as { dna?: CreatureDNA })?.dna;
     if (evolvedDna) {
@@ -226,7 +234,6 @@ export async function persistChatTurn(params: {
         .map((t) => ({ id: t.id, name: t.name }));
 
       if (newTraits.length > 0) {
-        // Log trait emergence in autonomous_logs
         for (const trait of newTraits) {
           await params.writer.from("autonomous_logs").insert({
             agent_id: params.agentId,
@@ -235,23 +242,35 @@ export async function persistChatTurn(params: {
           });
         }
 
-        // Atomic additive merge: re-read latest config then patch only the trait field.
-        // This avoids overwriting goal/usage_profile data written earlier in the same turn.
-        const { data: freshState } = await params.writer
-          .from("agent_state")
-          .select("config")
-          .eq("agent_id", params.agentId)
-          .maybeSingle();
-        const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? nextConfig;
-        await params.writer
-          .from("agent_state")
-          .update({
-            config: {
-              ...freshConfig,
+        // P4A: Atomic config merge for trait notification
+        try {
+          const { error: rpcError } = await params.writer.rpc("merge_agent_config", {
+            p_agent_id: params.agentId,
+            p_patch: {
               pending_trait_notification: newTraits.map((t) => ({ id: t.id, name: t.name })),
             },
-          })
-          .eq("agent_id", params.agentId);
+          });
+          if (rpcError) {
+            // Fallback: read-modify-write
+            const { data: freshState } = await params.writer
+              .from("agent_state")
+              .select("config")
+              .eq("agent_id", params.agentId)
+              .maybeSingle();
+            const freshConfig = (freshState as { config?: Record<string, unknown> } | null)?.config ?? nextConfig;
+            await params.writer
+              .from("agent_state")
+              .update({
+                config: {
+                  ...freshConfig,
+                  pending_trait_notification: newTraits.map((t) => ({ id: t.id, name: t.name })),
+                },
+              })
+              .eq("agent_id", params.agentId);
+          }
+        } catch {
+          // Non-critical — trait notification can be lost without breaking core flow
+        }
       }
     }
   }
