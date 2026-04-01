@@ -37,19 +37,6 @@ const COMEBACK_TIERS: ComebackTier[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * Determine the comeback multiplier for a given absence duration.
- * Returns 1 (no bonus) when the user hasn't been away long enough.
- * Internal helper — used by getComebackTier below.
- */
-function getComebackMultiplier(absentHours: number): number {
-  const days = absentHours / 24;
-  for (const tier of COMEBACK_TIERS) {
-    if (days >= tier.minAbsentDays) return tier.multiplier;
-  }
-  return 1;
-}
-
-/**
  * Get the full tier info (multiplier + label) for display purposes.
  */
 export function getComebackTier(absentHours: number): ComebackTier | null {
