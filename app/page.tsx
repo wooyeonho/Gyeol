@@ -200,13 +200,14 @@ export default function Home() {
   }, [messages, creature, historyLoaded]);
 
   // Creature reward reaction — visual pulse when rewards fire
-  const lastRewardRef = useRef<string | null>(null);
+  // Use object reference equality to deduplicate: creature dep changes every render,
+  // but lastReward only gets a new object reference when a new reward actually fires.
+  const lastRewardRef = useRef<typeof lastReward>(null);
   useEffect(() => {
     if (!lastReward) return;
-    // Deduplicate: only react once per reward instance
-    const rewardKey = `${lastReward.tier}-${lastReward.source}`;
-    if (lastRewardRef.current === rewardKey) return;
-    lastRewardRef.current = rewardKey;
+    // Deduplicate: only react once per reward object instance
+    if (lastRewardRef.current === lastReward) return;
+    lastRewardRef.current = lastReward;
 
     // Tier-scaled intensity
     const tierIntensity: Record<string, number> = {

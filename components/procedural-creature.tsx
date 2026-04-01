@@ -591,11 +591,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     groupRef.current.scale.lerp(new THREE.Vector3(sc, sc, sc), 0.08);
 
     // Position: force-driven movement — creature physically moves around the scene
+    // Idle bob amplitude modulates vertical bobbing (e.g., playing=0.1, sleeping=0.01)
+    const idleBob = Math.sin(t * 1.8) * idleBobAmplitudeRef.current;
     if (forceState) {
       const targetX = forceState.position.x * 1.5; // scale normalized to scene units
-      const targetY = forceState.position.y * 1.2;
+      const targetY = forceState.position.y * 1.2 + idleBob;
       groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.08);
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
+    } else {
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, idleBob, 0.08);
     }
 
     // Rotation: force-driven rotation blended with legacy rotation + idle behavior
