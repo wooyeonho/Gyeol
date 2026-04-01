@@ -102,16 +102,19 @@ export async function trySemanticCache(params: {
 
     console.log(`[SemanticCache] HIT — similarity=${(match.similarity ?? 0).toFixed(3)}, reusing cached response`);
 
-    // Create a lightweight SSE stream from the cached response
-    // (streams it out character by character to match the SSE format)
+    // OPT-D: Stream cached response word-by-word (avg 40ms/word) so it feels
+    // like live generation rather than a jarring instant dump.
     const encoder = new TextEncoder();
+    const words = cachedResponse.split(/(?<=\s)|(?=\s)/); // split preserving whitespace
+    const WORD_DELAY_MS = 38; // ~26 words/sec ≈ natural reading cadence
     const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        // Send the cached response as a single chunk in Groq-compatible SSE format
-        const sseData = JSON.stringify({
-          choices: [{ delta: { content: cachedResponse } }],
-        });
-        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+      async start(controller) {
+        for (const word of words) {
+          const sseData = JSON.stringify({ choices: [{ delta: { content: word } }] });
+          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+          // Yield to event loop between words — keeps the stream flowing naturally
+          await new Promise((r) => setTimeout(r, WORD_DELAY_MS));
+        }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
