@@ -165,32 +165,38 @@ export async function persistChatTurn(params: {
   // Real-time mood detection from this turn (lightweight, no AI call)
   const turnMood = detectTurnMood(params.message, params.reply);
 
-  // P1C Phase 2: Embedding-dependent memory insert + agent_state update + goal loop — all parallel
-  await Promise.all([
-    embedding.length > 0
-      ? params.writer.from("memories").insert({
-          agent_id: params.agentId,
-          type: "conversation",
-          content: params.message,
-          embedding,
-        })
-      : Promise.resolve(),
-    params.writer.from("agent_state").update({
-      total_messages: totalMessages,
-      intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
-      vitality: newVitality,
-      config: nextConfig,
-      ...(turnMood ? { mood: turnMood } : {}),
-      ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
-    }).eq("agent_id", params.agentId),
-    applyGoalLoop({
-      agentId: params.agentId,
-      agentState: params.agentState,
-      baseConfig: nextConfig,
-      message: params.message,
-      writer: params.writer,
-    }),
-  ]);
+  // P1C Phase 2: Memory insert runs in parallel with sequential agent_state + goal loop
+  // Note: agent_state update and applyGoalLoop MUST be sequential because both write to
+  // the config column — running them in parallel causes a last-write-wins race condition.
+  const memoryInsertPromise = embedding.length > 0
+    ? params.writer.from("memories").insert({
+        agent_id: params.agentId,
+        type: "conversation",
+        content: params.message,
+        embedding,
+      })
+    : Promise.resolve();
+
+  // Sequential: agent_state update first, then goal loop (which may patch config)
+  await params.writer.from("agent_state").update({
+    total_messages: totalMessages,
+    intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
+    vitality: newVitality,
+    config: nextConfig,
+    ...(turnMood ? { mood: turnMood } : {}),
+    ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
+  }).eq("agent_id", params.agentId);
+
+  const goalSignal = await applyGoalLoop({
+    agentId: params.agentId,
+    agentState: params.agentState,
+    baseConfig: nextConfig,
+    message: params.message,
+    writer: params.writer,
+  });
+
+  // Wait for parallel memory insert to complete
+  await memoryInsertPromise;
 
   // P1C Phase 3: Evolution hooks (after() already defers these from the stream)
   await runEvolutionHooks(params.agentId, totalMessages, params.message, params.reply);
@@ -198,8 +204,8 @@ export async function persistChatTurn(params: {
   recordServerEvent(PRODUCT_EVENT.chatPostProcessCompleted, {
     agentId: params.agentId,
     durationMs: params.durationMs,
-    goalCaptured: false,
-    researchFocusUpdated: false,
+    goalCaptured: Boolean(goalSignal?.activeGoal),
+    researchFocusUpdated: Boolean(goalSignal?.researchFocus),
     replyLength: params.reply.length,
     totalMessages,
   });
