@@ -286,6 +286,7 @@ export function VoidCanvas({
           particles={particleCount}
           vitality={vitality}
           isListening={isListening}
+          background={background}
           motionBias={motionBias}
           pulseScale={pulseScale}
           onTap={onTap}

@@ -45,7 +45,10 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return [];
 }
 
-/** P4B: Use Gemini batchEmbedContents — single HTTP request for all texts. */
+/**
+ * P4B: Use Gemini batchEmbedContents — single HTTP request for all texts.
+ * TODO: Wire into autonomous cron jobs for bulk memory embedding (currently unused).
+ */
 export async function generateEmbeddingBatch(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];
   if (texts.length === 1) return [await generateEmbedding(texts[0])];

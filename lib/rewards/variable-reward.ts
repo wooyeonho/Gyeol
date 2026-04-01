@@ -395,6 +395,7 @@ export function rollReward(
 /**
  * Determine whether a "mystery box" event should trigger.
  * Mystery boxes appear roughly once per 10 sessions with diminishing frequency.
+ * TODO: Wire into frontend mystery box UI component when implemented.
  *
  * @param sessionCount  total lifetime session count for this user
  */
