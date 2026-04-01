@@ -16,6 +16,7 @@ create table if not exists agents (
 );
 
 create index if not exists agents_user_id_idx on agents(user_id);
+create index if not exists agents_user_id_created_at_desc on agents(user_id, created_at desc);
 
 create table if not exists agent_state (
   id uuid primary key default gen_random_uuid(),
