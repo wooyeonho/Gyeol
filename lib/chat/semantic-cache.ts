@@ -90,7 +90,7 @@ export async function trySemanticCache(params: {
       .select("content")
       .eq("agent_id", params.agentId)
       .eq("role", "assistant")
-      .gt("created_at", userChatTime)
+      .gte("created_at", userChatTime)
       .order("created_at", { ascending: true })
       .limit(1);
 
