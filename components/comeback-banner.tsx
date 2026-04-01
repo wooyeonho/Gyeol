@@ -21,6 +21,8 @@ export function ComebackBanner({ onComebackDetected }: { onComebackDetected?: (m
   const [dismissed, setDismissed] = useState(false);
   const { t, locale } = useTranslations();
   const firedRef = useRef(false);
+  const callbackRef = useRef(onComebackDetected);
+  useEffect(() => { callbackRef.current = onComebackDetected; }, [onComebackDetected]);
 
   useEffect(() => {
     let mounted = true;
@@ -33,9 +35,9 @@ export function ComebackBanner({ onComebackDetected }: { onComebackDetected?: (m
         if (mounted && data.comeback_bonus) {
           setBonus(data.comeback_bonus);
           // Fire comeback detection callback once
-          if (!firedRef.current && onComebackDetected) {
+          if (!firedRef.current && callbackRef.current) {
             firedRef.current = true;
-            onComebackDetected(data.comeback_bonus.multiplier);
+            callbackRef.current(data.comeback_bonus.multiplier);
           }
         }
       } catch {
@@ -45,7 +47,7 @@ export function ComebackBanner({ onComebackDetected }: { onComebackDetected?: (m
 
     fetchBonus();
     return () => { mounted = false; };
-  }, [onComebackDetected]);
+  }, []);
 
   return (
     <AnimatePresence>

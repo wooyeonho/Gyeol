@@ -204,7 +204,7 @@ export default function Home() {
   useEffect(() => {
     if (!lastReward) return;
     // Deduplicate: only react once per reward instance
-    const rewardKey = `${lastReward.tier}-${lastReward.source}-${Date.now()}`;
+    const rewardKey = `${lastReward.tier}-${lastReward.source}`;
     if (lastRewardRef.current === rewardKey) return;
     lastRewardRef.current = rewardKey;
 
@@ -228,12 +228,12 @@ export default function Home() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [lastReward, creature]);
+  }, [lastReward, creature.excite, creature.boostConversationEnergy]);
 
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
-  }, [creature]);
+  }, [creature.excite]);
 
   // Zelda-like touch freedom: every gesture type affects creature affinity
   const handleCreatureTouch = useCallback((affinityDelta: number) => {
@@ -257,7 +257,7 @@ export default function Home() {
       creature.boostConversationEnergy(0.15);
     }, 1200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [creature]);
+  }, [creature.excite, creature.boostConversationEnergy]);
 
   const handleCelebrationEnd = useCallback(async () => {
     try {
