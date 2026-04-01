@@ -71,6 +71,7 @@ export default function CarePage() {
         const data = await res.json();
         setCare(data.careState);
         haptic("success");
+        useAgentStore.getState().fetchAgentState();
       }
     } finally {
       setActing(false);
