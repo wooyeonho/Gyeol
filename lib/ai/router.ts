@@ -189,21 +189,53 @@ function getInCharacterFallback(systemPrompt: string) {
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
   const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
     ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
-  for (const m of MODELS) {
-    try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
-      console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
-      return res.body!;
-    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
-  }
-  // Gemini Flash streaming fallback (higher quality than CF 1B)
+
+  // P1D: Hedged request — start Groq primary, if no response in 3s start Gemini in parallel
+  const groqCtrl = new AbortController();
+  const geminiCtrl = new AbortController();
+
+  const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
+    for (const m of MODELS) {
+      try {
+        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
+        console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
+        return { source: m.name, stream: res.body! };
+      } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
+    }
+    throw new Error("All Groq models failed");
+  })();
+
+  // Start Gemini hedge after 3s delay
+  const HEDGE_DELAY_MS = 3000;
+  const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
+    const hedgeTimer = setTimeout(async () => {
+      if (groqCtrl.signal.aborted) return reject(new Error("Groq already won"));
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
+        console.log("[AI] Gemini hedge won");
+        resolve({ source: "gemini-hedge", stream });
+      } catch (e) { reject(e); }
+    }, HEDGE_DELAY_MS);
+    // If Groq wins before the timer, cancel the hedge
+    groqPromise.then(() => { clearTimeout(hedgeTimer); reject(new Error("Groq won")); }).catch(() => {});
+  });
+
   try {
-    const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
-    console.log("[AI] Using Gemini Flash streaming");
-    return stream;
-  } catch (e) { console.error("[AI] Gemini stream failed:", e); }
-  console.log("[AI] All models failed, using in-character fallback");
-  return fallbackStream(getInCharacterFallback(systemPrompt));
+    const winner = await Promise.race([
+      groqPromise.then((r) => { geminiCtrl.abort(); return r; }),
+      geminiHedge.then((r) => { groqCtrl.abort(); return r; }),
+    ]);
+    return winner.stream;
+  } catch {
+    // Both raced paths failed — try Gemini directly as final fallback
+    try {
+      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
+      console.log("[AI] Using Gemini Flash streaming fallback");
+      return stream;
+    } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    console.log("[AI] All models failed, using in-character fallback");
+    return fallbackStream(getInCharacterFallback(systemPrompt));
+  }
 }
 
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
