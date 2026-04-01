@@ -8,8 +8,11 @@ import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 
 interface ConversationTurn {
-  speaker: "A" | "B";
+  speakerId: string;
+  speakerName: string;
+  speaker?: "A" | "B";
   text: string;
+  timestamp?: string;
 }
 
 interface ConversationResult {
@@ -38,7 +41,7 @@ export default function CreatureConversationPage() {
   const [conversing, setConversing] = useState(false);
   const [error, setError] = useState("");
 
-  const COST = 20;
+  const COST = 10;
 
   const fetchOthers = useCallback(async () => {
     try {
@@ -86,10 +89,17 @@ export default function CreatureConversationPage() {
       if (res.ok) {
         const data = await res.json();
         haptic("success");
+        const toEffectArray = (obj: Record<string, number> | undefined) =>
+          Object.entries(obj ?? {}).map(([axis, delta]) => ({ axis, delta: delta as number }));
         setResult({
-          turns: data.turns ?? [],
-          dnaEffectsA: data.dnaEffectsA ?? [],
-          dnaEffectsB: data.dnaEffectsB ?? [],
+          turns: (data.turns ?? []).map((t: Record<string, unknown>, i: number) => ({
+            speakerId: (t.speakerId as string) ?? "",
+            speakerName: (t.speakerName as string) ?? "",
+            speaker: (i % 2 === 0 ? "A" : "B") as "A" | "B",
+            text: (t.text as string) ?? "",
+          })),
+          dnaEffectsA: toEffectArray(data.dnaEffectsA),
+          dnaEffectsB: toEffectArray(data.dnaEffectsB),
         });
         // Refresh agent store for updated coins
         useAgentStore.getState().fetchAgentState();
