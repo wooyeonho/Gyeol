@@ -134,10 +134,10 @@ async function handleStreamResponse(
     metaBuffer = {};
     if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment) return;
     set((s) => {
-      const msgs = [...s.messages];
-      const last = msgs[msgs.length - 1];
+      const last = s.messages[s.messages.length - 1];
       if (!last || last.role !== "assistant") return s;
-      msgs[msgs.length - 1] = {
+      // Only clone the last element — avoids O(n) full-array copy on each flush
+      const updated = {
         ...last,
         content: last.content + text,
         error: false,
@@ -145,6 +145,8 @@ async function handleStreamResponse(
         ...(meta.traitEmerged ? { traitEmerged: meta.traitEmerged } : {}),
         ...(meta.memoryMoment ? { memoryMoment: meta.memoryMoment } : {}),
       };
+      const msgs = s.messages.slice();
+      msgs[msgs.length - 1] = updated;
       return { messages: msgs };
     });
   }

@@ -30,6 +30,8 @@ type CacheHit = {
  * lightweight adapted response as an SSE stream.
  *
  * Returns null if no cache hit (caller should proceed with full LLM generation).
+ * Accepts a pre-computed embedding to avoid redundant embedding generation
+ * when the caller (chat route) already computed one for memory recall.
  */
 export async function trySemanticCache(params: {
   agentId: string;
@@ -37,9 +39,13 @@ export async function trySemanticCache(params: {
   reader: DbReader;
   systemPrompt: string;
   maxTokens: number;
+  /** Pre-computed embedding from context building — avoids a redundant API call. */
+  precomputedEmbedding?: number[];
 }): Promise<CacheHit | null> {
   try {
-    const embedding = await generateEmbedding(params.message);
+    const embedding = params.precomputedEmbedding?.length
+      ? params.precomputedEmbedding
+      : await generateEmbedding(params.message);
     if (embedding.length === 0) return null;
 
     // Query match_memories for recent conversation-type memories with high similarity

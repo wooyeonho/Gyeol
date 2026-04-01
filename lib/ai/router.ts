@@ -204,20 +204,21 @@ function getArchetypeTemperature(systemPrompt: string): number {
 }
 
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
-  const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
-    ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
+  const verbalTokens = getMaxTokensFromVerbal(systemPrompt);
+  const effectiveMaxTokens = verbalTokens !== 700 ? verbalTokens : maxTokens;
   const temperature = getArchetypeTemperature(systemPrompt);
 
   // OPT-C: Hedged request — start Groq primary, fire Gemini in parallel after 1.5s.
   // Groq Llama 4 Scout typically begins streaming in 200-500ms.
-  // Hedge at 1.5s (down from 3s) captures Groq timeouts 2× faster.
-  const groqCtrl = new AbortController();
-  const geminiCtrl = new AbortController();
+  // Hedge at 1.5s captures Groq timeouts quickly while avoiding wasted Gemini calls.
+  let groqSettled = false;
+  let geminiSettled = false;
 
   const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
     for (const m of MODELS) {
       try {
         const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
+        groqSettled = true;
         console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
         return { source: m.name, stream: res.body! };
       } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
@@ -225,13 +226,14 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     throw new Error("All Groq models failed");
   })();
 
-  // Start Gemini hedge after 1.5s (previously 3s)
+  // Start Gemini hedge after 1.5s
   const HEDGE_DELAY_MS = 1500;
   const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
     const hedgeTimer = setTimeout(async () => {
-      if (groqCtrl.signal.aborted) return reject(new Error("Groq already won"));
+      if (groqSettled) return reject(new Error("Groq already won"));
       try {
         const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        geminiSettled = true;
         console.log("[AI] Gemini hedge won");
         resolve({ source: "gemini-hedge", stream });
       } catch (e) { reject(e); }
@@ -241,18 +243,17 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
   });
 
   try {
-    const winner = await Promise.race([
-      groqPromise.then((r) => { geminiCtrl.abort(); return r; }),
-      geminiHedge.then((r) => { groqCtrl.abort(); return r; }),
-    ]);
+    const winner = await Promise.race([groqPromise, geminiHedge]);
     return winner.stream;
   } catch {
     // Both raced paths failed — try Gemini directly as final fallback
-    try {
-      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
-      console.log("[AI] Using Gemini Flash streaming fallback");
-      return stream;
-    } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    if (!geminiSettled) {
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        console.log("[AI] Using Gemini Flash streaming fallback");
+        return stream;
+      } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    }
     console.log("[AI] All models failed, using in-character fallback");
     return fallbackStream(getInCharacterFallback(systemPrompt));
   }

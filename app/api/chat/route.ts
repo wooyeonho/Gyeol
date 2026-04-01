@@ -69,7 +69,9 @@ export async function POST(req: NextRequest) {
         .limit(1)
         .maybeSingle();
       billingTier = (sub as { plan_tier?: string } | null)?.plan_tier ?? null;
-    } catch { /* default to free tier on error */ }
+    } catch (e) {
+      console.warn("[Chat] billing tier lookup failed, defaulting to free:", e instanceof Error ? e.message : e);
+    }
     const allowed = await checkRateLimit(`chat:${user.id}`, billingTier);
     if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
 
@@ -110,8 +112,8 @@ export async function POST(req: NextRequest) {
             .from("agent_state")
             .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
             .eq("agent_id", agentId)
-            .then(({ error }) => {
-              if (error) console.error("[Chat] preferred_locale sync failed", error);
+            .then(({ error: syncErr }: { error: { message: string } | null }) => {
+              if (syncErr) console.error("[Chat] preferred_locale sync failed", syncErr);
             });
         });
       }
@@ -153,13 +155,14 @@ export async function POST(req: NextRequest) {
       : verbal < 0.75 ? 500
       : 700;
 
-    // --- P2A: Semantic cache check ---
+    // --- P2A: Semantic cache check (reuses embedding from context to avoid redundant API call) ---
     const cacheHit = await trySemanticCache({
       agentId,
       message,
       reader: supabase,
       systemPrompt: finalSystemPrompt,
       maxTokens,
+      precomputedEmbedding: context.embedding,
     });
 
     // --- P3A: Synchronous DNA mutation (pure function, no DB) ---

@@ -61,12 +61,14 @@ export async function authorizeV1ApiKey(
   if (row?.id) {
     if (row.is_active === false) return null;
     if (!hasScope(row, requiredScope)) return null;
-    Promise.resolve(
-      service
-        .from("api_keys")
-        .update({ last_used_at: new Date().toISOString() })
-        .eq("id", row.id)
-    ).catch((err: unknown) => console.warn("[V1Auth] last_used_at update failed:", err));
+    service
+      .from("api_keys")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", row.id)
+      .then(({ error: updateErr }: { error: { message: string } | null }) => {
+        if (updateErr) console.warn("[V1Auth] last_used_at update failed:", updateErr.message);
+      })
+      .catch((err: unknown) => console.warn("[V1Auth] last_used_at update failed:", err));
     return {
       id: row.id,
       identifier: getApiKeyIdentifier(request),
