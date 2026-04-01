@@ -59,19 +59,38 @@ export async function trySemanticCache(params: {
     }>).find((m) => {
       if (m.type !== "conversation") return false;
       if ((m.similarity ?? 0) < SIMILARITY_THRESHOLD) return false;
-      if (m.created_at && m.created_at < cutoff) return false;
+      // Filter out memories older than the cache window
+      if (m.created_at) {
+        if (m.created_at < cutoff) return false;
+      } else {
+        // If created_at is not returned by RPC, skip this match (can't verify recency)
+        return false;
+      }
       return true;
     });
 
     if (!match) return null;
 
-    // Find the assistant response that followed this cached user message
+    // Find the assistant response that followed this cached user message.
+    // Strategy: find the user chat row matching this memory content, then get the next assistant row.
+    const { data: userChat } = await params.reader
+      .from("chats")
+      .select("created_at")
+      .eq("agent_id", params.agentId)
+      .eq("role", "user")
+      .eq("content", match.content)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const userChatTime = (userChat as Array<{ created_at: string }> | null)?.[0]?.created_at;
+    if (!userChatTime) return null;
+
     const { data: followUp } = await params.reader
       .from("chats")
       .select("content")
       .eq("agent_id", params.agentId)
       .eq("role", "assistant")
-      .gt("created_at", match.created_at ?? cutoff)
+      .gt("created_at", userChatTime)
       .order("created_at", { ascending: true })
       .limit(1);
 
