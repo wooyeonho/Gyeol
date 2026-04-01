@@ -203,6 +203,7 @@ export default function Home() {
   // Use object reference equality to deduplicate: creature dep changes every render,
   // but lastReward only gets a new object reference when a new reward actually fires.
   const lastRewardRef = useRef<typeof lastReward>(null);
+  const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!lastReward) return;
     // Deduplicate: only react once per reward object instance
@@ -221,13 +222,15 @@ export default function Home() {
     creature.excite();
     creature.boostConversationEnergy(intensity);
 
-    // Jackpot/large get a delayed second pulse for "double-take" effect
+    // Jackpot/large get a delayed second pulse for "double-take" effect.
+    // Use a ref so the timer survives creature dep changes (~66ms cycle).
     if (lastReward.tier === "jackpot" || lastReward.tier === "large") {
-      const timer = setTimeout(() => {
+      if (rewardTimerRef.current) clearTimeout(rewardTimerRef.current);
+      rewardTimerRef.current = setTimeout(() => {
+        rewardTimerRef.current = null;
         creature.excite();
         creature.boostConversationEnergy(intensity * 0.6);
       }, 500);
-      return () => clearTimeout(timer);
     }
   }, [lastReward, creature]);
 
