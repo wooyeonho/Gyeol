@@ -95,7 +95,7 @@ export default function DnaEditPage() {
       const res = await fetch("/api/dna-edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, dna: editedDna }),
+        body: JSON.stringify({ agentId, edits: editedDna }),
       });
       if (res.ok) {
         haptic("success");
