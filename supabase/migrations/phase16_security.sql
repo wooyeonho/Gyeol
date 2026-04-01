@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE INDEX IF NOT EXISTS idx_rate_limits_key_time ON rate_limits (rl_key, created_at DESC);
 
 -- Auto-cleanup: purge entries older than 2 minutes
+-- TODO: Wire into a periodic cron job (e.g. heartbeat or dedicated cleanup cron) to call this RPC
 CREATE OR REPLACE FUNCTION cleanup_rate_limits() RETURNS void LANGUAGE sql AS $$
   DELETE FROM rate_limits WHERE created_at < NOW() - INTERVAL '2 minutes';
 $$;
