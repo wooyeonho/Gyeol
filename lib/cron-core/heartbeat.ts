@@ -115,9 +115,13 @@ export async function executeHeartbeat(): Promise<CronResult> {
     }
 
     // Batch-load last user chat times for all agents (single query vs N queries)
-    const { data: lastChatRows } = await db.rpc("get_last_user_chat_times", {
-      agent_ids: agents.map((a: { id: string }) => a.id),
-    }).catch(() => ({ data: null }));
+    let lastChatRows: Array<{ agent_id: string; last_chat_at: string }> | null = null;
+    try {
+      const res = await db.rpc("get_last_user_chat_times", {
+        agent_ids: agents.map((a: { id: string }) => a.id),
+      });
+      lastChatRows = res.data;
+    } catch { /* RPC may not exist yet — fall back to per-agent queries */ }
     const lastChatMap = new Map<string, string>();
     if (Array.isArray(lastChatRows)) {
       for (const row of lastChatRows) {
