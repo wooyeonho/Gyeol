@@ -511,6 +511,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return () => { toonGradient.dispose(); };
   }, [toonGradient]);
 
+  // Dispose primary/secondary/eye color objects on unmount (THREE.Color has no GPU resources,
+  // but any MeshBasicMaterial / MeshToonMaterial created via JSX is auto-managed by R3F;
+  // halo material is the only imperatively-accessed one — dispose it on unmount).
+  useEffect(() => {
+    return () => {
+      const halo = haloRef.current;
+      if (halo) {
+        (halo.material as THREE.Material)?.dispose?.();
+      }
+    };
+  }, []);
+
   // Animation loop
   useFrame((state) => {
     if (!groupRef.current) return;

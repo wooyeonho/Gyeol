@@ -4,7 +4,12 @@ vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(),
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(),
+}));
+
 import { createServiceClient } from "@/lib/supabase/service";
+import { createClient } from "@/lib/supabase/server";
 import { GET } from "./route";
 
 function mockDashboardService() {
@@ -48,6 +53,11 @@ describe("/api/dashboard contract", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (createServiceClient as Mock).mockReturnValue(mockDashboardService());
+    (createClient as Mock).mockResolvedValue({
+      auth: {
+        getUser: async () => ({ data: { user: { id: "test-user-id" } } }),
+      },
+    });
   });
 
   it("returns public dashboard contract fields", async () => {

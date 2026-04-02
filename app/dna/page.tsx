@@ -133,6 +133,55 @@ function RadarChart({ dna, size = 280 }: { dna: CreatureDNA; size?: number }) {
   );
 }
 
+/** Shows recent DNA axis mutations from agent config history */
+function MutationHistory({ config }: { config: Record<string, unknown> }) {
+  // dna_shift mutations stored as "dna_shift:axis:+0.05" format in mutation_trait
+  const mutationTrait = config.mutation_trait as string | undefined;
+  const recentShifts: { axis: string; direction: string; value: number }[] = [];
+
+  if (mutationTrait && mutationTrait.startsWith("dna_shift:")) {
+    const parts = mutationTrait.split(":");
+    if (parts.length >= 3) {
+      const axis = parts[1];
+      const val = parseFloat(parts[2]);
+      if (axis && !isNaN(val)) {
+        recentShifts.push({ axis, direction: val >= 0 ? "up" : "down", value: Math.abs(val) });
+      }
+    }
+  }
+
+  if (recentShifts.length === 0) return null;
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+        Recent Mutations
+      </p>
+      <div className="space-y-1.5">
+        {recentShifts.map((shift, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+          >
+            <span className={`text-sm font-bold ${shift.direction === "up" ? "text-emerald-400" : "text-rose-400"}`}>
+              {shift.direction === "up" ? "\u2191" : "\u2193"}
+            </span>
+            <span className="text-xs text-white/60">
+              {AXIS_LABELS_KO[shift.axis] ?? shift.axis}
+            </span>
+            <span className={`ml-auto text-xs font-medium ${shift.direction === "up" ? "text-emerald-400/70" : "text-rose-400/70"}`}>
+              {shift.direction === "up" ? "+" : "-"}{(shift.value * 100).toFixed(1)}%
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DNAPage() {
   const { t } = useTranslations();
   const agentState = useAgentStore((s) => s.agentState);
@@ -249,9 +298,14 @@ export default function DNAPage() {
           </div>
         )}
 
+        {/* Mutation history — recent DNA axis changes */}
+        {dna && agentState?.config && (
+          <MutationHistory config={agentState.config as Record<string, unknown>} />
+        )}
+
         {!dna && (
           <p className="text-center text-sm text-white/30 py-4">
-            {t("dna.noData") || "더 대화할수록 DNA가 형성됩니다."}
+            {t("dna.noData") || "DNA forms as you converse more."}
           </p>
         )}
       </div>

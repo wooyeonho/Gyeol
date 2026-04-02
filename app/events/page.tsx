@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
@@ -9,9 +9,91 @@ import {
   getEventTimeRemaining,
 } from "@/lib/engagement/seasonal-event";
 
+/** Lightweight CSS-only seasonal particle overlay */
+function SeasonalParticles({ season }: { season: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const particles: { x: number; y: number; r: number; speed: number; drift: number; opacity: number }[] = [];
+    const count = 25;
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 2 + Math.random() * 4,
+        speed: 0.3 + Math.random() * 0.8,
+        drift: (Math.random() - 0.5) * 0.4,
+        opacity: 0.3 + Math.random() * 0.5,
+      });
+    }
+
+    const colors: Record<string, string> = {
+      spring: "#ffb7c5",
+      summer: "#90ee90",
+      autumn: "#daa520",
+      winter: "#e0f0ff",
+    };
+    const color = colors[season] || colors.winter;
+
+    let raf: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.y += p.speed;
+        p.x += p.drift + Math.sin(p.y * 0.01) * 0.3;
+        if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width; }
+        if (p.x > canvas.width + 10) p.x = -10;
+        if (p.x < -10) p.x = canvas.width + 10;
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, [season]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none absolute inset-0 z-0"
+      style={{ width: "100%", height: "100%" }}
+      aria-hidden="true"
+    />
+  );
+}
+
+function getCurrentSeason(): string {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return "spring";
+  if (month >= 5 && month <= 7) return "summer";
+  if (month >= 8 && month <= 10) return "autumn";
+  return "winter";
+}
+
 export default function EventsPage() {
   const { locale, t } = useTranslations();
   const localeKey = locale === "en" ? "en" : "ko";
+  const season = useMemo(() => getCurrentSeason(), []);
 
   const activeEvent = useMemo(() => getActiveSeasonalEvent(), []);
   const timeRemaining = useMemo(
@@ -20,8 +102,9 @@ export default function EventsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-lg">
+    <div className="relative min-h-screen bg-black px-4 pb-24 pt-20 text-white overflow-hidden">
+      <SeasonalParticles season={season} />
+      <div className="relative z-10 mx-auto max-w-lg">
         {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <Link href="/" className="text-sm text-white/50 hover:text-white/80">
