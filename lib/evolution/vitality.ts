@@ -1,5 +1,21 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { logWarn } from "@/lib/ops/logger";
+import type { CreatureDNA } from "@/lib/genome/dna";
+
+/**
+ * DNA-dependent care multiplier: different DNA profiles respond differently to
+ * different types of care interactions. warmth creatures love touch, verbal
+ * creatures respond to chat, etc.
+ */
+export function getDNACareMultiplier(dna: CreatureDNA, interactionType: string): number {
+  switch (interactionType) {
+    case "touch": return 0.5 + dna.warmth * 1.0;
+    case "chat": return 0.3 + dna.verbal * 0.7;
+    case "visit": return 0.2 + dna.stability * 0.8;
+    case "newStimulus": return 0.1 + dna.curiosity * 0.9;
+    default: return 0.5;
+  }
+}
 
 /** Vitality stages per vitality-manager.md: melancholy, recall, near-death, will */
 type VitalityStage = "alive" | "melancholy" | "recall" | "near_death" | "will" | "echo";

@@ -2,6 +2,23 @@ import { generateJSON } from "@/lib/ai/router";
 import type { AutonomyIntervalRule } from "@/lib/autonomy/interval-rule";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import type { CreatureDNA } from "@/lib/genome/dna";
+
+/**
+ * Resolve which autonomous activity the creature should pursue based on its DNA.
+ * Higher-scoring activities are naturally preferred — no hard thresholds.
+ */
+export function resolveAutonomousActivity(dna: CreatureDNA): string {
+  const scores: Record<string, number> = {
+    school: dna.verbal * 0.5 + dna.analytical * 0.5,
+    creation: dna.creativity * 0.7 + dna.intuitive * 0.3,
+    bonding: dna.empathy * 0.5 + dna.warmth * 0.5,
+    wandering: dna.independence * 0.6 + dna.curiosity * 0.4,
+    training: dna.persistence * 0.6 + dna.stability * 0.4,
+    adaptation: dna.adaptability * 0.5 + dna.spatial * 0.3 + (1 - dna.verbal) * 0.2,
+  };
+  return Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0];
+}
 
 type HeartbeatPlan = {
   action?: "none" | "learner" | "crawl";
