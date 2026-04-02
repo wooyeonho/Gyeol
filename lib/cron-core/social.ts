@@ -18,6 +18,7 @@ type SocialAgentState = {
   config?: Record<string, unknown> | null;
   lexicon?: { entries?: { word: string; meaning?: string }[] } | null;
   dogma?: { beliefs?: string[] } | null;
+  genome?: { dna?: { verbal?: number } } | null;
 };
 
 type FeedCandidate = {
@@ -68,7 +69,7 @@ export async function executeSocial(): Promise<CronResult> {
     const db = createServiceClient();
     const { data: allStates } = await db
       .from("agent_state")
-      .select("agent_id, fragments, self_name, config, lexicon, dogma");
+      .select("agent_id, fragments, self_name, config, lexicon, dogma, genome");
     const enabled = ((allStates ?? []) as SocialAgentState[]).filter(
       (agent) => (agent.config as Record<string, unknown> | undefined)?.social_enabled !== false,
     );
@@ -236,16 +237,33 @@ export async function executeSocial(): Promise<CronResult> {
       const reactor = poster.agent_id === a.agent_id ? b : a;
       const postLocale = resolveGenerationLocale({ config: poster.config ?? undefined });
       const postLanguage = getLanguageName(postLocale);
-      const postPayload = await generateJSON<{ content?: string; topic?: string }>(
-        "Respond ONLY valid JSON. Write a short public social feed post, first-person, warm, and under 180 characters.",
-        `${buildContext(poster)}\nRecent encounter:\n${conversation.map((item) => item.content).join("\n")}\nWrite one short public post in ${postLanguage}.\nJSON: {"topic":"short topic","content":"public post text"}`,
-      );
-      const postContent = normalizeGeneratedText(
-        postPayload?.content,
-        180,
-        `${poster.self_name || "A being"} just shared a quiet afterglow from a social encounter.`,
-      );
-      const postTopic = normalizeGeneratedText(postPayload?.topic, 48, firstLine.slice(0, 48) || "social pulse");
+      const posterVerbal = (poster.genome?.dna?.verbal ?? 0.6);
+      let postContent: string;
+      let postTopic: string;
+      if (posterVerbal < 0.15) {
+        // Silent creature — presence indicator only
+        postContent = `[${poster.self_name || "A being"} glows softly]`;
+        postTopic = "presence";
+      } else if (posterVerbal < 0.35) {
+        // Minimal verbal — very short utterance
+        const miniPayload = await generateJSON<{ content?: string; topic?: string }>(
+          "Respond ONLY valid JSON. Write 1-3 words max.",
+          `${buildContext(poster)}\nRecent encounter:\n${conversation.map((item) => item.content).join("\n")}\nExpress in 1-3 words in ${postLanguage}.\nJSON: {"topic":"short topic","content":"1-3 words"}`,
+        );
+        postContent = normalizeGeneratedText(miniPayload?.content, 30, "...");
+        postTopic = normalizeGeneratedText(miniPayload?.topic, 48, "whisper");
+      } else {
+        const postPayload = await generateJSON<{ content?: string; topic?: string }>(
+          "Respond ONLY valid JSON. Write a short public social feed post, first-person, warm, and under 180 characters.",
+          `${buildContext(poster)}\nRecent encounter:\n${conversation.map((item) => item.content).join("\n")}\nWrite one short public post in ${postLanguage}.\nJSON: {"topic":"short topic","content":"public post text"}`,
+        );
+        postContent = normalizeGeneratedText(
+          postPayload?.content,
+          180,
+          `${poster.self_name || "A being"} just shared a quiet afterglow from a social encounter.`,
+        );
+        postTopic = normalizeGeneratedText(postPayload?.topic, 48, firstLine.slice(0, 48) || "social pulse");
+      }
       const moderatedPost = moderateSocialContent(postContent);
       const { data } = await db
         .from("social_posts")
