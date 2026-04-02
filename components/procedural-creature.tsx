@@ -8,6 +8,8 @@ import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
 import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
+import { deriveBodyPlan } from "@/lib/genome/body-plan";
+import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
@@ -177,6 +179,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     () => blendGeometryParams(conMorph.archetypeBlend, conMorph.morphComplexity),
     [conMorph],
   );
+
+  // Body plan — determines fundamental creature silhouette
+  const bodyPlan = useMemo(
+    () => deriveBodyPlan(dna, genLevel),
+    [dna, genLevel],
+  );
+  const isAmorphous = bodyPlan.primary === "amorphous";
 
   // [UPGRADE 6] Wider silhouette range — driven by continuous morphology bodyRatio
   const bodyElongation = useMemo(
@@ -750,18 +759,32 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body with toon shading + vertex color patterns */}
-      <mesh ref={meshRef} geometry={geometry}>
+      {/* Main body with toon shading + vertex color patterns (scaled down for non-amorphous plans) */}
+      <mesh ref={meshRef} geometry={geometry} scale={isAmorphous ? 1 : 0.35}>
         <meshToonMaterial
           color={primaryColor}
           emissive={primaryColor}
           emissiveIntensity={emissiveIntensity}
           transparent
-          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality))}
+          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (isAmorphous ? 1 : 0.6)}
           gradientMap={toonGradient}
           vertexColors={hasVertexColors}
         />
       </mesh>
+
+      {/* Body plan structural meshes */}
+      {!isAmorphous && (
+        <CreatureBodyPlan
+          bodyPlan={bodyPlan}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+          emissiveIntensity={emissiveIntensity}
+          activityDim={activityDim}
+          vitality={vitality}
+          toonGradient={toonGradient}
+          bodyElongation={bodyElongation}
+        />
+      )}
 
       {/* Body segments: extra segment meshes stacked along Y when bodySegments > 1 */}
       {(bodySegmentsConfig.count > 1 || bodySegmentsConfig.fractional > 0.025) && (() => {
