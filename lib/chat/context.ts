@@ -67,7 +67,7 @@ async function loadPromptMemories(params: {
     // OPT-B: Fire-and-forget reference count update — never block the hot path
     const ids = memories.filter((m) => m.id).map((m) => m.id);
     if (ids.length > 0) {
-      void params.writer.rpc("batch_increment_reference_count", { p_ids: ids }).catch(() => {
+      void Promise.resolve(params.writer.rpc("batch_increment_reference_count", { p_ids: ids })).catch(() => {
         // Fallback: individual updates if RPC not deployed yet (still fire-and-forget)
         void Promise.allSettled(
           memories
