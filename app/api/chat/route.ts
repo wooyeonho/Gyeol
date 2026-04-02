@@ -1,3 +1,4 @@
+export const maxDuration = 30;
 import { NextRequest, after } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";

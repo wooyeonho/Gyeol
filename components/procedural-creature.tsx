@@ -477,6 +477,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
 
+  // Dispose previous geometry on change or unmount to prevent GPU memory leak
+  useEffect(() => {
+    return () => { geometry.dispose(); };
+  }, [geometry]);
+
   const hasVertexColors = useMemo(
     () => derivePatternType(appearance.markingsSeed).type !== "none",
     [appearance.markingsSeed],
