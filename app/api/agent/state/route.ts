@@ -6,6 +6,7 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getDemoAgentState } from "@/lib/demo/runtime";
 import { generateInitialDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { getLatestSubscription } from "@/lib/billing/service";
 
 export async function GET() {
   try {
@@ -32,7 +33,18 @@ export async function GET() {
       console.log(`[AgentState] Backfilled genome for agent ${agentId}`);
     }
 
-    return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple });
+    // Include billing plan tier so the reward system can apply plan multipliers
+    let planTier: string = "free";
+    try {
+      const sub = await getLatestSubscription(service, user.id);
+      if (sub?.plan_tier === "pro" || sub?.plan_tier === "premium") {
+        planTier = sub.plan_tier;
+      }
+    } catch {
+      // Non-fatal — default to free
+    }
+
+    return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple, planTier });
   } catch (e) {
     console.error("GET /api/agent/state error", e);
     if (isMissingEnvError(e)) {

@@ -4,6 +4,7 @@ import type { AgentState } from "@/types/agent";
 interface AgentStore {
   agentId: string | null;
   agentState: AgentState | null;
+  planTier: "free" | "pro" | "premium";
   loading: boolean;
   error: boolean;
   evolutionEvent: { level: number; mutation?: string } | null;
@@ -16,7 +17,7 @@ const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 3000];
 
 export const useAgentStore = create<AgentStore>((set) => ({
-  agentId: null, agentState: null, loading: true, error: false, evolutionEvent: null,
+  agentId: null, agentState: null, planTier: "free", loading: true, error: false, evolutionEvent: null,
   fetchAgentState: async (options) => {
     if (!options?.silent) set({ loading: true, error: false });
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -30,9 +31,11 @@ export const useAgentStore = create<AgentStore>((set) => ({
           throw new Error(`Failed to fetch agent state: ${res.status}`);
         }
         const json = await res.json().catch(() => ({ agentId: null, agentState: null }));
+        const tier = json.planTier;
         set({
           agentId: typeof json.agentId === "string" ? json.agentId : null,
           agentState: (json.agentState as AgentState | null) ?? null,
+          planTier: tier === "pro" || tier === "premium" ? tier : "free",
           loading: false,
           error: false,
         });
