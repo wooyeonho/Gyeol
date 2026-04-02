@@ -18,7 +18,10 @@ import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
 import { DeathScreen } from "@/components/death-screen";
-import { LivingFeed } from "@/components/living-feed";
+const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), {
+  ssr: false,
+  loading: () => null,
+});
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -27,9 +30,15 @@ const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => 
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-black" aria-hidden="true" />,
 });
-import { ChatPanel } from "@/components/chat-panel";
+const ChatPanel = dynamic(() => import("@/components/chat-panel").then((m) => ({ default: m.ChatPanel })), {
+  ssr: false,
+  loading: () => <div className="h-full" />,
+});
 import { BottomNav } from "@/components/bottom-nav";
-import { EvolutionCeremony } from "@/components/evolution-ceremony";
+const EvolutionCeremony = dynamic(() => import("@/components/evolution-ceremony").then((m) => ({ default: m.EvolutionCeremony })), {
+  ssr: false,
+  loading: () => null,
+});
 import { WorldClassHub } from "@/components/world-class-hub";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";

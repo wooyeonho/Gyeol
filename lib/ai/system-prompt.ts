@@ -341,9 +341,16 @@ function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): stri
   return `${header}\n${parts.join("\n")}`;
 }
 
-/** Strip control characters and cap length before inserting DB content into prompts. */
+/** Strip control characters, prompt injection patterns, and cap length before inserting DB content into prompts. */
 function sanitizeForPrompt(text: string, maxLength = 500): string {
-  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").slice(0, maxLength);
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/ignore\s+(all\s+)?previous\s+instructions?/gi, "[filtered]")
+    .replace(/you\s+are\s+now/gi, "[filtered]")
+    .replace(/system\s*:\s*/gi, "[filtered]")
+    .replace(/\[INST\]/gi, "[filtered]")
+    .replace(/<<SYS>>/gi, "[filtered]")
+    .slice(0, maxLength);
 }
 
 export function buildSystemPrompt(p: BuildSystemPromptParams): string {

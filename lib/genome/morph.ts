@@ -36,6 +36,16 @@ export type MorphWeights = {
  * Derive morph target weights from DNA.
  * Each weight is 0..1, representing how much that morph should be applied.
  */
+/**
+ * Non-linear amplification for extreme DNA values.
+ * Values near 0.5 stay roughly the same; values near 0 or 1 get 1.5-2.5x amplification.
+ * This makes creatures with extreme DNA dramatically different from average ones.
+ */
+function amplifyExtreme(value: number): number {
+  const distance = Math.abs(value - 0.5) * 2; // 0~1
+  return value + (value - 0.5) * distance * 1.5;
+}
+
 export function deriveMorphWeights(
   dna: CreatureDNA,
   species: SpeciesProfile,

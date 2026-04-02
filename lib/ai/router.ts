@@ -1,12 +1,7 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
-
 interface Msg { role: string; content: string }
 interface GroqCompletionResponse {
   choices?: Array<{ message?: { content?: string } }>;
-}
-interface CloudflareCompletionResponse {
-  result?: { response?: string };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -34,25 +29,6 @@ async function callGroq(model: string, system: string, messages: Msg[], stream: 
     });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Groq ${model} ${res.status}`);
-    return res;
-  } catch (e) { clearTimeout(timer); throw e; }
-}
-
-async function callCF(system: string, messages: Msg[], stream: boolean) {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
-  if (!accountId || !apiToken) throw new Error("CF credentials not configured");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
-  try {
-    const res = await fetch(CF_URL(accountId), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
-      body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`CF ${res.status}`);
     return res;
   } catch (e) { clearTimeout(timer); throw e; }
 }
@@ -278,12 +254,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
-  // Cloudflare as last resort
-  try {
-    const res = await callCF(systemPrompt, messages, false);
-    const data = (await res.json()) as CloudflareCompletionResponse;
-    return data.result?.response || "";
-  } catch (e) { console.error("[AI] CF failed:", e); }
+  // CF 1B removed — quality too low. Return empty string as final fallback.
   return "";
 }
 
