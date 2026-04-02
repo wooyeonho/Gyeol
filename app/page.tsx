@@ -439,11 +439,15 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
           style={{ backgroundImage: circadian.overlay }}
         />
-        {/* Near-death red tint — vitality < 0.2 */}
-        {vitality < 0.2 && (
+        {/* Near-death vitality tint — progressive red overlay + vignette */}
+        {vitality < 0.3 && (
           <div
             className="pointer-events-none absolute inset-0 transition-all duration-[2000ms]"
-            style={{ background: `rgba(180,0,0,${0.08 + (0.2 - vitality) * 0.6})` }}
+            style={{
+              background: vitality < 0.1
+                ? `radial-gradient(ellipse at center, rgba(120,0,0,${0.15 + (0.1 - vitality) * 1.5}) 20%, rgba(60,0,0,${0.3 + (0.1 - vitality) * 2.0}) 100%)`
+                : `radial-gradient(ellipse at center, transparent 40%, rgba(180,0,0,${0.05 + (0.3 - vitality) * 0.3}) 100%)`,
+            }}
           />
         )}
         <div
