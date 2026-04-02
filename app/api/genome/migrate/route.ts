@@ -1,7 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { buildMigrationGenome } from "@/lib/genome/migrate";
 import { safeHandler } from "@/lib/api/safe-handler";
+import { checkCronAuth } from "@/lib/cron-auth";
 
 /**
  * POST /api/genome/migrate
@@ -12,8 +13,12 @@ import { safeHandler } from "@/lib/api/safe-handler";
  *
  * Idempotent: agents that already have a genome are skipped.
  * Returns the count of migrated agents.
+ * Protected: requires CRON_SECRET authentication.
  */
-export const POST = safeHandler(async () => {
+export const POST = safeHandler(async (request: Request) => {
+  if (!checkCronAuth(request as NextRequest)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const service = createServiceClient();
 
   // Find agents missing genome data

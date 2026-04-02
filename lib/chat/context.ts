@@ -5,9 +5,9 @@ import type { UserPreferences } from "@/lib/creature/preference-memory";
 import type { FeatureBehaviorProfile } from "@/lib/ai/system-prompt";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
-type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
+type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 
-type MemoryMatch = { id: string | null; content: string; reference_count?: number | null };
+type MemoryMatch = { id: string | null; content: string; reference_count?: number | null; similarity?: number; created_at?: string };
 type PromptMemory = { id: string; content: string; referenceCount: number };
 type ChatRow = { role: string; content: string };
 type LogRow = { summary: string };
@@ -17,9 +17,20 @@ type AgentStateRow = Record<string, unknown> & {
 };
 type WorldStateRow = Record<string, unknown> | null;
 
+/** P5A: Memory moment — a strongly matching old memory that triggers a recall animation */
+export type MemoryMoment = {
+  content: string;
+  ageDays: number;
+  similarity: number;
+};
+
 export type ChatPromptContext = {
   agentState: AgentStateRow | null;
   chatMessages: Array<{ role: string; content: string }>;
+  /** Pre-computed message embedding — reused by semantic cache to avoid redundant API call */
+  embedding: number[];
+  /** P5A: If a strongly matching old memory was found, surface it for recall UX */
+  memoryMoment?: MemoryMoment;
   promptMetrics: {
     autonomousLogCount: number;
     memoryCount: number;
@@ -31,14 +42,15 @@ export type ChatPromptContext = {
 
 async function loadPromptMemories(params: {
   agentId: string;
-  message: string;
+  embeddingPromise: Promise<number[]>;
   reader: DbReader;
   recallCount: number;
   writer: DbWriter;
-}): Promise<PromptMemory[]> {
+}): Promise<{ memories: PromptMemory[]; memoryMoment?: MemoryMoment }> {
   try {
-    const embedding = await generateEmbedding(params.message);
-    if (embedding.length === 0) return [];
+    // OPT-A: Reuse pre-started embedding promise instead of starting fresh
+    const embedding = await params.embeddingPromise;
+    if (embedding.length === 0) return { memories: [] };
 
     const { data } = await params.reader.rpc("match_memories", {
       p_agent_id: params.agentId,
@@ -52,20 +64,41 @@ async function loadPromptMemories(params: {
       referenceCount: memory.reference_count ?? 0,
     }));
 
-    await Promise.allSettled(
-      memories
-        .filter((memory) => memory.id)
-        .map((memory) =>
-          params.writer
-            .from("memories")
-            .update({ reference_count: memory.referenceCount + 1 })
-            .eq("id", memory.id)
-        )
-    );
+    // OPT-B: Fire-and-forget reference count update — never block the hot path
+    const ids = memories.filter((m) => m.id).map((m) => m.id);
+    if (ids.length > 0) {
+      void Promise.resolve(params.writer.rpc("batch_increment_reference_count", { p_ids: ids })).catch(() => {
+        // Fallback: individual updates if RPC not deployed yet (still fire-and-forget)
+        void Promise.allSettled(
+          memories
+            .filter((memory) => memory.id)
+            .map((memory) =>
+              params.writer
+                .from("memories")
+                .update({ reference_count: memory.referenceCount + 1 })
+                .eq("id", memory.id)
+            )
+        );
+      });
+    }
 
-    return memories;
-  } catch {
-    return [];
+    // P5A: Detect memory moment — similarity > 0.95 and older than 7 days
+    let memoryMoment: MemoryMoment | undefined;
+    const now = Date.now();
+    for (const raw of matched) {
+      const sim = raw.similarity ?? 0;
+      const createdAt = raw.created_at ? new Date(raw.created_at).getTime() : now;
+      const ageDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+      if (sim >= 0.95 && ageDays >= 7) {
+        memoryMoment = { content: raw.content, ageDays, similarity: sim };
+        break;
+      }
+    }
+
+    return { memories, memoryMoment };
+  } catch (e) {
+    console.error("[Context] Memory loading failed:", e instanceof Error ? e.message : e);
+    return { memories: [] };
   }
 }
 
@@ -76,23 +109,14 @@ export async function buildChatPromptContext(params: {
   reader: DbReader;
   writer: DbWriter;
 }): Promise<ChatPromptContext> {
-  const [{ data: agentStateRow }, { data: worldStateRow }] = await Promise.all([
+  // OPT-A: Start embedding generation immediately (parallel with all DB fetches).
+  // Previously: waited for agentState → then started embedding (~300ms saved).
+  const embeddingPromise = generateEmbedding(params.message);
+
+  // P1B: Parallelize ALL 4 DB queries at once
+  const [{ data: agentStateRow }, { data: worldStateRow }, { data: recentChats }, { data: logs }] = await Promise.all([
     params.reader.from("agent_state").select("*").eq("agent_id", params.agentId).single(),
     params.reader.from("world_state").select("*").eq("id", "global").single(),
-  ]);
-
-  const agentState = (agentStateRow ?? null) as AgentStateRow | null;
-  const worldState = (worldStateRow ?? null) as WorldStateRow;
-  const recallCount = Math.max(1, Math.min(agentState?.config?.recall_count ?? 5, 10));
-  const memories = await loadPromptMemories({
-    agentId: params.agentId,
-    message: params.message,
-    reader: params.reader,
-    recallCount,
-    writer: params.writer,
-  });
-
-  const [{ data: recentChats }, { data: logs }] = await Promise.all([
     params.reader
       .from("chats")
       .select("role, content")
@@ -107,9 +131,44 @@ export async function buildChatPromptContext(params: {
       .limit(3),
   ]);
 
+  const agentState = (agentStateRow ?? null) as AgentStateRow | null;
+  const worldState = (worldStateRow ?? null) as WorldStateRow;
+  const recallCount = Math.max(1, Math.min(agentState?.config?.recall_count ?? 5, 10));
+
+  // Await the embedding so we can share it with semantic cache (avoids double API call)
+  const resolvedEmbedding = await embeddingPromise;
+
+  // Memory loading: embedding was already started, just await the RPC result now
+  const { memories, memoryMoment } = await loadPromptMemories({
+    agentId: params.agentId,
+    embeddingPromise: Promise.resolve(resolvedEmbedding),
+    reader: params.reader,
+    recallCount,
+    writer: params.writer,
+  });
+
   const recentChatRows = (recentChats ?? []) as ChatRow[];
   const logRows = (logs ?? []) as LogRow[];
-  const chronologicalChats = [...recentChatRows].reverse();
+  const allChats = [...recentChatRows].reverse();
+
+  // P8A: Chat history compression — keep last 7 messages verbatim,
+  // compress older messages into a brief summary to save ~500 tokens/request.
+  const VERBATIM_COUNT = 7;
+  let chronologicalChats: ChatRow[];
+  if (allChats.length > VERBATIM_COUNT) {
+    const older = allChats.slice(0, allChats.length - VERBATIM_COUNT);
+    const recent = allChats.slice(-VERBATIM_COUNT);
+    const topics = older
+      .filter((c) => c.role === "user")
+      .map((c) => c.content.slice(0, 60))
+      .slice(-3);
+    const summary = topics.length > 0
+      ? `[Earlier conversation covered: ${topics.join("; ")}]`
+      : "[Earlier conversation omitted for brevity]";
+    chronologicalChats = [{ role: "system", content: summary }, ...recent];
+  } else {
+    chronologicalChats = allChats;
+  }
   const promptConfig = (agentState?.config ?? {}) as Record<string, unknown>;
   const stateForPrompt = {
     ...agentState,
@@ -144,6 +203,8 @@ export async function buildChatPromptContext(params: {
       ...chronologicalChats.map((chat) => ({ role: chat.role, content: chat.content })),
       { role: "user", content: params.message },
     ],
+    embedding: resolvedEmbedding,
+    memoryMoment,
     promptMetrics: {
       autonomousLogCount: logRows.length,
       memoryCount: memories.length,

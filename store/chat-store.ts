@@ -28,7 +28,8 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }
+interface MemoryMomentData { memory: string; age_days: number; similarity: number }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -117,6 +118,43 @@ async function handleStreamResponse(
 ) {
   const copy = getLocaleText(locale);
   let aborted = false;
+
+  // P6A: Batched streaming — collect deltas in a buffer, flush to Zustand at ~15fps
+  // instead of 60+ state updates/sec. Reduces array copies and re-renders dramatically.
+  let contentBuffer = "";
+  let metaBuffer: Partial<Pick<Message, "dnaShift" | "traitEmerged" | "memoryMoment">> = {};
+  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  const FLUSH_INTERVAL = 66; // ~15fps — smooth enough for text, 4x fewer renders
+
+  function flushBuffer() {
+    flushTimer = null;
+    const text = contentBuffer;
+    const meta = { ...metaBuffer };
+    contentBuffer = "";
+    metaBuffer = {};
+    if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment) return;
+    set((s) => {
+      const last = s.messages[s.messages.length - 1];
+      if (!last || last.role !== "assistant") return s;
+      // Only clone the last element — avoids O(n) full-array copy on each flush
+      const updated = {
+        ...last,
+        content: last.content + text,
+        error: false,
+        ...(meta.dnaShift ? { dnaShift: meta.dnaShift } : {}),
+        ...(meta.traitEmerged ? { traitEmerged: meta.traitEmerged } : {}),
+        ...(meta.memoryMoment ? { memoryMoment: meta.memoryMoment } : {}),
+      };
+      const msgs = s.messages.slice();
+      msgs[msgs.length - 1] = updated;
+      return { messages: msgs };
+    });
+  }
+
+  function scheduleFlush() {
+    if (!flushTimer) flushTimer = setTimeout(flushBuffer, FLUSH_INTERVAL);
+  }
+
   try {
     const controller = get().abortController;
     const res = await fetch("/api/chat", {
@@ -137,39 +175,29 @@ async function handleStreamResponse(
       if (done) break;
       sseBuffer += decoder.decode(value, { stream: true });
       const lines = sseBuffer.split("\n");
-      // Keep the last element — it may be an incomplete line from a TCP chunk boundary.
       sseBuffer = lines.pop() ?? "";
       for (const line of lines) {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const parsed = JSON.parse(line.slice(6));
-            // Handle dna_shift metadata event
             if (parsed.type === "dna_shift" && Array.isArray(parsed.axes)) {
-              set((s) => {
-                const msgs = [...s.messages];
-                const last = msgs[msgs.length - 1];
-                if (last?.role === "assistant") {
-                  msgs[msgs.length - 1] = { ...last, dnaShift: parsed.axes as string[] };
-                }
-                return { messages: msgs };
-              });
+              metaBuffer.dnaShift = parsed.axes as string[];
+              scheduleFlush();
             } else if (parsed.type === "trait_emerged" && Array.isArray(parsed.traits)) {
-              set((s) => {
-                const msgs = [...s.messages];
-                const last = msgs[msgs.length - 1];
-                if (last?.role === "assistant") {
-                  msgs[msgs.length - 1] = { ...last, traitEmerged: parsed.traits as { id: string; name: { ko: string; en: string } }[] };
-                }
-                return { messages: msgs };
-              });
+              metaBuffer.traitEmerged = parsed.traits as { id: string; name: { ko: string; en: string } }[];
+              scheduleFlush();
+            } else if (parsed.type === "memory_moment" && typeof parsed.memory === "string") {
+              metaBuffer.memoryMoment = {
+                memory: parsed.memory as string,
+                age_days: typeof parsed.age_days === "number" ? parsed.age_days : 0,
+                similarity: typeof parsed.similarity === "number" ? parsed.similarity : 0,
+              };
+              scheduleFlush();
             } else {
               const content = parsed.choices?.[0]?.delta?.content || "";
               if (content) {
-                set((s) => {
-                  const msgs = [...s.messages];
-                  msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + content, error: false };
-                  return { messages: msgs };
-                });
+                contentBuffer += content;
+                scheduleFlush();
               }
             }
           } catch (error) {
@@ -180,6 +208,9 @@ async function handleStreamResponse(
         }
       }
     }
+    // Flush any remaining buffered content
+    if (flushTimer) clearTimeout(flushTimer);
+    flushBuffer();
     // After stream ends, check if the assistant message is still empty (all deltas failed to parse)
     const lastMsgCheck = get().messages[get().messages.length - 1];
     if (lastMsgCheck && lastMsgCheck.role === "assistant" && !lastMsgCheck.content) {

@@ -10,6 +10,7 @@ import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appea
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
+import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 
 interface ProceduralCreatureProps {
   dna: CreatureDNA;
@@ -28,6 +29,8 @@ interface ProceduralCreatureProps {
   forceState?: ForceState | null;
   /** Evolution generation level (1+, no upper bound) */
   genLevel?: number;
+  /** Idle behavior visual parameters — computed from resolveIdleBehavior */
+  idleBehaviorParams?: IdleBehaviorParams;
 }
 
 const SPHERE_DETAIL = 4;
@@ -103,6 +106,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   conversationEnergy = 0,
   forceState,
   genLevel = 1,
+  idleBehaviorParams,
 }: ProceduralCreatureProps) {
   const energy = conversationEnergy ?? 0;
 
@@ -137,6 +141,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Smoothly interpolated activity parameters — prevents discrete jumps between awake/drowsy/sleeping
   const activityDimRef = useRef(1);
   const activityMultRef = useRef(1);
+
+  // Idle behavior lerp refs — smooth transitions between idle states (rate 0.03/frame)
+  const idleRotationSpeedRef = useRef(1);
+  const idleBodyTiltRef = useRef(0);
+  const idleScaleOscRef = useRef(0.02);
+  const idleEyeOpennessRef = useRef(1);
+  const idleEmissiveMultRef = useRef(1);
+  const idleAppendageSpeedRef = useRef(1);
+  const idleBobAmplitudeRef = useRef(0.03);
+  const idleDreamParticlesRef = useRef(0);
+  // Dream particle refs
+  const dreamParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null, null]);
 
   const baseAppearance = useMemo(
     () => deriveDNAAppearance(dna, species, genLevel),
@@ -461,6 +477,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
 
+  // Dispose previous geometry on change or unmount to prevent GPU memory leak
+  useEffect(() => {
+    return () => { geometry.dispose(); };
+  }, [geometry]);
+
   const hasVertexColors = useMemo(
     () => derivePatternType(appearance.markingsSeed).type !== "none",
     [appearance.markingsSeed],
@@ -502,6 +523,19 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const activityMult = activityMultRef.current;
     const smoothActivityDim = activityDimRef.current;
 
+    // Lerp idle behavior params toward targets (rate 0.03/frame for smooth transitions)
+    if (idleBehaviorParams) {
+      const rate = 0.03;
+      idleRotationSpeedRef.current += (idleBehaviorParams.rotationSpeed - idleRotationSpeedRef.current) * rate;
+      idleBodyTiltRef.current += (idleBehaviorParams.bodyTilt - idleBodyTiltRef.current) * rate;
+      idleScaleOscRef.current += (idleBehaviorParams.scaleOscillation - idleScaleOscRef.current) * rate;
+      idleEyeOpennessRef.current += (idleBehaviorParams.eyeOpenness - idleEyeOpennessRef.current) * rate;
+      idleEmissiveMultRef.current += (idleBehaviorParams.emissiveMult - idleEmissiveMultRef.current) * rate;
+      idleAppendageSpeedRef.current += (idleBehaviorParams.appendageSpeed - idleAppendageSpeedRef.current) * rate;
+      idleBobAmplitudeRef.current += (idleBehaviorParams.bobAmplitude - idleBobAmplitudeRef.current) * rate;
+      idleDreamParticlesRef.current += ((idleBehaviorParams.showDreamParticles ? 1 : 0) - idleDreamParticlesRef.current) * rate;
+    }
+
     const leanTarget = isListening ? 0.12 : 0;
     listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
     const eyeScaleTarget = isListening ? 1.25 : 1;
@@ -525,7 +559,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         blinkTimerRef.current = baseInterval + Math.random() * 3;
       }
     }
-    const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint;
+    const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint * idleEyeOpennessRef.current;
 
     lookTimerRef.current -= dt;
     if (lookTimerRef.current <= 0 && !lookActiveRef.current && creatureActivity === "awake") {
@@ -552,26 +586,33 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
 
     // Scale: use force-driven scale pulse when available, fallback to legacy breathing
+    // Idle scale oscillation modulates the breathing depth
+    const idleScaleOsc = idleScaleOscRef.current;
     const forceScalePulse = forceState ? forceState.scalePulse : 1;
     const breathScale = forceState
-      ? forceScalePulse + excitePulse * 0.12
-      : 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12;
+      ? forceScalePulse + excitePulse * 0.12 + Math.sin(t * 1.5) * idleScaleOsc
+      : 1 + breathSin * appearance.breatheDepth * energyMult + heartbeat + excitePulse * 0.12 + Math.sin(t * 1.5) * idleScaleOsc;
     const sc = scale * appearance.scale * breathScale;
     groupRef.current.scale.lerp(new THREE.Vector3(sc, sc, sc), 0.08);
 
     // Position: force-driven movement — creature physically moves around the scene
+    // Idle bob amplitude modulates vertical bobbing (e.g., playing=0.1, sleeping=0.01)
+    const idleBob = Math.sin(t * 1.8) * idleBobAmplitudeRef.current;
     if (forceState) {
       const targetX = forceState.position.x * 1.5; // scale normalized to scene units
-      const targetY = forceState.position.y * 1.2;
+      const targetY = forceState.position.y * 1.2 + idleBob;
       groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.08);
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
+    } else {
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, idleBob, 0.08);
     }
 
-    // Rotation: force-driven rotation blended with legacy rotation
-    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult;
+    // Rotation: force-driven rotation blended with legacy rotation + idle behavior
+    const idleRotSpeed = idleRotationSpeedRef.current;
+    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult * idleRotSpeed;
     const forceRotation = forceState ? forceState.rotation * 0.15 : 0; // subtle force-driven rotation
     groupRef.current.rotation.y += rotSpeed * 0.01 + forceRotation * 0.02;
-    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias;
+    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias + idleBodyTiltRef.current;
     groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current + forceRotation * 0.3, 0.06);
 
     if (meshRef.current) {
@@ -603,7 +644,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const haloPulse = 1 + Math.sin(t * 0.8 * energyMult) * 0.05 + excitePulse * 0.1 + energy * 0.08;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim;
+        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim * idleEmissiveMultRef.current;
     }
 
     const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });
@@ -621,20 +662,21 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
     if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
 
-    // Crown sway
+    // Crown sway — modulated by idle appendage speed
+    const idleAppSpeed = idleAppendageSpeedRef.current;
     if (crownRef.current) {
-      const windPhase = t * 1.2 + 0.5;
+      const windPhase = t * 1.2 * idleAppSpeed + 0.5;
       crownRef.current.rotation.x = Math.sin(windPhase) * 0.12 * activityMult + breathSin * 0.06;
       crownRef.current.rotation.z = Math.cos(windPhase * 0.7) * 0.08 * activityMult;
       crownRef.current.scale.setScalar(1 + breathSin * 0.05);
     }
     if (sideLeftRef.current) {
-      const flapPhase = t * 0.8;
+      const flapPhase = t * 0.8 * idleAppSpeed;
       sideLeftRef.current.rotation.z = 0.4 + Math.sin(flapPhase) * 0.15 * activityMult + breathSin * 0.08;
       sideLeftRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
     }
     if (sideRightRef.current) {
-      const flapPhase = t * 0.8 + Math.PI * 0.3;
+      const flapPhase = t * 0.8 * idleAppSpeed + Math.PI * 0.3;
       sideRightRef.current.rotation.z = -0.4 - Math.sin(flapPhase) * 0.15 * activityMult - breathSin * 0.08;
       sideRightRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
     }
@@ -647,9 +689,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       veilMesh.scale.y = 1 + breathSin * 0.04;
     }
 
-    // Tail wag
+    // Tail wag — modulated by idle appendage speed
     if (tailRef.current) {
-      const wagSpeed = 1.5 + dna.playfulness * 1.5;
+      const wagSpeed = (1.5 + dna.playfulness * 1.5) * idleAppSpeed;
       const wagAmp = 0.2 + dna.playfulness * 0.3;
       tailRef.current.rotation.x = Math.sin(t * wagSpeed) * wagAmp * activityMult;
       tailRef.current.rotation.y = Math.cos(t * wagSpeed * 0.7) * wagAmp * 0.5 * activityMult;
@@ -658,20 +700,34 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Horn pulse
     if (hornLRef.current) hornLRef.current.scale.setScalar(1 + breathSin * 0.03);
     if (hornRRef.current) hornRRef.current.scale.setScalar(1 + breathSin * 0.03);
-    // Antenna sway
+    // Antenna sway — modulated by idle appendage speed
     if (antennaLRef.current) {
-      antennaLRef.current.rotation.z = -0.3 + Math.sin(t * 1.5) * 0.15 * activityMult - pn.x * 0.1;
-      antennaLRef.current.rotation.x = Math.cos(t * 1.2) * 0.1 * activityMult + pn.y * 0.05;
+      antennaLRef.current.rotation.z = -0.3 + Math.sin(t * 1.5 * idleAppSpeed) * 0.15 * activityMult - pn.x * 0.1;
+      antennaLRef.current.rotation.x = Math.cos(t * 1.2 * idleAppSpeed) * 0.1 * activityMult + pn.y * 0.05;
     }
     if (antennaRRef.current) {
-      antennaRRef.current.rotation.z = 0.3 - Math.sin(t * 1.5 + 0.5) * 0.15 * activityMult - pn.x * 0.1;
-      antennaRRef.current.rotation.x = Math.cos(t * 1.2 + 0.3) * 0.1 * activityMult + pn.y * 0.05;
+      antennaRRef.current.rotation.z = 0.3 - Math.sin(t * 1.5 * idleAppSpeed + 0.5) * 0.15 * activityMult - pn.x * 0.1;
+      antennaRRef.current.rotation.x = Math.cos(t * 1.2 * idleAppSpeed + 0.3) * 0.1 * activityMult + pn.y * 0.05;
     }
     // Mouth animation
     if (mouthRef.current) {
       mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, mouthConfig.width, 0.08);
       mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, 0.3 + mouthConfig.open * 0.7, 0.08);
       mouthRef.current.rotation.z = THREE.MathUtils.lerp(mouthRef.current.rotation.z, mouthConfig.curve * 0.3, 0.06);
+    }
+
+    // Dream particles — orbit around creature when dreaming/daydreaming
+    const dreamOpacity = idleDreamParticlesRef.current;
+    for (let di = 0; di < 5; di++) {
+      const dp = dreamParticleRefs.current[di];
+      if (!dp) continue;
+      const orbitPhase = t * 0.4 + di * ((Math.PI * 2) / 5);
+      const orbitRadius = 0.55 + di * 0.06;
+      dp.position.x = Math.cos(orbitPhase) * orbitRadius;
+      dp.position.y = Math.sin(orbitPhase * 0.7 + di) * 0.15 + 0.2;
+      dp.position.z = Math.sin(orbitPhase) * orbitRadius;
+      (dp.material as THREE.MeshBasicMaterial).opacity = dreamOpacity * (0.3 + Math.sin(t * 1.5 + di * 1.2) * 0.2);
+      dp.scale.setScalar(0.02 + Math.sin(t * 2 + di) * 0.008);
     }
   });
 
@@ -1004,6 +1060,17 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           </>
         );
       })()}
+
+      {/* Dream particles — 5 small glowing orbs that orbit when dreaming/daydreaming */}
+      {Array.from({ length: 5 }, (_, i) => (
+        <mesh
+          key={`dream-${i}`}
+          ref={(el) => { dreamParticleRefs.current[i] = el; }}
+        >
+          <sphereGeometry args={[0.02, 6, 6]} />
+          <meshBasicMaterial color={secondaryColor} transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
     </group>
   );
 });

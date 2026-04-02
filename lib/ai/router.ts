@@ -1,12 +1,7 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
-
 interface Msg { role: string; content: string }
 interface GroqCompletionResponse {
   choices?: Array<{ message?: { content?: string } }>;
-}
-interface CloudflareCompletionResponse {
-  result?: { response?: string };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -34,25 +29,6 @@ async function callGroq(model: string, system: string, messages: Msg[], stream: 
     });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Groq ${model} ${res.status}`);
-    return res;
-  } catch (e) { clearTimeout(timer); throw e; }
-}
-
-async function callCF(system: string, messages: Msg[], stream: boolean) {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
-  if (!accountId || !apiToken) throw new Error("CF credentials not configured");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
-  try {
-    const res = await fetch(CF_URL(accountId), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
-      body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`CF ${res.status}`);
     return res;
   } catch (e) { clearTimeout(timer); throw e; }
 }
@@ -165,20 +141,24 @@ function getFallbackText(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
-/** Derive max_tokens from verbal axis value embedded in the system prompt. */
+/** Derive max_tokens from verbal axis value embedded in the system prompt.
+ *  Values aligned with chat/route.ts verbal axis thresholds. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {
   const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
   if (!match) return 700;
   switch (match[1]) {
-    case "SILENT":   return 15;
-    case "MINIMAL":  return 20;
-    case "BRIEF":    return 40;
-    case "ELOQUENT": return 1000;
+    case "SILENT":   return 30;
+    case "MINIMAL":  return 60;
+    case "BRIEF":    return 180;
+    case "ELOQUENT": return 700;
     default:         return 700;
   }
 }
 
 function getInCharacterFallback(systemPrompt: string) {
+  // Respect verbal axis in fallback — SILENT/MINIMAL creatures can't speak full sentences
+  if (systemPrompt.includes("EXPRESSION MODE — SILENT")) return "[...]";
+  if (systemPrompt.includes("EXPRESSION MODE — MINIMAL")) return "...";
   if (systemPrompt.includes("日本語")) return "...ちょっと頭がぼんやりしてる。少し待ってくれる？";
   if (systemPrompt.includes("中文")) return "...脑袋有点发蒙。等我一下好吗？";
   if (systemPrompt.includes("español")) return "...Tengo la mente un poco nublada. ¿Puedes esperar un momento?";
@@ -186,24 +166,73 @@ function getInCharacterFallback(systemPrompt: string) {
   return "...머리가 좀 멍해. 잠깐만 기다려줘.";
 }
 
+/**
+ * P11A: Archetype-based temperature tuning.
+ * Volatile archetypes (volcanic, spectral) get higher temperature for creative variety.
+ * Stable archetypes (crystalline, mechanical) get lower temperature for consistency.
+ */
+function getArchetypeTemperature(systemPrompt: string): number {
+  if (systemPrompt.includes("volcanic") || systemPrompt.includes("spectral")) return 0.80;
+  if (systemPrompt.includes("fluid") || systemPrompt.includes("organic")) return 0.72;
+  if (systemPrompt.includes("ethereal") || systemPrompt.includes("verdant")) return 0.68;
+  if (systemPrompt.includes("crystalline") || systemPrompt.includes("mechanical")) return 0.50;
+  return 0.65; // default
+}
+
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
-  const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
-    ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
-  for (const m of MODELS) {
-    try {
-      const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens);
-      console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
-      return res.body!;
-    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
-  }
-  // Gemini Flash streaming fallback (higher quality than CF 1B)
+  const verbalTokens = getMaxTokensFromVerbal(systemPrompt);
+  const effectiveMaxTokens = verbalTokens !== 700 ? verbalTokens : maxTokens;
+  const temperature = getArchetypeTemperature(systemPrompt);
+
+  // OPT-C: Hedged request — start Groq primary, fire Gemini in parallel after 1.5s.
+  // Groq Llama 4 Scout typically begins streaming in 200-500ms.
+  // Hedge at 1.5s captures Groq timeouts quickly while avoiding wasted Gemini calls.
+  let groqSettled = false;
+  let geminiSettled = false;
+
+  const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
+    for (const m of MODELS) {
+      try {
+        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
+        groqSettled = true;
+        console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
+        return { source: m.name, stream: res.body! };
+      } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
+    }
+    throw new Error("All Groq models failed");
+  })();
+
+  // Start Gemini hedge after 1.5s
+  const HEDGE_DELAY_MS = 1500;
+  const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
+    const hedgeTimer = setTimeout(async () => {
+      if (groqSettled) return reject(new Error("Groq already won"));
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        geminiSettled = true;
+        console.log("[AI] Gemini hedge won");
+        resolve({ source: "gemini-hedge", stream });
+      } catch (e) { reject(e); }
+    }, HEDGE_DELAY_MS);
+    // If Groq wins before the timer, cancel the hedge
+    groqPromise.then(() => { clearTimeout(hedgeTimer); reject(new Error("Groq won")); }).catch(() => {});
+  });
+
   try {
-    const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
-    console.log("[AI] Using Gemini Flash streaming");
-    return stream;
-  } catch (e) { console.error("[AI] Gemini stream failed:", e); }
-  console.log("[AI] All models failed, using in-character fallback");
-  return fallbackStream(getInCharacterFallback(systemPrompt));
+    const winner = await Promise.race([groqPromise, geminiHedge]);
+    return winner.stream;
+  } catch {
+    // Both raced paths failed — try Gemini directly as final fallback
+    if (!geminiSettled) {
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        console.log("[AI] Using Gemini Flash streaming fallback");
+        return stream;
+      } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    }
+    console.log("[AI] All models failed, using in-character fallback");
+    return fallbackStream(getInCharacterFallback(systemPrompt));
+  }
 }
 
 export async function generateTextOnce(systemPrompt: string, userPrompt: string, opts?: { max_tokens?: number; temperature?: number }): Promise<string> {
@@ -225,12 +254,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
-  // Cloudflare as last resort
-  try {
-    const res = await callCF(systemPrompt, messages, false);
-    const data = (await res.json()) as CloudflareCompletionResponse;
-    return data.result?.response || "";
-  } catch (e) { console.error("[AI] CF failed:", e); }
+  // CF 1B removed — quality too low. Return empty string as final fallback.
   return "";
 }
 

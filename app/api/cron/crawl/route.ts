@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { NextRequest } from "next/server";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { executeCrawl, executeCrawlWithBody } from "@/lib/cron-core";

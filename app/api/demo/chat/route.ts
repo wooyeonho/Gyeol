@@ -113,11 +113,9 @@ export async function POST(req: NextRequest) {
 
     // Pipe stream and append DNA metadata
     const encoder = new TextEncoder();
-    const transformStream = createAssistantTapStream(async () => {
-      // No persistence in demo mode
-    });
+    const { transform: tapTransform } = createAssistantTapStream();
 
-    const aiStream = stream.pipeThrough(transformStream);
+    const aiStream = stream.pipeThrough(tapTransform);
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = aiStream.getReader();
