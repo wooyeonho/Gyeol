@@ -66,7 +66,9 @@ export async function authorizeV1ApiKey(
         .from("api_keys")
         .update({ last_used_at: new Date().toISOString() })
         .eq("id", row.id)
-    ).catch((err: unknown) => console.warn("[V1Auth] last_used_at update failed:", err));
+    ).then(({ error: updateErr }: { error: { message: string } | null }) => {
+      if (updateErr) console.warn("[V1Auth] last_used_at update failed:", updateErr.message);
+    }).catch((err: unknown) => console.warn("[V1Auth] last_used_at update failed:", err));
     return {
       id: row.id,
       identifier: getApiKeyIdentifier(request),
