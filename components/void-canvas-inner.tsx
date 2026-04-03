@@ -3,6 +3,7 @@
 import React, { useRef, useState, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -527,6 +528,15 @@ function Scene({
       {particles > 0 && (
         <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} conversationEnergy={conversationEnergy} />
       )}
+      {/* Bloom: makes emissive parts glow like bioluminescence */}
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.3}
+          luminanceSmoothing={0.9}
+          intensity={0.8}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   );
 }
@@ -568,14 +578,11 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full" style={{ imageRendering: "pixelated" }}>
+    <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
-        dpr={0.2}
-        gl={{ antialias: false, powerPreference: "low-power" }}
-        onCreated={({ gl }) => {
-          gl.domElement.style.imageRendering = "pixelated";
-        }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, powerPreference: "default", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       >
         <Scene {...props} />
       </Canvas>
