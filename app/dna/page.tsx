@@ -8,6 +8,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
+import { PortraitGallery } from "@/components/portrait-gallery";
 
 const AXIS_GROUPS = [
   { label: "인지", axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -302,6 +303,8 @@ export default function DNAPage() {
           <MutationHistory config={agentState.config as Record<string, unknown>} />
         )}
 
+        {/* Portrait Gallery — AI-generated creature portraits */}
+        {dna && <PortraitGallery />}
         {!dna && (
           <p className="text-center text-sm text-white/30 py-4">
             {t("dna.noData") || "DNA forms as you converse more."}
