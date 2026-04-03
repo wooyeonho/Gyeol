@@ -59,11 +59,27 @@ export default function Home() {
   const historyLoaded = useChatStore((s) => s.historyLoaded);
   const greetingInjectedRef = useRef(false);
   const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
+  const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  // Fetch latest portrait
+  useEffect(() => {
+    if (!agentState) return;
+    fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.portraits?.length) return;
+        try {
+          const latest = JSON.parse(data.portraits[0].content);
+          if (latest?.image) setPortraitUrl(latest.image);
+        } catch { /* ignore parse error */ }
+      })
+      .catch(() => { /* non-critical */ });
+  }, [agentState]);
 
   // Transfer demo DNA to new account (runs once after first agent creation)
   const dnaSeededRef = useRef(false);
@@ -493,6 +509,21 @@ export default function Home() {
             idleBehaviorParams={idleBehaviorParams}
           />
         </ThreeErrorBoundary>
+
+        {/* AI-generated portrait overlay — creature's "face" */}
+        {portraitUrl && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
+            <div className="relative w-40 h-40 rounded-full overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={portraitUrl}
+                alt="Creature portrait"
+                className="w-full h-full object-cover opacity-90 mix-blend-screen"
+              />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            </div>
+          </div>
+        )}
 
         {/* Bottom gradient fade into chat area */}
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
