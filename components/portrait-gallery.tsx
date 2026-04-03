@@ -70,6 +70,7 @@ export function PortraitGallery() {
   const [generating, setGenerating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [genContext, setGenContext] = useState<"portrait" | "full_body" | "action" | "dream">("portrait");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -90,6 +91,7 @@ export function PortraitGallery() {
 
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
+    setError(null);
     try {
       const res = await fetch("/api/creature/portrait", {
         method: "POST",
@@ -98,7 +100,7 @@ export function PortraitGallery() {
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        alert(err.error ?? "Failed to generate portrait");
+        setError(err.error ?? "Failed to generate portrait");
         return;
       }
       const data = (await res.json()) as {
@@ -109,7 +111,6 @@ export function PortraitGallery() {
         element: string;
         context: string;
       };
-      // Add to gallery immediately
       const newPortrait: ParsedPortrait = {
         id: `temp-${Date.now()}`,
         type: "creature_portrait",
@@ -126,7 +127,7 @@ export function PortraitGallery() {
       };
       setPortraits((prev) => [newPortrait, ...prev]);
     } catch {
-      alert("Network error");
+      setError("Network error — please try again");
     } finally {
       setGenerating(false);
     }
@@ -172,6 +173,9 @@ export function PortraitGallery() {
             t("portrait.generate")
           )}
         </button>
+        {error && (
+          <p className="text-xs text-red-400/80 text-center">{error}</p>
+        )}
       </div>
 
       {/* Gallery grid */}

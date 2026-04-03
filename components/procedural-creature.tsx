@@ -9,6 +9,7 @@ import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/mor
 import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import { deriveBodyStructure } from "@/lib/genome/body-plan";
+import { createLivingMaterial, deriveLivingMaterialParams } from "@/lib/shaders/living-material";
 import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
@@ -418,6 +419,21 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return new THREE.Color().setHSL(appearance.eyeHue / 360, 0.75, 0.6);
   }, [appearance]);
 
+  // Living material shader — replaces flat toon material with bioluminescent shader
+  // Falls back to toon material on low-end devices (low devicePixelRatio as heuristic)
+  const useLivingShader = typeof window !== "undefined" && (window.devicePixelRatio ?? 1) >= 1.5;
+
+  const livingMaterial = useMemo(() => {
+    if (!useLivingShader) return null;
+    const params = deriveLivingMaterialParams(
+      primaryColor,
+      secondaryColor,
+      appearance.glowIntensity,
+      dna,
+    );
+    return createLivingMaterial(params);
+  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna, useLivingShader]);
+
   const eyePositions = useMemo(() => {
     const spread = eyeConfig.count === 1 ? 0 : 0.16 * (1 + morphWeights.sideSpread * 0.3);
     const height = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
@@ -532,6 +548,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     const t = state.clock.elapsedTime;
     const dt = state.clock.getDelta();
+
+    // Tick living material shader time
+    if (livingMaterial?.uniforms.uTime) {
+      livingMaterial.uniforms.uTime.value = t;
+    }
+
     // Smoothly lerp activity parameters toward target (no discrete jumps between states)
     activityDimRef.current += (activityDimTarget - activityDimRef.current) * 0.04;
     activityMultRef.current += (activityMultTarget - activityMultRef.current) * 0.04;
@@ -765,18 +787,22 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body with toon shading + vertex color patterns */}
-      <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
-        <meshToonMaterial
-          color={primaryColor}
-          emissive={primaryColor}
-          emissiveIntensity={emissiveIntensity}
-          transparent
-          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (hasStructure ? 0.5 : 1)}
-          gradientMap={toonGradient}
-          vertexColors={hasVertexColors}
-        />
-      </mesh>
+      {/* Main body — living shader with bioluminescent glow, toon fallback on low-end */}
+      {livingMaterial ? (
+        <mesh ref={meshRef} geometry={geometry} material={livingMaterial} scale={hasStructure ? 0.4 : 1} />
+      ) : (
+        <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
+          <meshToonMaterial
+            color={primaryColor}
+            emissive={primaryColor}
+            emissiveIntensity={emissiveIntensity}
+            transparent
+            opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (hasStructure ? 0.5 : 1)}
+            gradientMap={toonGradient}
+            vertexColors={hasVertexColors}
+          />
+        </mesh>
+      )}
 
       {/* Continuous body structure — limbs, head, segments, wings, tail, etc. */}
       {hasStructure && (
