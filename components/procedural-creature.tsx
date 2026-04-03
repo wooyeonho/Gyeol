@@ -8,7 +8,7 @@ import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
 import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
-import { deriveBodyPlan } from "@/lib/genome/body-plan";
+import { deriveBodyStructure } from "@/lib/genome/body-plan";
 import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
@@ -180,12 +180,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     [conMorph],
   );
 
-  // Body plan — determines fundamental creature silhouette
-  const bodyPlan = useMemo(
-    () => deriveBodyPlan(dna, genLevel),
+  // Continuous body structure — DNA directly drives structural parameters
+  const bodyStructure = useMemo(
+    () => deriveBodyStructure(dna, genLevel),
     [dna, genLevel],
   );
-  const isAmorphous = bodyPlan.primary === "amorphous";
+  // Show body plan overlay when structure is sufficiently non-spherical
+  const hasStructure = bodyStructure.headSeparation > 0.3
+    || bodyStructure.limbCount > 0.5
+    || bodyStructure.segmentCount > 1.8
+    || bodyStructure.wingSpan > 0.3
+    || bodyStructure.fragmentation > 0.3
+    || bodyStructure.branchCount > 0.5;
 
   // [UPGRADE 6] Wider silhouette range — driven by continuous morphology bodyRatio
   const bodyElongation = useMemo(
@@ -759,30 +765,29 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body with toon shading + vertex color patterns (scaled down for non-amorphous plans) */}
-      <mesh ref={meshRef} geometry={geometry} scale={isAmorphous ? 1 : 0.35}>
+      {/* Main body with toon shading + vertex color patterns */}
+      <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
         <meshToonMaterial
           color={primaryColor}
           emissive={primaryColor}
           emissiveIntensity={emissiveIntensity}
           transparent
-          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (isAmorphous ? 1 : 0.6)}
+          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (hasStructure ? 0.5 : 1)}
           gradientMap={toonGradient}
           vertexColors={hasVertexColors}
         />
       </mesh>
 
-      {/* Body plan structural meshes */}
-      {!isAmorphous && (
+      {/* Continuous body structure — limbs, head, segments, wings, tail, etc. */}
+      {hasStructure && (
         <CreatureBodyPlan
-          bodyPlan={bodyPlan}
+          structure={bodyStructure}
           primaryColor={primaryColor}
           secondaryColor={secondaryColor}
           emissiveIntensity={emissiveIntensity}
           activityDim={activityDim}
           vitality={vitality}
           toonGradient={toonGradient}
-          bodyElongation={bodyElongation}
         />
       )}
 

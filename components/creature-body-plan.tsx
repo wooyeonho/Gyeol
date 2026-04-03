@@ -2,504 +2,249 @@
 
 import React, { useMemo } from "react";
 import * as THREE from "three";
-import type { BodyPlanConfig, BodyStructure } from "@/lib/genome/body-plan";
+import type { BodyStructure } from "@/lib/genome/body-plan";
 
-interface BodyPlanMeshProps {
-  bodyPlan: BodyPlanConfig;
+interface Props {
+  structure: BodyStructure;
   primaryColor: THREE.Color;
   secondaryColor: THREE.Color;
   emissiveIntensity: number;
   activityDim: number;
   vitality: number;
   toonGradient: THREE.DataTexture;
-  bodyElongation: number;
 }
 
 /**
- * Renders body-plan-specific structural meshes.
- * This adds the skeletal structure (limbs, segments, wings, branches, fragments)
- * that makes each body plan visually distinct. It does NOT replace the core body
- * or appendages — it adds on top.
+ * Renders body structure from continuous parameters.
+ * No templates. No categories. DNA numbers in, geometry out.
  */
 export const CreatureBodyPlan = React.memo(function CreatureBodyPlan({
-  bodyPlan,
+  structure: s,
   primaryColor,
   secondaryColor,
-  emissiveIntensity,
+  emissiveIntensity: ei,
   activityDim,
   vitality,
-  toonGradient,
-  bodyElongation,
-}: BodyPlanMeshProps) {
-  const s = bodyPlan.structure;
-  const opacity = Math.max(0.4, activityDim * 0.85 * Math.max(0.5, vitality));
-  const plan = bodyPlan.primary;
-
-  // Blend factor for secondary plan visual hints
-  const blendW = bodyPlan.secondaryWeight;
+  toonGradient: toon,
+}: Props) {
+  const op = Math.max(0.4, activityDim * 0.85 * Math.max(0.5, vitality));
 
   const elements = useMemo(() => {
-    switch (plan) {
-      case "serpentine":
-        return <SerpentineBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "bipedal":
-        return <BipedalBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "quadruped":
-        return <QuadrupedBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "avian":
-        return <AvianBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "aquatic":
-        return <AquaticBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "insectoid":
-        return <InsectoidBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "arboreal":
-        return <ArborealBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "humanoid":
-        return <HumanoidBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "composite":
-        return <CompositeBody s={s} primary={primaryColor} secondary={secondaryColor} ei={emissiveIntensity} op={opacity} toon={toonGradient} />;
-      case "amorphous":
-      default:
-        return null; // existing renderer handles this
-    }
-  }, [plan, s, primaryColor, secondaryColor, emissiveIntensity, opacity, toonGradient]);
+    const els: React.ReactElement[] = [];
+    const r = s.coreScale * 0.12; // base segment radius
 
-  return <>{elements}</>;
+    // ── BODY SEGMENTS ──
+    // segmentCount determines how many connected parts form the body
+    const segs = Math.max(1, Math.round(s.segmentCount));
+    const spacing = r * 2 * s.segmentSpacing;
+
+    for (let i = 0; i < segs; i++) {
+      const t = segs === 1 ? 0.5 : i / (segs - 1); // 0..1 along body
+      // Taper: thickest at ~30%, thinning toward ends
+      const taper = 1.0 - Math.abs(t - 0.3) * 0.6;
+      const segR = r * Math.max(0.25, taper);
+
+      // Position along body axis, oriented by uprightness
+      // uprightness > 0: vertical stack, < 0: horizontal chain
+      const upright = Math.max(-1, Math.min(1, s.uprightness));
+      const yOff = -i * spacing * Math.max(0, upright + 0.5);
+      const zOff = -i * spacing * Math.max(0, 0.5 - upright);
+
+      // Flatness: squash Y and stretch X
+      const scaleX = 1 + (s.flatness - 1) * 0.3;
+      const scaleY = 1 - (s.flatness - 1) * 0.2;
+
+      // Serpentine wave for elongated bodies
+      const wave = segs > 3 ? Math.sin(t * Math.PI * 2) * 0.04 * (segs - 3) : 0;
+
+      const color = i % 2 === 0 ? primaryColor : secondaryColor;
+      els.push(
+        <mesh key={`seg-${i}`} position={[wave, yOff, zOff]} scale={[scaleX, scaleY, 1]}>
+          <sphereGeometry args={[segR, 10, 8]} />
+          <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.65} transparent opacity={op * 0.8} gradientMap={toon} />
+        </mesh>,
+      );
+    }
+
+    // ── HEAD ──
+    // Separates from body when headSeparation > 0.3
+    if (s.headSeparation > 0.3) {
+      const headR = r * s.headScale * 1.2;
+      const sep = s.headSeparation * r * 2.5;
+      const upright = Math.max(-1, Math.min(1, s.uprightness));
+      const headY = sep * Math.max(0, upright + 0.3);
+      const headZ = sep * Math.max(0, 0.7 - upright);
+
+      // Neck connector
+      if (s.headSeparation > 0.5) {
+        const neckLen = sep * 0.5;
+        const neckAngle = Math.atan2(headZ, headY);
+        els.push(
+          <mesh key="neck" position={[0, headY * 0.4, headZ * 0.4]} rotation={[neckAngle, 0, 0]}>
+            <capsuleGeometry args={[r * 0.2, neckLen, 4, 4]} />
+            <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.6} gradientMap={toon} />
+          </mesh>,
+        );
+      }
+
+      els.push(
+        <mesh key="head" position={[0, headY, headZ]}>
+          <sphereGeometry args={[headR, 10, 10]} />
+          <meshToonMaterial color={primaryColor} emissive={primaryColor} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.85} gradientMap={toon} />
+        </mesh>,
+      );
+    }
+
+    // ── LIMBS ──
+    // limbCount determines how many, limbLength/Thickness determine shape
+    if (s.limbCount > 0.5) {
+      const count = Math.round(s.limbCount);
+      const pairs = Math.max(1, Math.ceil(count / 2));
+      const limbLen = 0.08 + s.limbLength * 0.15;
+      const limbR = 0.012 + s.limbThickness * 0.025;
+      const bodyLen = (segs - 1) * spacing;
+
+      for (let p = 0; p < pairs; p++) {
+        // Distribute pairs along body based on limbDistribution
+        const attachT = pairs === 1
+          ? (1 - s.limbDistribution) * 0.8 // single pair: low or mid
+          : s.limbDistribution * (p / (pairs - 1)); // multiple: spread
+        const upright = Math.max(-1, Math.min(1, s.uprightness));
+        const attachY = -attachT * bodyLen * Math.max(0, upright + 0.5);
+        const attachZ = -attachT * bodyLen * Math.max(0, 0.5 - upright);
+
+        // Limb angle: upright creatures have legs down, horizontal have legs to sides
+        const downAngle = upright > 0.3 ? 0.1 : 0.6;
+        const sideOffset = r + limbR;
+
+        // Left limb
+        els.push(
+          <mesh key={`limb-L-${p}`} position={[-sideOffset, attachY - limbLen * 0.4, attachZ]} rotation={[0, 0, downAngle]}>
+            <capsuleGeometry args={[limbR, limbLen, 4, 6]} />
+            <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.65} gradientMap={toon} />
+          </mesh>,
+        );
+        // Right limb
+        els.push(
+          <mesh key={`limb-R-${p}`} position={[sideOffset, attachY - limbLen * 0.4, attachZ]} rotation={[0, 0, -downAngle]}>
+            <capsuleGeometry args={[limbR, limbLen, 4, 6]} />
+            <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.65} gradientMap={toon} />
+          </mesh>,
+        );
+
+        // For upright creatures with 2+ limb pairs: first pair = arms (shorter, higher angle)
+        if (p === 0 && pairs >= 2 && upright > 0.5) {
+          // Already placed as legs above — override position to arm-like
+          // The first pair becomes arms by being placed higher with outward angle
+          els[els.length - 2] = (
+            <mesh key={`limb-L-${p}`} position={[-sideOffset * 1.2, attachY + limbLen * 0.2, attachZ]} rotation={[0, 0, 0.35]}>
+              <capsuleGeometry args={[limbR * 0.8, limbLen * 0.8, 4, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.45} transparent opacity={op * 0.6} gradientMap={toon} />
+            </mesh>
+          );
+          els[els.length - 1] = (
+            <mesh key={`limb-R-${p}`} position={[sideOffset * 1.2, attachY + limbLen * 0.2, attachZ]} rotation={[0, 0, -0.35]}>
+              <capsuleGeometry args={[limbR * 0.8, limbLen * 0.8, 4, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.45} transparent opacity={op * 0.6} gradientMap={toon} />
+            </mesh>
+          );
+        }
+      }
+    }
+
+    // ── WINGS ──
+    if (s.wingSpan > 0.3) {
+      const wingW = 0.1 * s.wingSpan;
+      const wingH = 0.06 * s.wingSpan;
+      const wingY = s.wingPosition * spacing * (segs - 1) * 0.3;
+      const wingTilt = 0.3 + s.wingSpan * 0.1;
+
+      els.push(
+        <mesh key="wing-L" position={[-r * 1.3, wingY, -r * 0.3]} rotation={[0.1, 0.2, wingTilt]}>
+          <planeGeometry args={[wingW, wingH]} />
+          <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.5} side={THREE.DoubleSide} gradientMap={toon} />
+        </mesh>,
+        <mesh key="wing-R" position={[r * 1.3, wingY, -r * 0.3]} rotation={[0.1, -0.2, -wingTilt]}>
+          <planeGeometry args={[wingW, wingH]} />
+          <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.5} side={THREE.DoubleSide} gradientMap={toon} />
+        </mesh>,
+      );
+    }
+
+    // ── TAIL ──
+    if (s.tailLength > 0.15) {
+      const tailLen = 0.05 + s.tailLength * 0.15;
+      const tailR = 0.01 + s.tailThickness * 0.02;
+      const bodyEnd = -(segs - 1) * spacing;
+      const upright = Math.max(-1, Math.min(1, s.uprightness));
+      const tailY = bodyEnd * Math.max(0, upright + 0.5) - tailLen * 0.3;
+      const tailZ = bodyEnd * Math.max(0, 0.5 - upright) - tailLen * 0.5;
+
+      els.push(
+        <mesh key="tail" position={[0, tailY, tailZ]} rotation={[0.4 - upright * 0.3, 0, 0]}>
+          <capsuleGeometry args={[tailR, tailLen, 4, 6]} />
+          <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.6} gradientMap={toon} />
+        </mesh>,
+      );
+    }
+
+    // ── BRANCHES ──
+    if (s.branchCount > 0.5) {
+      const count = Math.round(s.branchCount);
+      const bLen = 0.04 + s.branchLength * 0.1;
+      const bR = r * 0.3;
+
+      for (let bi = 0; bi < count; bi++) {
+        const t = 0.2 + (bi / count) * 0.6;
+        const angle = (bi / count) * Math.PI * 2 + bi * 0.8;
+        const yPos = -t * spacing * (segs - 1) * Math.max(0, s.uprightness + 0.5);
+        const tiltOut = 0.5 + (1 - t) * 0.6;
+        const color = bi % 3 === 0 ? primaryColor : secondaryColor;
+
+        els.push(
+          <mesh key={`branch-${bi}`} position={[Math.cos(angle) * r * 1.3, yPos, Math.sin(angle) * r * 1.3]} rotation={[Math.sin(angle) * tiltOut, 0, Math.cos(angle) * tiltOut]}>
+            <capsuleGeometry args={[bR, bLen, 3, 5]} />
+            <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.55} gradientMap={toon} />
+          </mesh>,
+        );
+
+        // Leaf/node at tip
+        if (bLen > 0.05) {
+          els.push(
+            <mesh key={`leaf-${bi}`} position={[Math.cos(angle) * (r * 1.3 + bLen * 0.6), yPos + bLen * 0.3, Math.sin(angle) * (r * 1.3 + bLen * 0.6)]}>
+              <sphereGeometry args={[bR * 1.5, 6, 6]} />
+              <meshToonMaterial color={secondaryColor} emissive={secondaryColor} emissiveIntensity={ei * 0.7} transparent opacity={op * 0.45} gradientMap={toon} />
+            </mesh>,
+          );
+        }
+      }
+    }
+
+    // ── FRAGMENTS ──
+    // When fragmentation > 0.3, pieces orbit the core
+    if (s.fragmentation > 0.3) {
+      const fragCount = Math.round(2 + s.fragmentation * 4);
+      const orbitR = r * (2 + s.fragmentation);
+      for (let fi = 0; fi < fragCount; fi++) {
+        const angle = (fi / fragCount) * Math.PI * 2;
+        const yOff = Math.sin(angle * 1.5 + fi) * r * 0.8;
+        const fragR = r * (0.2 + Math.sin(fi * 2.1) * 0.1);
+        const color = fi % 2 === 0 ? primaryColor : secondaryColor;
+        els.push(
+          <mesh key={`frag-${fi}`} position={[Math.cos(angle) * orbitR, yOff, Math.sin(angle) * orbitR]}>
+            <dodecahedronGeometry args={[fragR, 0]} />
+            <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.6} gradientMap={toon} />
+          </mesh>,
+        );
+      }
+    }
+
+    return els;
+  }, [s, primaryColor, secondaryColor, ei, op, toon]);
+
+  // Center the body vertically
+  const totalHeight = (s.segmentCount - 1) * s.coreScale * 0.12 * 2 * s.segmentSpacing;
+  const centerY = totalHeight * Math.max(0, s.uprightness) * 0.3;
+
+  return <group position={[0, centerY, 0]}>{elements}</group>;
 });
-
-// ─── Shared types ────────────────────────────────────────────────────
-
-type PlanProps = {
-  s: BodyStructure;
-  primary: THREE.Color;
-  secondary: THREE.Color;
-  ei: number;
-  op: number;
-  toon: THREE.DataTexture;
-};
-
-// ─── Serpentine: elongated chain ─────────────────────────────────────
-
-function SerpentineBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const segments = Math.max(3, Math.min(12, s.partCount));
-  const segSize = s.coreScale * 0.18;
-  const els: React.ReactElement[] = [];
-
-  for (let i = 0; i < segments; i++) {
-    const t = i / (segments - 1); // 0..1 along body
-    const scale = 1.0 - Math.abs(t - 0.35) * 0.8; // thickest at 35%
-    const yOff = -i * segSize * 1.8;
-    const zWave = Math.sin(t * Math.PI * 2) * 0.08;
-    const color = i % 2 === 0 ? primary : secondary;
-    els.push(
-      <mesh key={`serp-${i}`} position={[0, yOff, zWave]}>
-        <sphereGeometry args={[segSize * Math.max(0.3, scale), 10, 8]} />
-        <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.7} transparent opacity={op * 0.8} gradientMap={toon} />
-      </mesh>,
-    );
-  }
-
-  // Tail fin
-  if (s.tailLength > 0.2) {
-    const tailY = -segments * segSize * 1.8;
-    els.push(
-      <mesh key="serp-tail" position={[0, tailY, 0]} rotation={[0.3, 0, 0]}>
-        <coneGeometry args={[segSize * 0.5, segSize * s.tailLength * 2, 4]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.6} gradientMap={toon} />
-      </mesh>,
-    );
-  }
-
-  return <group position={[0, segments * segSize * 0.9, 0]}>{els}</group>;
-}
-
-// ─── Bipedal: upright with arms and legs ─────────────────────────────
-
-function BipedalBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const torsoH = 0.22 * s.aspectRatio;
-  const legLen = 0.15 * s.limbLength;
-  const armLen = 0.12 * s.limbLength;
-  const headR = 0.08 * s.headProminence;
-  const limbR = 0.025 * (0.5 + s.limbThickness);
-
-  return (
-    <group position={[0, -0.15, 0]}>
-      {/* Torso */}
-      <mesh position={[0, 0, 0]}>
-        <capsuleGeometry args={[0.1 * s.coreScale, torsoH, 6, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, torsoH * 0.5 + headR + 0.02, 0]}>
-        <sphereGeometry args={[headR, 10, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.8} gradientMap={toon} />
-      </mesh>
-      {/* Left arm */}
-      <mesh position={[-0.14, torsoH * 0.2, 0]} rotation={[0, 0, 0.3]}>
-        <capsuleGeometry args={[limbR, armLen, 4, 6]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.65} gradientMap={toon} />
-      </mesh>
-      {/* Right arm */}
-      <mesh position={[0.14, torsoH * 0.2, 0]} rotation={[0, 0, -0.3]}>
-        <capsuleGeometry args={[limbR, armLen, 4, 6]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.65} gradientMap={toon} />
-      </mesh>
-      {/* Left leg */}
-      <mesh position={[-0.06, -torsoH * 0.5 - legLen * 0.5, 0]}>
-        <capsuleGeometry args={[limbR * 1.3, legLen, 4, 6]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-      {/* Right leg */}
-      <mesh position={[0.06, -torsoH * 0.5 - legLen * 0.5, 0]}>
-        <capsuleGeometry args={[limbR * 1.3, legLen, 4, 6]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-    </group>
-  );
-}
-
-// ─── Quadruped: horizontal body with 4 legs ──────────────────────────
-
-function QuadrupedBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const bodyLen = 0.2 * s.aspectRatio;
-  const legLen = 0.12 * s.limbLength;
-  const legR = 0.025 * (0.5 + s.limbThickness);
-  const headR = 0.07 * s.headProminence;
-
-  return (
-    <group position={[0, -0.1, 0]} rotation={[0.15, 0, 0]}>
-      {/* Horizontal body */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <capsuleGeometry args={[0.1 * s.coreScale, bodyLen, 6, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 0.04, bodyLen * 0.5 + headR]}>
-        <sphereGeometry args={[headR, 10, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.8} gradientMap={toon} />
-      </mesh>
-      {/* 4 legs */}
-      {[
-        [-0.08, -0.12, bodyLen * 0.35],
-        [0.08, -0.12, bodyLen * 0.35],
-        [-0.08, -0.12, -bodyLen * 0.35],
-        [0.08, -0.12, -bodyLen * 0.35],
-      ].map(([x, y, z], i) => (
-        <mesh key={`qleg-${i}`} position={[x, y, z]}>
-          <capsuleGeometry args={[legR, legLen, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.65} gradientMap={toon} />
-        </mesh>
-      ))}
-      {/* Tail */}
-      {s.tailLength > 0.1 && (
-        <mesh position={[0, 0.05, -bodyLen * 0.5 - 0.05]} rotation={[0.5, 0, 0]}>
-          <capsuleGeometry args={[0.015, s.tailLength * 0.15, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.6} gradientMap={toon} />
-        </mesh>
-      )}
-    </group>
-  );
-}
-
-// ─── Avian: small body + large wings ─────────────────────────────────
-
-function AvianBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const wingW = 0.2 * s.wingSpan;
-  const wingH = 0.12 * s.wingSpan;
-  const headR = 0.06 * s.headProminence;
-
-  return (
-    <group position={[0, -0.05, 0]}>
-      {/* Compact body */}
-      <mesh>
-        <sphereGeometry args={[0.1 * s.coreScale, 10, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.7} transparent opacity={op * 0.75} gradientMap={toon} />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 0.12, 0.06]}>
-        <sphereGeometry args={[headR, 8, 8]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.8} gradientMap={toon} />
-      </mesh>
-      {/* Left wing */}
-      <mesh position={[-0.15, 0.02, -0.02]} rotation={[0.1, 0.2, 0.4]}>
-        <planeGeometry args={[wingW, wingH]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.55} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-      {/* Right wing */}
-      <mesh position={[0.15, 0.02, -0.02]} rotation={[0.1, -0.2, -0.4]}>
-        <planeGeometry args={[wingW, wingH]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.55} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-      {/* Tail feathers */}
-      {s.tailLength > 0.1 && (
-        <mesh position={[0, -0.02, -0.14]} rotation={[0.6, 0, 0]}>
-          <planeGeometry args={[0.08, s.tailLength * 0.15]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.5} side={THREE.DoubleSide} gradientMap={toon} />
-        </mesh>
-      )}
-    </group>
-  );
-}
-
-// ─── Aquatic: flat/streamlined body + fins ───────────────────────────
-
-function AquaticBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const bodyW = 0.16 * s.coreScale;
-
-  return (
-    <group position={[0, -0.05, 0]} rotation={[0.1, 0, 0]}>
-      {/* Flat body */}
-      <mesh scale={[1.3, 0.5, 1.0]}>
-        <sphereGeometry args={[bodyW, 12, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-      {/* Dorsal fin */}
-      <mesh position={[0, bodyW * 0.5, -0.02]} rotation={[0.2, 0, 0]}>
-        <planeGeometry args={[0.04, 0.1]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.5} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-      {/* Side fins */}
-      <mesh position={[-bodyW * 1.2, -0.02, 0.02]} rotation={[0, 0, 0.5]}>
-        <planeGeometry args={[0.08, 0.05]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.45} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-      <mesh position={[bodyW * 1.2, -0.02, 0.02]} rotation={[0, 0, -0.5]}>
-        <planeGeometry args={[0.08, 0.05]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.45} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-      {/* Tail fin */}
-      <mesh position={[0, 0, -bodyW * 1.5]} rotation={[0, 0, Math.PI / 4]}>
-        <planeGeometry args={[0.1, 0.08]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.5} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>
-    </group>
-  );
-}
-
-// ─── Insectoid: multi-segment + many thin legs ───────────────────────
-
-function InsectoidBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const segments = Math.max(3, Math.min(8, s.partCount));
-  const segR = 0.06 * s.coreScale;
-  const legLen = 0.1 * s.limbLength;
-  const legR = 0.008 * (1 + s.limbThickness);
-  const els: React.ReactElement[] = [];
-
-  // Body segments
-  for (let i = 0; i < segments; i++) {
-    const t = i / (segments - 1);
-    const scale = i === 0 ? 1.2 : (i === segments - 1 ? 0.7 : 1.0 - Math.abs(t - 0.4) * 0.3);
-    const zOff = -i * segR * 2.2;
-    const color = i === 0 ? primary : (i % 2 === 0 ? primary : secondary);
-    els.push(
-      <mesh key={`iseg-${i}`} position={[0, 0, zOff]}>
-        <sphereGeometry args={[segR * scale, 8, 6]} />
-        <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.75} gradientMap={toon} />
-      </mesh>,
-    );
-
-    // Legs on body segments (not head)
-    if (i > 0 && i < segments - 1) {
-      const legY = -segR * scale * 0.7;
-      els.push(
-        <mesh key={`ilegL-${i}`} position={[-segR * 1.1, legY, zOff]} rotation={[0, 0, 0.6]}>
-          <capsuleGeometry args={[legR, legLen, 3, 4]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.3} transparent opacity={op * 0.6} gradientMap={toon} />
-        </mesh>,
-        <mesh key={`ilegR-${i}`} position={[segR * 1.1, legY, zOff]} rotation={[0, 0, -0.6]}>
-          <capsuleGeometry args={[legR, legLen, 3, 4]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.3} transparent opacity={op * 0.6} gradientMap={toon} />
-        </mesh>,
-      );
-    }
-  }
-
-  // Wings if present
-  if (s.wingSpan > 0.3) {
-    const wSize = 0.1 * s.wingSpan;
-    els.push(
-      <mesh key="iwingL" position={[-segR * 1.5, segR * 0.8, -segR * 2]} rotation={[0, 0, 0.3]}>
-        <planeGeometry args={[wSize, wSize * 1.5]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.35} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>,
-      <mesh key="iwingR" position={[segR * 1.5, segR * 0.8, -segR * 2]} rotation={[0, 0, -0.3]}>
-        <planeGeometry args={[wSize, wSize * 1.5]} />
-        <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.35} side={THREE.DoubleSide} gradientMap={toon} />
-      </mesh>,
-    );
-  }
-
-  const totalLen = (segments - 1) * segR * 2.2;
-  return <group position={[0, 0.05, totalLen * 0.4]}>{els}</group>;
-}
-
-// ─── Arboreal: trunk with branches ───────────────────────────────────
-
-function ArborealBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const trunkH = 0.25 * s.aspectRatio;
-  const trunkR = 0.05 * (0.5 + s.limbThickness);
-  const branches = Math.max(2, Math.min(8, s.branchCount));
-  const els: React.ReactElement[] = [];
-
-  // Trunk
-  els.push(
-    <mesh key="trunk" position={[0, 0, 0]}>
-      <capsuleGeometry args={[trunkR, trunkH, 6, 8]} />
-      <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.75} gradientMap={toon} />
-    </mesh>,
-  );
-
-  // Branches
-  for (let i = 0; i < branches; i++) {
-    const t = 0.3 + (i / branches) * 0.6; // along trunk
-    const angle = (i / branches) * Math.PI * 2 + i * 0.7;
-    const yPos = (t - 0.5) * trunkH;
-    const branchLen = 0.08 + s.limbLength * 0.08 * (1 - Math.abs(t - 0.7) * 1.2);
-    const branchR = trunkR * 0.5;
-    const tilt = 0.4 + (1 - t) * 0.8; // lower branches droop more
-    const color = i % 3 === 0 ? primary : secondary;
-
-    els.push(
-      <mesh key={`branch-${i}`} position={[Math.cos(angle) * trunkR * 1.5, yPos, Math.sin(angle) * trunkR * 1.5]} rotation={[Math.sin(angle) * tilt, 0, Math.cos(angle) * tilt]}>
-        <capsuleGeometry args={[branchR, branchLen, 3, 5]} />
-        <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.6} gradientMap={toon} />
-      </mesh>,
-    );
-
-    // Leaf/bloom at branch tip
-    if (branchLen > 0.06) {
-      const tipX = Math.cos(angle) * (trunkR * 1.5 + branchLen * 0.7);
-      const tipZ = Math.sin(angle) * (trunkR * 1.5 + branchLen * 0.7);
-      els.push(
-        <mesh key={`leaf-${i}`} position={[tipX, yPos + branchLen * 0.3, tipZ]}>
-          <sphereGeometry args={[branchR * 1.5, 6, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.5} gradientMap={toon} />
-        </mesh>,
-      );
-    }
-  }
-
-  return <group position={[0, -trunkH * 0.3, 0]}>{els}</group>;
-}
-
-// ─── Humanoid: proportioned body ─────────────────────────────────────
-
-function HumanoidBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const torsoH = 0.18 * s.aspectRatio;
-  const legLen = 0.18 * s.limbLength;
-  const armLen = 0.15 * s.limbLength;
-  const headR = 0.07 * s.headProminence;
-  const limbR = 0.02 * (0.5 + s.limbThickness);
-  const shoulderW = 0.11;
-
-  return (
-    <group position={[0, -0.18, 0]}>
-      {/* Torso */}
-      <mesh>
-        <capsuleGeometry args={[0.08 * s.coreScale, torsoH, 6, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.6} transparent opacity={op * 0.7} gradientMap={toon} />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, torsoH * 0.5 + headR * 0.8, 0]}>
-        <sphereGeometry args={[headR, 10, 10]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.8} transparent opacity={op * 0.85} gradientMap={toon} />
-      </mesh>
-      {/* Neck */}
-      <mesh position={[0, torsoH * 0.45, 0]}>
-        <capsuleGeometry args={[limbR * 1.2, 0.03, 4, 4]} />
-        <meshToonMaterial color={primary} emissive={primary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.65} gradientMap={toon} />
-      </mesh>
-      {/* Left arm: upper + forearm */}
-      <group position={[-shoulderW, torsoH * 0.3, 0]}>
-        <mesh rotation={[0, 0, 0.2]}>
-          <capsuleGeometry args={[limbR, armLen * 0.5, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.45} transparent opacity={op * 0.65} gradientMap={toon} />
-        </mesh>
-        <mesh position={[-armLen * 0.15, -armLen * 0.5, 0]} rotation={[0, 0, 0.1]}>
-          <capsuleGeometry args={[limbR * 0.85, armLen * 0.45, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.6} gradientMap={toon} />
-        </mesh>
-      </group>
-      {/* Right arm */}
-      <group position={[shoulderW, torsoH * 0.3, 0]}>
-        <mesh rotation={[0, 0, -0.2]}>
-          <capsuleGeometry args={[limbR, armLen * 0.5, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.45} transparent opacity={op * 0.65} gradientMap={toon} />
-        </mesh>
-        <mesh position={[armLen * 0.15, -armLen * 0.5, 0]} rotation={[0, 0, -0.1]}>
-          <capsuleGeometry args={[limbR * 0.85, armLen * 0.45, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.6} gradientMap={toon} />
-        </mesh>
-      </group>
-      {/* Left leg: upper + lower */}
-      <group position={[-0.05, -torsoH * 0.5, 0]}>
-        <mesh>
-          <capsuleGeometry args={[limbR * 1.4, legLen * 0.5, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.7} gradientMap={toon} />
-        </mesh>
-        <mesh position={[0, -legLen * 0.5, 0]}>
-          <capsuleGeometry args={[limbR * 1.2, legLen * 0.45, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.35} transparent opacity={op * 0.65} gradientMap={toon} />
-        </mesh>
-      </group>
-      {/* Right leg */}
-      <group position={[0.05, -torsoH * 0.5, 0]}>
-        <mesh>
-          <capsuleGeometry args={[limbR * 1.4, legLen * 0.5, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.4} transparent opacity={op * 0.7} gradientMap={toon} />
-        </mesh>
-        <mesh position={[0, -legLen * 0.5, 0]}>
-          <capsuleGeometry args={[limbR * 1.2, legLen * 0.45, 4, 6]} />
-          <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.35} transparent opacity={op * 0.65} gradientMap={toon} />
-        </mesh>
-      </group>
-      {/* Wings if high creativity */}
-      {s.wingSpan > 0.3 && (
-        <>
-          <mesh position={[-0.12, torsoH * 0.15, -0.06]} rotation={[0.2, 0.3, 0.5]}>
-            <planeGeometry args={[0.15 * s.wingSpan, 0.2 * s.wingSpan]} />
-            <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.4} side={THREE.DoubleSide} gradientMap={toon} />
-          </mesh>
-          <mesh position={[0.12, torsoH * 0.15, -0.06]} rotation={[0.2, -0.3, -0.5]}>
-            <planeGeometry args={[0.15 * s.wingSpan, 0.2 * s.wingSpan]} />
-            <meshToonMaterial color={secondary} emissive={secondary} emissiveIntensity={ei * 0.5} transparent opacity={op * 0.4} side={THREE.DoubleSide} gradientMap={toon} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-}
-
-// ─── Composite: orbiting fragments ───────────────────────────────────
-
-function CompositeBody({ s, primary, secondary, ei, op, toon }: PlanProps) {
-  const frags = Math.max(3, Math.min(10, s.fragmentCount));
-  const els: React.ReactElement[] = [];
-  const orbitR = 0.15 * (1 + s.dispersion);
-
-  for (let i = 0; i < frags; i++) {
-    const angle = (i / frags) * Math.PI * 2;
-    const yOff = (Math.sin(angle * 2 + i) * 0.1);
-    const fragSize = 0.04 + Math.sin(i * 1.7) * 0.02;
-    const x = Math.cos(angle) * orbitR;
-    const z = Math.sin(angle) * orbitR;
-    const color = i % 2 === 0 ? primary : secondary;
-
-    els.push(
-      <mesh key={`frag-${i}`} position={[x, yOff, z]}>
-        <dodecahedronGeometry args={[fragSize, 0]} />
-        <meshToonMaterial color={color} emissive={color} emissiveIntensity={ei * 0.7} transparent opacity={op * 0.65} gradientMap={toon} />
-      </mesh>,
-    );
-  }
-
-  // Core ember
-  els.push(
-    <mesh key="core">
-      <sphereGeometry args={[0.03, 8, 8]} />
-      <meshBasicMaterial color={primary} transparent opacity={op * 0.9} />
-    </mesh>,
-  );
-
-  return <group>{els}</group>;
-}
