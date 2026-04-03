@@ -423,6 +423,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Falls back to toon material on low-end devices (low devicePixelRatio as heuristic)
   const useLivingShader = typeof window !== "undefined" && (window.devicePixelRatio ?? 1) >= 1.5;
 
+  const livingMaterialRef = useRef<ReturnType<typeof createLivingMaterial> | null>(null);
   const livingMaterial = useMemo(() => {
     if (!useLivingShader) return null;
     const params = deriveLivingMaterialParams(
@@ -433,6 +434,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     );
     return createLivingMaterial(params);
   }, [primaryColor, secondaryColor, appearance.glowIntensity, dna, useLivingShader]);
+  // Sync ref after render (avoids "Cannot access refs during render" React Compiler error)
+  // and dispose previous material on change/unmount (GPU leak prevention)
+  useEffect(() => {
+    livingMaterialRef.current = livingMaterial;
+    return () => { livingMaterial?.dispose(); };
+  }, [livingMaterial]);
 
   const eyePositions = useMemo(() => {
     const spread = eyeConfig.count === 1 ? 0 : 0.16 * (1 + morphWeights.sideSpread * 0.3);
@@ -549,9 +556,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const t = state.clock.elapsedTime;
     const dt = state.clock.getDelta();
 
-    // Tick living material shader time
-    if (livingMaterial?.uniforms.uTime) {
-      livingMaterial.uniforms.uTime.value = t;
+    // Tick living material shader time (use ref to avoid React Compiler immutability error)
+    if (livingMaterialRef.current?.uniforms.uTime) {
+      livingMaterialRef.current.uniforms.uTime.value = t;
     }
 
     // Smoothly lerp activity parameters toward target (no discrete jumps between states)
