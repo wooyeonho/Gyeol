@@ -420,7 +420,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   }, [appearance]);
 
   // Living material shader — replaces flat toon material with bioluminescent shader
+  // Falls back to toon material on low-end devices (low devicePixelRatio as heuristic)
+  const useLivingShader = typeof window !== "undefined" && (window.devicePixelRatio ?? 1) >= 1.5;
+
   const livingMaterial = useMemo(() => {
+    if (!useLivingShader) return null;
     const params = deriveLivingMaterialParams(
       primaryColor,
       secondaryColor,
@@ -428,7 +432,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       dna,
     );
     return createLivingMaterial(params);
-  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna]);
+  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna, useLivingShader]);
 
   const eyePositions = useMemo(() => {
     const spread = eyeConfig.count === 1 ? 0 : 0.16 * (1 + morphWeights.sideSpread * 0.3);
@@ -546,7 +550,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const dt = state.clock.getDelta();
 
     // Tick living material shader time
-    if (livingMaterial.uniforms.uTime) {
+    if (livingMaterial?.uniforms.uTime) {
       livingMaterial.uniforms.uTime.value = t;
     }
 
@@ -783,8 +787,22 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body — living shader with bioluminescent glow */}
-      <mesh ref={meshRef} geometry={geometry} material={livingMaterial} scale={hasStructure ? 0.4 : 1} />
+      {/* Main body — living shader with bioluminescent glow, toon fallback on low-end */}
+      {livingMaterial ? (
+        <mesh ref={meshRef} geometry={geometry} material={livingMaterial} scale={hasStructure ? 0.4 : 1} />
+      ) : (
+        <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
+          <meshToonMaterial
+            color={primaryColor}
+            emissive={primaryColor}
+            emissiveIntensity={emissiveIntensity}
+            transparent
+            opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality)) * (hasStructure ? 0.5 : 1)}
+            gradientMap={toonGradient}
+            vertexColors={hasVertexColors}
+          />
+        </mesh>
+      )}
 
       {/* Continuous body structure — limbs, head, segments, wings, tail, etc. */}
       {hasStructure && (
