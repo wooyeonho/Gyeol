@@ -12,6 +12,7 @@ import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
+import { deriveDNATheme, applyDNAThemeToRoot } from "@/lib/theme/dna-theme";
 import { haptic } from "@/lib/micro-interactions";
 import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
@@ -147,6 +148,10 @@ export default function Home() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
+  useEffect(() => {
+    if (!creatureDna) return;
+    applyDNAThemeToRoot(deriveDNATheme(creatureDna));
+  }, [creatureDna]);
   const config = agentState?.config ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
