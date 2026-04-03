@@ -66,9 +66,11 @@ export default function Home() {
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
 
-  // Fetch latest portrait
+  // Fetch latest portrait — runs once when agent first loads
+  const portraitFetchedRef = useRef(false);
   useEffect(() => {
-    if (!agentState) return;
+    if (!agentState || portraitFetchedRef.current) return;
+    portraitFetchedRef.current = true;
     fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -455,11 +457,15 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
           style={{ backgroundImage: circadian.overlay }}
         />
-        {/* Near-death red tint — vitality < 0.2 */}
-        {vitality < 0.2 && (
+        {/* Near-death vitality tint — progressive red overlay + vignette */}
+        {vitality < 0.3 && (
           <div
             className="pointer-events-none absolute inset-0 transition-all duration-[2000ms]"
-            style={{ background: `rgba(180,0,0,${0.08 + (0.2 - vitality) * 0.6})` }}
+            style={{
+              background: vitality < 0.1
+                ? `radial-gradient(ellipse at center, rgba(120,0,0,${0.15 + (0.1 - vitality) * 1.5}) 20%, rgba(60,0,0,${0.3 + (0.1 - vitality) * 2.0}) 100%)`
+                : `radial-gradient(ellipse at center, transparent 40%, rgba(180,0,0,${0.05 + (0.3 - vitality) * 0.3}) 100%)`,
+            }}
           />
         )}
         <div
@@ -512,17 +518,23 @@ export default function Home() {
 
         {/* AI-generated portrait overlay — creature's "face" */}
         {portraitUrl && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
-            <div className="relative w-40 h-40 rounded-full overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]"
+          >
+            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={portraitUrl}
                 alt="Creature portrait"
-                className="w-full h-full object-cover opacity-90 mix-blend-screen"
+                className="w-full h-full object-cover opacity-85 mix-blend-screen"
               />
               <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-white/5" />
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Bottom gradient fade into chat area */}

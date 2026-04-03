@@ -61,32 +61,35 @@ export function deriveMorphWeights(
   // Archetype modifiers push certain morphs
   const archMod = ARCHETYPE_MORPH_BIAS[species.archetype] ?? {};
 
+  // Amplify extreme DNA values so creatures with edge-case DNA look dramatically different.
+  const amp = (v: number) => amplifyExtreme(v);
+
   // Each morph weight is scaled by morphComplexity — early gens express subtly,
   // later gens express the full range of deformation.
   return {
     bodyStretch: clampMin0(
-      ((dna.verbal * 0.4 + dna.spatial * 0.3 - dna.stability * 0.2 + 0.1) + (archMod.bodyStretch ?? 0)) * mc
+      ((amp(dna.verbal) * 0.4 + amp(dna.spatial) * 0.3 - amp(dna.stability) * 0.2 + 0.1) + (archMod.bodyStretch ?? 0)) * mc
     ),
     bodyBulge: clampMin0(
-      ((dna.warmth * 0.4 + dna.empathy * 0.25 - dna.analytical * 0.15 + 0.1) + (archMod.bodyBulge ?? 0)) * mc
+      ((amp(dna.warmth) * 0.4 + amp(dna.empathy) * 0.25 - amp(dna.analytical) * 0.15 + 0.1) + (archMod.bodyBulge ?? 0)) * mc
     ),
     crownGrowth: clampMin0(
-      ((dna.creativity * 0.35 + dna.intuitive * 0.3 + dna.curiosity * 0.15 - 0.15) + (archMod.crownGrowth ?? 0)) * mc
+      ((amp(dna.creativity) * 0.35 + amp(dna.intuitive) * 0.3 + amp(dna.curiosity) * 0.15 - 0.15) + (archMod.crownGrowth ?? 0)) * mc
     ),
     sideSpread: clampMin0(
-      ((dna.assertiveness * 0.35 + dna.independence * 0.25 + dna.intensity * 0.15 - 0.1) + (archMod.sideSpread ?? 0)) * mc
+      ((amp(dna.assertiveness) * 0.35 + amp(dna.independence) * 0.25 + amp(dna.intensity) * 0.15 - 0.1) + (archMod.sideSpread ?? 0)) * mc
     ),
     rhythmWobble: clampMin0(
-      ((dna.playfulness * 0.4 + dna.adaptability * 0.3 - dna.stability * 0.2) + (archMod.rhythmWobble ?? 0)) * mc
+      ((amp(dna.playfulness) * 0.4 + amp(dna.adaptability) * 0.3 - amp(dna.stability) * 0.2) + (archMod.rhythmWobble ?? 0)) * mc
     ),
     crystalFacet: clampMin0(
-      ((dna.analytical * 0.4 + dna.stability * 0.3 - dna.creativity * 0.15 - 0.1) + (archMod.crystalFacet ?? 0)) * mc
+      ((amp(dna.analytical) * 0.4 + amp(dna.stability) * 0.3 - amp(dna.creativity) * 0.15 - 0.1) + (archMod.crystalFacet ?? 0)) * mc
     ),
     veilDrape: clampMin0(
-      ((dna.openness * 0.35 + dna.empathy * 0.25 + dna.intuitive * 0.15 - 0.15) + (archMod.veilDrape ?? 0)) * mc
+      ((amp(dna.openness) * 0.35 + amp(dna.empathy) * 0.25 + amp(dna.intuitive) * 0.15 - 0.15) + (archMod.veilDrape ?? 0)) * mc
     ),
     coreConcentrate: clampMin0(
-      ((dna.intensity * 0.35 + dna.persistence * 0.3 - dna.openness * 0.15) + (archMod.coreConcentrate ?? 0)) * mc
+      ((amp(dna.intensity) * 0.35 + amp(dna.persistence) * 0.3 - amp(dna.openness) * 0.15) + (archMod.coreConcentrate ?? 0)) * mc
     ),
   };
 }

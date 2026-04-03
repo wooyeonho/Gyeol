@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
+import { writeComebackMultiplier } from "@/lib/rewards/variable-reward";
 
 type ComebackBonusData = {
   multiplier: number;
@@ -34,6 +35,9 @@ export function ComebackBanner({ onComebackDetected }: { onComebackDetected?: (m
         const data = await res.json() as { comeback_bonus?: ComebackBonusData | null };
         if (mounted && data.comeback_bonus) {
           setBonus(data.comeback_bonus);
+          // Persist multiplier so the reward middleware can apply it on next message
+          writeComebackMultiplier(data.comeback_bonus.multiplier);
+
           // Fire comeback detection callback once
           if (!firedRef.current && callbackRef.current) {
             firedRef.current = true;

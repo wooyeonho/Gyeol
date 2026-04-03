@@ -304,10 +304,11 @@ export default function DNAPage() {
         )}
 
         {/* Portrait Gallery — AI-generated creature portraits */}
-        <PortraitGallery />
+        {dna && <PortraitGallery />}
+
         {!dna && (
           <p className="text-center text-sm text-white/30 py-4">
-            {t("dna.noData") || "더 대화할수록 DNA가 형성됩니다."}
+            {t("dna.noData") || "DNA forms as you converse more."}
           </p>
         )}
       </div>

@@ -8,6 +8,9 @@ import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
 import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
+import { deriveBodyStructure } from "@/lib/genome/body-plan";
+import { createLivingMaterial, deriveLivingMaterialParams } from "@/lib/shaders/living-material";
+import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
@@ -177,6 +180,19 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     () => blendGeometryParams(conMorph.archetypeBlend, conMorph.morphComplexity),
     [conMorph],
   );
+
+  // Continuous body structure — DNA directly drives structural parameters
+  const bodyStructure = useMemo(
+    () => deriveBodyStructure(dna, genLevel),
+    [dna, genLevel],
+  );
+  // Show body plan overlay when structure is sufficiently non-spherical
+  const hasStructure = bodyStructure.headSeparation > 0.3
+    || bodyStructure.limbCount > 0.5
+    || bodyStructure.segmentCount > 1.8
+    || bodyStructure.wingSpan > 0.3
+    || bodyStructure.fragmentation > 0.3
+    || bodyStructure.branchCount > 0.5;
 
   // [UPGRADE 6] Wider silhouette range — driven by continuous morphology bodyRatio
   const bodyElongation = useMemo(
@@ -403,6 +419,17 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return new THREE.Color().setHSL(appearance.eyeHue / 360, 0.75, 0.6);
   }, [appearance]);
 
+  // Living material shader — replaces flat toon material with bioluminescent shader
+  const livingMaterial = useMemo(() => {
+    const params = deriveLivingMaterialParams(
+      primaryColor,
+      secondaryColor,
+      appearance.glowIntensity,
+      dna,
+    );
+    return createLivingMaterial(params);
+  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna]);
+
   const eyePositions = useMemo(() => {
     const spread = eyeConfig.count === 1 ? 0 : 0.16 * (1 + morphWeights.sideSpread * 0.3);
     const height = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
@@ -517,6 +544,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     const t = state.clock.elapsedTime;
     const dt = state.clock.getDelta();
+
+    // Tick living material shader time
+    if (livingMaterial.uniforms.uTime) {
+      livingMaterial.uniforms.uTime.value = t;
+    }
+
     // Smoothly lerp activity parameters toward target (no discrete jumps between states)
     activityDimRef.current += (activityDimTarget - activityDimRef.current) * 0.04;
     activityMultRef.current += (activityMultTarget - activityMultRef.current) * 0.04;
@@ -750,18 +783,21 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
       </mesh>
 
-      {/* Main body with toon shading + vertex color patterns */}
-      <mesh ref={meshRef} geometry={geometry}>
-        <meshToonMaterial
-          color={primaryColor}
-          emissive={primaryColor}
+      {/* Main body — living shader with bioluminescent glow */}
+      <mesh ref={meshRef} geometry={geometry} material={livingMaterial} scale={hasStructure ? 0.4 : 1} />
+
+      {/* Continuous body structure — limbs, head, segments, wings, tail, etc. */}
+      {hasStructure && (
+        <CreatureBodyPlan
+          structure={bodyStructure}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
           emissiveIntensity={emissiveIntensity}
-          transparent
-          opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality))}
-          gradientMap={toonGradient}
-          vertexColors={hasVertexColors}
+          activityDim={activityDim}
+          vitality={vitality}
+          toonGradient={toonGradient}
         />
-      </mesh>
+      )}
 
       {/* Body segments: extra segment meshes stacked along Y when bodySegments > 1 */}
       {(bodySegmentsConfig.count > 1 || bodySegmentsConfig.fractional > 0.025) && (() => {
