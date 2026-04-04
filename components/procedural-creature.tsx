@@ -131,6 +131,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const antennaLRef = useRef<THREE.Mesh>(null);
   const antennaRRef = useRef<THREE.Mesh>(null);
   const mouthRef = useRef<THREE.Mesh>(null);
+  const eyelidLRef = useRef<THREE.Mesh>(null);
+  const eyelidRRef = useRef<THREE.Mesh>(null);
+  const eyelidCyclopsRef = useRef<THREE.Mesh>(null);
 
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
@@ -442,9 +445,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       secondaryColor,
       appearance.glowIntensity,
       dna,
+      species.archetype,
     );
     return createLivingMaterial(params);
-  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna, useLivingShader]);
+  }, [primaryColor, secondaryColor, appearance.glowIntensity, dna, useLivingShader, species.archetype]);
   // Sync ref after render (avoids "Cannot access refs during render" React Compiler error)
   // and dispose previous material on change/unmount (GPU leak prevention)
   useEffect(() => {
@@ -722,6 +726,27 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
     if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
 
+    // Pupil dilation — expression-driven iris scaling
+    const pupilDilation = expr.pupilScale;
+    for (const eyeRef of [eyeLRef, eyeRRef]) {
+      if (eyeRef.current) {
+        const irisScale = pupilDilation;
+        eyeRef.current.scale.set(
+          THREE.MathUtils.lerp(eyeRef.current.scale.x, irisScale, 0.08),
+          THREE.MathUtils.lerp(eyeRef.current.scale.y, irisScale, 0.08),
+          THREE.MathUtils.lerp(eyeRef.current.scale.z, irisScale, 0.08),
+        );
+      }
+    }
+
+    // Eyelid droop — expression-driven eyelid coverage
+    const eyelidScale = Math.max(0.01, expr.eyelidDroop);
+    for (const lidRef of [eyelidLRef, eyelidRRef, eyelidCyclopsRef]) {
+      if (lidRef.current) {
+        lidRef.current.scale.y = THREE.MathUtils.lerp(lidRef.current.scale.y, eyelidScale, 0.06);
+      }
+    }
+
     // Crown sway — modulated by idle appendage speed
     const idleAppSpeed = idleAppendageSpeedRef.current;
     if (crownRef.current) {
@@ -769,11 +794,20 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       antennaRRef.current.rotation.z = 0.3 - Math.sin(t * 1.5 * idleAppSpeed + 0.5) * 0.15 * activityMult - pn.x * 0.1;
       antennaRRef.current.rotation.x = Math.cos(t * 1.2 * idleAppSpeed + 0.3) * 0.1 * activityMult + pn.y * 0.05;
     }
-    // Mouth animation
+    // Mouth animation — blends mood config with expression system
     if (mouthRef.current) {
+      // Expression mouthOpen scales Y (open mouth)
+      const exprMouthOpen = expr.mouthOpen;
+      const mouthOpenTarget = 0.3 + (mouthConfig.open + exprMouthOpen) * 0.5 * 0.7;
       mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, mouthConfig.width, 0.08);
-      mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, 0.3 + mouthConfig.open * 0.7, 0.08);
-      mouthRef.current.rotation.z = THREE.MathUtils.lerp(mouthRef.current.rotation.z, mouthConfig.curve * 0.3, 0.06);
+      mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, mouthOpenTarget, 0.08);
+      // Expression mouthCurve: positive = smile (rotate up), negative = frown (rotate down)
+      const exprCurve = expr.mouthCurve;
+      const combinedCurve = (mouthConfig.curve + exprCurve) * 0.5;
+      mouthRef.current.rotation.z = THREE.MathUtils.lerp(mouthRef.current.rotation.z, combinedCurve * 0.3, 0.06);
+      // Flip mouth arc for frown vs smile: rotate X to arc downward when negative
+      const arcFlip = combinedCurve < 0 ? Math.PI : 0;
+      mouthRef.current.rotation.x = THREE.MathUtils.lerp(mouthRef.current.rotation.x, arcFlip, 0.06);
     }
 
     // Dream particles — orbit around creature when dreaming/daydreaming
@@ -905,6 +939,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
               <sphereGeometry args={[dynEyeSize * 0.15, 8, 8]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
+            {/* Eyelid — expression-driven droop, scaled in useFrame */}
+            <mesh ref={eyelidLRef} position={[0, dynEyeSize * 0.4, dynEyeSize * 0.3]} scale={[1, 0.01, 1]}>
+              <sphereGeometry args={[dynEyeSize * 0.7, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+              <meshToonMaterial color={primaryColor} transparent opacity={0.85} gradientMap={toonGradient} />
+            </mesh>
           </group>
           <group ref={eyeGroupRRef} position={eyePositions.right}>
             <mesh>
@@ -919,6 +958,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
             <mesh position={[dynEyeSize * 0.18, dynEyeSize * 0.2, dynEyeSize * 0.85]}>
               <sphereGeometry args={[dynEyeSize * 0.15, 8, 8]} />
               <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            {/* Eyelid — expression-driven droop, scaled in useFrame */}
+            <mesh ref={eyelidRRef} position={[0, dynEyeSize * 0.4, dynEyeSize * 0.3]} scale={[1, 0.01, 1]}>
+              <sphereGeometry args={[dynEyeSize * 0.7, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+              <meshToonMaterial color={primaryColor} transparent opacity={0.85} gradientMap={toonGradient} />
             </mesh>
           </group>
         </>
@@ -937,6 +981,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           <mesh position={[cyclopsEyeSize * 0.18, cyclopsEyeSize * 0.2, cyclopsEyeSize * 0.85]}>
             <sphereGeometry args={[cyclopsEyeSize * 0.15, 8, 8]} />
             <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          {/* Eyelid — expression-driven droop, scaled in useFrame */}
+          <mesh ref={eyelidCyclopsRef} position={[0, cyclopsEyeSize * 0.4, cyclopsEyeSize * 0.3]} scale={[1, 0.01, 1]}>
+            <sphereGeometry args={[cyclopsEyeSize * 0.7, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+            <meshToonMaterial color={primaryColor} transparent opacity={0.85} gradientMap={toonGradient} />
           </mesh>
         </group>
       )}

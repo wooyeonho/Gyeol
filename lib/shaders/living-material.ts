@@ -44,6 +44,7 @@ const fragmentShader = /* glsl */ `
   uniform float uOpacity;
   uniform float uIridescence;
   uniform float uSubsurface;
+  uniform float uBrightness;
 
   varying vec3 vNormal;
   varying vec3 vWorldPosition;
@@ -89,7 +90,7 @@ const fragmentShader = /* glsl */ `
     color += shimmer * 0.03 * uRimColor;
 
     // Brightness boost — self-illuminated, no scene lights needed
-    color *= 1.4;
+    color *= uBrightness;
 
     // Fully opaque core, slight edge transparency for glow feel
     float alpha = uOpacity * (0.92 + vFresnel * 0.08);
@@ -107,6 +108,7 @@ export type LivingMaterialParams = {
   opacity: number;
   iridescence: number;
   subsurface: number;
+  brightness: number;
 };
 
 export function createLivingMaterial(params: LivingMaterialParams): THREE.ShaderMaterial {
@@ -124,6 +126,7 @@ export function createLivingMaterial(params: LivingMaterialParams): THREE.Shader
       uOpacity: { value: params.opacity },
       uIridescence: { value: params.iridescence },
       uSubsurface: { value: params.subsurface },
+      uBrightness: { value: params.brightness },
     },
     transparent: true,
     side: THREE.FrontSide,
@@ -133,12 +136,14 @@ export function createLivingMaterial(params: LivingMaterialParams): THREE.Shader
 
 /**
  * Derive living material parameters from DNA appearance.
+ * Optionally accepts an archetype to vary material per species type.
  */
 export function deriveLivingMaterialParams(
   primaryColor: THREE.Color,
   secondaryColor: THREE.Color,
   glowIntensity: number,
   dna: { creativity: number; openness: number; intensity: number; warmth: number; intuitive: number },
+  archetype?: string,
 ): LivingMaterialParams {
   // Rim color: shifted brighter version of primary
   const rimColor = primaryColor.clone();
@@ -151,15 +156,78 @@ export function deriveLivingMaterialParams(
     0.4 + dna.warmth * 0.3,
   );
 
+  // Base (DNA-driven) values
+  let pulseSpeed = 1.5 + dna.intensity * 1.5;
+  let rimIntensity = 0.3 + dna.openness * 0.5 + glowIntensity * 0.3;
+  let innerGlow = 0.2 + dna.warmth * 0.4 + glowIntensity * 0.2;
+  let opacity = 0.95;
+  let iridescence = dna.creativity * 0.6 + dna.intuitive * 0.3;
+  let subsurface = 0.3 + dna.warmth * 0.4;
+  let brightness = 1.4;
+
+  // Archetype-specific overrides
+  switch (archetype) {
+    case "organic":
+      rimIntensity = 0.15 + dna.openness * 0.2 + glowIntensity * 0.1;
+      subsurface = 0.5 + dna.warmth * 0.4; // skin-like feel
+      brightness = 1.1;
+      break;
+    case "crystalline":
+      rimIntensity = 0.5 + dna.openness * 0.5 + glowIntensity * 0.3;
+      subsurface = 0.1 + dna.warmth * 0.15;
+      iridescence = 0.6 + dna.creativity * 0.4 + dna.intuitive * 0.3;
+      brightness = 1.3;
+      break;
+    case "ethereal":
+      // Keep current high glow behavior — the only archetype that should look "glowy"
+      brightness = 1.4;
+      break;
+    case "volcanic":
+      innerGlow = 0.5 + dna.warmth * 0.5 + glowIntensity * 0.3;
+      rimIntensity = 0.08 + dna.openness * 0.1;
+      pulseSpeed = (1.5 + dna.intensity * 1.5) * 3; // 3x pulse speed
+      brightness = 1.3;
+      break;
+    case "mechanical":
+      subsurface = 0.05 + dna.warmth * 0.05;
+      rimIntensity = 0.1 + dna.openness * 0.1;
+      opacity = 0.99;
+      iridescence = 0;
+      brightness = 1.15;
+      break;
+    case "verdant":
+      subsurface = 0.35 + dna.warmth * 0.3;
+      rimIntensity = 0.12 + dna.openness * 0.15;
+      pulseSpeed = 0.8 + dna.intensity * 0.5; // low pulse
+      brightness = 1.15;
+      break;
+    case "spectral":
+      rimIntensity = 0.5 + dna.openness * 0.6 + glowIntensity * 0.3;
+      opacity = 0.7;
+      iridescence = 0.7 + dna.creativity * 0.3;
+      brightness = 1.3;
+      break;
+    case "fluid":
+      subsurface = 0.4 + dna.warmth * 0.35;
+      rimIntensity = 0.25 + dna.openness * 0.3;
+      brightness = 1.25;
+      break;
+    default:
+      // Unknown archetype — use DNA-driven defaults with moderate brightness
+      brightness = 1.3;
+      break;
+  }
+
   return {
     baseColor: primaryColor,
     rimColor,
     innerColor,
-    pulseSpeed: 1.5 + dna.intensity * 1.5, // heart rate
-    rimIntensity: 0.3 + dna.openness * 0.5 + glowIntensity * 0.3,
-    innerGlow: 0.2 + dna.warmth * 0.4 + glowIntensity * 0.2,
-    opacity: 0.95,
-    iridescence: dna.creativity * 0.6 + dna.intuitive * 0.3,
-    subsurface: 0.3 + dna.warmth * 0.4,
+    pulseSpeed,
+    rimIntensity,
+    innerGlow,
+    opacity,
+    iridescence,
+    subsurface,
+    brightness,
   };
 }

@@ -528,12 +528,23 @@ function Scene({
       {particles > 0 && (
         <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} conversationEnergy={conversationEnergy} />
       )}
-      {/* Bloom: makes emissive parts glow like bioluminescence */}
+      {/* Bloom: intensity varies by archetype — only ethereal/spectral should look truly glowy */}
       <EffectComposer>
         <Bloom
           luminanceThreshold={0.3}
           luminanceSmoothing={0.9}
-          intensity={0.8}
+          intensity={(() => {
+            const arch = species?.archetype;
+            switch (arch) {
+              case "ethereal": case "spectral": return 1.0;
+              case "volcanic": return 0.6;
+              case "crystalline": return 0.5;
+              case "fluid": return 0.4;
+              case "organic": case "verdant": return 0.3;
+              case "mechanical": return 0.2;
+              default: return 0.5;
+            }
+          })()}
           mipmapBlur
         />
       </EffectComposer>
