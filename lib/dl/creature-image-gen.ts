@@ -112,8 +112,11 @@ export async function generateCreatureImage(
 ): Promise<ImageGenResult> {
   const prompt = buildCreatureImagePrompt(dna, species, style);
 
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
+  const env = (globalThis as Record<string, unknown>).process
+    ? (process as unknown as { env: Record<string, string | undefined> }).env
+    : ({} as Record<string, string | undefined>);
+  const accountId = env.CF_ACCOUNT_ID;
+  const apiToken = env.CF_API_TOKEN;
 
   if (!accountId || !apiToken) {
     return {
@@ -156,7 +159,10 @@ export async function generateCreatureImage(
     }
 
     const buffer = await res.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const base64 = btoa(binary);
 
     return {
       imageData: `data:image/png;base64,${base64}`,

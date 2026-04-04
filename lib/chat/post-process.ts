@@ -153,17 +153,32 @@ export async function persistChatTurn(params: {
   let detectedIntent: string | null = null;
   if (currentGenome?.dna) {
     // Wire: intent-classifier → enrich mutation signal
+    let intentSignals: Partial<Record<string, number>> = {};
     try {
-      const intentResult = await classifyIntent(params.message);
+      const intentResult = classifyIntent(params.message);
       detectedIntent = intentResult.intent;
+      if (intentResult.confidence >= 0.5) {
+        intentSignals = intentResult.dnaSignals;
+      }
     } catch { /* intent classification is optional enhancement */ }
 
     const { dna: rawEvolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
 
+    // Apply intent-based DNA signals on top of soft mutation
+    let finalDNA = { ...rawEvolvedDNA };
+    for (const [axis, delta] of Object.entries(intentSignals)) {
+      if (axis in finalDNA && typeof delta === "number") {
+        const rec = finalDNA as Record<string, number>;
+        rec[axis] = Math.max(0, Math.min(1, (rec[axis] ?? 0.5) + delta));
+        if (!changedAxes.includes(axis as typeof changedAxes[number])) {
+          changedAxes.push(axis as typeof changedAxes[number]);
+        }
+      }
+    }
+
     // Wire: creature-control → validate DNA transition safety
-    let finalDNA = rawEvolvedDNA;
     if (changedAxes.length > 0) {
-      const validation = validateDNATransition(currentGenome.dna, rawEvolvedDNA);
+      const validation = validateDNATransition(currentGenome.dna, finalDNA);
       if (!validation.valid && validation.correctedDna) {
         console.log(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
         finalDNA = validation.correctedDna;

@@ -66,7 +66,7 @@ export async function runEvaluation(
     throw new Error(`Failed to load golden cases: ${casesErr.message}`);
   }
 
-  const goldenCases: GoldenCase[] = (cases ?? []).map((c) => ({
+  const goldenCases: GoldenCase[] = (cases ?? []).map((c: Record<string, unknown>) => ({
     id: c.id as string,
     category: c.category as string,
     subcategory: c.subcategory as string | null,

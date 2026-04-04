@@ -39,7 +39,9 @@ export async function classifyEmotion(
   locale: string = "en",
 ): Promise<EmotionResult> {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (globalThis as Record<string, unknown>).process
+      ? (process as unknown as { env: Record<string, string | undefined> }).env.GEMINI_API_KEY
+      : undefined;
     if (!apiKey) return fallbackClassify(text);
 
     const prompt = `Classify the emotion in this ${locale} text into exactly one category.
@@ -71,14 +73,20 @@ Respond in JSON: {"primary":"...","detailed":"...","confidence":0.0-1.0}`;
     const data = await res.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // Extract JSON from response
-    const jsonMatch = rawText.match(/\{[^}]+\}/);
+    // Extract JSON from response — handle nested braces and malformed output
+    const jsonMatch = rawText.match(/\{[\s\S]*?\}/);
     if (!jsonMatch) return fallbackClassify(text);
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return fallbackClassify(text);
+    }
+
     const primary = parsed.primary as EmotionResult["primary"];
     const detailed = parsed.detailed as string;
-    const confidence = Math.min(1, Math.max(0, parsed.confidence ?? 0.5));
+    const confidence = Math.min(1, Math.max(0, Number(parsed.confidence ?? 0.5) || 0.5));
 
     // Validate primary is in our set
     if (!EMOTION_TO_MOOD[primary]) return fallbackClassify(text);

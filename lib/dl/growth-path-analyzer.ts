@@ -71,7 +71,8 @@ export function analyzeGrowthPath(
     if (growthType === "balanced") continue;
     let total = 0;
     for (const axis of relevantAxes) {
-      total += Math.max(0, axisChanges[axis] ?? 0); // Only count positive growth
+      // Count absolute change — both growth and atrophy are meaningful signals
+      total += Math.abs(axisChanges[axis] ?? 0);
     }
     scores[growthType as GrowthType] = total / relevantAxes.length;
   }
