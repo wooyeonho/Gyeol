@@ -134,7 +134,8 @@ export function deriveContinuousMorphology(
   const limbCount = limbPotential * evoCapacity.dnaExpressionRange;
 
   const eyePotential = 1 + dna.intuitive * 2 + dna.curiosity * 1 + dna.empathy * 0.5;
-  const eyeCount = Math.max(1, eyePotential * evoCapacity.dnaExpressionRange);
+  // Minimum 2 eyes (no cyclops by default) — third eye unlocks at higher potential
+  const eyeCount = Math.max(2, eyePotential * evoCapacity.dnaExpressionRange);
 
   const hornPotential = dna.intensity * 2 + dna.assertiveness * 1.5;
   const hornCount = hornPotential > 1.2
