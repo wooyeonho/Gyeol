@@ -17,10 +17,11 @@ import {
 } from "@/lib/autonomy/self-regulation";
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { computeIntervalHours, normalizeIntervalRule } from "@/lib/autonomy/interval-rule";
-import { planHeartbeatAutonomy } from "@/lib/autonomy/heartbeat-planner";
+import { planHeartbeatAutonomy, resolveAutonomousActivity } from "@/lib/autonomy/heartbeat-planner";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { logWarn } from "@/lib/ops/logger";
+import type { CreatureDNA } from "@/lib/genome/dna";
 import { distillMemoriesToMoltBook, shareMoltBookEntry } from "@/lib/moltbook";
 
 type MemoryRow = { content: string };
@@ -38,6 +39,7 @@ type AgentState = Record<string, unknown> & {
   self_model: Record<string, unknown> | null;
   intimacy_score: number | null;
   last_heartbeat_at: string | null;
+  genome: { dna?: CreatureDNA } | null;
 };
 
 function getBaseUrl(): string {
@@ -100,7 +102,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
     const [agentsRes, worldStateRes, allStatesRes] = await Promise.all([
       db.from("agents").select("id, user_id"),
       db.from("world_state").select("weather").eq("id", "global").single(),
-      db.from("agent_state").select("agent_id, config, status, vitality, subjective_time, self_name, fragments, self_model, intimacy_score, last_heartbeat_at"),
+      db.from("agent_state").select("agent_id, config, status, vitality, subjective_time, self_name, fragments, self_model, intimacy_score, last_heartbeat_at, genome"),
     ]);
     const agents = agentsRes.data;
     if (!agents) return { processed: 0, timestamp: new Date().toISOString() };
@@ -245,6 +247,13 @@ export async function executeHeartbeat(): Promise<CronResult> {
             config: nextConfig,
           })
           .eq("agent_id", agentId);
+
+        // Resolve DNA-driven autonomous activity preference
+        const agentDna = (state.genome as { dna?: CreatureDNA } | null)?.dna;
+        const autonomousActivity = agentDna ? resolveAutonomousActivity(agentDna) : undefined;
+        if (autonomousActivity) {
+          nextConfig.autonomy_activity = autonomousActivity;
+        }
 
         const autonomyPlan = await planHeartbeatAutonomy({
           activeGoal: typeof baseConfig.active_goal === "string" ? baseConfig.active_goal : null,

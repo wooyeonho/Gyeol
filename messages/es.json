@@ -626,7 +626,9 @@
     "fallbackPartner": "another Gyeol",
     "acceptFailed": "Accept failed",
     "accept": "Accept",
-    "reject": "Reject"
+    "reject": "Reject",
+    "sectionTitle": "Breeding",
+    "sectionDesc": "Create a new being by blending traits with a mutual friend."
   },
   "sharePage": {
     "notFound": "Share card not found.",

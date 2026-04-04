@@ -8,6 +8,8 @@ import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDateTime } from "@/lib/i18n/format";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import BreedingCard from "@/components/breeding-card";
+import type { Visual } from "@/components/breeding-card";
 
 type SocialLog = {
   id: string;
@@ -1009,6 +1011,46 @@ export default function SocialPage() {
               <div key={gift.id} className="rounded-2xl bg-black/25 p-3 text-sm text-white/70">
                 {gift.summary}
               </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Breeding section */}
+      {mutualAgents.length > 0 && (
+        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {t("breeding.sectionTitle")}
+          </p>
+          <p className="mt-2 text-sm text-white/60">
+            {t("breeding.sectionDesc")}
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {mutualAgents.slice(0, 4).map((agent) => (
+              <BreedingCard
+                key={agent.id}
+                mode="partner"
+                myAgentId="self"
+                myVisual={selfAgent?.visual as Visual}
+                partner={{
+                  id: agent.id,
+                  self_name: agent.self_name ?? null,
+                  gen_level: agent.gen_level ?? 1,
+                  memory_count: agent.memory_count,
+                  visual: agent.visual as Visual,
+                }}
+                onRequest={async (partnerAgentId: string) => {
+                  const res = await fetch("/api/breeding", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "request", partner_agent_id: partnerAgentId }),
+                  });
+                  if (!res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error((json as { error?: string }).error || t("breeding.requestFailed"));
+                  }
+                }}
+              />
             ))}
           </div>
         </section>

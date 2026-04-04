@@ -623,7 +623,9 @@
     "fallbackPartner": "다른 결",
     "acceptFailed": "수락에 실패했습니다",
     "accept": "수락",
-    "reject": "거절"
+    "reject": "거절",
+    "sectionTitle": "브리딩",
+    "sectionDesc": "친구와 특성을 결합하여 새로운 존재를 만들어 보세요."
   },
   "sharePage": {
     "notFound": "공유 카드를 찾을 수 없습니다.",

@@ -12,6 +12,9 @@ import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
+import { deriveDNATheme, applyDNAThemeToRoot } from "@/lib/theme/dna-theme";
+import { deriveVoiceParams } from "@/lib/genome/voice-synth";
+import { deriveSpecies } from "@/lib/genome/species";
 import { haptic } from "@/lib/micro-interactions";
 import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
@@ -147,6 +150,10 @@ export default function Home() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
+  useEffect(() => {
+    if (!creatureDna) return;
+    applyDNAThemeToRoot(deriveDNATheme(creatureDna));
+  }, [creatureDna]);
   const config = agentState?.config ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
@@ -195,6 +202,23 @@ export default function Home() {
       volume: emotionProfile.volume,
     };
   }, [emotionMood, creature.state.conversationEnergy]);
+
+  // DNA-driven voice hint for Soundscape synth
+  const voiceHint = useMemo(() => {
+    if (!creatureDna) return null;
+    const species = deriveSpecies(creatureDna);
+    const vp = deriveVoiceParams(creatureDna, species);
+    return {
+      baseFreq: vp.baseFreq,
+      timbre: vp.timbre,
+      attack: vp.attack,
+      decay: vp.decay,
+      sustain: vp.sustain,
+      release: vp.release,
+      vibratoRate: vp.vibratoRate,
+      vibratoDepth: vp.vibratoDepth,
+    };
+  }, [creatureDna]);
 
   const lastReward = useChatStore((s) => s.lastReward);
   const clearReward = useChatStore((s) => s.clearReward);
@@ -627,6 +651,7 @@ export default function Home() {
         soundProfile={soundProfile}
         label={appearance.sound.label}
         accentColor={appearance.palette.primary}
+        voiceHint={voiceHint}
       />
       <RewardToast
         reward={lastReward}

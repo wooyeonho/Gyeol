@@ -305,6 +305,7 @@ export default function DNAPage() {
 
         {/* Portrait Gallery — AI-generated creature portraits */}
         {dna && <PortraitGallery />}
+
         {!dna && (
           <p className="text-center text-sm text-white/30 py-4">
             {t("dna.noData") || "DNA forms as you converse more."}

@@ -9,6 +9,7 @@ import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
 import { detectTurnMood } from "@/lib/evolution/personality";
+import { getDNACareMultiplier } from "@/lib/evolution/vitality";
 // P1F: Static imports — avoid dynamic import() cold-start penalty on serverless
 import { analyzePersonality } from "@/lib/evolution/personality";
 import { checkEvolution } from "@/lib/evolution/gen-level";
@@ -124,7 +125,9 @@ export async function persistChatTurn(params: {
   ]);
 
   const totalMessages = (params.agentState?.total_messages ?? 0) + 1;
-  const newVitality = Math.min(1, (params.agentState?.vitality ?? 1) + 0.02);
+  const existingGenome = (params.agentState as Record<string, unknown>)?.genome as { dna?: CreatureDNA } | null;
+  const careMultiplier = existingGenome?.dna ? getDNACareMultiplier(existingGenome.dna, "chat") : 1;
+  const newVitality = Math.min(1, (params.agentState?.vitality ?? 1) + 0.02 * careMultiplier);
   const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
   const previousUsageProfile = currentConfig.usage_profile;
   const nextUsageProfile = updateUsageProfile(previousUsageProfile, params.message, params.reply);

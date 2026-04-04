@@ -186,13 +186,14 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     () => deriveBodyStructure(dna, genLevel),
     [dna, genLevel],
   );
-  // Show body plan overlay when structure is sufficiently non-spherical
-  const hasStructure = bodyStructure.headSeparation > 0.3
-    || bodyStructure.limbCount > 0.5
-    || bodyStructure.segmentCount > 1.8
-    || bodyStructure.wingSpan > 0.3
-    || bodyStructure.fragmentation > 0.3
-    || bodyStructure.branchCount > 0.5;
+  // Show body plan overlay when structure is significantly evolved beyond base form
+  // Thresholds high enough that Gen 1 average DNA doesn't trigger body shrink
+  const hasStructure = bodyStructure.headSeparation > 0.5
+    || bodyStructure.limbCount > 3
+    || bodyStructure.segmentCount > 2.5
+    || bodyStructure.wingSpan > 0.5
+    || bodyStructure.fragmentation > 0.5
+    || bodyStructure.branchCount > 1;
 
   // [UPGRADE 6] Wider silhouette range — driven by continuous morphology bodyRatio
   const bodyElongation = useMemo(
@@ -272,7 +273,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       hornCurve: dna.creativity > 0.5 ? 0.3 : 0,
       tailLength: 0.15 + dna.playfulness * 0.2,
       antennaLength: 0.12 + dna.curiosity * 0.18,
-      spikeCount: Math.max(2, Math.min(12, Math.round(conMorph.spikeCount))),
+      spikeCount: Math.min(12, Math.round(Math.max(0, conMorph.spikeCount))),
     }),
     [dna, conMorph],
   );
@@ -452,8 +453,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     };
   }, [morphWeights, eyeConfig.count]);
 
-  // Larger eyes = instantly recognizable as a character (was 0.055)
-  const eyeSize = 0.095 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
+  // Large eyes = cute and instantly recognizable as a character
+  const eyeSize = 0.11 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
 
   const moodMod = useMemo(() => {
     switch (mood) {
@@ -1086,11 +1087,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           limbElements.push(
             <mesh key={`sl-${li}`} ref={li === 0 ? sideLeftRef : undefined} position={[-xOffset, yOff, 0]} rotation={[rotVariance, 0, 0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.85 * activityDim} gradientMap={toonGradient} />
             </mesh>,
             <mesh key={`sr-${li}`} ref={li === 0 ? sideRightRef : undefined} position={[xOffset, yOff, 0]} rotation={[-rotVariance, 0, -0.4]}>
               <sphereGeometry args={[limbSize, 8, 8]} />
-              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.6 * activityDim} gradientMap={toonGradient} />
+              <meshToonMaterial color={limbColor} emissive={limbColor} emissiveIntensity={emissiveIntensity * 0.8} transparent opacity={limbPresence * 0.85 * activityDim} gradientMap={toonGradient} />
             </mesh>,
           );
         }
