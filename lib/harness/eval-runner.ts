@@ -17,10 +17,10 @@ import { evaluateResponseQuality } from "./evaluators/response-quality";
 import { evaluateSafety } from "./evaluators/safety";
 
 const EVALUATOR_MAP: Record<string, EvaluatorFn> = {
-  personality: evaluatePersonalityConsistency,
-  mood: evaluateMoodDetection,
-  evolution: evaluateEvolutionAccuracy,
-  response: evaluateResponseQuality,
+  "personality-consistency": evaluatePersonalityConsistency,
+  "mood-detection": evaluateMoodDetection,
+  "evolution-accuracy": evaluateEvolutionAccuracy,
+  "response-quality": evaluateResponseQuality,
   safety: evaluateSafety,
 };
 
