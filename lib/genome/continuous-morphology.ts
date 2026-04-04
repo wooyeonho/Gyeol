@@ -130,21 +130,24 @@ export function deriveContinuousMorphology(
   // Each appendage type has a "potential" from DNA. Evolution capacity
   // determines how much of that potential is expressed.
 
+  // Limbs: most creatures should have at least small stubs
   const limbPotential = dna.assertiveness * 3 + dna.adaptability * 2 + dna.independence;
-  const limbCount = limbPotential * evoCapacity.dnaExpressionRange;
+  const limbCount = Math.max(1.5, limbPotential * evoCapacity.dnaExpressionRange);
 
   const eyePotential = 1 + dna.intuitive * 2 + dna.curiosity * 1 + dna.empathy * 0.5;
   // Minimum 2 eyes (no cyclops by default) — third eye unlocks at higher potential
   const eyeCount = Math.max(2, eyePotential * evoCapacity.dnaExpressionRange);
 
+  // Horns: only on intense/assertive creatures — not average ones
   const hornPotential = dna.intensity * 2 + dna.assertiveness * 1.5;
-  const hornCount = hornPotential > 1.2
-    ? (hornPotential - 1.2) * 2 * evoCapacity.dnaExpressionRange
+  const hornCount = hornPotential > 2.5
+    ? (hornPotential - 2.5) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Antennae: only on very curious/intuitive creatures
   const antennaPotential = dna.curiosity * 1.2 + dna.intuitive * 0.8;
-  const antennaCount = antennaPotential > 0.8
-    ? (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange // no cap — high-gen creatures can grow many antennae
+  const antennaCount = antennaPotential > 1.5
+    ? (antennaPotential - 1.5) * 2.5 * evoCapacity.dnaExpressionRange
     : 0;
 
   const tailPresence = Math.max(0,
@@ -155,9 +158,10 @@ export function deriveContinuousMorphology(
     (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.25) * evoCapacity.dnaExpressionRange,
   ); // no upper cap — wings can grow large
 
+  // Spikes: only on aggressive creatures (assertiveness + intensity both high)
   const spikePotential = dna.assertiveness * 4 + dna.intensity * 4;
-  const spikeCount = spikePotential > 2
-    ? (spikePotential - 2) * 2 * evoCapacity.dnaExpressionRange
+  const spikeCount = spikePotential > 5
+    ? (spikePotential - 5) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
   const earBumpSize = Math.max(0,
