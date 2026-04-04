@@ -450,11 +450,18 @@ async function main() {
 
   console.log(`Seeding ${cases.length} golden cases...`);
 
-  const { error } = await supabase.from("eval_golden_cases").insert(cases);
-
-  if (error) {
-    console.error("Insert error:", error.message);
-    process.exit(1);
+  // Insert in chunks of 50 to avoid timeout on large batches
+  const CHUNK_SIZE = 50;
+  let inserted = 0;
+  for (let i = 0; i < cases.length; i += CHUNK_SIZE) {
+    const chunk = cases.slice(i, i + CHUNK_SIZE);
+    const { error } = await supabase.from("eval_golden_cases").insert(chunk);
+    if (error) {
+      console.error(`Insert error at chunk ${Math.floor(i / CHUNK_SIZE)}:`, error.message);
+      process.exit(1);
+    }
+    inserted += chunk.length;
+    console.log(`  Inserted ${inserted}/${cases.length}...`);
   }
 
   console.log(`Seeded ${cases.length} golden cases successfully.`);
