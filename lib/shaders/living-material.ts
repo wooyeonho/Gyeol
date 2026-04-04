@@ -88,8 +88,12 @@ const fragmentShader = /* glsl */ `
     float shimmer = hash(vWorldPosition * 20.0 + uTime * 0.5);
     color += shimmer * 0.03 * uRimColor;
 
-    // Final emissive-like output (no external lighting needed)
-    float alpha = uOpacity * (0.7 + vFresnel * 0.3);
+    // Boost brightness so the creature is clearly visible on dark backgrounds
+    // Without scene lighting, the custom shader needs self-illumination
+    color *= 1.4;
+
+    // Final output — fully opaque core, slight edge transparency for glow feel
+    float alpha = uOpacity * (0.92 + vFresnel * 0.08);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -155,7 +159,7 @@ export function deriveLivingMaterialParams(
     pulseSpeed: 1.5 + dna.intensity * 1.5, // heart rate
     rimIntensity: 0.3 + dna.openness * 0.5 + glowIntensity * 0.3,
     innerGlow: 0.2 + dna.warmth * 0.4 + glowIntensity * 0.2,
-    opacity: 0.85,
+    opacity: 0.95,
     iridescence: dna.creativity * 0.6 + dna.intuitive * 0.3,
     subsurface: 0.3 + dna.warmth * 0.4,
   };

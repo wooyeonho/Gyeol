@@ -275,7 +275,7 @@ export function VoidCanvas({
   const shouldUseThree = enableThree && !reducedVisualMode && shouldRenderThree;
 
   return (
-    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background, imageRendering: "pixelated" as const }}>
+    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
         <VoidCanvasInner
           shape={shape}
