@@ -40,7 +40,25 @@ export function validateMood(raw: string | null | undefined): CreatureMood {
 
 /**
  * Detect mood from a single message+reply pair (runs every chat turn).
+ * Uses DL emotion classifier with keyword-based fallback.
+ */
+export async function detectTurnMoodAsync(message: string, locale: string = "en"): Promise<CreatureMood | null> {
+  try {
+    const { classifyEmotion } = await import("@/lib/dl/emotion-classifier");
+    const result = await classifyEmotion(message, locale);
+    if (result.detailed && MOOD_SET.has(result.detailed)) {
+      return result.detailed as CreatureMood;
+    }
+  } catch {
+    // DL failed — fall through to keyword detection
+  }
+  return null;
+}
+
+/**
+ * Detect mood from a single message+reply pair (runs every chat turn).
  * Lightweight keyword-based detection — no AI call needed.
+ * Used as synchronous fallback when DL classifier is unavailable.
  */
 export function detectTurnMood(message: string, reply: string): CreatureMood | null {
   const text = `${message} ${reply}`.toLowerCase();
