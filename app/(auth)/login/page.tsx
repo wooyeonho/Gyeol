@@ -155,6 +155,9 @@ export default function LoginPage() {
           <Link href={signupHref} className="hover:text-[color:var(--foreground)]">
             {t("auth.signupLink")}
           </Link>
+          <Link href="/forgot-password" className="hover:text-[color:var(--foreground)]">
+            {t("auth.forgotPasswordLink") ?? "Forgot password?"}
+          </Link>
           <Link href="/features" className="hover:text-[color:var(--foreground)]">
             {t("auth.loginFeaturesLink")}
           </Link>

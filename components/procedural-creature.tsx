@@ -871,6 +871,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           activityDim={activityDim}
           vitality={vitality}
           toonGradient={toonGradient}
+          archetype={species.archetype}
         />
       )}
 

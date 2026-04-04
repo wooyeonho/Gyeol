@@ -13,6 +13,7 @@ interface Props {
   activityDim: number;
   vitality: number;
   toonGradient: THREE.DataTexture;
+  archetype?: string;
 }
 
 /**
@@ -31,8 +32,14 @@ export const CreatureBodyPlan = React.memo(function CreatureBodyPlan({
   activityDim,
   vitality,
   toonGradient,
+  archetype,
 }: Props) {
-  const opacity = Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality));
+  // Archetype-aware opacity: ethereal/spectral are more transparent, mechanical is opaque
+  const baseOpacity = archetype === "ethereal" ? 0.7
+    : archetype === "spectral" ? 0.65
+    : archetype === "mechanical" ? 0.95
+    : 0.9;
+  const opacity = Math.max(0.4, activityDim * baseOpacity * Math.max(0.5, vitality));
 
   // Generate single organic geometry from structure
   const organicGeo = useMemo(() => {
@@ -77,7 +84,14 @@ export const CreatureBodyPlan = React.memo(function CreatureBodyPlan({
       <meshToonMaterial
         color={primaryColor}
         emissive={primaryColor}
-        emissiveIntensity={emissiveIntensity * 0.9}
+        emissiveIntensity={emissiveIntensity * (
+          archetype === "organic" ? 0.4
+          : archetype === "mechanical" ? 0.3
+          : archetype === "verdant" ? 0.5
+          : archetype === "crystalline" ? 0.7
+          : archetype === "volcanic" ? 0.8
+          : 0.9
+        )}
         transparent
         opacity={opacity}
         gradientMap={toonGradient}
