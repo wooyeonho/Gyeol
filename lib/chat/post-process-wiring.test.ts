@@ -147,7 +147,7 @@ describe("Intent signals flow into DNA mutations", () => {
         (finalDNA as Record<string, number>)[axis] = Math.max(0, Math.min(1,
           ((finalDNA as Record<string, number>)[axis] ?? 0.5) + delta,
         ));
-        if (!changedAxes.includes(axis)) changedAxes.push(axis);
+        if (!changedAxes.includes(axis as typeof changedAxes[number])) changedAxes.push(axis as typeof changedAxes[number]);
       }
     }
 
@@ -402,7 +402,7 @@ describe("End-to-end DNA wiring: intent → mutation → validation → safety",
         (mutatedDNA as Record<string, number>)[axis] = Math.max(0, Math.min(1,
           ((mutatedDNA as Record<string, number>)[axis] ?? 0.5) + delta,
         ));
-        if (!changedAxes.includes(axis)) changedAxes.push(axis);
+        if (!changedAxes.includes(axis as typeof changedAxes[number])) changedAxes.push(axis as typeof changedAxes[number]);
       }
     }
 

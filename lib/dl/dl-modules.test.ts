@@ -3,7 +3,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CreatureDNA } from "@/lib/genome/dna";
-import type { SpeciesProfile, ArchetypeBlend } from "@/lib/genome/species";
+import type { SpeciesProfile } from "@/lib/genome/species";
+import type { ArchetypeBlend } from "@/lib/genome/continuous-morphology";
 
 // ─── Helpers ───
 
