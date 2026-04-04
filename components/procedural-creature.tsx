@@ -14,6 +14,7 @@ import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
+import { getExpression, lerpExpression, type ExpressionState } from "@/lib/creature/expression-system";
 
 interface ProceduralCreatureProps {
   dna: CreatureDNA;
@@ -144,6 +145,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Smoothly interpolated activity parameters — prevents discrete jumps between awake/drowsy/sleeping
   const activityDimRef = useRef(1);
   const activityMultRef = useRef(1);
+
+  // Expression system — smooth lerp between mood-driven facial expressions
+  const expressionRef = useRef<ExpressionState>(getExpression(mood));
+  const expressionTargetRef = useRef<ExpressionState>(getExpression(mood));
+
+  // Update expression target when mood changes
+  useEffect(() => {
+    expressionTargetRef.current = getExpression(mood);
+  }, [mood]);
 
   // Idle behavior lerp refs — smooth transitions between idle states (rate 0.03/frame)
   const idleRotationSpeedRef = useRef(1);
@@ -581,6 +591,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       idleDreamParticlesRef.current += ((idleBehaviorParams.showDreamParticles ? 1 : 0) - idleDreamParticlesRef.current) * rate;
     }
 
+    // Wire: expression-system → smooth facial expression lerp each frame
+    expressionRef.current = lerpExpression(expressionRef.current, expressionTargetRef.current, 0.04);
+    const expr = expressionRef.current;
+
     const leanTarget = isListening ? 0.12 : 0;
     listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
     const eyeScaleTarget = isListening ? 1.25 : 1;
@@ -604,7 +618,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         blinkTimerRef.current = baseInterval + Math.random() * 3;
       }
     }
-    const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint * idleEyeOpennessRef.current;
+    // Wire: expression-system eyeOpenness modulates eye Y scale alongside blink + mood
+    const eyeOpenY = (1 - blinkPhaseRef.current) * moodMod.eyeSquint * idleEyeOpennessRef.current * expr.eyeOpenness;
 
     lookTimerRef.current -= dt;
     if (lookTimerRef.current <= 0 && !lookActiveRef.current && creatureActivity === "awake") {

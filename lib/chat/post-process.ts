@@ -8,8 +8,10 @@ import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/g
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
-import { detectTurnMood } from "@/lib/evolution/personality";
+import { detectTurnMood, detectTurnMoodAsync } from "@/lib/evolution/personality";
 import { getDNACareMultiplier } from "@/lib/evolution/vitality";
+import { validateDNATransition, enforcePersonalitySafety, applySafetyCorrections } from "@/lib/harness/creature-control";
+import { classifyIntent } from "@/lib/dl/intent-classifier";
 // P1F: Static imports — avoid dynamic import() cold-start penalty on serverless
 import { analyzePersonality } from "@/lib/evolution/personality";
 import { checkEvolution } from "@/lib/evolution/gen-level";
@@ -148,12 +150,32 @@ export async function persistChatTurn(params: {
   }
   let nextGenome = currentGenome;
   let mutationChangedAxes: string[] = [];
+  let detectedIntent: string | null = null;
   if (currentGenome?.dna) {
-    const { dna: evolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
+    // Wire: intent-classifier → enrich mutation signal
+    try {
+      const intentResult = await classifyIntent(params.message);
+      detectedIntent = intentResult.intent;
+    } catch { /* intent classification is optional enhancement */ }
+
+    const { dna: rawEvolvedDNA, changedAxes } = applySoftMutation(currentGenome.dna, params.message);
+
+    // Wire: creature-control → validate DNA transition safety
+    let finalDNA = rawEvolvedDNA;
+    if (changedAxes.length > 0) {
+      const validation = validateDNATransition(currentGenome.dna, rawEvolvedDNA);
+      if (!validation.valid && validation.correctedDna) {
+        console.log(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
+        finalDNA = validation.correctedDna;
+      }
+      // Enforce personality safety (prevent harmful DNA combinations)
+      finalDNA = applySafetyCorrections(finalDNA);
+    }
+
     mutationChangedAxes = changedAxes;
     if (changedAxes.length > 0) {
-      const species = deriveSpecies(evolvedDNA);
-      nextGenome = { ...currentGenome, dna: evolvedDNA, species: species.name, archetype: species.archetype, element: species.element };
+      const species = deriveSpecies(finalDNA);
+      nextGenome = { ...currentGenome, dna: finalDNA, species: species.name, archetype: species.archetype, element: species.element };
     }
   }
 
@@ -167,8 +189,11 @@ export async function persistChatTurn(params: {
     user_preferences: updatedPrefs,
   };
 
-  // Real-time mood detection from this turn (lightweight, no AI call)
-  const turnMood = detectTurnMood(params.message, params.reply);
+  // Real-time mood detection: try DL classifier first, fall back to keyword matching
+  let turnMood = await detectTurnMoodAsync(params.message).catch(() => null);
+  if (!turnMood) {
+    turnMood = detectTurnMood(params.message, params.reply);
+  }
 
   // P1C Phase 2: Memory insert runs in parallel with sequential agent_state + goal loop
   // Note: agent_state update and applyGoalLoop MUST be sequential because both write to
@@ -278,5 +303,6 @@ export async function persistChatTurn(params: {
     totalMessages,
     changedAxes,
     newTraits,
+    detectedIntent,
   };
 }
