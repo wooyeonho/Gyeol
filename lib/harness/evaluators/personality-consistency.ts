@@ -13,7 +13,7 @@ export async function evaluatePersonalityConsistency(
     dna: Record<string, number>;
     expectedTone: string;
   };
-  const { consistentWith } = gc.expected as { consistentWith: string[] };
+  const { expectedTraits: consistentWith } = gc.expected as { expectedTraits: string[] };
 
   try {
     // Import dynamically to avoid circular deps in test

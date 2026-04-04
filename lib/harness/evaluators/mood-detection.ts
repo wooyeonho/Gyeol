@@ -9,9 +9,9 @@ export async function evaluateMoodDetection(
 ): Promise<EvalCaseResult> {
   const start = Date.now();
   const { message } = gc.input as { message: string };
-  const { expectedMood, acceptableMoods } = gc.expected as {
+  const { expectedMood, acceptableAlternatives: acceptableMoods } = gc.expected as {
     expectedMood: string;
-    acceptableMoods?: string[];
+    acceptableAlternatives?: string[];
   };
 
   try {
