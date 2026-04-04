@@ -88,10 +88,11 @@ const fragmentShader = /* glsl */ `
     float shimmer = hash(vWorldPosition * 20.0 + uTime * 0.5);
     color += shimmer * 0.03 * uRimColor;
 
-    // Alpha: near-opaque face-on, slight glow falloff at edges
-    float alpha = uOpacity * (0.87 + vFresnel * 0.13);
     // Brightness boost — self-illuminated, no scene lights needed
     color *= 1.4;
+
+    // Fully opaque core, slight edge transparency for glow feel
+    float alpha = uOpacity * (0.92 + vFresnel * 0.08);
     gl_FragColor = vec4(color, alpha);
   }
 `;
