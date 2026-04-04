@@ -10,7 +10,7 @@ import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
 import { detectTurnMood, detectTurnMoodAsync } from "@/lib/evolution/personality";
 import { getDNACareMultiplier } from "@/lib/evolution/vitality";
-import { validateDNATransition, enforcePersonalitySafety, applySafetyCorrections } from "@/lib/harness/creature-control";
+import { validateDNATransition, applySafetyCorrections } from "@/lib/harness/creature-control";
 import { classifyIntent } from "@/lib/dl/intent-classifier";
 // P1F: Static imports — avoid dynamic import() cold-start penalty on serverless
 import { analyzePersonality } from "@/lib/evolution/personality";
