@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
+import { checkLLMHealth } from "@/lib/ops/llm-health";
 
 const REQUIRED_ENV_KEYS = [
   "CRON_SECRET",
@@ -134,6 +135,14 @@ export async function GET(request?: NextRequest) {
     }));
     const missingEnv = envStatus.filter((e) => !e.configured).map((e) => e.key);
 
+    // LLM API key health checks (parallel)
+    let llmHealth: Awaited<ReturnType<typeof checkLLMHealth>> = [];
+    try {
+      llmHealth = await checkLLMHealth();
+    } catch (e) {
+      console.error("ops/readiness llm health check", e);
+    }
+
     const recommendations: string[] = [];
     if (missingEnv.length > 0) {
       recommendations.push(`필수 환경변수 누락: ${missingEnv.join(", ")}`);
@@ -154,10 +163,20 @@ export async function GET(request?: NextRequest) {
       recommendations.push("최근 critical 경보가 있습니다. 대시보드에서 원인을 확인하세요.");
     }
 
+    // LLM key health recommendations
+    for (const llm of llmHealth) {
+      if (!llm.configured) {
+        recommendations.push(`LLM 키 미설정: ${llm.provider.toUpperCase()} — ${llm.error}`);
+      } else if (!llm.healthy) {
+        recommendations.push(`LLM 키 문제: ${llm.provider.toUpperCase()} — ${llm.error}`);
+      }
+    }
+
     return NextResponse.json({
       checked_at: new Date().toISOString(),
       env_status: envStatus,
       stripe_configured: stripeConfigured,
+      llm_health: llmHealth,
       autonomy_health: autonomy,
       stale_counts: {
         stale_heartbeat_6h: staleHeartbeat6h,
