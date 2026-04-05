@@ -1,3 +1,4 @@
+export const maxDuration = 30;
 import { NextRequest, after } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";
@@ -21,8 +22,9 @@ import {
   updateUserDNA,
   type UserDNA,
 } from "@/lib/genome/user-dna";
+import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
-import { checkSemanticCache } from "@/lib/chat/semantic-cache";
+import { trySemanticCache } from "@/lib/chat/semantic-cache";
 
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
@@ -39,27 +41,6 @@ function detectUserLanguage(text: string): string | null {
   if (latin > 0 && /[ñÑ¿¡]/.test(text)) return "Spanish (Español)";
   if (latin / total > 0.5) return "English";
   return null;
-}
-
-/**
- * Compute DNA mutation synchronously (pure function, no DB) so we can
- * inline the dna_shift / trait_emerged events before closing the stream.
- */
-function computeInlineDnaShift(
-  agentState: Record<string, unknown> | null,
-  message: string,
-): { changedAxes: string[]; newTraits: { id: string; name: { ko: string; en: string } }[] } {
-  const genome = agentState?.genome as { dna?: CreatureDNA } | null;
-  if (!genome?.dna) return { changedAxes: [], newTraits: [] };
-  const { dna: evolvedDNA, changedAxes } = applySoftMutation(genome.dna, message);
-  if (changedAxes.length === 0) return { changedAxes: [], newTraits: [] };
-  const prevTraits = getExpressedTraits(genome.dna);
-  const nextTraits = getExpressedTraits(evolvedDNA);
-  const prevIds = new Set(prevTraits.map((t) => t.id));
-  const newTraits = nextTraits
-    .filter((t) => !prevIds.has(t.id))
-    .map((t) => ({ id: t.id, name: t.name }));
-  return { changedAxes, newTraits };
 }
 
 /**
@@ -123,7 +104,9 @@ export async function POST(req: NextRequest) {
         .limit(1)
         .maybeSingle();
       billingTier = (sub as { plan_tier?: string } | null)?.plan_tier ?? null;
-    } catch { /* default to free tier on error */ }
+    } catch (e) {
+      console.warn("[Chat] billing tier lookup failed, defaulting to free:", e instanceof Error ? e.message : e);
+    }
     const allowed = await checkRateLimit(`chat:${user.id}`, billingTier);
     if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
 
@@ -161,8 +144,8 @@ export async function POST(req: NextRequest) {
             .from("agent_state")
             .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
             .eq("agent_id", agentId)
-            .then(({ error }) => {
-              if (error) console.error("[Chat] preferred_locale sync failed", error);
+            .then(({ error: syncErr }: { error: { message: string } | null }) => {
+              if (syncErr) console.error("[Chat] preferred_locale sync failed", syncErr);
             });
         });
       }
@@ -194,108 +177,45 @@ export async function POST(req: NextRequest) {
       langRule,
     ].filter(Boolean).join("\n");
 
-    const genome = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
-    const verbal = genome?.dna?.verbal ?? 0.5;
+    // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
+    const genomeForVerbal = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
+    const verbal = genomeForVerbal?.dna?.verbal ?? 0.5;
     const maxTokens = verbal < 0.15 ? 30
       : verbal < 0.35 ? 60
       : verbal < 0.55 ? 180
       : verbal < 0.75 ? 500
       : 700;
 
-    // ── P2A: Semantic Cache — check for near-duplicate messages ──
-    const cachedResponse = await checkSemanticCache({
+    // --- P2A: Semantic cache check (reuses embedding from context to avoid redundant API call) ---
+    const cacheHit = await trySemanticCache({
       agentId,
       message,
-      embedding: context.messageEmbedding,
-      reader: service,
+      reader: supabase,
+      systemPrompt: finalSystemPrompt,
+      maxTokens,
+      precomputedEmbedding: context.embedding,
     });
 
-    // ── P3A: Compute DNA mutation synchronously (pure, no IO) ──
-    const inlineDna = computeInlineDnaShift(context.agentState, message);
-
-    // ── Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity ──
-    const inlineResonance = computeInlineResonance(context.agentState, message);
-
-    // ── P5A: Memory moment — old memory recalled with high similarity ──
-    const memoryMoment = context.memoryMoment;
-
-    let responseStream: ReadableStream;
-
-    if (cachedResponse) {
-      // Cache hit: return cached response as a single-chunk stream
-      console.log("[AI] Semantic cache hit");
-      recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
-        agentId,
-        durationMs: Date.now() - requestStartedAt,
-        replyLength: cachedResponse.length,
-        userId: user.id,
-        cacheHit: true,
-      });
-      const encoder = new TextEncoder();
-      responseStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cachedResponse } }] })}\n\n`));
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-        },
-      });
-
-      // Still persist the turn in background
-      after(async () => {
-        try {
-          await persistChatTurn({
-            agentId,
-            agentState: context.agentState,
-            durationMs: Date.now() - requestStartedAt,
-            message,
-            reply: cachedResponse,
-            writer: service,
-          });
-        } catch (error) {
-          console.error("[PostStream:cache]", error);
-        }
-      });
-    } else {
-      // Normal LLM path
-      const stream = await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
-      let capturedResponse = "";
-
-      const transformStream = createAssistantTapStream((fullResponse) => {
-        capturedResponse = fullResponse;
-        recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
-          agentId,
-          durationMs: Date.now() - requestStartedAt,
-          replyLength: fullResponse.length,
-          userId: user.id,
-        });
-      });
-
-      responseStream = stream.pipeThrough(transformStream);
-
-      // ── P1A: Defer ALL heavy post-processing to after() ──
-      after(async () => {
-        try {
-          await persistChatTurn({
-            agentId,
-            agentState: context.agentState,
-            durationMs: Date.now() - requestStartedAt,
-            message,
-            reply: capturedResponse,
-            writer: service,
-          });
-        } catch (error) {
-          recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
-            agentId,
-            durationMs: Date.now() - requestStartedAt,
-            messageLength: message.length,
-            userId: user.id,
-          });
-          console.error("[PostStream]", error);
-        }
-      });
+    // --- P3A: Synchronous DNA mutation (pure function, no DB) ---
+    const genome = context.agentState?.genome as { dna?: CreatureDNA; species?: string; archetype?: string; element?: string } | null;
+    let dnaShiftAxes: string[] = [];
+    let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
+    if (genome?.dna) {
+      const { dna: evolvedDNA, changedAxes } = applySoftMutation(genome.dna, message);
+      dnaShiftAxes = changedAxes;
+      if (changedAxes.length > 0) {
+        const prevTraits = getExpressedTraits(genome.dna);
+        const nextTraits = getExpressedTraits(evolvedDNA);
+        const prevIds = new Set(prevTraits.map((t) => t.id));
+        newTraits = nextTraits
+          .filter((t) => !prevIds.has(t.id))
+          .map((t) => ({ id: t.id, name: t.name }));
+      }
     }
 
-    // ── Build final stream with inline metadata events ──
+    // --- Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity ---
+    const inlineResonance = computeInlineResonance(context.agentState, message);
+
     const allowedOrigin = getAllowedChatOrigin(req.headers.get("origin"), req.nextUrl.origin);
     const headers: HeadersInit = {
       "Content-Type": "text/event-stream",
@@ -307,11 +227,21 @@ export async function POST(req: NextRequest) {
       headers.Vary = "Origin";
     }
 
+    // Choose stream source: cache hit (lightweight adaptation) or full LLM
+    const stream = cacheHit
+      ? cacheHit.stream
+      : await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
+
+    // Tap stream captures full response text without blocking close
+    const { transform: tapTransform, getFullResponse } = createAssistantTapStream();
+    const aiStream = stream.pipeThrough(tapTransform);
     const encoder = new TextEncoder();
+
+    // Build output stream: AI text + inline DNA/trait events (no waiting for post-processing)
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
         // Pipe response stream
-        const reader = responseStream.getReader();
+        const reader = aiStream.getReader();
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -321,28 +251,26 @@ export async function POST(req: NextRequest) {
         } finally {
           reader.releaseLock();
         }
-
-        // ── P5A: Memory moment event (old high-similarity memory recalled) ──
-        if (memoryMoment) {
-          const memoryEvent = JSON.stringify({
-            type: "memory_moment",
-            content: memoryMoment.content,
-            age_days: memoryMoment.ageDays,
-          });
-          controller.enqueue(encoder.encode(`data: ${memoryEvent}\n\n`));
-        }
-
-        // ── P3A: Inline DNA shift — computed synchronously, no waiting for DB ──
-        if (inlineDna.changedAxes.length > 0) {
-          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: inlineDna.changedAxes });
+        // P3A: DNA shift + trait events sent inline (synchronous, no DB wait)
+        if (dnaShiftAxes.length > 0) {
+          const dnaEvent = JSON.stringify({ type: "dna_shift", axes: dnaShiftAxes });
           controller.enqueue(encoder.encode(`data: ${dnaEvent}\n\n`));
         }
-        if (inlineDna.newTraits.length > 0) {
-          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: inlineDna.newTraits });
+        if (newTraits.length > 0) {
+          const traitEvent = JSON.stringify({ type: "trait_emerged", traits: newTraits });
           controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
         }
-
-        // ── Resonance event — always emit so the client can track '결맞춤' over time ──
+        // P5A: Memory moment event (if context had a strong match)
+        if (context.memoryMoment) {
+          const mmEvent = JSON.stringify({
+            type: "memory_moment",
+            memory: context.memoryMoment.content,
+            age_days: context.memoryMoment.ageDays,
+            similarity: context.memoryMoment.similarity,
+          });
+          controller.enqueue(encoder.encode(`data: ${mmEvent}\n\n`));
+        }
+        // Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity
         if (inlineResonance) {
           const resonanceEvent = JSON.stringify({
             type: "resonance",
@@ -354,6 +282,35 @@ export async function POST(req: NextRequest) {
         }
         controller.close();
       },
+    });
+
+    // P1A: Move ALL post-processing into after() — stream closes immediately
+    after(async () => {
+      const fullResponse = getFullResponse();
+      recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
+        agentId,
+        durationMs: Date.now() - requestStartedAt,
+        replyLength: fullResponse.length,
+        userId: user.id,
+      });
+      try {
+        await persistChatTurn({
+          agentId,
+          agentState: context.agentState,
+          durationMs: Date.now() - requestStartedAt,
+          message,
+          reply: fullResponse,
+          writer: service,
+        });
+      } catch (error) {
+        recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
+          agentId,
+          durationMs: Date.now() - requestStartedAt,
+          messageLength: message.length,
+          userId: user.id,
+        });
+        console.error("[PostStream]", error);
+      }
     });
 
     return new Response(metaStream, { headers });

@@ -26,7 +26,7 @@ export async function absorbSharedKnowledge(
 
   // Cannot absorb own entry
   if (entry.agent_id === agentId) {
-    console.log("[MoltHub] Absorb: cannot absorb own entry");
+    console.warn("[MoltHub] Absorb: cannot absorb own entry");
     return false;
   }
 
@@ -39,7 +39,7 @@ export async function absorbSharedKnowledge(
     .maybeSingle();
 
   if (existingStar) {
-    console.log("[MoltHub] Absorb: already absorbed this entry");
+    console.warn("[MoltHub] Absorb: already absorbed this entry");
     return false;
   }
 
@@ -84,6 +84,6 @@ export async function absorbSharedKnowledge(
     p_column: "times_referenced",
   }).then(() => {});
 
-  console.log(`[MoltHub] Agent ${agentId} absorbed entry ${entryId} (confidence: ${degradedConfidence})`);
+  // Debug log removed — operation result is returned to caller
   return true;
 }

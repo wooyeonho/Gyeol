@@ -4,6 +4,7 @@ const TARGET_DIM = 768;
 /**
  * Zero-pad a vector to TARGET_DIM so that shorter fallback embeddings
  * (e.g. Cloudflare bge-small 384-dim) can be stored in the vector(768) column.
+ * Vectors that are already the correct length are returned unchanged.
  */
 function padToTargetDim(vec: number[]): number[] {
   if (vec.length >= TARGET_DIM) return vec;
@@ -14,16 +15,24 @@ function padToTargetDim(vec: number[]): number[] {
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: TARGET_DIM }) }
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY ?? "" },
+        body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: TARGET_DIM }),
+        signal: ctrl.signal,
+      }
     );
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`Gemini ${res.status}`);
     const data = await res.json();
     const values: number[] = data.embedding?.values || [];
     return values.length > 0 ? padToTargetDim(values) : [];
   } catch (e) {
-    console.error("[Embed] Gemini failed:", e);
+    console.error("[Embed] Gemini failed:", e instanceof Error ? e.message : e);
   }
   const cfAccountId = process.env.CF_ACCOUNT_ID;
   const cfApiToken = process.env.CF_API_TOKEN;
@@ -45,57 +54,46 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 /**
- * P4B: Batch embedding using Gemini batchEmbedContents endpoint.
- * Single API call for multiple texts instead of sequential calls.
+ * P4B: Use Gemini batchEmbedContents — single HTTP request for all texts.
+ * TODO: Wire into autonomous cron jobs for bulk memory embedding (currently unused).
  */
 export async function generateEmbeddingBatch(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];
+  if (texts.length === 1) return [await generateEmbedding(texts[0])];
 
-  // Try Gemini batch endpoint first
-  try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
       const requests = texts.map((text) => ({
         model: "models/gemini-embedding-001",
         content: { parts: [{ text }] },
         outputDimensionality: TARGET_DIM,
       }));
-
-      // Process in batches of 100 (Gemini batch limit)
-      const results: number[][] = [];
-      for (let i = 0; i < requests.length; i += 100) {
-        const batch = requests.slice(i, i + 100);
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ requests: batch }),
-          }
-        );
-        if (!res.ok) throw new Error(`Gemini batch ${res.status}`);
-        const data = await res.json();
-        const embeddings: Array<{ values?: number[] }> = data.embeddings || [];
-        for (const emb of embeddings) {
-          const values = emb.values || [];
-          results.push(values.length > 0 ? padToTargetDim(values) : []);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 15000);
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: JSON.stringify({ requests }),
+          signal: ctrl.signal,
         }
-      }
-      if (results.length === texts.length) {
-        console.log(`[Embed] Gemini batch: ${texts.length} texts`);
-        return results;
-      }
+      );
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`Gemini batch ${res.status}`);
+      const data = await res.json();
+      const embeddings: number[][] = (data.embeddings ?? []).map(
+        (e: { values?: number[] }) => padToTargetDim(e.values ?? [])
+      );
+      if (embeddings.length === texts.length) return embeddings;
+      // Partial result — fall through to individual calls
+      console.error(`[Embed] Batch returned ${embeddings.length}/${texts.length}, falling back`);
+    } catch (e) {
+      console.error("[Embed] Gemini batch failed:", e);
     }
-  } catch (e) {
-    console.error("[Embed] Gemini batch failed, falling back to sequential:", e);
   }
 
-  // Fallback: sequential (original behavior)
-  const results: number[][] = [];
-  for (let i = 0; i < texts.length; i += 6) {
-    const batch = texts.slice(i, i + 6);
-    const embeddings = await Promise.all(batch.map((t) => generateEmbedding(t)));
-    results.push(...embeddings);
-  }
-  return results;
+  // Fallback: individual calls in parallel
+  return Promise.all(texts.map((t) => generateEmbedding(t)));
 }

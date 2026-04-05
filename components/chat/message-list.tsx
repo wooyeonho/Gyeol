@@ -34,7 +34,7 @@ export function MessageList({
   simpleModeLevel,
   locale,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { content: string; age_days: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -198,7 +198,7 @@ export function MessageList({
                     ✦ {m.memoryMoment.age_days}{locale?.startsWith("ko") ? "일 전의 기억" : "d ago — memory recalled"}
                   </p>
                   <p className="mt-1 text-xs italic text-white/50 line-clamp-2">
-                    {maskJargon(m.memoryMoment.content)}
+                    {maskJargon(m.memoryMoment.memory)}
                   </p>
                 </motion.div>
               )}

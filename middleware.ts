@@ -28,7 +28,7 @@ function checkCsrfOrigin(request: NextRequest): boolean {
   const host = request.headers.get("host");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-  // Build set of allowed origins
+  // Build set of allowed origin hosts
   const allowed = new Set<string>();
   if (host) allowed.add(host);
   if (appUrl) {
@@ -38,6 +38,22 @@ function checkCsrfOrigin(request: NextRequest): boolean {
   }
   // Vercel preview deployments
   if (host?.endsWith(".vercel.app")) allowed.add(host);
+
+  // Custom override for preview / staging deploys (matches lib/security/csrf.ts)
+  const extraOrigins = process.env.CSRF_ALLOWED_ORIGINS;
+  if (extraOrigins) {
+    for (const o of extraOrigins.split(",")) {
+      const trimmed = o.trim();
+      if (trimmed) {
+        try {
+          allowed.add(new URL(trimmed).host);
+        } catch {
+          // If not a valid URL, treat as a raw host value
+          allowed.add(trimmed);
+        }
+      }
+    }
+  }
 
   if (origin) {
     try {
@@ -180,9 +196,9 @@ function buildCsp(nonce: string): string {
 }
 
 // ══════════════════════════════════════════
-// Main proxy (migrated from middleware.ts for Next.js 16 compat)
+// Next.js Middleware — CSP, CSRF, Rate Limit, Auth
 // ══════════════════════════════════════════
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip static files and Next.js internals
@@ -274,9 +290,8 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    if (process.env.NODE_ENV === "production" && !pathname.startsWith("/api")) {
-      return new NextResponse("Service unavailable: auth middleware is not configured", { status: 503 });
-    }
+    // Supabase not configured — skip middleware auth gracefully.
+    // Individual API routes and pages handle their own auth checks.
     return response;
   }
 

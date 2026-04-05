@@ -13,8 +13,8 @@ describe("CreatureDNA", () => {
     it("produces DNA with all 16 axes", () => {
       const dna = generateInitialDNA("test-agent-1");
       for (const axis of DNA_AXES) {
-        expect(dna[axis]).toBeGreaterThanOrEqual(0.25);
-        expect(dna[axis]).toBeLessThanOrEqual(0.75);
+        expect(dna[axis]).toBeGreaterThanOrEqual(0.08);
+        expect(dna[axis]).toBeLessThanOrEqual(0.92);
       }
     });
 

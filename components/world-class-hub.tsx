@@ -84,7 +84,7 @@ function ChevronIcon({ expanded, className }: { expanded: boolean; className?: s
   );
 }
 
-export function WorldClassHub() {
+export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (multiplier: number) => void } = {}) {
   const { locale, t } = useTranslations();
   const { agentState } = useAgentStore();
   const { worldState } = useWorldStore();
@@ -102,7 +102,10 @@ export function WorldClassHub() {
   const [recap, setRecap] = useState<HomeRecap | null>(null);
   // Start collapsed if messages exist; expand if empty
   const hasMessages = messages.length > 0;
-  const [expanded, setExpanded] = useState(() => !hasMessages);
+  // Default to collapsed so the chat input stays above the fold even on smaller
+  // viewports. The hub's expanded content (streak, rewards, weekly event, prompts)
+  // can push the chat panel off-screen when auto-expanded for new users.
+  const [expanded, setExpanded] = useState(false);
   const [wasEmpty, setWasEmpty] = useState(() => !hasMessages);
 
   // Collapse once first message arrives (transition from empty → non-empty)
@@ -219,7 +222,7 @@ export function WorldClassHub() {
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
-      <ComebackBanner />
+      <ComebackBanner onComebackDetected={onComebackDetected} />
       <DuoStreakAlertBanner />
       <motion.section
         className="overflow-hidden rounded-[2rem] border border-white/15 bg-black/55 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl"

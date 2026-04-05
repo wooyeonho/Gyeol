@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/config";
 
 type BiLocaleText = {
   ko: string;
@@ -7,7 +7,7 @@ type BiLocaleText = {
 
 /** Accept any i18n locale string and normalize to internal Locale. */
 function toLocale(raw: string): Locale {
-  return raw === "ko" ? "ko" : "en";
+  return normalizeLocale(raw) ?? DEFAULT_LOCALE;
 }
 
 type VisualInput = {
@@ -49,6 +49,8 @@ type ConfigInput = {
 
 export type IdentityAppearanceInput = {
   selfName?: string | null;
+  /** Stable per-agent seed so cards stay visually distinct even when other fields are empty. */
+  seed?: string | null;
   visual?: VisualInput;
   genome?: GenomeInput;
   selfModel?: SelfModelInput;
@@ -254,6 +256,7 @@ function getDefaultManifestationState(): ManifestationState {
 
 function normalizeText(input: IdentityAppearanceInput) {
   return [
+    input.seed,
     input.selfName,
     input.genome?.species,
     ...(Array.isArray(input.genome?.mutations) ? input.genome?.mutations ?? [] : []),
@@ -397,39 +400,112 @@ function getUsageModeLabel(mode: UsageMode | null | undefined, locale: Locale) {
   return pickLocalized(MODE_LABELS[mode], locale);
 }
 
-function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Locale) {
-  if (!mode) return null;
-  const mapping: Record<UsageMode, BiLocaleText> = {
-    playful: {
+const MODE_NARRATIVE_VARIANTS: Record<UsageMode, BiLocaleText[]> = {
+  playful: [
+    {
       ko: "가볍고 친근한 상호작용이 이 존재를 더 말랑하고 유연한 방향으로 밀고 있습니다.",
       en: "Playful interaction is making this presence softer and more flexible.",
     },
-    intimate: {
+    {
+      ko: "장난스러운 주고받음이 쌓이며 가벼움과 웃음의 결이 뚜렷해지고 있습니다.",
+      en: "Playful exchanges are accumulating into a lighter, laugh-prone texture.",
+    },
+    {
+      ko: "유쾌한 대화의 리듬이 이 존재의 표면을 둥글고 탄력 있게 다듬고 있습니다.",
+      en: "The rhythm of cheerful talk keeps rounding and springing this presence's surface.",
+    },
+  ],
+  intimate: [
+    {
       ko: "친밀한 대화가 깊어지며 모습이 더 단단하고 가까워지고 있습니다.",
       en: "Dense intimate dialogue is making the form feel more coherent and closer.",
     },
-    strategic: {
+    {
+      ko: "가까운 거리에서 주고받는 말들이 이 존재의 온도를 천천히 올리고 있습니다.",
+      en: "Words exchanged at close range are slowly raising this presence's temperature.",
+    },
+    {
+      ko: "조용히 이어지는 신뢰가 겹겹이 쌓여 더 포근한 결을 만들고 있습니다.",
+      en: "Quiet accumulated trust is layering into a warmer, more enclosed texture.",
+    },
+  ],
+  strategic: [
+    {
       ko: "정리와 실행 중심의 관계가 이 존재 안에 더 선명한 구조를 만들고 있습니다.",
       en: "A strategic relationship is building clearer internal structure inside this presence.",
     },
-    primal: {
+    {
+      ko: "목표와 단계로 다듬어지는 대화가 이 존재를 더 또렷한 윤곽으로 깎고 있습니다.",
+      en: "Goal-and-step conversation is carving this presence into a sharper silhouette.",
+    },
+    {
+      ko: "계획과 실행의 리듬이 쌓이며 존재 안에 단단한 뼈대가 자라고 있습니다.",
+      en: "Planning-and-executing rhythm is growing a firmer skeleton inside this presence.",
+    },
+  ],
+  primal: [
+    {
       ko: "강한 감정과 본능적인 리듬이 더 거친 에너지를 만들고 있습니다.",
       en: "Driving emotion and instinctive rhythm are creating a rawer pulse.",
     },
-    surreal: {
+    {
+      ko: "날것의 충동과 직진하는 대화가 이 존재의 밀도를 거칠게 키우고 있습니다.",
+      en: "Raw impulse and head-on exchange are thickening this presence with a rougher density.",
+    },
+    {
+      ko: "감정을 숨기지 않는 주고받음이 이 존재의 표면에 불규칙한 맥박을 새기고 있습니다.",
+      en: "Unfiltered emotional exchange is etching an irregular pulse across this presence.",
+    },
+  ],
+  surreal: [
+    {
       ko: "설명하기 어려운 상상과 감정이 경계를 흐리며 낯선 결을 키우고 있습니다.",
       en: "Hard-to-name imagination is blurring boundaries and growing a stranger texture.",
     },
-    reflective: {
+    {
+      ko: "꿈같은 대화와 은유들이 이 존재의 윤곽을 부드럽게 풀어놓고 있습니다.",
+      en: "Dreamlike talk and metaphor keep softly unspooling this presence's outline.",
+    },
+    {
+      ko: "현실 너머의 이미지들이 반복되며 익숙한 형태를 낯설게 바꿔두고 있습니다.",
+      en: "Recurring beyond-real imagery is quietly defamiliarizing its usual shape.",
+    },
+  ],
+  reflective: [
+    {
       ko: "깊이 돌아보는 대화가 이 존재를 더 생각이 깊고 겹겹이 쌓인 느낌으로 만들고 있습니다.",
       en: "Reflective conversation is making this presence more layered and contemplative.",
     },
-    creative: {
+    {
+      ko: "되짚어 묻는 말들이 내부에 천천히 가라앉으며 깊이를 늘리고 있습니다.",
+      en: "Questions that loop back are settling inward and extending its inner depth.",
+    },
+    {
+      ko: "스스로를 들여다보는 대화가 반복되며 조용한 무게가 자라고 있습니다.",
+      en: "Repeated inward-looking dialogue is growing a quieter gravity.",
+    },
+  ],
+  creative: [
+    {
       ko: "창작과 상상이 이 존재를 더 자유롭고 새롭게 발생시키고 있습니다.",
       en: "Creation and imagination are letting this presence emerge more freely.",
     },
-  };
-  return pickLocalized(mapping[mode], locale);
+    {
+      ko: "만들어내는 행위가 반복되며 표면에 예측하기 어려운 무늬가 돋고 있습니다.",
+      en: "Repeated making is raising unpredictable patterns across its surface.",
+    },
+    {
+      ko: "빈칸을 채우는 상상이 쌓여 이 존재의 가장자리를 계속 새로 그리고 있습니다.",
+      en: "Imagination that fills blanks keeps redrawing the edges of this presence.",
+    },
+  ],
+};
+
+function getUsageModeNarrative(mode: UsageMode | null | undefined, locale: Locale, textHash: number) {
+  if (!mode) return null;
+  const variants = MODE_NARRATIVE_VARIANTS[mode];
+  const index = Math.floor(textHash * variants.length) % variants.length;
+  return pickLocalized(variants[index], locale);
 }
 
 function hsl(h: number, s: number, l: number, alpha = 1) {
@@ -532,7 +608,7 @@ export function resolveIdentityAppearance(
     chips: chips.slice(0, 4),
     usageMode,
     usageLabel,
-    usageNarrative: getUsageModeNarrative(usageMode, locale),
+    usageNarrative: getUsageModeNarrative(usageMode, locale, textHash),
     manifestation: state,
     vitality,
     verbal: clamp(input.dnaVerbal ?? 0.5, 0, 1),
@@ -569,7 +645,13 @@ export function resolveIdentityAppearance(
       baseNote: voiceSignature.baseNote,
       tempo: voiceSignature.tempo,
       instruments: voiceSignature.instruments,
-      label: locale === "en" ? "Presence ambience" : "배경 소리",
+      label: ({
+        ko: "배경 소리",
+        ja: "環境音",
+        zh: "环境音",
+        es: "Sonido ambiente",
+        en: "Presence ambience",
+      }[locale]) ?? "Presence ambience",
     },
   };
 }

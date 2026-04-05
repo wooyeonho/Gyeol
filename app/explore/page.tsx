@@ -9,6 +9,8 @@ import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { BottomNav } from "@/components/bottom-nav";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 type Agent = {
   id: string;
@@ -83,21 +85,18 @@ export default function ExplorePage() {
 
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-5xl">
-        <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-            {t("explore.eyebrow")}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("explore.title")}</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/66">
-            {t("explore.subtitle")}
-          </p>
-        </header>
+      <div className="mx-auto max-w-5xl space-y-4">
+        <DiscoverPageHeader
+          eyebrow={t("explore.eyebrow")}
+          title={t("explore.title")}
+          subtitle={t("explore.subtitle")}
+        />
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {agents.map((a) => {
           const appearance = resolveIdentityAppearance(
             {
+              seed: a.id,
               selfName: a.self_name,
               visual: a.visual,
               genome: { species: a.species },
@@ -152,17 +151,18 @@ export default function ExplorePage() {
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                <DiscussInChatButton
+                  prompt={t("discover.discussThisPrompt")
+                    .replace("{name}", a.self_name || t("explore.nameless"))
+                    .replace("{page}", t("explore.title"))}
+                  label={t("discover.discussInChat")}
+                  variant="primary"
+                />
                 <Link
                   href="/compare"
-                  className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100"
+                  className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/78 hover:bg-white/10"
                 >
                   {t("leaderboard.compareNow")}
-                </Link>
-                <Link
-                  href="/adopt"
-                  className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/78"
-                >
-                  {t("adoptPage.title")}
                 </Link>
               </div>
             </div>

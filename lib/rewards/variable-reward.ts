@@ -51,6 +51,8 @@ const REWARD_STORAGE_KEYS = {
   inventory: "gyeol_reward_inventory_v1",
   messagesSinceReward: "gyeol_reward_messages_since_reward_v1",
   dailyLoginDate: "gyeol_daily_login_bonus_date_v1",
+  comebackMultiplier: "gyeol_comeback_multiplier_v1",
+  lastRewardAt: "gyeol_last_reward_at_v1",
 } as const;
 
 const GUARANTEED_REWARD_EVERY = 6;
@@ -350,6 +352,71 @@ export function markDailyLoginBonusClaimed(date = new Date()) {
   writeStorageString(REWARD_STORAGE_KEYS.dailyLoginDate, date.toISOString().slice(0, 10));
 }
 
+// ---------------------------------------------------------------------------
+// Comeback multiplier persistence (client-side)
+// ---------------------------------------------------------------------------
+
+/**
+ * Store the comeback multiplier in localStorage so the reward middleware
+ * can apply it on the next message reward roll.
+ */
+export function writeComebackMultiplier(multiplier: number) {
+  if (multiplier <= 1) return;
+  writeStorageString(REWARD_STORAGE_KEYS.comebackMultiplier, String(multiplier));
+}
+
+/**
+ * Read the stored comeback multiplier without clearing it.
+ * Returns 1 (no bonus) if none is stored.
+ */
+export function readComebackMultiplier(): number {
+  const raw = readStorageString(REWARD_STORAGE_KEYS.comebackMultiplier);
+  if (!raw) return 1;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 1 ? value : 1;
+}
+
+/**
+ * Clear the stored comeback multiplier (call after a reward is actually granted).
+ */
+export function clearComebackMultiplier() {
+  if (isBrowser()) {
+    try { window.localStorage.removeItem(REWARD_STORAGE_KEYS.comebackMultiplier); } catch { /* ignore */ }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Last reward timestamp (for expiry countdown)
+// ---------------------------------------------------------------------------
+
+/** Record when the last reward was granted (ISO string). */
+export function writeLastRewardAt(date = new Date()) {
+  writeStorageString(REWARD_STORAGE_KEYS.lastRewardAt, date.toISOString());
+}
+
+/** Read last reward timestamp. Returns null if never set. */
+export function readLastRewardAt(): string | null {
+  return readStorageString(REWARD_STORAGE_KEYS.lastRewardAt);
+}
+
+// ---------------------------------------------------------------------------
+// Plan tier reward multiplier
+// ---------------------------------------------------------------------------
+
+export type PlanTierForReward = "free" | "pro" | "premium";
+
+/**
+ * Get the reward multiplier for a billing plan tier.
+ *   free    → 1x
+ *   pro     → 1.5x
+ *   premium → 2x
+ */
+export function getPlanRewardMultiplier(tier: PlanTierForReward | null | undefined): number {
+  if (tier === "premium") return 2;
+  if (tier === "pro") return 1.5;
+  return 1;
+}
+
 export function rollReward(
   streakDays = 0,
   options?: {
@@ -395,6 +462,7 @@ export function rollReward(
 /**
  * Determine whether a "mystery box" event should trigger.
  * Mystery boxes appear roughly once per 10 sessions with diminishing frequency.
+ * TODO: Wire into frontend mystery box UI component when implemented.
  *
  * @param sessionCount  total lifetime session count for this user
  */

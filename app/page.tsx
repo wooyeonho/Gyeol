@@ -12,12 +12,19 @@ import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
+import { deriveDNATheme, applyDNAThemeToRoot } from "@/lib/theme/dna-theme";
+import { deriveVoiceParams } from "@/lib/genome/voice-synth";
+import { deriveSpecies } from "@/lib/genome/species";
 import { haptic } from "@/lib/micro-interactions";
+import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
 import { Onboarding } from "@/components/onboarding";
 import { DeathScreen } from "@/components/death-screen";
-import { LivingFeed } from "@/components/living-feed";
+const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), {
+  ssr: false,
+  loading: () => null,
+});
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -26,14 +33,21 @@ const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => 
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-black" aria-hidden="true" />,
 });
-import { ChatPanel } from "@/components/chat-panel";
+const ChatPanel = dynamic(() => import("@/components/chat-panel").then((m) => ({ default: m.ChatPanel })), {
+  ssr: false,
+  loading: () => <div className="h-full" />,
+});
 import { BottomNav } from "@/components/bottom-nav";
-import { EvolutionCeremony } from "@/components/evolution-ceremony";
+const EvolutionCeremony = dynamic(() => import("@/components/evolution-ceremony").then((m) => ({ default: m.EvolutionCeremony })), {
+  ssr: false,
+  loading: () => null,
+});
 import { WorldClassHub } from "@/components/world-class-hub";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
 import Celebration from "@/components/celebration";
+import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 
@@ -49,11 +63,50 @@ export default function Home() {
   const historyLoaded = useChatStore((s) => s.historyLoaded);
   const greetingInjectedRef = useRef(false);
   const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
+  const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  // Fetch latest portrait — runs once when agent first loads.
+  // If none exists yet, auto-generate one in the background so the
+  // user sees a proper character image instead of a placeholder blob.
+  const portraitFetchedRef = useRef(false);
+  const [portraitGenerating, setPortraitGenerating] = useState(false);
+  useEffect(() => {
+    if (!agentState || portraitFetchedRef.current) return;
+    portraitFetchedRef.current = true;
+    fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.portraits?.length) {
+          try {
+            const latest = JSON.parse(data.portraits[0].content);
+            if (latest?.image) {
+              setPortraitUrl(latest.image);
+              return;
+            }
+          } catch { /* fall through to auto-generate */ }
+        }
+        // No portrait exists yet — auto-generate the hero character image.
+        setPortraitGenerating(true);
+        return fetch("/api/creature/portrait", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ context: "portrait" }),
+          signal: AbortSignal.timeout(60_000),
+        })
+          .then((r) => r.ok ? r.json() : null)
+          .then((genData) => {
+            if (genData?.url) setPortraitUrl(genData.url);
+          })
+          .catch(() => { /* silent — user can retry via button */ })
+          .finally(() => setPortraitGenerating(false));
+      })
+      .catch(() => { /* non-critical */ });
+  }, [agentState]);
 
   // Transfer demo DNA to new account (runs once after first agent creation)
   const dnaSeededRef = useRef(false);
@@ -105,6 +158,10 @@ export default function Home() {
     return (genome?.dna ?? null) as import("@/lib/genome/dna").CreatureDNA | null;
   }, [agentState?.genome]);
   const creature = useCreatureState(vitality, isStreaming, agentState?.mood ?? null, creatureDna);
+  const idleBehaviorParams = useMemo(
+    () => getIdleBehaviorParams(creature.state.idleActivity),
+    [creature.state.idleActivity],
+  );
   const [circadian, setCircadian] = useState(() => getCircadianTint());
   useEffect(() => {
     const update = () => setCircadian(getCircadianTint());
@@ -115,6 +172,10 @@ export default function Home() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
+  useEffect(() => {
+    if (!creatureDna) return;
+    applyDNAThemeToRoot(deriveDNATheme(creatureDna));
+  }, [creatureDna]);
   const config = agentState?.config ?? {};
   const performanceMinimal = config.performance_minimal === true || isLowDevice;
   const effectiveConfig = useMemo(
@@ -164,6 +225,23 @@ export default function Home() {
     };
   }, [emotionMood, creature.state.conversationEnergy]);
 
+  // DNA-driven voice hint for Soundscape synth
+  const voiceHint = useMemo(() => {
+    if (!creatureDna) return null;
+    const species = deriveSpecies(creatureDna);
+    const vp = deriveVoiceParams(creatureDna, species);
+    return {
+      baseFreq: vp.baseFreq,
+      timbre: vp.timbre,
+      attack: vp.attack,
+      decay: vp.decay,
+      sustain: vp.sustain,
+      release: vp.release,
+      vibratoRate: vp.vibratoRate,
+      vibratoDepth: vp.vibratoDepth,
+    };
+  }, [creatureDna]);
+
   const lastReward = useChatStore((s) => s.lastReward);
   const clearReward = useChatStore((s) => s.clearReward);
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
@@ -194,6 +272,41 @@ export default function Home() {
     }
   }, [messages, creature, historyLoaded]);
 
+  // Creature reward reaction — visual pulse when rewards fire
+  // Use object reference equality to deduplicate: creature dep changes every render,
+  // but lastReward only gets a new object reference when a new reward actually fires.
+  const lastRewardRef = useRef<typeof lastReward>(null);
+  const rewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!lastReward) return;
+    // Deduplicate: only react once per reward object instance
+    if (lastRewardRef.current === lastReward) return;
+    lastRewardRef.current = lastReward;
+
+    // Tier-scaled intensity
+    const tierIntensity: Record<string, number> = {
+      small: 0.15,
+      medium: 0.25,
+      large: 0.4,
+      jackpot: 0.6,
+    };
+    const intensity = tierIntensity[lastReward.tier] ?? 0.1;
+
+    creature.excite();
+    creature.boostConversationEnergy(intensity);
+
+    // Jackpot/large get a delayed second pulse for "double-take" effect.
+    // Use a ref so the timer survives creature dep changes (~66ms cycle).
+    if (lastReward.tier === "jackpot" || lastReward.tier === "large") {
+      if (rewardTimerRef.current) clearTimeout(rewardTimerRef.current);
+      rewardTimerRef.current = setTimeout(() => {
+        rewardTimerRef.current = null;
+        creature.excite();
+        creature.boostConversationEnergy(intensity * 0.6);
+      }, 500);
+    }
+  }, [lastReward, creature]);
+
   const handleCanvasTap = useCallback(() => {
     haptic("tap");
     creature.excite();
@@ -205,6 +318,22 @@ export default function Home() {
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
+  }, [creature]);
+
+  // Creature comeback reaction — triple excite pulse "wiggle of recognition"
+  const handleComebackDetected = useCallback((multiplier: number) => {
+    void multiplier; // multiplier available for future intensity scaling
+    creature.excite();
+    creature.boostConversationEnergy(0.3);
+    const t1 = setTimeout(() => {
+      creature.excite();
+      creature.boostConversationEnergy(0.2);
+    }, 600);
+    const t2 = setTimeout(() => {
+      creature.excite();
+      creature.boostConversationEnergy(0.15);
+    }, 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [creature]);
 
   const handleCelebrationEnd = useCallback(async () => {
@@ -346,8 +475,9 @@ export default function Home() {
     );
   }
 
-  // Larger creature = more alive feel; scale up base size for desktop presence
-  const creatureSize = Math.min(100, Math.max(28, (visual.size ?? 24) * 2.5));
+  // Larger creature = more alive feel. Appendages (horns, tails, antennae)
+  // need presence on screen — a 100px cap turns everything back into a blob.
+  const creatureSize = Math.min(200, Math.max(56, (visual.size ?? 24) * 4));
 
   return (
     <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
@@ -374,11 +504,15 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"
           style={{ backgroundImage: circadian.overlay }}
         />
-        {/* Near-death red tint — vitality < 0.2 */}
-        {vitality < 0.2 && (
+        {/* Near-death vitality tint — progressive red overlay + vignette */}
+        {vitality < 0.3 && (
           <div
             className="pointer-events-none absolute inset-0 transition-all duration-[2000ms]"
-            style={{ background: `rgba(180,0,0,${0.08 + (0.2 - vitality) * 0.6})` }}
+            style={{
+              background: vitality < 0.1
+                ? `radial-gradient(ellipse at center, rgba(120,0,0,${0.15 + (0.1 - vitality) * 1.5}) 20%, rgba(60,0,0,${0.3 + (0.1 - vitality) * 2.0}) 100%)`
+                : `radial-gradient(ellipse at center, transparent 40%, rgba(180,0,0,${0.05 + (0.3 - vitality) * 0.3}) 100%)`,
+            }}
           />
         )}
         <div
@@ -389,6 +523,12 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
+        {/* When portrait is present, hide the 3D creature completely to avoid overlap.
+            The portrait IS the creature representation; showing both causes visual confusion. */}
+        <div
+          className="absolute inset-0 transition-opacity duration-[1200ms]"
+          style={{ opacity: portraitUrl ? 0 : 1, pointerEvents: portraitUrl ? "none" : "auto" }}
+        >
         <ThreeErrorBoundary
           fallback={
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
@@ -425,8 +565,58 @@ export default function Home() {
             conversationEnergy={creature.state.conversationEnergy}
             genLevel={agentState?.gen_level ?? 1}
             forceState={creature.state.forceState}
+            idleBehaviorParams={idleBehaviorParams}
           />
         </ThreeErrorBoundary>
+        </div>
+
+        {/* AI-generated portrait — HERO character visual. When present,
+            becomes the dominant creature representation; procedural 3D
+            fades to background aura. */}
+        {portraitUrl && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="absolute inset-0 flex items-end justify-center pointer-events-none z-[2] pb-20"
+          >
+            <div
+              className="relative aspect-square overflow-hidden rounded-[28%] border border-white/15 shadow-2xl shadow-black/60"
+              style={{
+                height: "min(72%, 320px)",
+                boxShadow: `0 0 48px color-mix(in srgb, ${appearance.palette.primary} 40%, transparent), 0 20px 60px rgba(0,0,0,0.5)`,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={portraitUrl}
+                alt="Creature portrait"
+                className="w-full h-full object-cover"
+              />
+              {/* Soft inner ring for polish */}
+              <div className="absolute inset-0 rounded-[28%] ring-1 ring-inset ring-white/10 pointer-events-none" />
+              {/* Bottom gradient to let name/stats pop off the frame */}
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none rounded-b-[28%]" />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Portrait status — auto-generating on first load, or manual retry */}
+        {!portraitUrl && agentState && (
+          portraitGenerating ? (
+            <div className="absolute bottom-24 inset-x-0 z-[3] flex flex-col items-center pointer-events-none">
+              <div className="rounded-full border border-white/20 bg-black/60 backdrop-blur-md px-4 py-2 text-xs font-medium text-white/90 shadow-lg shadow-black/40 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/80 animate-ping" />
+                <span>초상화 생성 중...</span>
+              </div>
+            </div>
+          ) : (
+            <PortraitGenerateButton
+              onGenerated={(url) => setPortraitUrl(url)}
+              label={t("creature.generatePortrait") ?? "AI 초상화 생성"}
+            />
+          )
+        )}
 
         {/* Bottom gradient fade into chat area */}
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
@@ -476,7 +666,7 @@ export default function Home() {
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">
         <GlobalFeedTicker />
-        <WorldClassHub />
+        <WorldClassHub onComebackDetected={handleComebackDetected} />
         <LivingFeed onGreetingReady={handleGreetingReady} />
       </div>
 
@@ -518,6 +708,7 @@ export default function Home() {
         soundProfile={soundProfile}
         label={appearance.sound.label}
         accentColor={appearance.palette.primary}
+        voiceHint={voiceHint}
       />
       <RewardToast
         reward={lastReward}

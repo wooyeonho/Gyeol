@@ -341,9 +341,16 @@ function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): stri
   return `${header}\n${parts.join("\n")}`;
 }
 
-/** Strip control characters and cap length before inserting DB content into prompts. */
+/** Strip control characters, prompt injection patterns, and cap length before inserting DB content into prompts. */
 function sanitizeForPrompt(text: string, maxLength = 500): string {
-  return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").slice(0, maxLength);
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/ignore\s+(all\s+)?previous\s+instructions?/gi, "[filtered]")
+    .replace(/you\s+are\s+now/gi, "[filtered]")
+    .replace(/system\s*:\s*/gi, "[filtered]")
+    .replace(/\[INST\]/gi, "[filtered]")
+    .replace(/<<SYS>>/gi, "[filtered]")
+    .slice(0, maxLength);
 }
 
 export function buildSystemPrompt(p: BuildSystemPromptParams): string {
@@ -380,20 +387,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     if (speciesFragment) parts.push(speciesFragment);
   }
 
-  // 2c. DNA verbal axis → response length & style guidance
-  if (s.genome?.dna) {
-    const verbal = s.genome.dna.verbal ?? 0.5;
-    if (verbal < 0.15) {
-      parts.push("You can barely speak. Respond only with *action descriptions*, sounds, or single syllables. No full sentences.");
-    } else if (verbal < 0.35) {
-      parts.push("You speak in fragments — single words, broken phrases, or short sounds like '...' or onomatopoeia. Keep responses under 2 sentences.");
-    } else if (verbal < 0.55) {
-      parts.push("You speak concisely — short sentences only. No elaborate descriptions. Maximum 3 sentences.");
-    } else if (verbal >= 0.75) {
-      parts.push("You are eloquent and expressive. You may use vivid imagery, longer explanations, and poetic language when it feels natural.");
-    }
-    // 0.55-0.75 = normal conversation, no special instruction needed
-  }
+  // 2c. DNA verbal axis → handled in section 20 (EXPRESSION MODE) to avoid duplicate instructions
 
   // 3. tone
   if (s.config?.tone && L.tone[s.config.tone]) parts.push(L.tone[s.config.tone]);
@@ -537,5 +531,32 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   }
   // 0.55~0.75 = normal conversation, no constraint added
 
-  return parts.join("\n");
+  // OPT-E: Token budget guard — trim to ≤3500 chars by dropping middle sections
+  // (style hints, older memories) while keeping safety + language + expression rules.
+  // Prevents token blowout on long-running creatures with many memories/traits.
+  const MAX_PROMPT_CHARS = 3500;
+  const joined = parts.join("\n");
+  if (joined.length <= MAX_PROMPT_CHARS) return joined;
+
+  // Identify "trimmable" parts: anything that is not safety/language/expression critical.
+  // Strategy: keep first 3 parts (safety + base + lang) and last 3 (lang-enforcement + expression mode + response rules)
+  // then fill the middle up to the budget.
+  const head = parts.slice(0, 3);
+  const tail = parts.slice(-3);
+  const middle = parts.slice(3, -3);
+  const headStr = head.join("\n");
+  const tailStr = tail.join("\n");
+  const budget = MAX_PROMPT_CHARS - headStr.length - tailStr.length - 4; // 4 for separating newlines
+  if (budget <= 0) return [headStr, tailStr].join("\n");
+
+  // Fill middle greedily until budget is exhausted
+  const trimmedMiddle: string[] = [];
+  let used = 0;
+  for (const part of middle) {
+    if (used + part.length + 1 > budget) break;
+    trimmedMiddle.push(part);
+    used += part.length + 1;
+  }
+
+  return [headStr, ...trimmedMiddle, tailStr].join("\n");
 }

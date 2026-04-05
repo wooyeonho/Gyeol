@@ -5,10 +5,10 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
-import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { GrowthTimeline } from "@/components/growth-timeline";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 
 type ActivityItem =
   | {
@@ -121,22 +121,14 @@ export default function ActivityPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-4xl">
-      <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-        <div className="flex items-start gap-4">
-          <IdentityPresence appearance={appearance} size="md" />
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-              {t("activity.eyebrow")}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("activity.title")}</h1>
-            <p className="mt-3 text-sm leading-6 text-white/66">
-              {appearance.usageNarrative ?? t("activity.subtitle")}
-            </p>
-          </div>
-        </div>
-      </header>
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
+      <div className="mx-auto max-w-5xl space-y-4">
+      <DiscoverPageHeader
+        eyebrow={t("activity.eyebrow")}
+        title={t("activity.title")}
+        subtitle={appearance.usageNarrative ?? t("activity.subtitle")}
+        appearance={appearance}
+      />
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
 
       {/* Growth Timeline — autonomous changes over time */}

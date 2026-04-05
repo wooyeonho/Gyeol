@@ -12,9 +12,14 @@ vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn(),
 }));
 
+vi.mock("@/lib/economy/coins", () => ({
+  addCoinsAtomic: vi.fn().mockResolvedValue(true),
+}));
+
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { addCoinsAtomic } from "@/lib/economy/coins";
 import { POST } from "./route";
 
 describe("/api/invite/apply contract", () => {
@@ -80,6 +85,11 @@ describe("/api/invite/apply contract", () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.rewarded_coins).toBe(10);
     expect(insertReferral).toHaveBeenCalled();
-    expect(stateUpdateEq).toHaveBeenCalled();
+    // Coin reward now uses addCoinsAtomic RPC instead of direct DB update
+    expect(addCoinsAtomic).toHaveBeenCalledWith(
+      "agent-inviter",
+      10,
+      expect.stringContaining("referral"),
+    );
   });
 });

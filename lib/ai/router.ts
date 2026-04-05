@@ -1,31 +1,25 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const CF_URL = (id: string) => `https://api.cloudflare.com/client/v4/accounts/${id}/ai/run/@cf/meta/llama-3.2-1b-instruct`;
-
 interface Msg { role: string; content: string }
 interface GroqCompletionResponse {
   choices?: Array<{ message?: { content?: string } }>;
-}
-interface CloudflareCompletionResponse {
-  result?: { response?: string };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+// NOTE: In-memory rate limiter removed — Vercel serverless spawns independent
+// processes per request so module-level state is useless for global rate limiting.
+// Groq 429 responses are already caught and trigger the Gemini/CF fallback chain.
+
 const MODELS = [
   { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 15000 },
   { name: "llama-3.1-8b-instant", timeout: 10000 },
 ];
 
-/** HEDGE_DELAY_MS: Start Gemini fallback after this delay if Groq hasn't responded. */
-const HEDGE_DELAY_MS = 3000;
-
-async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65, signal?: AbortSignal) {
+async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
-  // Chain external abort signal
-  if (signal) signal.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const res = await fetch(GROQ_URL, {
       method: "POST",
@@ -35,25 +29,6 @@ async function callGroq(model: string, system: string, messages: Msg[], stream: 
     });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Groq ${model} ${res.status}`);
-    return res;
-  } catch (e) { clearTimeout(timer); throw e; }
-}
-
-async function callCF(system: string, messages: Msg[], stream: boolean) {
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const apiToken = process.env.CF_API_TOKEN;
-  if (!accountId || !apiToken) throw new Error("CF credentials not configured");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
-  try {
-    const res = await fetch(CF_URL(accountId), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
-      body: JSON.stringify({ messages: [{ role: "system", content: system }, ...messages], stream }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`CF ${res.status}`);
     return res;
   } catch (e) { clearTimeout(timer); throw e; }
 }
@@ -91,12 +66,11 @@ async function callGemini(system: string, messages: Msg[], maxTokens = 700, temp
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
-async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700, temp = 0.65, signal?: AbortSignal): Promise<ReadableStream> {
+async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700, temp = 0.65): Promise<ReadableStream> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Gemini API key not configured");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000);
-  if (signal) signal.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const contents = messages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -120,6 +94,7 @@ async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700
     );
     clearTimeout(timer);
     if (!res.ok) throw new Error(`Gemini stream ${res.status}`);
+    // Transform Gemini SSE to Groq-compatible SSE format
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -158,19 +133,32 @@ function fallbackStream(text: string): ReadableStream {
   });
 }
 
+function getFallbackText(systemPrompt: string) {
+  if (systemPrompt.includes("日本語")) return "...頭が少しぼんやりする。少し待っていて。";
+  if (systemPrompt.includes("中文")) return "...脑子有点晕。等我一下。";
+  if (systemPrompt.includes("español")) return "...La cabeza me da vueltas. Espérame un momento.";
+  if (systemPrompt.includes("English")) return "...my head feels foggy right now. give me a moment.";
+  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
+}
+
+/** Derive max_tokens from verbal axis value embedded in the system prompt.
+ *  Values aligned with chat/route.ts verbal axis thresholds. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {
   const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
   if (!match) return 700;
   switch (match[1]) {
-    case "SILENT":   return 15;
-    case "MINIMAL":  return 20;
-    case "BRIEF":    return 40;
-    case "ELOQUENT": return 1000;
+    case "SILENT":   return 30;
+    case "MINIMAL":  return 60;
+    case "BRIEF":    return 180;
+    case "ELOQUENT": return 700;
     default:         return 700;
   }
 }
 
 function getInCharacterFallback(systemPrompt: string) {
+  // Respect verbal axis in fallback — SILENT/MINIMAL creatures can't speak full sentences
+  if (systemPrompt.includes("EXPRESSION MODE — SILENT")) return "[...]";
+  if (systemPrompt.includes("EXPRESSION MODE — MINIMAL")) return "...";
   if (systemPrompt.includes("日本語")) return "...ちょっと頭がぼんやりしてる。少し待ってくれる？";
   if (systemPrompt.includes("中文")) return "...脑袋有点发蒙。等我一下好吗？";
   if (systemPrompt.includes("español")) return "...Tengo la mente un poco nublada. ¿Puedes esperar un momento?";
@@ -179,67 +167,70 @@ function getInCharacterFallback(systemPrompt: string) {
 }
 
 /**
- * P1D: Hedged streaming — fire Groq primary, start Gemini after HEDGE_DELAY_MS.
- * Use whichever responds first, cancel the other.
+ * P11A: Archetype-based temperature tuning.
+ * Volatile archetypes (volcanic, spectral) get higher temperature for creative variety.
+ * Stable archetypes (crystalline, mechanical) get lower temperature for consistency.
  */
+function getArchetypeTemperature(systemPrompt: string): number {
+  if (systemPrompt.includes("volcanic") || systemPrompt.includes("spectral")) return 0.80;
+  if (systemPrompt.includes("fluid") || systemPrompt.includes("organic")) return 0.72;
+  if (systemPrompt.includes("ethereal") || systemPrompt.includes("verdant")) return 0.68;
+  if (systemPrompt.includes("crystalline") || systemPrompt.includes("mechanical")) return 0.50;
+  return 0.65; // default
+}
+
 export async function generateText(systemPrompt: string, messages: Msg[], maxTokens = 700): Promise<ReadableStream> {
-  const effectiveMaxTokens = getMaxTokensFromVerbal(systemPrompt) !== 700
-    ? getMaxTokensFromVerbal(systemPrompt) : maxTokens;
+  const verbalTokens = getMaxTokensFromVerbal(systemPrompt);
+  const effectiveMaxTokens = verbalTokens !== 700 ? verbalTokens : maxTokens;
+  const temperature = getArchetypeTemperature(systemPrompt);
 
-  const groqAbort = new AbortController();
-  const geminiAbort = new AbortController();
-  let resolved = false;
+  // OPT-C: Hedged request — start Groq primary, fire Gemini in parallel after 1.5s.
+  // Groq Llama 4 Scout typically begins streaming in 200-500ms.
+  // Hedge at 1.5s captures Groq timeouts quickly while avoiding wasted Gemini calls.
+  let groqSettled = false;
+  let geminiSettled = false;
 
-  // Groq primary attempt (try both models sequentially but with hedge)
   const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
     for (const m of MODELS) {
-      if (resolved) throw new Error("Already resolved");
       try {
-        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, 0.65, groqAbort.signal);
-        console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
+        const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
+        groqSettled = true;
+        // Debug log removed — model selection is transparent to caller
         return { source: m.name, stream: res.body! };
-      } catch (e) {
-        if (groqAbort.signal.aborted) throw new Error("Groq aborted");
-        console.error(`[AI] ${m.name} failed:`, e);
-      }
+      } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
     }
     throw new Error("All Groq models failed");
   })();
 
-  // Gemini hedge — starts after HEDGE_DELAY_MS
-  const geminiPromise = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
+  // Start Gemini hedge after 1.5s
+  const HEDGE_DELAY_MS = 1500;
+  const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
     const hedgeTimer = setTimeout(async () => {
-      if (resolved) { reject(new Error("Already resolved")); return; }
+      if (groqSettled) return reject(new Error("Groq already won"));
       try {
-        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, 0.65, geminiAbort.signal);
-        console.log("[AI] Gemini hedge won");
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        geminiSettled = true;
+        // Debug log removed — hedge race outcome is implicit
         resolve({ source: "gemini-hedge", stream });
-      } catch (e) {
-        reject(e);
-      }
+      } catch (e) { reject(e); }
     }, HEDGE_DELAY_MS);
-    // If groq resolves before hedge timer, clean up
-    groqAbort.signal.addEventListener("abort", () => { clearTimeout(hedgeTimer); reject(new Error("Hedge cancelled")); }, { once: true });
-    geminiAbort.signal.addEventListener("abort", () => { clearTimeout(hedgeTimer); reject(new Error("Hedge cancelled")); }, { once: true });
+    // If Groq wins before the timer, cancel the hedge
+    groqPromise.then(() => { clearTimeout(hedgeTimer); reject(new Error("Groq won")); }).catch(() => {});
   });
 
   try {
-    const winner = await Promise.race([groqPromise, geminiPromise]);
-    resolved = true;
-    // Cancel the loser
-    if (winner.source === "gemini-hedge") groqAbort.abort();
-    else geminiAbort.abort();
+    const winner = await Promise.race([groqPromise, geminiHedge]);
     return winner.stream;
   } catch {
-    resolved = true;
-    // Both failed — try Gemini non-hedge as direct fallback
-    try {
-      geminiAbort.abort();
-      const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens);
-      console.log("[AI] Using Gemini Flash streaming (direct fallback)");
-      return stream;
-    } catch (e) { console.error("[AI] Gemini stream failed:", e); }
-    console.log("[AI] All models failed, using in-character fallback");
+    // Both raced paths failed — try Gemini directly as final fallback
+    if (!geminiSettled) {
+      try {
+        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
+        console.warn("[AI] Using Gemini Flash streaming fallback");
+        return stream;
+      } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+    }
+    console.warn("[AI] All models failed, using in-character fallback");
     return fallbackStream(getInCharacterFallback(systemPrompt));
   }
 }
@@ -255,18 +246,15 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       return data.choices?.[0]?.message?.content || "";
     } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
   }
+  // Gemini fallback (higher quality than CF 1B)
   try {
     const text = await callGemini(systemPrompt, messages, maxTokens, temp);
     if (text) {
-      console.log("[AI] Using Gemini");
+      // Debug log removed — model selection is transparent to caller
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
-  try {
-    const res = await callCF(systemPrompt, messages, false);
-    const data = (await res.json()) as CloudflareCompletionResponse;
-    return data.result?.response || "";
-  } catch (e) { console.error("[AI] CF failed:", e); }
+  // CF 1B removed — quality too low. Return empty string as final fallback.
   return "";
 }
 
@@ -276,6 +264,7 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
 ): Promise<T | null> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
 
+  // Attempt 1: try all models
   for (const m of MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
@@ -287,6 +276,7 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
     } catch (e) { console.error(`[JSON] ${m.name} attempt 1 failed:`, e); }
   }
 
+  // Retry once after 500ms backoff (all models again)
   await new Promise((resolve) => setTimeout(resolve, 500));
   for (const m of MODELS) {
     try {
@@ -299,13 +289,14 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
     } catch (e) { console.error(`[JSON] ${m.name} attempt 2 failed:`, e); }
   }
 
+  // Gemini Flash fallback — supports JSON output natively
   try {
     const text = await callGemini(systemPrompt, messages, 300, 0.3);
     if (text) {
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) {
-        console.log("[JSON] Using Gemini Flash fallback");
+        console.warn("[JSON] Using Gemini Flash fallback");
         return parsed as T;
       }
     }

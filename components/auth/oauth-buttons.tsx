@@ -17,7 +17,23 @@ type OAuthButtonsProps = {
 
 type Provider = "google" | "github" | "apple";
 
-const PROVIDERS: Provider[] = ["google", "github", "apple"];
+const ALL_PROVIDERS: Provider[] = ["google", "github", "apple"];
+
+function getEnabledProviders(): Provider[] {
+  const raw = process.env.NEXT_PUBLIC_ENABLED_OAUTH_PROVIDERS;
+  if (!raw) {
+    // Default: only providers the app has actually been configured for.
+    // Apple requires an Apple Developer account + Sign in with Apple setup, so it's off by default.
+    return ["google", "github"];
+  }
+  const list = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is Provider => (ALL_PROVIDERS as string[]).includes(s));
+  return list.length > 0 ? list : ["google", "github"];
+}
+
+const PROVIDERS: Provider[] = getEnabledProviders();
 
 function ProviderIcon({ provider }: { provider: Provider }) {
   if (provider === "google") {

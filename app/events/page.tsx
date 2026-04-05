@@ -19,9 +19,50 @@ export default function EventsPage() {
     [activeEvent],
   );
 
+  // Seasonal particle colors: spring=pink, summer=green, autumn=gold, winter=blue
+  const seasonalColors: Record<string, { particle: string; glow: string }> = {
+    spring: { particle: "#f9a8d4", glow: "rgba(249,168,212,0.15)" },
+    summer: { particle: "#6ee7b7", glow: "rgba(110,231,183,0.12)" },
+    autumn: { particle: "#fbbf24", glow: "rgba(251,191,36,0.15)" },
+    winter: { particle: "#93c5fd", glow: "rgba(147,197,253,0.12)" },
+  };
+  const season = activeEvent?.id?.includes("spring") ? "spring"
+    : activeEvent?.id?.includes("summer") ? "summer"
+    : activeEvent?.id?.includes("autumn") || activeEvent?.id?.includes("fall") ? "autumn"
+    : activeEvent?.id?.includes("winter") ? "winter"
+    : (() => { const m = new Date().getMonth(); return m < 3 ? "winter" : m < 6 ? "spring" : m < 9 ? "summer" : "autumn"; })();
+  const colors = seasonalColors[season] ?? seasonalColors.spring;
+
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-lg">
+    <div className="relative min-h-screen bg-black px-4 pb-24 pt-20 text-white overflow-hidden">
+      {/* Seasonal particle overlay */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        {Array.from({ length: 18 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full opacity-60"
+            style={{
+              width: 4 + (i % 3) * 3,
+              height: 4 + (i % 3) * 3,
+              background: colors.particle,
+              left: `${(i * 37 + 11) % 100}%`,
+              top: `${(i * 23 + 7) % 100}%`,
+              boxShadow: `0 0 6px ${colors.particle}`,
+              animation: `seasonalFloat ${6 + (i % 4) * 2}s ease-in-out infinite`,
+              animationDelay: `${i * 0.4}s`,
+            }}
+          />
+        ))}
+        <style>{`
+          @keyframes seasonalFloat {
+            0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
+            25% { transform: translateY(-30px) translateX(10px) scale(1.2); opacity: 0.8; }
+            50% { transform: translateY(-15px) translateX(-8px) scale(0.9); opacity: 0.6; }
+            75% { transform: translateY(-40px) translateX(5px) scale(1.1); opacity: 0.7; }
+          }
+        `}</style>
+      </div>
+      <div className="relative z-10 mx-auto max-w-lg">
         {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <Link href="/" className="text-sm text-white/50 hover:text-white/80">

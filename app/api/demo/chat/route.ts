@@ -5,31 +5,64 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { createAssistantTapStream } from "@/lib/chat/stream";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import { demoChatBodySchema, parseBody } from "@/lib/validation/schemas";
 
 const DEMO_MAX_TURNS = 3;
 
-// Simple in-memory rate limiter for demo (no auth = no DB-based limiter)
+// ── Rate limiting: per-minute + daily budget to prevent AI cost abuse ──
 const DEMO_RATE_WINDOW_MS = 60_000;
-const DEMO_MAX_PER_WINDOW = 10;
-const demoRateBuckets = new Map<string, { count: number; resetAt: number }>();
+const DEMO_MAX_PER_MINUTE = 5; // tighter per-minute limit
+const DEMO_DAILY_BUDGET = 20; // max requests per IP per day
 
-function checkDemoRateLimit(ip: string): boolean {
+type DemoRateBucket = {
+  minuteCount: number;
+  minuteResetAt: number;
+  dailyCount: number;
+  dailyResetAt: number;
+};
+const demoRateBuckets = new Map<string, DemoRateBucket>();
+
+function checkDemoRateLimit(ip: string): { allowed: boolean; reason?: string } {
   const now = Date.now();
   const bucket = demoRateBuckets.get(ip);
-  if (!bucket || now >= bucket.resetAt) {
-    demoRateBuckets.set(ip, { count: 1, resetAt: now + DEMO_RATE_WINDOW_MS });
-    return true;
+
+  if (!bucket) {
+    demoRateBuckets.set(ip, {
+      minuteCount: 1,
+      minuteResetAt: now + DEMO_RATE_WINDOW_MS,
+      dailyCount: 1,
+      dailyResetAt: now + 86_400_000, // 24 hours
+    });
+    return { allowed: true };
   }
-  if (bucket.count >= DEMO_MAX_PER_WINDOW) return false;
-  bucket.count++;
-  return true;
+
+  // Reset windows if expired
+  if (now >= bucket.minuteResetAt) {
+    bucket.minuteCount = 0;
+    bucket.minuteResetAt = now + DEMO_RATE_WINDOW_MS;
+  }
+  if (now >= bucket.dailyResetAt) {
+    bucket.dailyCount = 0;
+    bucket.dailyResetAt = now + 86_400_000;
+  }
+
+  if (bucket.dailyCount >= DEMO_DAILY_BUDGET) {
+    return { allowed: false, reason: "Daily demo limit reached. Sign up for unlimited access!" };
+  }
+  if (bucket.minuteCount >= DEMO_MAX_PER_MINUTE) {
+    return { allowed: false, reason: "Too many requests. Please wait a moment." };
+  }
+
+  bucket.minuteCount++;
+  bucket.dailyCount++;
+  return { allowed: true };
 }
 
 // Periodic cleanup to prevent memory leak (every 5 minutes)
 const _cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of demoRateBuckets) {
-    if (now >= bucket.resetAt) demoRateBuckets.delete(key);
+    if (now >= bucket.dailyResetAt) demoRateBuckets.delete(key);
   }
 }, 5 * 60_000);
 if (typeof _cleanupInterval === "object" && "unref" in _cleanupInterval) {
@@ -54,22 +87,24 @@ You only have 3 messages with this person. Make each one count. Make them want m
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = (await req.json()) as {
-      message?: string;
-      history?: { role: "user" | "assistant"; content: string }[];
-      dna?: CreatureDNA;
-    };
+    // Validate request body with Zod (message max 500 chars enforced by schema)
+    const parsed = await parseBody(req, demoChatBodySchema);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: parsed.error }), { status: 400 });
+    }
+    const payload = parsed.data;
 
-    // Rate limit by IP to prevent abuse
+    // Rate limit by IP to prevent AI cost abuse
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    if (!checkDemoRateLimit(ip)) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded", code: "RATE_LIMIT" }), { status: 429 });
+    const rateCheck = checkDemoRateLimit(ip);
+    if (!rateCheck.allowed) {
+      return new Response(
+        JSON.stringify({ error: rateCheck.reason ?? "Rate limit exceeded", code: "RATE_LIMIT" }),
+        { status: 429, headers: { "Retry-After": "60" } },
+      );
     }
 
-    const rawMessage = typeof payload.message === "string" ? payload.message : "";
-    if (!rawMessage.trim()) {
-      return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
-    }
+    const rawMessage = payload.message;
 
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) {
@@ -87,14 +122,14 @@ export async function POST(req: NextRequest) {
     // Demo works even without auth — we don't persist anything
 
     // Count turns from history
-    const history = Array.isArray(payload.history) ? payload.history : [];
+    const history = payload.history;
     const userTurns = history.filter((m) => m.role === "user").length;
     if (userTurns >= DEMO_MAX_TURNS) {
       return new Response(JSON.stringify({ error: "Demo limit reached", code: "DEMO_LIMIT" }), { status: 403 });
     }
 
     // Apply DNA mutation from this message
-    const currentDNA = payload.dna;
+    const currentDNA = payload.dna as CreatureDNA | undefined;
     let dnaResult: { dna: CreatureDNA; changedAxes: string[] } | null = null;
     if (currentDNA) {
       dnaResult = applySoftMutation(currentDNA, message);
@@ -113,11 +148,9 @@ export async function POST(req: NextRequest) {
 
     // Pipe stream and append DNA metadata
     const encoder = new TextEncoder();
-    const transformStream = createAssistantTapStream(async () => {
-      // No persistence in demo mode
-    });
+    const { transform: tapTransform } = createAssistantTapStream();
 
-    const aiStream = stream.pipeThrough(transformStream);
+    const aiStream = stream.pipeThrough(tapTransform);
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = aiStream.getReader();

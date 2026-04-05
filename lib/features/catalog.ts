@@ -78,7 +78,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
     },
     href: "/market",
     category: "experimental",
-    status: "beta",
+    status: "ready",
   },
   {
     id: "settings",
@@ -162,7 +162,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
     },
     href: "/room",
     category: "creative",
-    status: "beta",
+    status: "ready",
   },
   {
     id: "constellation",
@@ -176,7 +176,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
     },
     href: "/constellation",
     category: "creative",
-    status: "beta",
+    status: "ready",
   },
   {
     id: "time-travel",
@@ -190,7 +190,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
     },
     href: "/time-travel",
     category: "experimental",
-    status: "beta",
+    status: "ready",
   },
   {
     id: "war-event",
@@ -199,12 +199,12 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
       en: "War event",
     },
     summary: {
-      ko: "생태계 차원의 집단 이벤트를 위한 준비중 기능입니다.",
-      en: "A planned feature for large-scale ecosystem events.",
+      ko: "생태계 차원의 집단 이벤트에 참여해 진영별 점수를 겨룹니다.",
+      en: "Join large-scale ecosystem events and compete for your side's score.",
     },
     href: "/events/war",
     category: "world",
-    status: "planned",
+    status: "ready",
   },
   {
     id: "adopt",
@@ -213,12 +213,12 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
       en: "Adopt board",
     },
     summary: {
-      ko: "새로운 존재와의 연결 가능성을 탐색하는 베타 실험 공간입니다.",
-      en: "A beta space for exploring the possibility of connecting with a new being.",
+      ko: "새로운 존재와의 연결 가능성을 탐색하는 공간입니다.",
+      en: "A space for exploring the possibility of connecting with a new being.",
     },
     href: "/adopt",
     category: "experimental",
-    status: "beta",
+    status: "ready",
   },
 ];
 

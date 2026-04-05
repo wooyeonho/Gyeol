@@ -69,15 +69,19 @@ describe("Voice Synthesis System", () => {
   });
 
   it("timbre reflects DNA traits", () => {
-    const creative = generateInitialDNA("voice-creative-timbre");
-    creative.creativity = 0.85;
-    creative.analytical = 0.3;
+    // Use a neutral DNA baseline so species.element doesn't override timbre.
+    // (wider initial DNA range can push species toward fire/crystal which
+    //  deterministically overrides timbre at the end of deriveVoiceParams)
+    const neutralDNA = generateInitialDNA("voice-timbre-neutral");
+    for (const k of Object.keys(neutralDNA) as Array<keyof typeof neutralDNA>) {
+      neutralDNA[k] = 0.5;
+    }
+
+    const creative = { ...neutralDNA, creativity: 0.85, analytical: 0.3 };
     const vCreative = deriveVoiceParams(creative, deriveSpecies(creative));
     expect(vCreative.timbre).toBe("fmsine");
 
-    const analytical = generateInitialDNA("voice-analytical-timbre");
-    analytical.analytical = 0.85;
-    analytical.creativity = 0.3;
+    const analytical = { ...neutralDNA, analytical: 0.85, creativity: 0.3 };
     const vAnalytical = deriveVoiceParams(analytical, deriveSpecies(analytical));
     expect(vAnalytical.timbre).toBe("amsine");
   });

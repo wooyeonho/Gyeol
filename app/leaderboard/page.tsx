@@ -10,6 +10,8 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import type { LeaderboardEntry, LeaderboardResponse } from "@/app/api/leaderboard/route";
 import { useChatStore } from "@/store/chat-store";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 type Tab = "level" | "messages" | "vitality";
 
@@ -148,17 +150,12 @@ export default function LeaderboardPage() {
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl">
-        <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-300">
-            {t("leaderboard.eyebrow")}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            {t("leaderboard.title")}
-          </h1>
-          <p className="theme-text-subtle mt-3 text-base leading-7">
-            {t("leaderboard.subtitle")}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+        <DiscoverPageHeader
+          eyebrow={t("leaderboard.eyebrow")}
+          title={t("leaderboard.title")}
+          subtitle={t("leaderboard.subtitle")}
+        >
+          <div className="flex flex-wrap gap-2">
             {data && (
               <div className="theme-subpanel inline-flex items-center gap-2 rounded-full px-3 py-2">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -184,7 +181,9 @@ export default function LeaderboardPage() {
               {shareNotice}
             </div>
           )}
-        </header>
+        </DiscoverPageHeader>
+
+        <div className="h-4" />
 
         <div className="mb-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
@@ -258,6 +257,13 @@ export default function LeaderboardPage() {
                     {`${getMetricValue(context.self)} ${getMetricLabel()} · ${t("leaderboard.keepPushing")}`}
                   </p>
                 </div>
+                {context.percentile !== null && (
+                  <div className="ml-auto flex flex-col items-center rounded-2xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2">
+                    <span className="text-lg font-bold text-fuchsia-200">
+                      {t("leaderboard.topPercent").replace("{percent}", String(context.percentile))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -269,6 +275,7 @@ export default function LeaderboardPage() {
                 {context.nearby.map((entry) => {
                   const appearance = resolveIdentityAppearance(
                     {
+                      seed: entry.agent_id,
                       selfName: entry.self_name,
                       visual: entry.visual,
                       config: entry.config,
@@ -304,18 +311,27 @@ export default function LeaderboardPage() {
                         <p className="text-[11px] text-white/50">{getMetricLabel()}</p>
                       </div>
                     {!entry.is_self && (
-                      <button
-                        type="button"
-                        disabled={followBusyId === entry.agent_id}
-                        onClick={() => void handleFollow(entry.agent_id, !entry.is_following)}
-                        className={`rounded-full border px-3 py-1.5 text-xs ${
-                          entry.is_following
-                            ? "border-white/15 bg-white/5 text-white/72"
-                            : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
-                        } disabled:opacity-50`}
-                      >
-                        {entry.is_following ? t("social.unfollow") : t("social.follow")}
-                      </button>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <button
+                          type="button"
+                          disabled={followBusyId === entry.agent_id}
+                          onClick={() => void handleFollow(entry.agent_id, !entry.is_following)}
+                          className={`rounded-full border px-3 py-1.5 text-xs ${
+                            entry.is_following
+                              ? "border-white/15 bg-white/5 text-white/72"
+                              : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
+                          } disabled:opacity-50`}
+                        >
+                          {entry.is_following ? t("social.unfollow") : t("social.follow")}
+                        </button>
+                        <DiscussInChatButton
+                          prompt={t("discover.discussThisPrompt")
+                            .replace("{name}", entry.self_name || t("leaderboard.unnamed"))
+                            .replace("{page}", t("leaderboard.title"))}
+                          label={t("discover.discussInChat")}
+                          variant="ghost"
+                        />
+                      </div>
                     )}
                     </div>
                   );
@@ -337,6 +353,7 @@ export default function LeaderboardPage() {
             {entries.map((entry, i) => {
               const appearance = resolveIdentityAppearance(
                 {
+                  seed: entry.agent_id,
                   selfName: entry.self_name,
                   visual: entry.visual,
                   config: entry.config,

@@ -5,6 +5,7 @@ import { generateText } from "@/lib/ai/router";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { timeTravelBodySchema, parseBody } from "@/lib/validation/schemas";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
@@ -17,17 +18,13 @@ export async function POST(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetDateRaw = typeof body?.target_date === "string" ? body.target_date : "";
-    const rawMessage = typeof body?.message === "string" ? body.message : "";
-    if (!targetDateRaw || !rawMessage.trim()) {
-      return NextResponse.json({ error: "target_date and message required" }, { status: 400 });
+    const parsed = await parseBody(req, timeTravelBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
+    const targetDateRaw = parsed.data.target_date;
+    const rawMessage = parsed.data.message;
     const targetDate = new Date(targetDateRaw);
-    if (Number.isNaN(targetDate.getTime())) {
-      return NextResponse.json({ error: "Invalid target_date" }, { status: 400 });
-    }
 
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });

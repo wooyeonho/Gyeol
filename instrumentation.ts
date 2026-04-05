@@ -14,9 +14,11 @@ const CRITICAL_ENV_KEYS = [
 
 const RECOMMENDED_ENV_KEYS = [
   "GROQ_API_KEY",
+  "GEMINI_API_KEY",
   "CONNECTION_TOKEN_KEY",
   "TELEGRAM_WEBHOOK_SECRET",
   "NEXT_PUBLIC_APP_URL",
+  "VAPID_PRIVATE_KEY",
 ] as const;
 
 function validateEnvironment() {

@@ -130,38 +130,47 @@ export function deriveContinuousMorphology(
   // Each appendage type has a "potential" from DNA. Evolution capacity
   // determines how much of that potential is expressed.
 
+  // Limbs: most creatures should have at least small stubs
   const limbPotential = dna.assertiveness * 3 + dna.adaptability * 2 + dna.independence;
-  const limbCount = limbPotential * evoCapacity.dnaExpressionRange;
+  const limbCount = Math.max(1.5, limbPotential * evoCapacity.dnaExpressionRange);
 
   const eyePotential = 1 + dna.intuitive * 2 + dna.curiosity * 1 + dna.empathy * 0.5;
-  const eyeCount = Math.max(1, eyePotential * evoCapacity.dnaExpressionRange);
+  // Minimum 2 eyes (no cyclops by default) — third eye unlocks at higher potential
+  const eyeCount = Math.max(2, eyePotential * evoCapacity.dnaExpressionRange);
 
+  // Horns: scale continuously from low DNA values instead of cutting off near avg.
+  // Previous threshold (2.5) meant most mid-DNA creatures showed zero horns.
   const hornPotential = dna.intensity * 2 + dna.assertiveness * 1.5;
   const hornCount = hornPotential > 1.2
     ? (hornPotential - 1.2) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Antennae: available to mildly curious/intuitive creatures, not only extremes.
   const antennaPotential = dna.curiosity * 1.2 + dna.intuitive * 0.8;
   const antennaCount = antennaPotential > 0.8
-    ? (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange // no cap — high-gen creatures can grow many antennae
+    ? (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Tail: no negative offset — playful+adaptable creatures always get a visible tail.
   const tailPresence = Math.max(0,
-    (dna.playfulness * 0.6 + dna.adaptability * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap — tail can be longer than 1.0 at high gens
+    (dna.playfulness * 0.6 + dna.adaptability * 0.3) * evoCapacity.dnaExpressionRange,
+  );
 
+  // Fin/wing: lower offset so adaptable/open creatures get visible fins.
   const finWingSize = Math.max(0,
-    (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.25) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap — wings can grow large
+    (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.1) * evoCapacity.dnaExpressionRange,
+  );
 
+  // Spikes: lower cutoff so assertive creatures show them at mid DNA values.
   const spikePotential = dna.assertiveness * 4 + dna.intensity * 4;
-  const spikeCount = spikePotential > 2
-    ? (spikePotential - 2) * 2 * evoCapacity.dnaExpressionRange
+  const spikeCount = spikePotential > 3
+    ? (spikePotential - 3) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Ear bumps: no negative offset, empathic/warm creatures show them by default.
   const earBumpSize = Math.max(0,
-    (dna.empathy * 0.5 + dna.warmth * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap
+    (dna.empathy * 0.5 + dna.warmth * 0.3) * evoCapacity.dnaExpressionRange,
+  );
 
   const appendageVariety = dna.creativity * 0.6 + dna.openness * 0.4;
 
@@ -262,16 +271,20 @@ export type EvolutionCapacity = {
 export function getEvolutionCapacity(genLevel: number): EvolutionCapacity {
   const gen = Math.max(1, genLevel);
 
-  // Logarithmic growth: fast early, asymptotic later but never capped
-  // Gen 1: 0.3, Gen 5: 0.7, Gen 10: 0.85, Gen 20: 0.95, Gen 50: ~1.05
-  const expressionBase = 0.3 + 0.7 * (1 - 1 / (1 + (gen - 1) * 0.2));
+  // Logarithmic growth: fast early, asymptotic later but never capped.
+  // Gen 1 baseline raised from 0.3 → 0.7 so new creatures have VISIBLE
+  // distinctive features (horns, antennae, tail, ears) instead of being
+  // a smooth eyes-on-sphere blob. Evolution still adds more, but every
+  // agent starts as a recognisable character.
+  // Gen 1: 0.70, Gen 5: 0.87, Gen 10: 0.94, Gen 20: 0.98, Gen 50: ~1.05
+  const expressionBase = 0.7 + 0.3 * (1 - 1 / (1 + (gen - 1) * 0.2));
   // Slow linear growth beyond the asymptote (never truly capped)
   const expressionGrowth = Math.max(0, (gen - 10) * 0.005);
   const dnaExpressionRange = expressionBase + expressionGrowth;
 
-  // Morphological complexity: 0.2 at Gen 1, approaches 1.0 around Gen 8
-  // Asymptotic base curve + linear bonus beyond Gen 10 (can exceed 1.0 at high gens)
-  const morphBase = 0.2 + 0.8 * (1 - 1 / (1 + (gen - 1) * 0.3));
+  // Morphological complexity: 0.55 at Gen 1 (raised from 0.2), approaches 1.0 around Gen 8.
+  // Higher baseline means Gen 1 creatures already have body structure, not a plain sphere.
+  const morphBase = 0.55 + 0.45 * (1 - 1 / (1 + (gen - 1) * 0.3));
   const morphBonus = gen > 10 ? (gen - 10) * 0.01 : 0;
   const morphComplexity = morphBase + morphBonus;
 

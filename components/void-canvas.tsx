@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import type { ForceState } from "@/lib/creature/force-system";
+import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -44,6 +45,8 @@ interface VoidCanvasProps {
   genLevel?: number;
   /** Force-based physics state — drives emergent position/rotation/scale */
   forceState?: ForceState | null;
+  /** Idle behavior visual parameters for creature animation */
+  idleBehaviorParams?: IdleBehaviorParams;
 }
 
 const VoidCanvasInner = dynamic(
@@ -228,50 +231,22 @@ export function VoidCanvas({
   conversationEnergy,
   genLevel,
   forceState,
+  idleBehaviorParams,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
   const particleCount = reducedVisualMode ? 0 : isMobile ? Math.floor(particles / 2) : particles;
   const effectiveGlow = reducedVisualMode ? Math.min(glow, 35) : glow;
   const effectiveSize = reducedVisualMode ? Math.min(size, 24) : size;
-  const [shouldRenderThree, setShouldRenderThree] = useState(false);
 
-  useEffect(() => {
-    if (!enableThree || reducedVisualMode || typeof window === "undefined") {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let idleId: number | null = null;
-
-    const activate = () => {
-      if (!cancelled) {
-        setShouldRenderThree(true);
-      }
-    };
-
-    if ("requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(activate, { timeout: 1600 });
-    } else {
-      timeoutId = setTimeout(activate, 900);
-    }
-
-    return () => {
-      cancelled = true;
-      if (idleId !== null && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [enableThree, reducedVisualMode]);
-
-  const shouldUseThree = enableThree && !reducedVisualMode && shouldRenderThree;
+  // Render Three.js immediately when enabled — the VoidCanvasInner dynamic
+  // import already defers the heavy code. Adding a second idle-callback delay
+  // causes a visible sphere/blob flash on every mount, which makes the
+  // creature look like it "keeps changing back to a sphere" during nav.
+  const shouldUseThree = enableThree && !reducedVisualMode;
 
   return (
-    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background, imageRendering: "pixelated" as const }}>
+    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
         <VoidCanvasInner
           shape={shape}
@@ -282,6 +257,7 @@ export function VoidCanvas({
           particles={particleCount}
           vitality={vitality}
           isListening={isListening}
+          background={background}
           motionBias={motionBias}
           pulseScale={pulseScale}
           onTap={onTap}
@@ -296,6 +272,7 @@ export function VoidCanvas({
           conversationEnergy={conversationEnergy}
           genLevel={genLevel}
           forceState={forceState}
+          idleBehaviorParams={idleBehaviorParams}
         />
       ) : (
         <CssVoidFallback

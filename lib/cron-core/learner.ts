@@ -310,7 +310,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         await service.from("autonomous_logs").insert({
           agent_id: agentId,
           action_type: "research_task_completed",
-          summary: `Research task completed: ${(pendingTask as { title: string }).title}`,
+          summary: (pendingTask as { title: string }).title,
         });
 
         const { data: stateRow } = await service

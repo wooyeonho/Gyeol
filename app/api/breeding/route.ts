@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { breedingBodySchema, parseBody } from "@/lib/validation/schemas";
 import { getPrimaryAgent } from "@/lib/agents/primary";
 import { breedCreatures } from "@/lib/genome/dna";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -16,14 +17,18 @@ export async function POST(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
+    const parsed = await parseBody(req, breedingBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { action, partner_agent_id, record_id } = parsed.data;
+
     const service = createServiceClient();
     const { agentId: myAgentId } = await getPrimaryAgent(service, user.id);
     if (!myAgentId) return NextResponse.json({ error: "No agent" }, { status: 404 });
 
-    const action = typeof body?.action === "string" ? body.action : "request";
     if (action === "request") {
-      const partnerAgentId = typeof body?.partner_agent_id === "string" ? body.partner_agent_id : "";
+      const partnerAgentId = partner_agent_id ?? "";
       if (!partnerAgentId) return NextResponse.json({ error: "partner_agent_id required" }, { status: 400 });
       if (partnerAgentId === myAgentId) return NextResponse.json({ error: "Cannot breed with self" }, { status: 400 });
 
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, record });
     }
 
-    const recordId = typeof body?.record_id === "string" ? body.record_id : "";
+    const recordId = record_id ?? "";
     if (!recordId) return NextResponse.json({ error: "record_id required" }, { status: 400 });
 
     const { data: record } = await service

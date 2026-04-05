@@ -3,6 +3,7 @@
 import React, { useRef, useState, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -19,6 +20,7 @@ import {
   type TouchPhysicsState,
 } from "@/lib/creature/touch-physics";
 import type { ForceState } from "@/lib/creature/force-system";
+import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 
 export interface InnerProps {
   shape: string;
@@ -56,6 +58,8 @@ export interface InnerProps {
   genLevel?: number;
   /** Force-based physics state — drives emergent position/rotation/scale */
   forceState?: ForceState | null;
+  /** Idle behavior visual parameters for creature animation */
+  idleBehaviorParams?: IdleBehaviorParams;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -364,7 +368,7 @@ function Scene({
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
-  dna, mood, conversationEnergy = 0, genLevel, forceState,
+  dna, mood, conversationEnergy = 0, genLevel, forceState, idleBehaviorParams,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -482,10 +486,22 @@ function Scene({
 
   return (
     <>
-      {/* Enhanced lighting for toon shading — stronger directional + ambient for flat color steps */}
-      <ambientLight intensity={0.25 * activityDim} />
-      <directionalLight position={[2, 3, 4]} intensity={0.6 * activityDim} />
+      {/* Character-designer staging — 3-point lighting + rim light silhouette */}
+      <ambientLight intensity={0.2 * activityDim} />
+      {/* Key light: warm, upper-right — the dominant shaper */}
+      <directionalLight position={[3, 4, 5]} intensity={0.9 * activityDim} color="#fff4e0" />
+      {/* Fill light: cool, lower-left — softens shadows */}
+      <directionalLight position={[-3, 1, 2]} intensity={0.35 * activityDim} color="#8aa8ff" />
+      {/* Rim light: behind creature — carves silhouette from background */}
+      <directionalLight position={[-2, 2, -4]} intensity={0.8 * activityDim} color={color} />
       <pointLight color={color} intensity={tapGlow} />
+
+      {/* Subtle contact shadow beneath creature — grounds it without ring noise */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]}>
+        <circleGeometry args={[0.75, 32]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.38 * activityDim} depthWrite={false} />
+      </mesh>
+
       <Float
         speed={floatSpeed * sleepFloatMult}
         rotationIntensity={rotationIntensity * sleepFloatMult}
@@ -507,6 +523,7 @@ function Scene({
               conversationEnergy={conversationEnergy}
               genLevel={genLevel}
               forceState={forceState}
+              idleBehaviorParams={idleBehaviorParams}
             />
           ) : (
             <CoreShape
@@ -523,6 +540,26 @@ function Scene({
       {particles > 0 && (
         <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} conversationEnergy={conversationEnergy} />
       )}
+      {/* Bloom: intensity varies by archetype — only ethereal/spectral should look truly glowy */}
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.3}
+          luminanceSmoothing={0.9}
+          intensity={(() => {
+            const arch = species?.archetype;
+            switch (arch) {
+              case "ethereal": case "spectral": return 1.0;
+              case "volcanic": return 0.6;
+              case "crystalline": return 0.5;
+              case "fluid": return 0.4;
+              case "organic": case "verdant": return 0.3;
+              case "mechanical": return 0.2;
+              default: return 0.5;
+            }
+          })()}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   );
 }
@@ -564,14 +601,11 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full" style={{ imageRendering: "pixelated" }}>
+    <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
-        dpr={0.2}
-        gl={{ antialias: false, powerPreference: "low-power" }}
-        onCreated={({ gl }) => {
-          gl.domElement.style.imageRendering = "pixelated";
-        }}
+        camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, powerPreference: "default", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       >
         <Scene {...props} />
       </Canvas>

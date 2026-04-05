@@ -22,6 +22,8 @@ export type LeaderboardEntry = {
 export type LeaderboardContext = {
   self: LeaderboardEntry | null;
   nearby: LeaderboardEntry[];
+  /** Top N% percentile (1 = top 1%, 50 = top 50%). null if no self entry. */
+  percentile: number | null;
 };
 
 export type LeaderboardResponse = {
@@ -70,21 +72,24 @@ function mapRows(
   }));
 }
 
-function buildContext(entries: LeaderboardEntry[], selfAgentId?: string | null): LeaderboardContext {
+function buildContext(entries: LeaderboardEntry[], totalAgents: number, selfAgentId?: string | null): LeaderboardContext {
   if (!selfAgentId) {
-    return { self: null, nearby: [] };
+    return { self: null, nearby: [], percentile: null };
   }
 
   const index = entries.findIndex((entry) => entry.agent_id === selfAgentId);
   if (index === -1) {
-    return { self: null, nearby: [] };
+    return { self: null, nearby: [], percentile: null };
   }
 
   const start = Math.max(0, index - 2);
   const end = Math.min(entries.length, index + 3);
+  const rank = entries[index]?.rank ?? index + 1;
+  const pct = totalAgents > 0 ? Math.max(1, Math.ceil((rank / totalAgents) * 100)) : null;
   return {
     self: entries[index] ?? null,
     nearby: entries.slice(start, end),
+    percentile: pct,
   };
 }
 
@@ -146,15 +151,16 @@ export async function GET() {
       relationSets,
     );
 
+    const totalCount = countResult.count ?? 0;
     const response: LeaderboardResponse = {
       byLevel: byLevelAll.slice(0, 50),
       byMessages: byMessagesAll.slice(0, 50),
       byVitality: byVitalityAll.slice(0, 50),
-      totalAgents: countResult.count ?? 0,
+      totalAgents: totalCount,
       contexts: {
-        level: buildContext(byLevelAll, selfAgentId),
-        messages: buildContext(byMessagesAll, selfAgentId),
-        vitality: buildContext(byVitalityAll, selfAgentId),
+        level: buildContext(byLevelAll, totalCount, selfAgentId),
+        messages: buildContext(byMessagesAll, totalCount, selfAgentId),
+        vitality: buildContext(byVitalityAll, totalCount, selfAgentId),
       },
     };
 
