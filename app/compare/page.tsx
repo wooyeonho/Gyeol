@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 import type { CompareResult } from "@/app/api/compare/route";
 
 export default function ComparePage() {
@@ -129,15 +130,11 @@ export default function ComparePage() {
 
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-lg">
-        <header className="mb-6 text-center">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-            {t("compare.eyebrow")}
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            {t("compare.title")}
-          </h1>
-        </header>
+      <div className="mx-auto max-w-5xl space-y-4">
+        <DiscoverPageHeader
+          eyebrow={t("compare.eyebrow")}
+          title={t("compare.title")}
+        />
 
         {/* VS Header */}
         <div className="mb-6 flex items-center justify-center gap-6">

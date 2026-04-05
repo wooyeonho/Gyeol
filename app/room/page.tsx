@@ -5,8 +5,9 @@ import dynamic from "next/dynamic";
 import type { RoomObject } from "@/lib/room/types";
 import ARViewer from "@/components/ar-viewer";
 import { useTranslations } from "@/components/i18n-provider";
-import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { BottomNav } from "@/components/bottom-nav";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
 
@@ -42,18 +43,16 @@ export default function RoomPage() {
   const appearance = resolveIdentityAppearance({ visual, config }, locale);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="border-b border-white/10 p-4">
-        <div className="mx-auto flex max-w-4xl items-start gap-4">
-          <IdentityPresence appearance={appearance} size="md" />
-          <div>
-            <h1 className="text-xl font-semibold">{t("roomPage.title")}</h1>
-            <p className="mt-1 text-sm text-white/50">{t("roomPage.subtitle")}</p>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
-            {appearance.usageNarrative && (
-              <p className="mt-2 text-xs leading-5 text-white/56">{appearance.usageNarrative}</p>
-            )}
-          </div>
+    <div className="theme-page min-h-screen pb-24 text-white flex flex-col">
+      <div className="px-4 pt-20 pb-4">
+        <div className="mx-auto max-w-5xl">
+          <DiscoverPageHeader
+            eyebrow={appearance.title}
+            title={t("roomPage.title")}
+            subtitle={appearance.usageNarrative ?? t("roomPage.subtitle")}
+            appearance={appearance}
+            tight
+          />
         </div>
       </div>
       <div className="flex-1 relative min-h-[60vh]">
@@ -70,10 +69,11 @@ export default function RoomPage() {
           />
         )}
       </div>
-      <section className="p-4 border-t border-white/10 pb-24">
+      <section className="p-4 border-t border-white/10">
         <h2 className="text-sm font-medium text-white/70 mb-2">{t("roomPage.viewInAr")}</h2>
         <ARViewer color={arColor} onPositionSave={saveARPosition} />
       </section>
+      <BottomNav />
     </div>
   );
 }

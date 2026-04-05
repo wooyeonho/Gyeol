@@ -817,7 +817,11 @@
     "roomBody": "기억이 오브젝트가 되어 채워지는 공간을 둘러보세요.",
     "constellationBody": "기억의 별들이 모여 만드는 별자리를 확인하세요.",
     "dailyChallenges": "오늘의 챌린지",
-    "perfectDay": "완벽한 하루! 보상을 받을 수 있어요"
+    "perfectDay": "완벽한 하루! 보상을 받을 수 있어요",
+    "discussInChat": "채팅에서 이야기하기",
+    "discussAbout": "{name}에 대해 이야기하기",
+    "discussThisPrompt": "방금 {page}에서 {name}을(를) 봤어. 같이 이야기해볼까?",
+    "discussHere": "여기서 본 걸 채팅으로 이어가기"
   },
   "weeklyEvent": {
     "label": "주간 이벤트",

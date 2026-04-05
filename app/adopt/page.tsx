@@ -6,6 +6,8 @@ import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 type BoardItem = {
   agent_id: string;
@@ -70,16 +72,12 @@ export default function AdoptPage() {
 
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-5xl">
-      <header className="theme-panel mb-6 rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-          {t("adoptPage.eyebrow")}
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("adoptPage.title")}</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-white/66">
-          {t("adoptPage.subtitle")}
-        </p>
-      </header>
+      <div className="mx-auto max-w-5xl space-y-4">
+      <DiscoverPageHeader
+        eyebrow={t("adoptPage.eyebrow")}
+        title={t("adoptPage.title")}
+        subtitle={t("adoptPage.subtitle")}
+      />
       {error && (
         <div className="mb-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {error}
@@ -142,6 +140,15 @@ export default function AdoptPage() {
                     {chip}
                   </span>
                 ))}
+              </div>
+              <div className="mt-4">
+                <DiscussInChatButton
+                  prompt={t("discover.discussThisPrompt")
+                    .replace("{name}", item.self_name || t("adoptPage.nameless"))
+                    .replace("{page}", t("adoptPage.title"))}
+                  label={t("discover.discussInChat")}
+                  variant="ghost"
+                />
               </div>
             </div>
           );
