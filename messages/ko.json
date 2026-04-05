@@ -814,7 +814,9 @@
     "moreWays": "더 둘러볼 수 있는 곳",
     "allEmpty": "대화를 나눌수록 여기가 채워집니다. 활동 기록, 성장 앨범, 소셜 관계가 하나씩 나타날 거예요.",
     "roomBody": "기억이 오브젝트가 되어 채워지는 공간을 둘러보세요.",
-    "constellationBody": "기억의 별들이 모여 만드는 별자리를 확인하세요."
+    "constellationBody": "기억의 별들이 모여 만드는 별자리를 확인하세요.",
+    "dailyChallenges": "오늘의 챌린지",
+    "perfectDay": "완벽한 하루! 보상을 받을 수 있어요"
   },
   "weeklyEvent": {
     "label": "주간 이벤트",

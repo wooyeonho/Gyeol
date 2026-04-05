@@ -34,10 +34,10 @@ export function NavigationHub() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="theme-panel fixed top-4 right-4 z-50 min-h-12 min-w-12 rounded-full shadow-lg theme-text-subtle transition-colors hover:brightness-105"
+        className="theme-panel fixed top-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center rounded-full shadow-lg theme-text-subtle transition-colors hover:brightness-105"
         aria-label={t("common.openMenu")}
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="h-5 w-5" />
       </button>
 
       {isOpen && (
