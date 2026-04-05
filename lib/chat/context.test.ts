@@ -65,15 +65,20 @@ function createReader() {
       }
       throw new Error(`unexpected table: ${table}`);
     },
-    rpc: async () => ({
-      data: [
-        {
-          id: "mem-1",
-          content: "The user often talks about change.",
-          reference_count: 2,
-        },
-      ],
-    }),
+    rpc: async (fn: string) => {
+      if (fn === "match_memories") {
+        return {
+          data: [
+            {
+              id: "mem-1",
+              content: "The user often talks about change.",
+              reference_count: 2,
+            },
+          ],
+        };
+      }
+      return { data: null };
+    },
   };
 }
 
@@ -86,6 +91,12 @@ function createWriter() {
           eq: async () => ({ error: null }),
         }),
       };
+    },
+    rpc: async (fn: string) => {
+      if (fn === "batch_increment_reference_count") {
+        return { data: null };
+      }
+      return { data: null };
     },
   };
 }

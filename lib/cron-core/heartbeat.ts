@@ -67,7 +67,7 @@ async function runOptionalStep(
   }
 }
 
-async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl", _cronSecret: string) {
+async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl") {
   try {
     if (action === "learner") {
       const { executeLearner } = await import("@/lib/cron-core/learner");
@@ -314,7 +314,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
             summary: `Autonomous task created: ${autonomyPlan.research_task}`,
           });
           if (cronSecret && (autonomyPlan.action === "learner" || autonomyPlan.action === "crawl")) {
-            await triggerAutonomousAction(baseUrl, autonomyPlan.action, cronSecret);
+            await triggerAutonomousAction(baseUrl, autonomyPlan.action);
             await db.from("autonomous_logs").insert({
               agent_id: agentId,
               action_type: "heartbeat_action_triggered",

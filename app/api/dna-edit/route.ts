@@ -6,7 +6,7 @@ import {
   validateEdits,
   applyDNAEdits,
 } from "@/lib/genome/dna-editor";
-import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 
 /**
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const currentDNA = genome.dna as CreatureDNA;
 
     // Build a preview DNA with edits applied
-    const { dna: previewDNA, changedAxes, totalDelta } = applyDNAEdits(currentDNA, edits);
+    const { dna: previewDNA, changedAxes } = applyDNAEdits(currentDNA, edits);
 
     if (changedAxes.length === 0) {
       return NextResponse.json({ error: "No changes detected" }, { status: 400 });

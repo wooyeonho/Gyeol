@@ -133,14 +133,6 @@ function fallbackStream(text: string): ReadableStream {
   });
 }
 
-function getFallbackText(systemPrompt: string) {
-  if (systemPrompt.includes("日本語")) return "...頭が少しぼんやりする。少し待っていて。";
-  if (systemPrompt.includes("中文")) return "...脑子有点晕。等我一下。";
-  if (systemPrompt.includes("español")) return "...La cabeza me da vueltas. Espérame un momento.";
-  if (systemPrompt.includes("English")) return "...my head feels foggy right now. give me a moment.";
-  return "...머리가 좀 멍해. 잠깐만 기다려줘.";
-}
-
 /** Derive max_tokens from verbal axis value embedded in the system prompt.
  *  Values aligned with chat/route.ts verbal axis thresholds. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { generateInitialDNA, applySoftMutation, type CreatureDNA, DNA_AXES } from "@/lib/genome/dna";
 import { DNAReveal } from "@/components/demo/dna-reveal";
 import { FriendPreview } from "@/components/demo/friend-preview";

@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Allow anonymous users — just verify some user exists
     const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.auth.getUser();
     // Demo works even without auth — we don't persist anything
 
     // Count turns from history

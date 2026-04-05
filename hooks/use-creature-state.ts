@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveIdleBehavior, type IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { deriveAffinityMood } from "@/lib/creature/affinity-tracker";
-import { createForceState, stepForceSimulation, type ForceState, type Vec2 } from "@/lib/creature/force-system";
+import { createForceState, stepForceSimulation, type ForceState } from "@/lib/creature/force-system";
 import type { CreatureDNA } from "@/lib/genome/dna";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";

@@ -3,7 +3,6 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   groupByDate,
-  calculateDNAChanges,
   prepareRadarChartData,
   getDominantMood,
   DEFAULT_TIMELINE_DAYS,

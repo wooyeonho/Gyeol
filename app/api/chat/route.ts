@@ -15,7 +15,6 @@ import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
-import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { trySemanticCache } from "@/lib/chat/semantic-cache";
 

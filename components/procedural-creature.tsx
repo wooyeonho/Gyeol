@@ -255,7 +255,6 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const contEyes = conMorph.eyeCount;
     // Floor = how many full eyes; fractional part = partial eye opacity
     const fullCount = Math.floor(Math.min(contEyes, 5));
-    const _fractional = contEyes - fullCount; // reserved for future partial-eye rendering
     // For backward compat: 1 eye = cyclops mode
     const count = fullCount < 2 ? 1 : fullCount;
     const thirdEyeOpacity = count >= 2 ? Math.min(1, contEyes - 2) : 0;

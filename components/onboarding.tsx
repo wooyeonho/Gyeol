@@ -166,46 +166,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
 /* ---------- Step sub-components ---------- */
 
-function StepWelcome({ t }: { t: (key: string) => string }) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10">
-        <span className="text-4xl" aria-hidden="true">✨</span>
-      </div>
-      <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.instantTitle")}
-      </h1>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.instantBody")}
-      </p>
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
-        <p className="text-sm font-medium text-white">{t("onboarding.instantChecklistTitle")}</p>
-        <ul className="mt-2 space-y-1.5 text-sm leading-6 text-white/75">
-          <li>{t("onboarding.instantChecklist1")}</li>
-          <li>{t("onboarding.instantChecklist2")}</li>
-          <li>{t("onboarding.instantChecklist3")}</li>
-        </ul>
-      </div>
-    </>
-  );
-}
-
-function StepAlive({ t }: { t: (key: string) => string }) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10">
-        <span className="text-4xl" aria-hidden="true">🌱</span>
-      </div>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.step1Title")}
-      </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.step1Desc")}
-      </p>
-    </>
-  );
-}
-
 function StepPersonality({
   t,
   selectedMode,

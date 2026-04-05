@@ -7,9 +7,7 @@ vi.mock("@/lib/supabase/service", () => ({
 import { createServiceClient } from "@/lib/supabase/service";
 
 function makeDb() {
-  const eqFn = vi.fn().mockReturnThis();
   const ltFn = vi.fn().mockResolvedValue({});
-  const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
   const selectFn = vi.fn().mockReturnValue({
     eq: vi.fn().mockReturnValue({
       single: vi.fn().mockResolvedValue({ data: { reference_count: 3 } }),

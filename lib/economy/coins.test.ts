@@ -55,7 +55,6 @@ describe("getBalance", () => {
   });
 
   it("returns 0 when coins field is null", async () => {
-    const { db } = makeDb({ coins: undefined as unknown as number });
     const from = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) }),

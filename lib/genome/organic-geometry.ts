@@ -20,11 +20,6 @@ function noise3D(x: number, y: number, z: number): number {
   return (n - Math.floor(n)) * 2 - 1;
 }
 
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-  return t * t * (3 - 2 * t);
-}
-
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
@@ -63,7 +58,6 @@ function makeCapsule(
   radialSegments: number = 6,
   heightSegments: number = 1,
 ): THREE.BufferGeometry {
-  const totalHeight = halfHeight * 2 + radius * 2;
   const geo = new THREE.CapsuleGeometry(radius, halfHeight * 2, Math.max(2, radialSegments), Math.max(1, heightSegments));
   const src = geo.toNonIndexed();
   return src;
@@ -106,7 +100,6 @@ function translateGeo(geo: THREE.BufferGeometry, dx: number, dy: number, dz: num
     pos[i + 1] += dy;
     pos[i + 2] += dz;
   }
-  pos.length; // keep TS happy
 }
 
 /** Rotate all vertices around Z axis (for tilting limbs outward). */
@@ -148,15 +141,6 @@ function rotateGeoY(geo: THREE.BufferGeometry, angle: number): void {
   }
 }
 
-/** Scale all vertices in place. */
-function scaleGeo(geo: THREE.BufferGeometry, sx: number, sy: number, sz: number): void {
-  const pos = geo.attributes.position.array as Float32Array;
-  for (let i = 0; i < pos.length; i += 3) {
-    pos[i] *= sx;
-    pos[i + 1] *= sy;
-    pos[i + 2] *= sz;
-  }
-}
 
 // ─── Manual merge ──────────────────────────────────────────────────────────
 
@@ -229,8 +213,6 @@ function applyOrganicNoise(
       pos[i * 3 + 1] += noise3D(nx * 3, ny * 3 + 100, nz * 3) * asymAmp * 0.5;
     }
   }
-
-  pos.length; // TS
 }
 
 // ─── Uprightness tilt ──────────────────────────────────────────────────────

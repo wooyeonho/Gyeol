@@ -24,10 +24,6 @@ function makeDb({
 } = {}) {
   const singleState = vi.fn().mockResolvedValue({ data: state ?? null });
   const singleChat = vi.fn().mockResolvedValue({ data: lastChat ?? null });
-  const updateChain = {
-    eq: vi.fn().mockReturnThis(),
-    mockResolvedValue: undefined as unknown,
-  };
   const insertFn = vi.fn().mockResolvedValue({ error: null });
   const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
 
