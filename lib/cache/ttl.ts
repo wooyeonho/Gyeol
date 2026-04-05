@@ -5,6 +5,17 @@ type CacheEntry<T> = {
 
 const CACHE = new Map<string, CacheEntry<unknown>>();
 
+// Periodic sweep to evict expired entries and prevent memory leak on warm instances
+const _sweepInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of CACHE) {
+    if (entry.expiresAt <= now) CACHE.delete(key);
+  }
+}, 60_000); // every 60 seconds
+if (typeof _sweepInterval === "object" && "unref" in _sweepInterval) {
+  (_sweepInterval as { unref: () => void }).unref();
+}
+
 export function getTtlCache<T>(key: string): T | null {
   const entry = CACHE.get(key);
   if (!entry) return null;

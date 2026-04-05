@@ -6,22 +6,20 @@ export async function getBalance(agentId: string): Promise<number> {
   return data?.coins ?? 0;
 }
 
+/**
+ * @deprecated Use {@link addCoinsAtomic} instead to avoid race conditions.
+ */
 export async function addCoins(agentId: string, amount: number, reason: string) {
-  const db = createServiceClient();
-  const { data } = await db.from("agent_state").select("coins").eq("agent_id", agentId).single();
-  const current = data?.coins || 0;
-  await db.from("agent_state").update({ coins: current + amount }).eq("agent_id", agentId);
-  await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "coins_add", summary: `+${amount} coins: ${reason}` });
+  // Delegate to atomic version to prevent race conditions
+  await addCoinsAtomic(agentId, amount, reason);
 }
 
+/**
+ * @deprecated Use {@link spendCoinsAtomic} instead to avoid race conditions.
+ */
 export async function spendCoins(agentId: string, amount: number, reason: string): Promise<boolean> {
-  const db = createServiceClient();
-  const { data } = await db.from("agent_state").select("coins").eq("agent_id", agentId).single();
-  const current = data?.coins || 0;
-  if (current < amount) return false;
-  await db.from("agent_state").update({ coins: current - amount }).eq("agent_id", agentId);
-  await db.from("autonomous_logs").insert({ agent_id: agentId, action_type: "coins_spend", summary: `-${amount} coins: ${reason}` });
-  return true;
+  // Delegate to atomic version to prevent race conditions
+  return spendCoinsAtomic(agentId, amount, reason);
 }
 
 export async function spendCoinsAtomic(agentId: string, amount: number, reason: string): Promise<boolean> {

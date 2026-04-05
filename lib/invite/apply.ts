@@ -1,4 +1,5 @@
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { addCoinsAtomic } from "@/lib/economy/coins";
 import type { createServiceClient } from "@/lib/supabase/service";
 
 const REFERRAL_REWARD_COINS = Math.max(0, Number(process.env.REFERRAL_REWARD_COINS ?? 10));
@@ -40,16 +41,8 @@ export async function applyInviteCodeForUser(
 
   const { agentId: inviterAgentId } = await ensurePrimaryAgent(service, inviterId);
   if (inviterAgentId && REFERRAL_REWARD_COINS > 0) {
-    const { data: inviterState } = await service
-      .from("agent_state")
-      .select("coins")
-      .eq("agent_id", inviterAgentId)
-      .single();
-    const currentCoins = Number((inviterState as { coins?: number } | null)?.coins ?? 0);
-    await service
-      .from("agent_state")
-      .update({ coins: currentCoins + REFERRAL_REWARD_COINS })
-      .eq("agent_id", inviterAgentId);
+    // Atomic coin addition — prevents race condition from concurrent referral rewards
+    await addCoinsAtomic(inviterAgentId, REFERRAL_REWARD_COINS, `referral:${normalizedCode}`);
   }
 
   return { ok: true, rewardedCoins: REFERRAL_REWARD_COINS };

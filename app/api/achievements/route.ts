@@ -63,16 +63,18 @@ export async function GET() {
       }));
       await service.from("agent_achievements").insert(rows);
 
-      // Award rewards
-      for (const id of newlyUnlocked) {
+      // Award rewards — single atomic call instead of N+1 loop
+      const totalReward = newlyUnlocked.reduce((sum, id) => {
         const def = getAchievement(id);
-        if (def?.reward.coins) {
-          await service.rpc("add_coins_atomic", {
-            p_agent_id: agent.id,
-            p_amount: def.reward.coins,
-            p_reason: `achievement:${id}`,
-          });
-        }
+        return sum + (def?.reward.coins ?? 0);
+      }, 0);
+      if (totalReward > 0) {
+        const achievementIds = newlyUnlocked.join(",");
+        await service.rpc("add_coins_atomic", {
+          p_agent_id: agent.id,
+          p_amount: totalReward,
+          p_reason: `achievements:${achievementIds}`,
+        });
       }
     }
 

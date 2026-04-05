@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { spendCoinsAtomic } from "@/lib/economy/coins";
+import { creatureConversationBodySchema, parseBody } from "@/lib/validation/schemas";
 import {
   buildConversationPrompt,
   calculateConversationDNAEffects,
@@ -21,19 +23,11 @@ export async function POST(req: Request) {
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { agentIdA, agentIdB, locale = "ko" } = body as {
-      agentIdA?: string;
-      agentIdB?: string;
-      locale?: string;
-    };
-
-    if (!agentIdA || !agentIdB) {
-      return NextResponse.json({ error: "agentIdA and agentIdB required" }, { status: 400 });
+    const parsed = await parseBody(req, creatureConversationBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    if (agentIdA === agentIdB) {
-      return NextResponse.json({ error: "Cannot talk to self" }, { status: 400 });
-    }
+    const { agentIdA, agentIdB, locale } = parsed.data;
 
     const supabase = createServiceClient();
 
@@ -46,23 +40,23 @@ export async function POST(req: Request) {
       .single();
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    // Atomic coin deduction — prevents race condition from concurrent requests
+    const spent = await spendCoinsAtomic(agentIdA, CONVERSATION_COST, "creature_conversation");
+    if (!spent) {
+      return NextResponse.json(
+        { error: "Not enough coins", required: CONVERSATION_COST },
+        { status: 402 },
+      );
+    }
+
     // Fetch both agents
     const [resA, resB] = await Promise.all([
-      supabase.from("agent_state").select("config, mood, coins").eq("agent_id", agentIdA).single(),
+      supabase.from("agent_state").select("config, mood").eq("agent_id", agentIdA).single(),
       supabase.from("agent_state").select("config, mood").eq("agent_id", agentIdB).single(),
     ]);
 
     if (!resA.data || !resB.data) {
       return NextResponse.json({ error: "One or both agents not found" }, { status: 404 });
-    }
-
-    // Check coins
-    const coins = (resA.data.coins as number) ?? 0;
-    if (coins < CONVERSATION_COST) {
-      return NextResponse.json(
-        { error: "Not enough coins", required: CONVERSATION_COST, current: coins },
-        { status: 402 },
-      );
     }
 
     // Build participants
@@ -134,12 +128,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // Deduct coins from initiator + persist DNA for both creatures
+    // Coins already deducted atomically above — only persist DNA changes
     await Promise.all([
       supabase
         .from("agent_state")
         .update({
-          coins: coins - CONVERSATION_COST,
           config: { ...configA, genome: { ...genomeA, dna: updatedDnaA } },
         })
         .eq("agent_id", agentIdA),
