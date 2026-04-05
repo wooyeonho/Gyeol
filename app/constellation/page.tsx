@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
-import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { BottomNav } from "@/components/bottom-nav";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 
 const ConstellationScene = dynamic(() => import("@/components/constellation-scene"), { ssr: false });
 
@@ -90,17 +89,15 @@ export default function ConstellationPage() {
 
   return (
     <div className="theme-page min-h-screen pb-24 flex flex-col">
-      <div className="border-b border-white/10 p-4">
-        <div className="mx-auto flex max-w-5xl items-start gap-4">
-          <IdentityPresence appearance={appearance} size="md" />
-          <div>
-            <h1 className="text-xl font-semibold">{t("constellationPage.title")}</h1>
-            <p className="mt-1 text-sm text-white/50">{t("constellationPage.subtitle")}</p>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
-            {appearance.usageNarrative && (
-              <p className="mt-2 text-xs leading-5 text-white/56">{appearance.usageNarrative}</p>
-            )}
-          </div>
+      <div className="px-4 pt-20 pb-4">
+        <div className="mx-auto max-w-5xl">
+          <DiscoverPageHeader
+            eyebrow={appearance.title}
+            title={t("constellationPage.title")}
+            subtitle={appearance.usageNarrative ?? t("constellationPage.subtitle")}
+            appearance={appearance}
+            tight
+          />
         </div>
       </div>
       <div className="flex-1 min-h-[50vh] relative">
@@ -157,9 +154,6 @@ export default function ConstellationPage() {
             ))}
           </div>
         </div>
-      </div>
-      <div className="p-4">
-        <Link href="/" className="text-white/50 text-sm hover:text-white/80">{t("constellationPage.backHome")}</Link>
       </div>
       <BottomNav />
     </div>

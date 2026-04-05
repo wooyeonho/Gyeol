@@ -817,7 +817,11 @@
     "roomBody": "Explore a space where memories become objects.",
     "constellationBody": "View constellations formed by clusters of memories.",
     "dailyChallenges": "Today's challenges",
-    "perfectDay": "Perfect day! You can claim a reward"
+    "perfectDay": "Perfect day! You can claim a reward",
+    "discussInChat": "Discuss in chat",
+    "discussAbout": "Talk about {name}",
+    "discussThisPrompt": "I just saw {name} on {page}. Want to talk about them?",
+    "discussHere": "Bring this into chat"
   },
   "weeklyEvent": {
     "label": "Weekly event",

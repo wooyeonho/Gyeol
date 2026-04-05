@@ -7,6 +7,7 @@ import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 import { IdentityPresence } from "@/components/identity-presence";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTranslations } from "@/components/i18n-provider";
 import { readRewardInventory, type RewardInventory } from "@/lib/rewards/variable-reward";
@@ -182,15 +183,13 @@ export default function MarketPage() {
     <div className="theme-page min-h-screen pt-20 pb-24 px-4">
       <div className="mx-auto max-w-5xl">
       {/* Header */}
-      <div className="theme-panel mb-4 flex items-start justify-between gap-3 rounded-[2rem] p-6">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/70">{t("marketPage.eyebrow")}</p>
-          <h1 className="mt-2 text-xl font-semibold">{t("marketPage.title")}</h1>
-          <p className="mt-1 text-sm text-white/60">
-            {appearance.usageNarrative ?? t("marketPage.subtitle")}
-          </p>
-        </div>
-        <IdentityPresence appearance={appearance} size="md" />
+      <div className="mb-4">
+        <DiscoverPageHeader
+          eyebrow={t("marketPage.eyebrow")}
+          title={t("marketPage.title")}
+          subtitle={appearance.usageNarrative ?? t("marketPage.subtitle")}
+          appearance={appearance}
+        />
       </div>
 
       {/* Inventory panel */}

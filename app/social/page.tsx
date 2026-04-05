@@ -8,6 +8,7 @@ import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDateTime } from "@/lib/i18n/format";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 import BreedingCard from "@/components/breeding-card";
 import type { Visual } from "@/components/breeding-card";
 
@@ -460,45 +461,37 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-5xl">
-      <header className="mb-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-        <div className="flex items-start gap-4">
-          <IdentityPresence appearance={appearance} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
-              {t("socialPage.eyebrow")}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("socialPage.title")}</h1>
-            <p className="mt-3 text-sm leading-6 text-white/66">
-              {appearance.usageNarrative ??
-                t("socialPage.subtitle")}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {appearance.chips.map((chip) => (
-                <span
-                  key={chip}
-                  className="rounded-full border px-2 py-1 text-[11px]"
-                  style={{
-                    borderColor: `${appearance.palette.primary}30`,
-                    background: `${appearance.palette.primary}12`,
-                    color: "rgba(255,255,255,0.82)",
-                  }}
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {socialStats.map((item) => (
-                <div key={item.label} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/72">
-                  <span className="text-white/42">{item.label}</span> · <span className="font-medium text-white">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
+      <div className="mx-auto max-w-5xl space-y-4">
+      <DiscoverPageHeader
+        eyebrow={t("socialPage.eyebrow")}
+        title={t("socialPage.title")}
+        subtitle={appearance.usageNarrative ?? t("socialPage.subtitle")}
+        appearance={appearance}
+      >
+        <div className="flex flex-wrap gap-1.5">
+          {appearance.chips.map((chip) => (
+            <span
+              key={chip}
+              className="rounded-full border px-2 py-1 text-[11px]"
+              style={{
+                borderColor: `${appearance.palette.primary}30`,
+                background: `${appearance.palette.primary}12`,
+                color: "rgba(255,255,255,0.82)",
+              }}
+            >
+              {chip}
+            </span>
+          ))}
         </div>
-      </header>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {socialStats.map((item) => (
+            <div key={item.label} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/72">
+              <span className="text-white/42">{item.label}</span> · <span className="font-medium text-white">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </DiscoverPageHeader>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
 
       {/* Tab navigation */}

@@ -9,6 +9,7 @@ import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { useChatStore } from "@/store/chat-store";
 import { haptic } from "@/lib/micro-interactions";
 import { initOrRefreshDailyChallenges } from "@/lib/engagement/daily-challenge";
+import { DiscoverPageHeader } from "@/components/discover/page-header";
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -222,17 +223,11 @@ export default function DiscoverPage() {
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl space-y-4">
-        <header className="theme-panel rounded-[2rem] p-6 shadow-[0_0_80px_rgba(34,211,238,0.05)]">
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-300">
-            {t("discover.eyebrow")}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            {t("discover.title")}
-          </h1>
-          <p className="theme-text-subtle mt-3 max-w-3xl text-base leading-7">
-            {t("discover.subtitle")}
-          </p>
-        </header>
+        <DiscoverPageHeader
+          eyebrow={t("discover.eyebrow")}
+          title={t("discover.title")}
+          subtitle={t("discover.subtitle")}
+        />
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
