@@ -30,7 +30,7 @@ export async function GET() {
       const genome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
       await service.from("agent_state").update({ genome }).eq("agent_id", agentId);
       stateRow.genome = genome;
-      console.log(`[AgentState] Backfilled genome for agent ${agentId}`);
+      console.warn(`[AgentState] Backfilled genome for agent ${agentId}`);
     }
 
     // Include billing plan tier so the reward system can apply plan multipliers

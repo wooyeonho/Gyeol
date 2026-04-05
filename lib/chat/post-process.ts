@@ -146,7 +146,7 @@ export async function persistChatTurn(params: {
     const initialSpecies = deriveSpecies(initialDNA);
     currentGenome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
     genomeBackfilled = true;
-    console.log(`[PostProcess] Backfilled genome for agent ${params.agentId}`);
+    console.warn(`[PostProcess] Backfilled genome for agent ${params.agentId}`);
   }
   let nextGenome = currentGenome;
   let mutationChangedAxes: string[] = [];
@@ -180,7 +180,7 @@ export async function persistChatTurn(params: {
     if (changedAxes.length > 0) {
       const validation = validateDNATransition(currentGenome.dna, finalDNA);
       if (!validation.valid && validation.correctedDna) {
-        console.log(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
+        console.warn(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
         finalDNA = validation.correctedDna;
       }
       // Enforce personality safety (prevent harmful DNA combinations)

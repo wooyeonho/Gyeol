@@ -179,9 +179,26 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     }
   };
 
+  // Verbal mode badge — helps users understand why their creature speaks this way
+  const verbalBadge = (() => {
+    if (verbal < 0.15) return { mode: "SILENT", icon: "🤫", color: "border-red-400/30 text-red-300", desc: t("chat.verbalSilent") || "행동으로만 표현해요" };
+    if (verbal < 0.35) return { mode: "MINIMAL", icon: "💭", color: "border-orange-400/30 text-orange-300", desc: t("chat.verbalMinimal") || "단어나 소리만 내요" };
+    if (verbal < 0.55) return { mode: "BRIEF", icon: "💬", color: "border-yellow-300/30 text-yellow-200", desc: t("chat.verbalBrief") || "짧게 말해요" };
+    if (verbal >= 0.75) return { mode: "ELOQUENT", icon: "✨", color: "border-purple-400/30 text-purple-300", desc: t("chat.verbalEloquent") || "풍부하게 표현해요" };
+    return null; // Normal range (0.55–0.75) — no badge needed
+  })();
+
   return (
     <div className={`flex min-h-0 flex-1 flex-col px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
       <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+        {/* Verbal axis badge — shows when creature has distinctive expression mode */}
+        {verbalBadge && (
+          <div className={`mx-auto mb-2 flex items-center gap-1.5 rounded-full border ${verbalBadge.color} bg-white/[0.03] px-3 py-1 text-[11px] backdrop-blur-sm`}>
+            <span>{verbalBadge.icon}</span>
+            <span className="font-mono text-[10px] opacity-70">{verbalBadge.mode}</span>
+            <span className="opacity-60">{verbalBadge.desc}</span>
+          </div>
+        )}
         <div className="min-h-0 flex-1 overflow-hidden">
           <MessageList
             messages={messages}

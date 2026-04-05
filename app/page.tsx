@@ -523,10 +523,11 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
-        {/* When portrait is present, fade the 3D creature into background aura */}
+        {/* When portrait is present, hide the 3D creature completely to avoid overlap.
+            The portrait IS the creature representation; showing both causes visual confusion. */}
         <div
           className="absolute inset-0 transition-opacity duration-[1200ms]"
-          style={{ opacity: portraitUrl ? 0.35 : 1 }}
+          style={{ opacity: portraitUrl ? 0 : 1, pointerEvents: portraitUrl ? "none" : "auto" }}
         >
         <ThreeErrorBoundary
           fallback={

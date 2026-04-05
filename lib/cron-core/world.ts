@@ -32,7 +32,7 @@ export async function executeWorld(): Promise<CronResult> {
     try {
       const npc = await ensureNpcAgents();
       if (npc.created > 0) {
-        console.log(`[World] NPC seed: created ${npc.created}, existing ${npc.existing}`);
+        console.warn(`[World] NPC seed: created ${npc.created}, existing ${npc.existing}`);
       }
     } catch (e) {
       console.warn("[World] NPC seed skipped:", e instanceof Error ? e.message : e);

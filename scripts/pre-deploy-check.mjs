@@ -26,15 +26,16 @@ function run(label, cmd) {
 
 let ok = true;
 
-// 1. Middleware existence
-console.log("\n--- middleware/proxy check ---");
-const hasProxy = existsSync(resolve(root, "proxy.ts"));
+// 1. Middleware existence — Next.js only recognizes middleware.ts at the project root.
+//    proxy.ts alone is NOT sufficient; it must be re-exported via middleware.ts.
+console.log("\n--- middleware.ts check ---");
 const hasMiddleware = existsSync(resolve(root, "middleware.ts"));
-if (!hasProxy && !hasMiddleware) {
-  console.error("  FAIL: Neither proxy.ts nor middleware.ts found. CSP/Auth will not work.");
+if (!hasMiddleware) {
+  console.error("  FAIL: middleware.ts not found at project root. Next.js will not execute any middleware.");
+  console.error("        CSP headers, CSRF protection, rate limiting, and auth session refresh will be disabled.");
   ok = false;
 } else {
-  console.log(`  OK (proxy.ts: ${hasProxy}, middleware.ts: ${hasMiddleware})`);
+  console.log(`  OK (middleware.ts: ${hasMiddleware})`);
 }
 
 // 2. Typecheck
