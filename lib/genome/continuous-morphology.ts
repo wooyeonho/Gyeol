@@ -271,16 +271,20 @@ export type EvolutionCapacity = {
 export function getEvolutionCapacity(genLevel: number): EvolutionCapacity {
   const gen = Math.max(1, genLevel);
 
-  // Logarithmic growth: fast early, asymptotic later but never capped
-  // Gen 1: 0.3, Gen 5: 0.7, Gen 10: 0.85, Gen 20: 0.95, Gen 50: ~1.05
-  const expressionBase = 0.3 + 0.7 * (1 - 1 / (1 + (gen - 1) * 0.2));
+  // Logarithmic growth: fast early, asymptotic later but never capped.
+  // Gen 1 baseline raised from 0.3 → 0.7 so new creatures have VISIBLE
+  // distinctive features (horns, antennae, tail, ears) instead of being
+  // a smooth eyes-on-sphere blob. Evolution still adds more, but every
+  // agent starts as a recognisable character.
+  // Gen 1: 0.70, Gen 5: 0.87, Gen 10: 0.94, Gen 20: 0.98, Gen 50: ~1.05
+  const expressionBase = 0.7 + 0.3 * (1 - 1 / (1 + (gen - 1) * 0.2));
   // Slow linear growth beyond the asymptote (never truly capped)
   const expressionGrowth = Math.max(0, (gen - 10) * 0.005);
   const dnaExpressionRange = expressionBase + expressionGrowth;
 
-  // Morphological complexity: 0.2 at Gen 1, approaches 1.0 around Gen 8
-  // Asymptotic base curve + linear bonus beyond Gen 10 (can exceed 1.0 at high gens)
-  const morphBase = 0.2 + 0.8 * (1 - 1 / (1 + (gen - 1) * 0.3));
+  // Morphological complexity: 0.55 at Gen 1 (raised from 0.2), approaches 1.0 around Gen 8.
+  // Higher baseline means Gen 1 creatures already have body structure, not a plain sphere.
+  const morphBase = 0.55 + 0.45 * (1 - 1 / (1 + (gen - 1) * 0.3));
   const morphBonus = gen > 10 ? (gen - 10) * 0.01 : 0;
   const morphComplexity = morphBase + morphBonus;
 

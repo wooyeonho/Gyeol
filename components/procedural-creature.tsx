@@ -470,8 +470,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     };
   }, [morphWeights, eyeConfig.count]);
 
-  // Large eyes = cute and instantly recognizable as a character
-  const eyeSize = 0.11 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
+  // Refined eye proportions — small enough to read as character, not as sticker decal
+  const eyeSize = 0.068 * (1 + morphWeights.bodyBulge * 0.2) * eyeConfig.sizeMultiplier;
 
   const moodMod = useMemo(() => {
     switch (mood) {
@@ -724,10 +724,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     if (haloRef.current) {
-      const haloPulse = 1 + Math.sin(t * 0.8 * energyMult) * 0.05 + excitePulse * 0.1 + energy * 0.08;
+      const haloPulse = 1.08 + Math.sin(t * 0.8 * energyMult) * 0.03 + excitePulse * 0.05 + energy * 0.04;
       haloRef.current.scale.setScalar(haloPulse);
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
-        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim * idleEmissiveMultRef.current;
+        (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim * idleEmissiveMultRef.current * 0.35;
     }
 
     const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });
@@ -857,10 +857,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   return (
     <group ref={groupRef}>
-      {/* Mood aura glow */}
-      <mesh ref={haloRef}>
+      {/* Mood aura glow — subtle inner rim only, not a dominant halo ring */}
+      <mesh ref={haloRef} scale={1.08}>
         <sphereGeometry args={[0.62, 24, 24]} />
-        <meshBasicMaterial color={moodAuraColor} transparent opacity={moodMod.auraOpacity + appearance.glowIntensity * 0.12} side={THREE.BackSide} depthWrite={false} />
+        <meshBasicMaterial color={moodAuraColor} transparent opacity={(moodMod.auraOpacity + appearance.glowIntensity * 0.12) * 0.35} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
 
       {/* Main body — living shader with bioluminescent glow, toon fallback on low-end */}

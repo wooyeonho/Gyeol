@@ -496,37 +496,11 @@ function Scene({
       <directionalLight position={[-2, 2, -4]} intensity={0.8 * activityDim} color={color} />
       <pointLight color={color} intensity={tapGlow} />
 
-      {/* Pedestal stage — glowing disc the creature stands on */}
-      <group position={[0, -1.1, 0]}>
-        {/* Main disc */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <cylinderGeometry args={[1.4, 1.4, 0.08, 48, 1]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={0.4 * activityDim}
-            roughness={0.4}
-            metalness={0.6}
-            transparent
-            opacity={0.55 * activityDim}
-          />
-        </mesh>
-        {/* Inner glow ring */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-          <ringGeometry args={[1.15, 1.35, 48]} />
-          <meshBasicMaterial color={color} transparent opacity={0.7 * activityDim} side={THREE.DoubleSide} />
-        </mesh>
-        {/* Outer halo ring — soft broadcast */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-          <ringGeometry args={[1.4, 2.1, 48]} />
-          <meshBasicMaterial color={color} transparent opacity={0.12 * activityDim} side={THREE.DoubleSide} />
-        </mesh>
-        {/* Contact shadow blob */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
-          <circleGeometry args={[0.7, 32]} />
-          <meshBasicMaterial color="#000000" transparent opacity={0.35 * activityDim} />
-        </mesh>
-      </group>
+      {/* Subtle contact shadow beneath creature — grounds it without ring noise */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]}>
+        <circleGeometry args={[0.75, 32]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.38 * activityDim} depthWrite={false} />
+      </mesh>
 
       <Float
         speed={floatSpeed * sleepFloatMult}
