@@ -551,6 +551,7 @@ export default function SocialPage() {
               {mutualAgents.map((agent) => {
                 const friendAppearance = resolveIdentityAppearance(
                   {
+                    seed: agent.id,
                     selfName: agent.self_name,
                     visual: agent.visual,
                     genome: agent.genome,
@@ -752,6 +753,7 @@ export default function SocialPage() {
           {visiblePosts.map((post) => {
             const postAppearance = resolveIdentityAppearance(
               {
+                seed: post.author.agent_id,
                 selfName: post.author.self_name,
                 visual: post.author.visual,
                 genome: post.author.genome,
@@ -925,6 +927,7 @@ export default function SocialPage() {
             {otherAgents.slice(0, 6).map((agent) => {
               const otherAppearance = resolveIdentityAppearance(
                 {
+                  seed: agent.id,
                   selfName: agent.self_name,
                   visual: agent.visual,
                   genome: agent.genome,

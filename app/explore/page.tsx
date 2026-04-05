@@ -98,6 +98,7 @@ export default function ExplorePage() {
         {agents.map((a) => {
           const appearance = resolveIdentityAppearance(
             {
+              seed: a.id,
               selfName: a.self_name,
               visual: a.visual,
               genome: { species: a.species },

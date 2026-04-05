@@ -276,6 +276,7 @@ export default function LeaderboardPage() {
                 {context.nearby.map((entry) => {
                   const appearance = resolveIdentityAppearance(
                     {
+                      seed: entry.agent_id,
                       selfName: entry.self_name,
                       visual: entry.visual,
                       config: entry.config,
@@ -344,6 +345,7 @@ export default function LeaderboardPage() {
             {entries.map((entry, i) => {
               const appearance = resolveIdentityAppearance(
                 {
+                  seed: entry.agent_id,
                   selfName: entry.self_name,
                   visual: entry.visual,
                   config: entry.config,
