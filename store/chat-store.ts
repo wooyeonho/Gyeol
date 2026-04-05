@@ -29,7 +29,8 @@ import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/re
 import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface MemoryMomentData { memory: string; age_days: number; similarity: number }
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData }
+interface ResonanceData { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData; resonance?: ResonanceData }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -55,6 +56,7 @@ interface ChatStore {
   weeklyEvent: WeeklyEventState;
   weeklyEventProgress: WeeklyEventProgress;
   pendingWeeklyEventCompletion: boolean;
+  lastResonance: number | null;
   clearReward: () => void;
   claimDailyLoginBonus: (streakDays?: number) => void;
   hydrateRecentMessages: (messages: Message[]) => void;
@@ -122,7 +124,7 @@ async function handleStreamResponse(
   // P6A: Batched streaming — collect deltas in a buffer, flush to Zustand at ~15fps
   // instead of 60+ state updates/sec. Reduces array copies and re-renders dramatically.
   let contentBuffer = "";
-  let metaBuffer: Partial<Pick<Message, "dnaShift" | "traitEmerged" | "memoryMoment">> = {};
+  let metaBuffer: Partial<Pick<Message, "dnaShift" | "traitEmerged" | "memoryMoment" | "resonance">> = {};
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
   const FLUSH_INTERVAL = 66; // ~15fps — smooth enough for text, 4x fewer renders
 
@@ -132,7 +134,7 @@ async function handleStreamResponse(
     const meta = { ...metaBuffer };
     contentBuffer = "";
     metaBuffer = {};
-    if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment) return;
+    if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment && !meta.resonance) return;
     set((s) => {
       const last = s.messages[s.messages.length - 1];
       if (!last || last.role !== "assistant") return s;
@@ -144,10 +146,13 @@ async function handleStreamResponse(
         ...(meta.dnaShift ? { dnaShift: meta.dnaShift } : {}),
         ...(meta.traitEmerged ? { traitEmerged: meta.traitEmerged } : {}),
         ...(meta.memoryMoment ? { memoryMoment: meta.memoryMoment } : {}),
+        ...(meta.resonance ? { resonance: meta.resonance } : {}),
       };
       const msgs = s.messages.slice();
       msgs[msgs.length - 1] = updated;
-      return { messages: msgs };
+      const nextState: Partial<ChatStore> = { messages: msgs };
+      if (meta.resonance) nextState.lastResonance = meta.resonance.score;
+      return nextState;
     });
   }
 
@@ -191,6 +196,15 @@ async function handleStreamResponse(
                 memory: parsed.memory as string,
                 age_days: typeof parsed.age_days === "number" ? parsed.age_days : 0,
                 similarity: typeof parsed.similarity === "number" ? parsed.similarity : 0,
+              };
+              scheduleFlush();
+            } else if (parsed.type === "resonance" && typeof parsed.score === "number") {
+              metaBuffer.resonance = {
+                score: parsed.score as number,
+                delta: typeof parsed.delta === "number" ? parsed.delta : 0,
+                topOverlap: Array.isArray(parsed.top_overlap)
+                  ? (parsed.top_overlap as { axis: string; closeness: number }[])
+                  : [],
               };
               scheduleFlush();
             } else {
@@ -289,6 +303,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   weeklyEvent: readWeeklyEventState(),
   weeklyEventProgress: getWeeklyEventProgress(readWeeklyEventState()),
   pendingWeeklyEventCompletion: false,
+  lastResonance: null,
   clearReward: () => set({ lastReward: null }),
   hydrateRecentMessages: (messages) =>
     set((state) => ({

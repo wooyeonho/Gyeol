@@ -15,6 +15,13 @@ import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import {
+  computeResonance,
+  createInitialUserDNA,
+  resonanceTopOverlap,
+  updateUserDNA,
+  type UserDNA,
+} from "@/lib/genome/user-dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { trySemanticCache } from "@/lib/chat/semantic-cache";
@@ -22,22 +29,51 @@ import { trySemanticCache } from "@/lib/chat/semantic-cache";
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
   if (!text || text.length < 2) return null;
-  // Count characters in major script ranges
   const korean = (text.match(/[\uAC00-\uD7AF\u3131-\u318E]/g) || []).length;
   const japanese = (text.match(/[\u3040-\u309F\u30A0-\u30FF]/g) || []).length;
   const chinese = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
-  // Latin includes accented characters (French é, German ü, Spanish ñ, etc.)
   const latin = (text.match(/[a-zA-Z\u00C0-\u00FF]/g) || []).length;
   const total = korean + japanese + chinese + latin;
   if (total === 0) return null;
   if (korean / total > 0.3) return "Korean (한국어)";
   if (japanese / total > 0.3) return "Japanese (日本語)";
-  // Chinese characters can overlap with Japanese kanji; only flag if no kana present
   if (chinese / total > 0.3 && japanese === 0) return "Chinese (中文)";
-  // Spanish detection: require ñ or inverted punctuation (¿¡) as markers
   if (latin > 0 && /[ñÑ¿¡]/.test(text)) return "Spanish (Español)";
   if (latin / total > 0.5) return "English";
   return null;
+}
+
+/**
+ * Compute the post-turn Resonance Score (결맞춤) inline — no DB wait.
+ * Mirrors the user-DNA update performed by post-process so the score
+ * reflects the just-sent message.
+ */
+function computeInlineResonance(
+  agentState: Record<string, unknown> | null,
+  message: string,
+): {
+  score: number;
+  prevScore: number;
+  delta: number;
+  topOverlap: { axis: string; closeness: number }[];
+} | null {
+  const genome = agentState?.genome as { dna?: CreatureDNA } | null;
+  if (!genome?.dna) return null;
+  const config = (agentState?.config as Record<string, unknown> | null) ?? {};
+  const prevUserDNA = (config.user_dna as UserDNA | undefined) ?? createInitialUserDNA();
+  const { dna: nextUserDNA } = updateUserDNA(prevUserDNA, message);
+  const prevScore = computeResonance(prevUserDNA, genome.dna);
+  const score = computeResonance(nextUserDNA, genome.dna);
+  const overlap = resonanceTopOverlap(nextUserDNA, genome.dna, 3).map((o) => ({
+    axis: o.axis,
+    closeness: Math.round(o.closeness * 1000) / 1000,
+  }));
+  return {
+    score,
+    prevScore,
+    delta: Math.round((score - prevScore) * 10) / 10,
+    topOverlap: overlap,
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +82,6 @@ export async function POST(req: NextRequest) {
     const payload = (await req.json()) as { message?: unknown; locale?: unknown };
     const rawMessage = typeof payload.message === "string" ? payload.message : "";
     if (!rawMessage.trim()) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
-    // Prevent DOS via extremely long messages (8K chars ≈ 2K tokens)
     if (rawMessage.length > 8000) return new Response(JSON.stringify({ error: "Message too long" }), { status: 413 });
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
@@ -59,7 +94,6 @@ export async function POST(req: NextRequest) {
 
     const service = createServiceClient();
 
-    // Resolve billing tier so paid users get higher rate limits (pro=40, premium=80 req/min)
     let billingTier: string | null = null;
     try {
       const { data: sub } = await service
@@ -94,15 +128,12 @@ export async function POST(req: NextRequest) {
       writer: service,
     });
 
-    // Auto-sync detected locale to agent config so autonomous crons
-    // (heartbeat, dream, social, etc.) generate in the user's language.
-    // Uses atomic JSON merge to avoid overwriting config written by persistChatTurn.
+    // Auto-sync locale in background
     const normalizedLocale = normalizeLocale(locale);
     if (normalizedLocale && context.agentState) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
         after(async () => {
-          // Re-read latest config from DB to avoid overwriting usage_profile, goals, trait notifications
           const { data: freshRow } = await service
             .from("agent_state")
             .select("config")
@@ -128,7 +159,6 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    // Detect the user's language from their latest message to enforce matching
     const userLang = detectUserLanguage(payload.message as string);
     const langRule = userLang
       ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
@@ -183,6 +213,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // --- Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity ---
+    const inlineResonance = computeInlineResonance(context.agentState, message);
+
     const allowedOrigin = getAllowedChatOrigin(req.headers.get("origin"), req.nextUrl.origin);
     const headers: HeadersInit = {
       "Content-Type": "text/event-stream",
@@ -207,6 +240,7 @@ export async function POST(req: NextRequest) {
     // Build output stream: AI text + inline DNA/trait events (no waiting for post-processing)
     const metaStream = new ReadableStream<Uint8Array>({
       async start(controller) {
+        // Pipe response stream
         const reader = aiStream.getReader();
         try {
           while (true) {
@@ -235,6 +269,16 @@ export async function POST(req: NextRequest) {
             similarity: context.memoryMoment.similarity,
           });
           controller.enqueue(encoder.encode(`data: ${mmEvent}\n\n`));
+        }
+        // Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity
+        if (inlineResonance) {
+          const resonanceEvent = JSON.stringify({
+            type: "resonance",
+            score: inlineResonance.score,
+            delta: inlineResonance.delta,
+            top_overlap: inlineResonance.topOverlap,
+          });
+          controller.enqueue(encoder.encode(`data: ${resonanceEvent}\n\n`));
         }
         controller.close();
       },
@@ -275,7 +319,7 @@ export async function POST(req: NextRequest) {
     if (isMissingEnvError(e)) {
       return new Response(
         JSON.stringify({ error: "Service unavailable: missing server configuration", code: "MISSING_ENV" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
+        { status: 503, headers: { "Content-Type": "application/json" } },
       );
     }
     return new Response(JSON.stringify({ error: "Internal error" }), {

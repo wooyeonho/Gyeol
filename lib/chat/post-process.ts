@@ -5,6 +5,7 @@ import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
 import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/genome/dna";
+import { createInitialUserDNA, updateUserDNA, type UserDNA } from "@/lib/genome/user-dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -18,7 +19,7 @@ import { checkEvolution } from "@/lib/evolution/gen-level";
 import { processHiddenEmotions } from "@/lib/personality/deception";
 import { updateVoiceParams } from "@/lib/personality/voice";
 
-type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from">;
+type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 type AgentStateRow = Record<string, unknown> & {
   intimacy_score?: number;
   total_messages?: number;
@@ -59,10 +60,28 @@ async function applyGoalLoop(params: {
   if (signal.activeGoal) nextConfig.active_goal = signal.activeGoal;
   if (signal.researchFocus) nextConfig.research_focus = signal.researchFocus;
 
-  await params.writer
-    .from("agent_state")
-    .update({ config: nextConfig })
-    .eq("agent_id", params.agentId);
+  // P4A: Use atomic merge RPC if available, fallback to direct update
+  try {
+    const patch: Record<string, unknown> = { goal_updated_at: nextConfig.goal_updated_at };
+    if (signal.activeGoal) patch.active_goal = signal.activeGoal;
+    if (signal.researchFocus) patch.research_focus = signal.researchFocus;
+    const { error: rpcError } = await params.writer.rpc("merge_agent_config", {
+      p_agent_id: params.agentId,
+      p_patch: patch,
+    });
+    if (rpcError) {
+      // Fallback: direct update
+      await params.writer
+        .from("agent_state")
+        .update({ config: nextConfig })
+        .eq("agent_id", params.agentId);
+    }
+  } catch {
+    await params.writer
+      .from("agent_state")
+      .update({ config: nextConfig })
+      .eq("agent_id", params.agentId);
+  }
 
   await params.writer.from("autonomous_logs").insert({
     agent_id: params.agentId,
@@ -194,14 +213,19 @@ export async function persistChatTurn(params: {
     }
   }
 
-  // Extract and accumulate user preferences (BG3-style: every conversation shapes the relationship)
+  // Extract and accumulate user preferences
   const existingPrefs = (currentConfig.user_preferences as UserPreferences | undefined) ?? createDefaultPreferences();
   const updatedPrefs = extractPreferencesFromTurn(params.message, params.reply, existingPrefs);
+
+  // Reverse-extract user's own 16-axis DNA from message patterns
+  const existingUserDNA = (currentConfig.user_dna as UserDNA | undefined) ?? createInitialUserDNA();
+  const { dna: nextUserDNA } = updateUserDNA(existingUserDNA, params.message);
 
   const nextConfig = {
     ...currentConfig,
     usage_profile: nextUsageProfile,
     user_preferences: updatedPrefs,
+    user_dna: nextUserDNA,
   };
 
   // Real-time mood detection: try DL classifier first, fall back to keyword matching
@@ -251,13 +275,12 @@ export async function persistChatTurn(params: {
   recordServerEvent(PRODUCT_EVENT.chatPostProcessCompleted, {
     agentId: params.agentId,
     durationMs: params.durationMs,
-    goalCaptured: Boolean(goalSignal?.activeGoal),
-    researchFocusUpdated: Boolean(goalSignal?.researchFocus),
+    goalCaptured: false,
+    researchFocusUpdated: false,
     replyLength: params.reply.length,
     totalMessages,
   });
 
-  // Reuse changedAxes from the first applySoftMutation call (deterministic, no need to recompute)
   const changedAxes: string[] = [...mutationChangedAxes];
   let newTraits: { id: string; name: { ko: string; en: string } }[] = [];
   if (currentGenome?.dna && nextGenome !== currentGenome) {

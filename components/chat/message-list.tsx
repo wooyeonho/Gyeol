@@ -34,7 +34,7 @@ export function MessageList({
   simpleModeLevel,
   locale,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[] }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -181,6 +181,50 @@ export function MessageList({
                       {axis} +
                     </span>
                   ))}
+                </motion.div>
+              )}
+              {m.memoryMoment && !isStreaming && (
+                <motion.div
+                  className="mt-2 rounded-xl border p-2.5"
+                  style={{
+                    borderColor: `${appearance.palette.primary}30`,
+                    background: `linear-gradient(135deg, ${appearance.palette.primary}08, ${appearance.palette.primary}03)`,
+                  }}
+                  initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                >
+                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: `${appearance.palette.primary}90` }}>
+                    ✦ {m.memoryMoment.age_days}{locale?.startsWith("ko") ? "일 전의 기억" : "d ago — memory recalled"}
+                  </p>
+                  <p className="mt-1 text-xs italic text-white/50 line-clamp-2">
+                    {maskJargon(m.memoryMoment.memory)}
+                  </p>
+                </motion.div>
+              )}
+              {m.resonance && !isStreaming && (m.resonance.score >= 60 || Math.abs(m.resonance.delta) >= 2) && (
+                <motion.div
+                  className="mt-2 flex items-center gap-2 rounded-full border px-2.5 py-1"
+                  style={{
+                    borderColor: `${appearance.palette.primary}35`,
+                    background: `${appearance.palette.primary}10`,
+                  }}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                  title={m.resonance.topOverlap.map((o) => `${o.axis}: ${Math.round(o.closeness * 100)}%`).join(" · ")}
+                >
+                  <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}b0` }}>
+                    결맞춤
+                  </span>
+                  <span className="text-xs font-semibold" style={{ color: appearance.palette.primary }}>
+                    {m.resonance.score.toFixed(1)}
+                  </span>
+                  {m.resonance.delta !== 0 && (
+                    <span className="text-[10px]" style={{ color: m.resonance.delta > 0 ? "#9fe8a8" : "#f3a4a4" }}>
+                      {m.resonance.delta > 0 ? "▲" : "▼"}{Math.abs(m.resonance.delta).toFixed(1)}
+                    </span>
+                  )}
                 </motion.div>
               )}
               {m.traitEmerged && m.traitEmerged.length > 0 && !isStreaming && (
