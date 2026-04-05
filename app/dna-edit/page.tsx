@@ -8,6 +8,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNATheme } from "@/lib/theme/dna-theme";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
@@ -247,7 +248,7 @@ export default function DnaEditPage() {
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-1.5 text-xs text-white/60">
                             <span>{AXIS_EMOJIS[axis]}</span>
-                            {axis}
+                            {getDnaAxisLabel(axis, locale)}
                           </span>
                           <span className={`text-xs font-mono ${changed ? "text-indigo-300" : "text-white/30"}`}>
                             {(edited * 100).toFixed(0)}%

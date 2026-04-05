@@ -4,6 +4,8 @@ import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { getDominantTraits } from "@/lib/genome/dna";
+import { resolveLocale } from "@/lib/i18n/config";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 
 export const runtime = "edge";
 
@@ -16,6 +18,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const dnaParam = searchParams.get("dna") || "";
   const reading = searchParams.get("reading") || "";
+  const locale = resolveLocale({
+    acceptLanguage: req.headers.get("accept-language"),
+    explicitLocale: searchParams.get("locale"),
+  });
 
   // Parse DNA from comma-separated values
   const values = dnaParam.split(",").map(Number);
@@ -32,14 +38,6 @@ export async function GET(req: NextRequest) {
   const s = Math.round(appearance.primarySaturation);
   const l = Math.round(appearance.primaryLightness);
   const primaryColor = `hsl(${h}, ${s}%, ${l}%)`;
-
-  const AXIS_LABELS: Record<string, string> = {
-    analytical: "Analytical", intuitive: "Intuitive", verbal: "Verbal", spatial: "Spatial",
-    warmth: "Warmth", intensity: "Intensity", stability: "Stability", openness: "Openness",
-    assertiveness: "Assertiveness", empathy: "Empathy", playfulness: "Playfulness",
-    independence: "Independence", curiosity: "Curiosity", persistence: "Persistence",
-    adaptability: "Adaptability", creativity: "Creativity",
-  };
 
   const rarityLabel = species.rarity > 0.7 ? "Rare" : species.rarity > 0.5 ? "Uncommon" : "Common";
 
@@ -153,7 +151,7 @@ export async function GET(req: NextRequest) {
                 color: "rgba(255,255,255,0.7)",
               }}
             >
-              {AXIS_LABELS[axis]} {Math.round(dna[axis] * 100)}%
+              {getDnaAxisLabel(axis, locale)} {Math.round(dna[axis] * 100)}%
             </div>
           ))}
         </div>
