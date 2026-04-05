@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/config";
 
 type BiLocaleText = {
   ko: string;
@@ -7,7 +7,7 @@ type BiLocaleText = {
 
 /** Accept any i18n locale string and normalize to internal Locale. */
 function toLocale(raw: string): Locale {
-  return raw === "ko" ? "ko" : "en";
+  return normalizeLocale(raw) ?? DEFAULT_LOCALE;
 }
 
 type VisualInput = {
@@ -645,7 +645,13 @@ export function resolveIdentityAppearance(
       baseNote: voiceSignature.baseNote,
       tempo: voiceSignature.tempo,
       instruments: voiceSignature.instruments,
-      label: locale === "en" ? "Presence ambience" : "배경 소리",
+      label: ({
+        ko: "배경 소리",
+        ja: "環境音",
+        zh: "环境音",
+        es: "Sonido ambiente",
+        en: "Presence ambience",
+      }[locale]) ?? "Presence ambience",
     },
   };
 }
