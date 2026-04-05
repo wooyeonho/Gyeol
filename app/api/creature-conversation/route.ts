@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { spendCoinsAtomic } from "@/lib/economy/coins";
+import { spendCoinsAtomic, getBalance } from "@/lib/economy/coins";
 import { creatureConversationBodySchema, parseBody } from "@/lib/validation/schemas";
 import {
   buildConversationPrompt,
@@ -39,6 +39,16 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .single();
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Cheap balance pre-check — reject broke users before expensive AI call.
+    // Not race-condition-proof, but prevents obvious cost abuse. Atomic deduction below handles consistency.
+    const balance = await getBalance(agentIdA);
+    if (balance < CONVERSATION_COST) {
+      return NextResponse.json(
+        { error: "Not enough coins", required: CONVERSATION_COST },
+        { status: 402 },
+      );
+    }
 
     // Fetch both agents
     const [resA, resB] = await Promise.all([
