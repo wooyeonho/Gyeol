@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { addCoinsAtomic, spendCoinsAtomic } from "@/lib/economy/coins";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { socialGiftBodySchema, parseBody } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -14,14 +15,13 @@ export async function POST(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetAgentId = typeof body?.target_agent_id === "string" ? body.target_agent_id : "";
-    const coins = Math.floor(Number(body?.coins ?? 0));
-    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
-    if (!targetAgentId || coins <= 0) {
-      return NextResponse.json({ error: "target_agent_id and positive coins required" }, { status: 400 });
+    const parsed = await parseBody(req, socialGiftBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    if (coins > 10000) return NextResponse.json({ error: "coins too large" }, { status: 400 });
+    const targetAgentId = parsed.data.target_agent_id;
+    const coins = parsed.data.coins;
+    const message = sanitizeUserInput(parsed.data.message);
 
     const service = createServiceClient();
     const { data: myAgent } = await service.from("agents").select("id").eq("user_id", user.id).single();

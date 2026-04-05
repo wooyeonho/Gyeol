@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { spendCoinsAtomic } from "@/lib/economy/coins";
+import { careBodySchema, parseBody } from "@/lib/validation/schemas";
 import {
   applyCareDecay,
   createDefaultCareState,
@@ -69,34 +71,32 @@ export async function POST(req: Request) {
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { agentId, action } = body as { agentId?: string; action?: string };
-
-    if (!agentId || !action) {
-      return NextResponse.json({ error: "agentId and action required" }, { status: 400 });
+    const parsed = await parseBody(req, careBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    if (action !== "feed" && action !== "rest") {
-      return NextResponse.json({ error: "action must be 'feed' or 'rest'" }, { status: 400 });
-    }
+    const { agentId, action } = parsed.data;
 
     const { owned, service: supabase } = await verifyOwnership(user.id, agentId);
     if (!owned) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { data } = await supabase
       .from("agent_state")
-      .select("config, coins")
+      .select("config")
       .eq("agent_id", agentId)
       .single();
 
     if (!data) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
     const config = (data.config ?? {}) as Record<string, unknown>;
-    const coins = (data.coins as number) ?? 0;
     const careState = (config.care_state as CareState | undefined) ?? createDefaultCareState();
     const decayed = applyCareDecay(careState);
 
     const cost = action === "feed" ? FEED_COST : REST_COST;
-    if (coins < cost) {
-      return NextResponse.json({ error: "Not enough coins", required: cost, current: coins }, { status: 402 });
+
+    // Atomic coin deduction — prevents race condition from concurrent requests
+    const spent = await spendCoinsAtomic(agentId, cost, `care:${action}`);
+    if (!spent) {
+      return NextResponse.json({ error: "Not enough coins", required: cost }, { status: 402 });
     }
 
     // Extract creature DNA for DNA-aware care responses
@@ -125,12 +125,10 @@ export async function POST(req: Request) {
       updatedConfig.genome = { ...genome, dna };
     }
 
+    // Coins already deducted atomically above — only persist config changes
     await supabase
       .from("agent_state")
-      .update({
-        config: updatedConfig,
-        coins: coins - cost,
-      })
+      .update({ config: updatedConfig })
       .eq("agent_id", agentId);
 
     return NextResponse.json({ careState: newCareState, coinsSpent: cost, dnaNudge });

@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { logRouteError } from "@/lib/ops/logger";
+import { pushSubscribeBodySchema, parseBody } from "@/lib/validation/schemas";
 
 export async function POST(req: Request) {
   try {
-    const { subscription, agentId } = await req.json();
-    if (!subscription || !subscription.endpoint) {
-      return NextResponse.json({ error: "No subscription" }, { status: 400 });
+    const parsed = await parseBody(req, pushSubscribeBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { subscription, agentId } = parsed.data;
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

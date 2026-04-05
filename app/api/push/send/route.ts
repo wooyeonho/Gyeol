@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import webpush from "web-push";
 import { logRouteError } from "@/lib/ops/logger";
+import { pushSendBodySchema, parseBody } from "@/lib/validation/schemas";
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -18,7 +19,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { agentId, title, body, url } = await req.json();
+    const parsed = await parseBody(req, pushSendBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { agentId, title, body, url } = parsed.data;
     const service = createServiceClient();
 
     let query = service.from("push_subscriptions").select("*");

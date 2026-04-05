@@ -4,6 +4,10 @@ vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn().mockResolvedValue({ agentId: "inviter-agent" }),
 }));
 
+vi.mock("@/lib/economy/coins", () => ({
+  addCoinsAtomic: vi.fn().mockResolvedValue(true),
+}));
+
 import { applyInviteCodeForUser } from "./apply";
 
 function makeDb(opts: {
@@ -77,6 +81,7 @@ describe("applyInviteCodeForUser", () => {
   });
 
   it("creates referral and rewards coins for new valid code", async () => {
+    const { addCoinsAtomic } = await import("@/lib/economy/coins");
     const { db, insertFn } = makeDb({
       inviteRow: { user_id: "inviter-1" },
       existingReferral: null,
@@ -93,6 +98,11 @@ describe("applyInviteCodeForUser", () => {
         invitee_id: "user-2",
         code: "code123",
       })
+    );
+    expect(addCoinsAtomic).toHaveBeenCalledWith(
+      "inviter-agent",
+      expect.any(Number),
+      expect.stringContaining("referral"),
     );
   });
 

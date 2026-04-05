@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { spendCoinsAtomic, getBalance } from "@/lib/economy/coins";
+import { dnaEditBodySchema, parseBody } from "@/lib/validation/schemas";
 import {
   calculateEditCost,
   validateEdits,
   applyDNAEdits,
 } from "@/lib/genome/dna-editor";
-import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 
 /**
@@ -20,15 +22,11 @@ export async function POST(req: Request) {
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { agentId, edits } = body as {
-      agentId?: string;
-      edits?: Record<string, number>;
-    };
-
-    if (!agentId || !edits) {
-      return NextResponse.json({ error: "agentId and edits required" }, { status: 400 });
+    const parsed = await parseBody(req, dnaEditBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { agentId, edits } = parsed.data;
 
     const supabase = createServiceClient();
     const { data: ownership } = await supabase
@@ -40,14 +38,13 @@ export async function POST(req: Request) {
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { data } = await supabase
       .from("agent_state")
-      .select("config, coins")
+      .select("config")
       .eq("agent_id", agentId)
       .single();
 
     if (!data) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
     const config = (data.config ?? {}) as Record<string, unknown>;
-    const coins = (data.coins as number) ?? 0;
     const genome = config.genome as Record<string, unknown> | undefined;
 
     if (!genome?.dna) {
@@ -69,11 +66,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid edits", details: validation.errors }, { status: 400 });
     }
 
-    // Calculate cost
+    // Calculate cost and deduct atomically
     const cost = calculateEditCost(currentDNA, previewDNA);
-    if (coins < cost) {
+    const spent = await spendCoinsAtomic(agentId, cost, "dna_edit");
+    if (!spent) {
       return NextResponse.json(
-        { error: "Not enough coins", required: cost, current: coins },
+        { error: "Not enough coins", required: cost },
         { status: 402 },
       );
     }
@@ -88,20 +86,19 @@ export async function POST(req: Request) {
       element: newSpecies.element,
     };
 
+    // Coins already deducted atomically above — only persist config changes
     await supabase
       .from("agent_state")
-      .update({
-        config: { ...config, genome: updatedGenome },
-        coins: coins - cost,
-      })
+      .update({ config: { ...config, genome: updatedGenome } })
       .eq("agent_id", agentId);
 
+    const remaining = await getBalance(agentId);
     return NextResponse.json({
       dna: previewDNA,
       species: newSpecies,
       changedAxes,
       coinsSpent: cost,
-      coinsRemaining: coins - cost,
+      coinsRemaining: remaining,
     });
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
