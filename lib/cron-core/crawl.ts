@@ -211,7 +211,7 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
         await service.from("autonomous_logs").insert({
           agent_id: agentId,
           action_type: "research_task_completed",
-          summary: `Research task completed via crawl: ${(pendingTask as { title: string }).title}`,
+          summary: (pendingTask as { title: string }).title,
         });
 
         const { data: refreshedState } = await service
