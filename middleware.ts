@@ -28,7 +28,7 @@ function checkCsrfOrigin(request: NextRequest): boolean {
   const host = request.headers.get("host");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-  // Build set of allowed origins
+  // Build set of allowed origin hosts
   const allowed = new Set<string>();
   if (host) allowed.add(host);
   if (appUrl) {
@@ -38,6 +38,22 @@ function checkCsrfOrigin(request: NextRequest): boolean {
   }
   // Vercel preview deployments
   if (host?.endsWith(".vercel.app")) allowed.add(host);
+
+  // Custom override for preview / staging deploys (matches lib/security/csrf.ts)
+  const extraOrigins = process.env.CSRF_ALLOWED_ORIGINS;
+  if (extraOrigins) {
+    for (const o of extraOrigins.split(",")) {
+      const trimmed = o.trim();
+      if (trimmed) {
+        try {
+          allowed.add(new URL(trimmed).host);
+        } catch {
+          // If not a valid URL, treat as a raw host value
+          allowed.add(trimmed);
+        }
+      }
+    }
+  }
 
   if (origin) {
     try {
