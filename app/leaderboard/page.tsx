@@ -368,14 +368,23 @@ export default function LeaderboardPage() {
               return (
                 <div
                   key={`${entry.rank}-${entry.agent_id}`}
-                  className={`relative flex items-center gap-4 rounded-2xl border p-4 transition-colors ${
+                  className={`group relative flex items-center gap-4 overflow-hidden rounded-[1.75rem] border p-4 transition-all duration-300 hover:-translate-y-0.5 ${
                     entry.is_self
                       ? "border-cyan-300/25 bg-cyan-400/10"
                       : isTop3
-                        ? "border-white/15 bg-gradient-to-r from-white/[0.06] to-transparent"
+                        ? "border-white/15"
                         : "border-white/8 bg-white/[0.03]"
                   }`}
-                  style={isTop3 && !entry.is_self ? { borderColor: `${color}35` } : undefined}
+                  style={
+                    isTop3 && !entry.is_self
+                      ? {
+                          borderColor: `${color}35`,
+                          background: appearance.scene?.backgroundGradient
+                            ? `${appearance.scene.backgroundGradient}, linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%)`
+                            : `linear-gradient(135deg, ${color}12 0%, transparent 60%)`,
+                        }
+                      : undefined
+                  }
                 >
                   <div
                     className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold ${

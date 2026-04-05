@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
-import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
+import { AgentCard } from "@/components/discover/agent-card";
 
 type BoardItem = {
   agent_id: string;
@@ -64,7 +64,7 @@ export default function AdoptPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="theme-page min-h-screen flex items-center justify-center">
         <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
       </div>
     );
@@ -73,75 +73,48 @@ export default function AdoptPage() {
   return (
     <div className="theme-page min-h-screen px-4 pb-24 pt-20">
       <div className="mx-auto max-w-5xl space-y-4">
-      <DiscoverPageHeader
-        eyebrow={t("adoptPage.eyebrow")}
-        title={t("adoptPage.title")}
-        subtitle={t("adoptPage.subtitle")}
-      />
-      {error && (
-        <div className="mb-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-          {error}
-        </div>
-      )}
-      <div className="grid gap-4 md:grid-cols-2">
-        {items.map((item) => {
-          const appearance = resolveIdentityAppearance(
-            {
-              seed: item.agent_id,
-              selfName: item.self_name,
-              visual: item.visual,
-              genome: { species: item.species },
-              config: item.config ?? null,
-              vitality: item.vitality ?? 0,
-            },
-            locale
-          );
+        <DiscoverPageHeader
+          eyebrow={t("adoptPage.eyebrow")}
+          title={t("adoptPage.title")}
+          subtitle={t("adoptPage.subtitle")}
+        />
+        {error && (
+          <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          {items.map((item) => {
+            const appearance = resolveIdentityAppearance(
+              {
+                seed: item.agent_id,
+                selfName: item.self_name,
+                visual: item.visual,
+                genome: { species: item.species },
+                config: item.config ?? null,
+                vitality: item.vitality ?? 0,
+              },
+              locale
+            );
 
-          return (
-            <div
-              key={item.agent_id}
-              className="theme-panel rounded-[1.75rem] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <IdentityPresence appearance={appearance} size="md" />
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{appearance.title}</p>
-                    <div className="mt-2 text-base font-medium text-white">{item.self_name || t("adoptPage.nameless")}</div>
-                    <div className="mt-1 text-sm text-white/68">
-                      {t("adoptPage.statsLine")
-                        .replace("{vitality}", String(Math.round((item.vitality ?? 0) * 100)))
-                        .replace("{memory}", String(item.memory_count ?? 0))
-                        .replace("{days}", String(item.days_alive ?? 0))}
-                    </div>
-                  </div>
-                </div>
+            return (
+              <AgentCard
+                key={item.agent_id}
+                appearance={appearance}
+                name={item.self_name || t("adoptPage.nameless")}
+                stats={[
+                  { label: t("chat.vitality"), value: `${Math.round((item.vitality ?? 0) * 100)}%` },
+                  { label: t("explore.memory"), value: String(item.memory_count ?? 0) },
+                  { label: t("adoptPage.daysAlive") || "Days", value: String(item.days_alive ?? 0) },
+                ]}
+              >
                 <button
                   onClick={() => void adopt(item.agent_id)}
                   disabled={submittingId === item.agent_id}
-                  className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-50"
                 >
                   {t("adoptPage.adopt")}
                 </button>
-              </div>
-
-              <p className="mt-4 text-sm leading-6 text-white/58">{appearance.usageNarrative ?? appearance.subtitle}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {appearance.chips.map((chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full border px-2 py-1 text-[11px]"
-                    style={{
-                      borderColor: `${appearance.palette.primary}30`,
-                      background: `${appearance.palette.primary}12`,
-                      color: "rgba(255,255,255,0.82)",
-                    }}
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-4">
                 <DiscussInChatButton
                   prompt={t("discover.discussThisPrompt")
                     .replace("{name}", item.self_name || t("adoptPage.nameless"))
@@ -149,21 +122,18 @@ export default function AdoptPage() {
                   label={t("discover.discussInChat")}
                   variant="ghost"
                 />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {items.length === 0 && (
-        <div className="mt-6">
+              </AgentCard>
+            );
+          })}
+        </div>
+        {items.length === 0 && (
           <AnimatedEmptyState
             icon="explore"
             title={t("explore.emptyTitle")}
             description={t("explore.emptyDesc")}
             accentColor="#67e8f9"
           />
-        </div>
-      )}
+        )}
       </div>
       <BottomNav />
     </div>
