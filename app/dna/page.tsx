@@ -10,6 +10,7 @@ import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
 import { PortraitGallery } from "@/components/portrait-gallery";
 import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -232,6 +233,17 @@ export default function DNAPage() {
               </>
             )}
           </div>
+          {dna && (
+            <div className="mt-3 flex justify-center">
+              <DiscussInChatButton
+                prompt={t("discover.discussThisPrompt")
+                  .replace("{name}", agentState?.self_name || "GYEOL")
+                  .replace("{page}", "DNA")}
+                label={t("discover.discussHere")}
+                variant="ghost"
+              />
+            </div>
+          )}
         </header>
 
         {/* Radar chart */}

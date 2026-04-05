@@ -8,6 +8,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { ManifestationTimeline } from "@/components/manifestation-timeline";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
@@ -23,6 +24,7 @@ export default function AlbumPage() {
   const [loading, setLoading] = useState(true);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const { locale, t } = useTranslations();
   const appearance = resolveIdentityAppearance({ visual, config }, locale);
   const completeness = useMemo(
@@ -36,6 +38,7 @@ export default function AlbumPage() {
 
   async function handleShare() {
     setShareLoading(true);
+    setShareError(null);
     try {
       const res = await fetch("/api/share", { method: "POST" });
       const json = await res.json().catch(() => null);
@@ -44,7 +47,14 @@ export default function AlbumPage() {
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(json.url);
         }
+      } else {
+        setShareError(
+          (json && typeof json.error === "string" ? json.error : null) ??
+            t("album.shareFailed")
+        );
       }
+    } catch {
+      setShareError(t("album.shareFailed"));
     } finally {
       setShareLoading(false);
     }
@@ -88,7 +98,15 @@ export default function AlbumPage() {
           title={t("album.title")}
           subtitle={appearance.usageNarrative ?? t("album.subtitle")}
           appearance={appearance}
-        />
+        >
+          <DiscussInChatButton
+            prompt={t("discover.discussThisPrompt")
+              .replace("{name}", appearance.title)
+              .replace("{page}", t("album.title"))}
+            label={t("discover.discussHere")}
+            variant="ghost"
+          />
+        </DiscoverPageHeader>
         {loading ? (
           <div className="flex justify-center py-12">
             <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
@@ -202,6 +220,9 @@ export default function AlbumPage() {
           >
             {shareLoading ? "..." : shareUrl ? t("album.shareReady") : t("album.shareAction")}
           </button>
+          {shareError && (
+            <span className="text-xs text-red-300 self-center">{shareError}</span>
+          )}
           <Link
             href="/"
             className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"

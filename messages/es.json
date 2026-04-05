@@ -165,6 +165,7 @@
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
     "shareAction": "Share growth card",
+    "shareFailed": "No se pudo crear el enlace",
     "collectionEyebrow": "Collection",
     "collectionProgress": "{percent}% of all milestones collected",
     "emptyDesc": "Start chatting to create your first milestone"
@@ -816,7 +817,13 @@
     "moreWays": "More ways to explore",
     "allEmpty": "Esto se llena a medida que hablas. Registros de actividad, álbumes de crecimiento y conexiones sociales aparecerán poco a poco.",
     "roomBody": "Explora un espacio donde los recuerdos se convierten en objetos.",
-    "constellationBody": "Ve constelaciones formadas por grupos de recuerdos."
+    "constellationBody": "Ve constelaciones formadas por grupos de recuerdos.",
+    "dailyChallenges": "Desafíos del día",
+    "perfectDay": "¡Día perfecto! Puedes reclamar una recompensa",
+    "discussInChat": "Hablar en el chat",
+    "discussAbout": "Hablar de {name}",
+    "discussThisPrompt": "Acabo de ver a {name} en {page}. ¿Charlamos sobre esto?",
+    "discussHere": "Llevar esto al chat"
   },
   "weeklyEvent": {
     "label": "Weekly event",

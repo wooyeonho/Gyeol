@@ -165,6 +165,7 @@
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
     "shareAction": "Share growth card",
+    "shareFailed": "共有リンクを作成できませんでした",
     "collectionEyebrow": "Collection",
     "collectionProgress": "{percent}% of all milestones collected",
     "emptyDesc": "Start chatting to create your first milestone"
@@ -816,7 +817,13 @@
     "moreWays": "More ways to explore",
     "allEmpty": "会話を重ねるほど、ここが埋まっていきます。活動記録、成長アルバム、ソーシャルが一つずつ現れます。",
     "roomBody": "記憶がオブジェクトになる空間を探索しましょう。",
-    "constellationBody": "記憶の星たちが作る星座を確認しましょう。"
+    "constellationBody": "記憶の星たちが作る星座を確認しましょう。",
+    "dailyChallenges": "今日のチャレンジ",
+    "perfectDay": "完璧な一日！報酬を受け取れます",
+    "discussInChat": "チャットで話す",
+    "discussAbout": "{name}について話す",
+    "discussThisPrompt": "さっき{page}で{name}を見たよ。一緒に話してみる？",
+    "discussHere": "ここで見たものをチャットへ"
   },
   "weeklyEvent": {
     "label": "Weekly event",

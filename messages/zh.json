@@ -165,6 +165,7 @@
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
     "shareAction": "Share growth card",
+    "shareFailed": "无法创建分享链接",
     "collectionEyebrow": "Collection",
     "collectionProgress": "{percent}% of all milestones collected",
     "emptyDesc": "Start chatting to create your first milestone"
@@ -816,7 +817,13 @@
     "moreWays": "More ways to explore",
     "allEmpty": "随着对话的增多，这里会逐渐丰富起来。活动记录、成长相册、社交关系会一一出现。",
     "roomBody": "探索记忆变成物体的空间。",
-    "constellationBody": "查看由记忆之星组成的星座。"
+    "constellationBody": "查看由记忆之星组成的星座。",
+    "dailyChallenges": "每日挑战",
+    "perfectDay": "完美的一天！可以领取奖励",
+    "discussInChat": "去聊天聊聊",
+    "discussAbout": "聊聊{name}",
+    "discussThisPrompt": "我刚在{page}看到{name}，一起聊聊吗？",
+    "discussHere": "把这里看到的带进聊天"
   },
   "weeklyEvent": {
     "label": "Weekly event",

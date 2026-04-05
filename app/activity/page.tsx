@@ -9,6 +9,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { GrowthTimeline } from "@/components/growth-timeline";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 type ActivityItem =
   | {
@@ -128,7 +129,15 @@ export default function ActivityPage() {
         title={t("activity.title")}
         subtitle={appearance.usageNarrative ?? t("activity.subtitle")}
         appearance={appearance}
-      />
+      >
+        <DiscussInChatButton
+          prompt={t("discover.discussThisPrompt")
+            .replace("{name}", selfAgent?.self_name || appearance.title)
+            .replace("{page}", t("activity.title"))}
+          label={t("discover.discussHere")}
+          variant="ghost"
+        />
+      </DiscoverPageHeader>
       {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
 
       {/* Growth Timeline — autonomous changes over time */}

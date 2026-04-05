@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
+import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 interface RadarPoint {
   axis: string;
@@ -138,6 +139,15 @@ export default function JourneyPage() {
           <p className="mt-1 text-sm text-white/50">
             {t("journey.subtitle") || "함께한 기억과 성장의 기록"}
           </p>
+          <div className="mt-3 flex justify-center">
+            <DiscussInChatButton
+              prompt={t("discover.discussThisPrompt")
+                .replace("{name}", agentState?.self_name || "GYEOL")
+                .replace("{page}", t("journey.title") || "Journey")}
+              label={t("discover.discussHere")}
+              variant="ghost"
+            />
+          </div>
         </header>
 
         {loading ? (

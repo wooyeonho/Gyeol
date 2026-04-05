@@ -123,6 +123,17 @@ export default function MarketPage() {
         return;
       }
       setNotice(`${t("marketPage.purchaseComplete")}: ${json.title ?? t("marketPage.unnamedItem")}`);
+      // Optimistically remove the bought item, then refetch to sync with server
+      setItems((prev) => prev.filter((it) => it.id !== itemId));
+      try {
+        const refresh = await fetch("/api/market");
+        if (refresh.ok) {
+          const refreshJson = await refresh.json().catch(() => ({ items: [] }));
+          if (Array.isArray(refreshJson.items)) setItems(refreshJson.items);
+        }
+      } catch {
+        // stale-removal is fine; next visit refetches
+      }
     } finally {
       setBuyingId(null);
     }

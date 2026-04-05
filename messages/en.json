@@ -165,6 +165,7 @@
     "defaultMilestoneBody": "A new identity shift was recorded here.",
     "shareReady": "Link copied",
     "shareAction": "Share growth card",
+    "shareFailed": "Couldn't create share link",
     "collectionEyebrow": "Collection",
     "collectionProgress": "{percent}% of all milestones collected",
     "emptyDesc": "Start chatting to create your first milestone"

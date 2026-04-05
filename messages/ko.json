@@ -165,6 +165,7 @@
     "defaultMilestoneBody": "이 지점에서 새로운 정체성 변화가 기록되었습니다.",
     "shareReady": "링크 복사됨",
     "shareAction": "성장 카드 공유",
+    "shareFailed": "공유 링크를 만들지 못했어요",
     "collectionEyebrow": "수집 완성도",
     "collectionProgress": "전체 마일스톤의 {percent}%를 수집했습니다",
     "emptyDesc": "대화를 시작하면 첫 마일스톤이 생성됩니다"
