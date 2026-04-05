@@ -58,10 +58,11 @@ export default function DnaEditPage() {
   const fetchDna = useCallback(async () => {
     if (!agentId) return;
     try {
-      const res = await fetch(`/api/agent/state?agentId=${agentId}`);
+      const res = await fetch(`/api/agent/state`);
       if (res.ok) {
         const data = await res.json();
-        const genome = (data?.config as Record<string, unknown>)?.genome as Record<string, unknown> | undefined;
+        const state = (data?.agentState ?? null) as Record<string, unknown> | null;
+        const genome = state?.genome as Record<string, unknown> | undefined;
         const dna = genome?.dna as CreatureDNA | undefined;
         if (dna) {
           setCurrentDna(dna);

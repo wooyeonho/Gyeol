@@ -8,7 +8,16 @@ import { useAgentStore } from "@/store/agent-store";
 import type { DiaryEntry } from "@/lib/diary/creature-diary";
 
 export default function DiaryPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const dayHeaders = (() => {
+    switch (locale) {
+      case "ko": return ["일", "월", "화", "수", "목", "금", "토"];
+      case "ja": return ["日", "月", "火", "水", "木", "金", "土"];
+      case "zh": return ["日", "一", "二", "三", "四", "五", "六"];
+      case "es": return ["D", "L", "M", "X", "J", "V", "S"];
+      default:   return ["S", "M", "T", "W", "T", "F", "S"];
+    }
+  })();
   const agentState = useAgentStore((s) => s.agentState);
   const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | undefined;
 
@@ -90,8 +99,8 @@ export default function DiaryPage() {
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
-                {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-                  <div key={d} className="text-center text-xs text-white/30">{d}</div>
+                {dayHeaders.map((d, i) => (
+                  <div key={`day-${i}`} className="text-center text-xs text-white/30">{d}</div>
                 ))}
               </div>
               {/* Days */}

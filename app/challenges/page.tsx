@@ -22,7 +22,8 @@ const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, { label: string; color: str
 };
 
 export default function ChallengesPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const isKo = locale === "ko" || locale?.startsWith("ko-");
   const [state, setState] = useState<DailyChallengeState | null>(() => {
     if (typeof window === "undefined") return null;
     return initOrRefreshDailyChallenges();
@@ -114,13 +115,13 @@ export default function ChallengesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-base font-semibold text-white">
-                        {def.label.ko}
+                        {isKo ? def.label.ko : def.label.en}
                       </h3>
                       <span className={`text-xs font-medium ${cfg.color} uppercase tracking-wide`}>
                         {cfg.label}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-sm text-white/60">{def.description.ko}</p>
+                    <p className="mt-0.5 text-sm text-white/60">{isKo ? def.description.ko : def.description.en}</p>
 
                     {/* Progress bar */}
                     {progress && progress.target > 1 && (
