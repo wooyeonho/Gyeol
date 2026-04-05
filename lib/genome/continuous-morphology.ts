@@ -138,35 +138,39 @@ export function deriveContinuousMorphology(
   // Minimum 2 eyes (no cyclops by default) — third eye unlocks at higher potential
   const eyeCount = Math.max(2, eyePotential * evoCapacity.dnaExpressionRange);
 
-  // Horns: only on intense/assertive creatures — not average ones
+  // Horns: scale continuously from low DNA values instead of cutting off near avg.
+  // Previous threshold (2.5) meant most mid-DNA creatures showed zero horns.
   const hornPotential = dna.intensity * 2 + dna.assertiveness * 1.5;
-  const hornCount = hornPotential > 2.5
-    ? (hornPotential - 2.5) * 2 * evoCapacity.dnaExpressionRange
+  const hornCount = hornPotential > 1.2
+    ? (hornPotential - 1.2) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
-  // Antennae: only on very curious/intuitive creatures
+  // Antennae: available to mildly curious/intuitive creatures, not only extremes.
   const antennaPotential = dna.curiosity * 1.2 + dna.intuitive * 0.8;
-  const antennaCount = antennaPotential > 1.5
-    ? (antennaPotential - 1.5) * 2.5 * evoCapacity.dnaExpressionRange
+  const antennaCount = antennaPotential > 0.8
+    ? (antennaPotential - 0.8) * 2.5 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Tail: no negative offset — playful+adaptable creatures always get a visible tail.
   const tailPresence = Math.max(0,
-    (dna.playfulness * 0.6 + dna.adaptability * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap — tail can be longer than 1.0 at high gens
+    (dna.playfulness * 0.6 + dna.adaptability * 0.3) * evoCapacity.dnaExpressionRange,
+  );
 
+  // Fin/wing: lower offset so adaptable/open creatures get visible fins.
   const finWingSize = Math.max(0,
-    (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.25) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap — wings can grow large
+    (dna.adaptability * 0.5 + dna.openness * 0.3 - 0.1) * evoCapacity.dnaExpressionRange,
+  );
 
-  // Spikes: only on aggressive creatures (assertiveness + intensity both high)
+  // Spikes: lower cutoff so assertive creatures show them at mid DNA values.
   const spikePotential = dna.assertiveness * 4 + dna.intensity * 4;
-  const spikeCount = spikePotential > 5
-    ? (spikePotential - 5) * 2 * evoCapacity.dnaExpressionRange
+  const spikeCount = spikePotential > 3
+    ? (spikePotential - 3) * 2 * evoCapacity.dnaExpressionRange
     : 0;
 
+  // Ear bumps: no negative offset, empathic/warm creatures show them by default.
   const earBumpSize = Math.max(0,
-    (dna.empathy * 0.5 + dna.warmth * 0.3 - 0.2) * evoCapacity.dnaExpressionRange,
-  ); // no upper cap
+    (dna.empathy * 0.5 + dna.warmth * 0.3) * evoCapacity.dnaExpressionRange,
+  );
 
   const appendageVariety = dna.creativity * 0.6 + dna.openness * 0.4;
 
