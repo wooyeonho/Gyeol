@@ -6,31 +6,14 @@ import { DNA_AXES, type CreatureDNA, getDominantTraits } from "@/lib/genome/dna"
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits, getTraitProfile } from "@/lib/genome/traits";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
+import { useTranslations } from "@/components/i18n-provider";
 
 type DNARevealProps = {
   dna: CreatureDNA;
   soulReading?: string | null;
   onContinue: () => void;
   onShare: () => void;
-};
-
-const AXIS_LABELS: Record<string, string> = {
-  analytical: "Analytical",
-  intuitive: "Intuitive",
-  verbal: "Verbal",
-  spatial: "Spatial",
-  warmth: "Warmth",
-  intensity: "Intensity",
-  stability: "Stability",
-  openness: "Openness",
-  assertiveness: "Assertiveness",
-  empathy: "Empathy",
-  playfulness: "Playfulness",
-  independence: "Independence",
-  curiosity: "Curiosity",
-  persistence: "Persistence",
-  adaptability: "Adaptability",
-  creativity: "Creativity",
 };
 
 const AXIS_COLORS: Record<string, string> = {
@@ -52,7 +35,7 @@ const AXIS_COLORS: Record<string, string> = {
   creativity: "#e879f9",
 };
 
-function RadarChart({ dna, animate }: { dna: CreatureDNA; animate: boolean }) {
+function RadarChart({ dna, animate, locale }: { dna: CreatureDNA; animate: boolean; locale: string }) {
   const size = 280;
   const cx = size / 2;
   const cy = size / 2;
@@ -147,7 +130,7 @@ function RadarChart({ dna, animate }: { dna: CreatureDNA; animate: boolean }) {
           fontWeight={p.val > 0.6 ? 600 : 400}
           opacity={p.val > 0.45 ? 0.9 : 0.4}
         >
-          {AXIS_LABELS[p.axis]}
+          {getDnaAxisLabel(p.axis, locale)}
         </text>
       ))}
       <defs>
@@ -192,6 +175,7 @@ function DescribeDNA(dna: CreatureDNA): string {
 }
 
 export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealProps) {
+  const { locale } = useTranslations();
   const [phase, setPhase] = useState<"intro" | "chart" | "traits" | "cta">("intro");
   const species = useMemo(() => deriveSpecies(dna), [dna]);
   const traits = useMemo(() => getTraitProfile(dna).slice(0, 4), [dna]);
@@ -298,7 +282,7 @@ export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealPr
               transition={{ duration: 0.6 }}
               className="my-4"
             >
-              <RadarChart dna={dna} animate={phase === "chart"} />
+              <RadarChart dna={dna} animate={phase === "chart"} locale={locale} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -353,7 +337,7 @@ export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealPr
                     backgroundColor: `${AXIS_COLORS[axis]}15`,
                   }}
                 >
-                  {AXIS_LABELS[axis]} {Math.round(dna[axis] * 100)}%
+                  {getDnaAxisLabel(axis, locale)} {Math.round(dna[axis] * 100)}%
                 </motion.span>
               ))}
             </motion.div>

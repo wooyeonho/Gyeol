@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 
 interface ConversationTurn {
   speakerId: string;
@@ -29,7 +30,7 @@ interface OtherCreature {
 }
 
 export default function CreatureConversationPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const agentState = useAgentStore((s) => s.agentState);
   const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | undefined;
   const coins = ((agentState as Record<string, unknown> | null)?.coins as number) ?? 0;
@@ -258,7 +259,7 @@ export default function CreatureConversationPage() {
                         <div className="space-y-1">
                           {side.effects.map((e) => (
                             <div key={e.axis} className="flex items-center justify-between text-xs">
-                              <span className="text-white/60">{e.axis}</span>
+                              <span className="text-white/60">{getDnaAxisLabel(e.axis, locale)}</span>
                               <span className={e.delta > 0 ? "text-emerald-300" : "text-red-300"}>
                                 {e.delta > 0 ? "+" : ""}{(e.delta * 100).toFixed(1)}%
                               </span>

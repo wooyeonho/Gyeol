@@ -11,6 +11,7 @@ import {
   deriveQuizResult,
   type QuizResult,
 } from "@/lib/onboarding/personality-quiz";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 
 export default function QuizPage() {
   const { t, locale } = useTranslations();
@@ -176,7 +177,7 @@ export default function QuizPage() {
                     key={axis}
                     className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs text-indigo-300"
                   >
-                    {axis}
+                    {getDnaAxisLabel(axis, locale)}
                   </span>
                 ))}
               </div>

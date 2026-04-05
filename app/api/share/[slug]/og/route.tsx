@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveLocale } from "@/lib/i18n/config";
 import { loadShareCardData } from "@/lib/share/card";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 
 export const runtime = "edge";
 
@@ -143,7 +144,7 @@ export async function GET(
               </div>
               {DNA_AXES.map((axis, i) => (
                 <div key={axis} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: "80px", fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "capitalize" }}>{axis}</div>
+                  <div style={{ width: "80px", fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>{getDnaAxisLabel(axis, locale)}</div>
                   <div style={{ flex: "1", height: "8px", borderRadius: "4px", background: "rgba(255,255,255,0.08)", overflow: "hidden", display: "flex" }}>
                     <div style={{
                       height: "100%",

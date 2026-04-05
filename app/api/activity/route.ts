@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { resolveLocale } from "@/lib/i18n/config";
+import { renderLogSummary } from "@/lib/activity/log-templates";
 
 const TYPE_FILTER: Record<string, string[]> = {
   dream: ["dream_journal", "dream"],
@@ -21,6 +23,10 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const typeParam = request.nextUrl.searchParams.get("type") ?? "all";
+    const locale = resolveLocale({
+      acceptLanguage: request.headers.get("accept-language"),
+      cookieHeader: request.headers.get("cookie"),
+    });
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ items: [] });
@@ -31,13 +37,16 @@ export async function GET(request: NextRequest) {
       service.from("agent_state").select("self_name, visual, genome, config, self_model, gen_level, vitality, mood").eq("agent_id", agentId).single(),
     ]);
 
-    const logs = (logsRes.data ?? []).map((r) => ({
-      id: (r as { id: string }).id,
-      kind: "log" as const,
-      action_type: (r as { action_type?: string }).action_type,
-      summary: (r as { summary?: string }).summary,
-      created_at: (r as { created_at?: string }).created_at,
-    }));
+    const logs = (logsRes.data ?? []).map((r) => {
+      const rec = r as { id: string; action_type?: string; summary?: string; created_at?: string };
+      return {
+        id: rec.id,
+        kind: "log" as const,
+        action_type: rec.action_type,
+        summary: renderLogSummary(rec.action_type, rec.summary, locale),
+        created_at: rec.created_at,
+      };
+    });
     const artifacts = (artifactsRes.data ?? []).map((r) => ({
       id: (r as { id: string }).id,
       kind: "artifact" as const,
