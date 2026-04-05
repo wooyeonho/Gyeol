@@ -40,15 +40,6 @@ export async function POST(req: Request) {
       .single();
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // Atomic coin deduction — prevents race condition from concurrent requests
-    const spent = await spendCoinsAtomic(agentIdA, CONVERSATION_COST, "creature_conversation");
-    if (!spent) {
-      return NextResponse.json(
-        { error: "Not enough coins", required: CONVERSATION_COST },
-        { status: 402 },
-      );
-    }
-
     // Fetch both agents
     const [resA, resB] = await Promise.all([
       supabase.from("agent_state").select("config, mood").eq("agent_id", agentIdA).single(),
@@ -109,6 +100,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to generate conversation" }, { status: 502 });
     }
 
+    // Atomic coin deduction — after all validation succeeds, before persisting results.
+    // This prevents losing coins if agents don't exist or AI fails.
+    const spent = await spendCoinsAtomic(agentIdA, CONVERSATION_COST, "creature_conversation");
+    if (!spent) {
+      return NextResponse.json(
+        { error: "Not enough coins", required: CONVERSATION_COST },
+        { status: 402 },
+      );
+    }
+
     // Calculate DNA effects
     const { effectsA, effectsB } = calculateConversationDNAEffects(participantA, participantB);
 
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Coins already deducted atomically above — only persist DNA changes
+    // Coins deducted atomically above — now persist DNA changes
     await Promise.all([
       supabase
         .from("agent_state")

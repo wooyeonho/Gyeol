@@ -70,11 +70,14 @@ export async function GET() {
       }, 0);
       if (totalReward > 0) {
         const achievementIds = newlyUnlocked.join(",");
-        await service.rpc("add_coins_atomic", {
+        const { error: rpcError } = await service.rpc("add_coins_atomic", {
           p_agent_id: agent.id,
           p_amount: totalReward,
           p_reason: `achievements:${achievementIds}`,
         });
+        if (rpcError) {
+          throw new Error(`add_coins_atomic RPC failed: ${rpcError.message}`);
+        }
       }
     }
 
