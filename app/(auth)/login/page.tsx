@@ -151,12 +151,15 @@ export default function LoginPage() {
         >
           {t("auth.guestContinue")}
         </button>
-        <div className="theme-text-faint flex flex-wrap items-center justify-between gap-2">
-          <Link href={signupHref} className="hover:text-[color:var(--foreground)]">
-            {t("auth.signupLink")}
-          </Link>
+        <Link
+          href={signupHref}
+          className="min-h-12 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-4 py-3 text-center text-base font-medium text-cyan-100 hover:brightness-110"
+        >
+          {t("auth.signupLink")}
+        </Link>
+        <div className="theme-text-faint flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1 text-center">
           <Link href="/forgot-password" className="hover:text-[color:var(--foreground)]">
-            {t("auth.forgotPasswordLink") ?? "Forgot password?"}
+            {t("auth.forgotPasswordLink") ?? "비밀번호를 잊으셨나요?"}
           </Link>
           <Link href="/features" className="hover:text-[color:var(--foreground)]">
             {t("auth.loginFeaturesLink")}

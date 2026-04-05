@@ -1,16 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getDemoWorldState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const service = createServiceClient();
     const [agentsRes, socialRes, worldRes, artifactsRes] = await Promise.all([
       service.from("agents").select("id", { count: "exact", head: true }),

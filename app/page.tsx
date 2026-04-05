@@ -453,8 +453,9 @@ export default function Home() {
     );
   }
 
-  // Larger creature = more alive feel; scale up base size for desktop presence
-  const creatureSize = Math.min(100, Math.max(28, (visual.size ?? 24) * 2.5));
+  // Larger creature = more alive feel. Appendages (horns, tails, antennae)
+  // need presence on screen — a 100px cap turns everything back into a blob.
+  const creatureSize = Math.min(200, Math.max(56, (visual.size ?? 24) * 4));
 
   return (
     <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>

@@ -116,6 +116,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
+  // Look-around behavior: target yaw + timestamp for next retarget.
+  const lookTargetYawRef = useRef(0);
+  const nextLookAtRef = useRef(0);
   const haloRef = useRef<THREE.Mesh>(null);
   const eyeLRef = useRef<THREE.Mesh>(null);
   const eyeRRef = useRef<THREE.Mesh>(null);
@@ -671,11 +674,27 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, idleBob, 0.08);
     }
 
-    // Rotation: force-driven rotation blended with legacy rotation + idle behavior
+    // Rotation: target-seeking look-around (not continuous spin).
+    // The creature picks a new yaw target every few seconds and lerps toward
+    // it, so it "glances around" instead of turning endlessly. Rotation speed
+    // from DNA/idle modulates how quickly it reaches the target + how often.
     const idleRotSpeed = idleRotationSpeedRef.current;
-    const rotSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult * idleRotSpeed;
-    const forceRotation = forceState ? forceState.rotation * 0.15 : 0; // subtle force-driven rotation
-    groupRef.current.rotation.y += rotSpeed * 0.01 + forceRotation * 0.02;
+    const lookSpeed = appearance.idleRotation * activityMult * moodMod.speedMult * energyMult * idleRotSpeed;
+    const forceRotation = forceState ? forceState.rotation * 0.15 : 0;
+    if (t >= nextLookAtRef.current) {
+      // Pick a new target yaw in ±1.2 rad and schedule next retarget
+      // (2–6s depending on activity; faster creatures look around more).
+      const seed = seededRandom(appearance.markingsSeed ?? 1, Math.floor(t * 7.3));
+      lookTargetYawRef.current = (seed - 0.5) * 2.4;
+      const pauseRange = 4 / (0.5 + lookSpeed * 2); // faster lookSpeed → shorter pauses
+      nextLookAtRef.current = t + 2 + seededRandom(appearance.markingsSeed ?? 1, Math.floor(t * 11.7)) * pauseRange;
+    }
+    const yawLerpRate = 0.02 + lookSpeed * 0.03; // blend rate toward target
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(
+      groupRef.current.rotation.y,
+      lookTargetYawRef.current + forceRotation * 0.5,
+      yawLerpRate,
+    );
     groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias + idleBodyTiltRef.current;
     groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current + forceRotation * 0.3, 0.06);
 

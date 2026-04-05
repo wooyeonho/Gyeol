@@ -96,6 +96,7 @@ type AgentState = {
   mood?: string;
   coins?: number;
   config?: AgentConfig;
+  genome?: { species?: string | null } | null;
   channels?: { telegram?: string; email?: boolean };
 };
 
@@ -498,7 +499,7 @@ export default function SettingsPage() {
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
   const summaryCards = [
-    { label: t("settings.name"), value: state?.self_name || "—" },
+    { label: t("settings.name"), value: state?.self_name || state?.genome?.species || "—" },
     { label: t("settings.genLevel"), value: String(state?.gen_level ?? 1) },
     { label: t("settings.messages"), value: String(state?.total_messages ?? 0) },
     { label: t("chat.vitality"), value: `${((state?.vitality ?? 1) * 100).toFixed(0)}%`, accent: true },

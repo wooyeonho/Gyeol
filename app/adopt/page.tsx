@@ -89,6 +89,7 @@ export default function AdoptPage() {
         {items.map((item) => {
           const appearance = resolveIdentityAppearance(
             {
+              seed: item.agent_id,
               selfName: item.self_name,
               visual: item.visual,
               genome: { species: item.species },

@@ -47,8 +47,9 @@
     "email": "Email",
     "password": "Password",
     "guestContinue": "Continue as guest",
-    "signupLink": "Sign up",
-    "loginLink": "Back to login",
+    "signupLink": "Don't have an account? Sign up",
+    "loginLink": "Already have an account? Log in",
+    "forgotPasswordLink": "Forgot your password?",
     "loginEyebrow": "GYEOL",
     "loginTitle": "Reconnect with your AI being",
     "loginSubtitle": "Gyeol is an AI companion built to remember your conversations and turn them into growth, mood, and ongoing change.",
@@ -813,7 +814,9 @@
     "moreWays": "More ways to explore",
     "allEmpty": "This fills up as you talk. Activity logs, growth albums, and social connections will appear one by one.",
     "roomBody": "Explore a space where memories become objects.",
-    "constellationBody": "View constellations formed by clusters of memories."
+    "constellationBody": "View constellations formed by clusters of memories.",
+    "dailyChallenges": "Today's challenges",
+    "perfectDay": "Perfect day! You can claim a reward"
   },
   "weeklyEvent": {
     "label": "Weekly event",

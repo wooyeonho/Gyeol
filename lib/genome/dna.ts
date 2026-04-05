@@ -155,8 +155,11 @@ export function generateInitialDNA(agentId: string): CreatureDNA {
       hash ^= input.charCodeAt(j);
       hash = Math.imul(hash, 16777619);
     }
-    // Map to 0.25..0.75 range (centered, room to grow in both directions)
-    dna[DNA_AXES[i]] = 0.25 + ((hash >>> 0) % 10000) / 20000;
+    // Map to 0.08..0.92 range. A wide spread is required so initial creatures
+    // actually clear appendage/feature thresholds (horns, antennae, spikes) and
+    // have distinctive silhouettes from day one. Growth can still push values
+    // toward either extreme via applySoftMutation.
+    dna[DNA_AXES[i]] = 0.08 + ((hash >>> 0) % 10000) / 10000 * 0.84;
   }
 
   return dna as unknown as CreatureDNA;

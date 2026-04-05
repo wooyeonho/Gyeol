@@ -102,7 +102,10 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
   const [recap, setRecap] = useState<HomeRecap | null>(null);
   // Start collapsed if messages exist; expand if empty
   const hasMessages = messages.length > 0;
-  const [expanded, setExpanded] = useState(() => !hasMessages);
+  // Default to collapsed so the chat input stays above the fold even on smaller
+  // viewports. The hub's expanded content (streak, rewards, weekly event, prompts)
+  // can push the chat panel off-screen when auto-expanded for new users.
+  const [expanded, setExpanded] = useState(false);
   const [wasEmpty, setWasEmpty] = useState(() => !hasMessages);
 
   // Collapse once first message arrives (transition from empty → non-empty)
