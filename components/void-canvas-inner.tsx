@@ -486,10 +486,22 @@ function Scene({
 
   return (
     <>
-      {/* Enhanced lighting for toon shading — stronger directional + ambient for flat color steps */}
-      <ambientLight intensity={0.25 * activityDim} />
-      <directionalLight position={[2, 3, 4]} intensity={0.6 * activityDim} />
+      {/* Character-designer staging — 3-point lighting + rim light silhouette */}
+      <ambientLight intensity={0.2 * activityDim} />
+      {/* Key light: warm, upper-right — the dominant shaper */}
+      <directionalLight position={[3, 4, 5]} intensity={0.9 * activityDim} color="#fff4e0" />
+      {/* Fill light: cool, lower-left — softens shadows */}
+      <directionalLight position={[-3, 1, 2]} intensity={0.35 * activityDim} color="#8aa8ff" />
+      {/* Rim light: behind creature — carves silhouette from background */}
+      <directionalLight position={[-2, 2, -4]} intensity={0.8 * activityDim} color={color} />
       <pointLight color={color} intensity={tapGlow} />
+
+      {/* Subtle contact shadow beneath creature — grounds it without ring noise */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]}>
+        <circleGeometry args={[0.75, 32]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.38 * activityDim} depthWrite={false} />
+      </mesh>
+
       <Float
         speed={floatSpeed * sleepFloatMult}
         rotationIntensity={rotationIntensity * sleepFloatMult}
@@ -591,7 +603,7 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
+        camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "default", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       >
