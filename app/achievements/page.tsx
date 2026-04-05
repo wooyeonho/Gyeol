@@ -17,7 +17,8 @@ const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; bo
 const RARITY_ORDER: AchievementRarity[] = ["mythic", "legendary", "epic", "rare", "common"];
 
 export default function AchievementsPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const loc = (["ko", "en", "ja", "zh", "es"].includes(locale) ? locale : "en") as "ko" | "en" | "ja" | "zh" | "es";
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<AchievementRarity | "all">("all");
 
@@ -93,7 +94,7 @@ export default function AchievementsPage() {
                 )}
                 <span className="relative text-2xl">{ach.hidden && !unlocked ? "❓" : ach.icon}</span>
                 <p className={`relative text-[10px] font-semibold leading-tight ${unlocked ? "text-white" : "text-white/40"}`}>
-                  {ach.hidden && !unlocked ? "???" : ach.label.ko}
+                  {ach.hidden && !unlocked ? "???" : ach.label[loc]}
                 </p>
                 <span className={`relative text-[9px] font-medium uppercase tracking-wide ${cfg.text}`}>
                   {cfg.label}

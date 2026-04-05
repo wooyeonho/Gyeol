@@ -38,14 +38,13 @@ export async function POST(req: Request) {
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { data } = await supabase
       .from("agent_state")
-      .select("config")
+      .select("genome")
       .eq("agent_id", agentId)
       .single();
 
     if (!data) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
-    const config = (data.config ?? {}) as Record<string, unknown>;
-    const genome = config.genome as Record<string, unknown> | undefined;
+    const genome = ((data as Record<string, unknown>).genome ?? {}) as Record<string, unknown>;
 
     if (!genome?.dna) {
       return NextResponse.json({ error: "Agent has no DNA" }, { status: 400 });
@@ -86,10 +85,10 @@ export async function POST(req: Request) {
       element: newSpecies.element,
     };
 
-    // Coins already deducted atomically above — only persist config changes
+    // Coins already deducted atomically above — persist genome column (top-level)
     await supabase
       .from("agent_state")
-      .update({ config: { ...config, genome: updatedGenome } })
+      .update({ genome: updatedGenome })
       .eq("agent_id", agentId);
 
     const remaining = await getBalance(agentId);

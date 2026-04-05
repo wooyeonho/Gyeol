@@ -607,7 +607,7 @@ export default function Home() {
             <div className="absolute bottom-24 inset-x-0 z-[3] flex flex-col items-center pointer-events-none">
               <div className="rounded-full border border-white/20 bg-black/60 backdrop-blur-md px-4 py-2 text-xs font-medium text-white/90 shadow-lg shadow-black/40 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-white/80 animate-ping" />
-                <span>초상화 생성 중...</span>
+                <span>{t("creature.generatingPortrait") ?? "Generating portrait..."}</span>
               </div>
             </div>
           ) : (

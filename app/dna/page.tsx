@@ -9,23 +9,20 @@ import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
 import { PortraitGallery } from "@/components/portrait-gallery";
+import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 
 const AXIS_GROUPS = [
-  { label: "인지", axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
-  { label: "감정", axes: ["warmth", "intensity", "stability", "openness"] as const, color: "#f472b6" },
-  { label: "사회", axes: ["assertiveness", "empathy", "playfulness", "independence"] as const, color: "#34d399" },
-  { label: "메타", axes: ["curiosity", "persistence", "adaptability", "creativity"] as const, color: "#a78bfa" },
+  { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
+  { key: "emotional", labels: { ko: "감정", en: "Emotional", ja: "感情", zh: "情感", es: "Emocional" }, axes: ["warmth", "intensity", "stability", "openness"] as const, color: "#f472b6" },
+  { key: "social",    labels: { ko: "사회", en: "Social",    ja: "社会", zh: "社交", es: "Social" },    axes: ["assertiveness", "empathy", "playfulness", "independence"] as const, color: "#34d399" },
+  { key: "meta",      labels: { ko: "메타", en: "Meta",      ja: "メタ", zh: "元",   es: "Meta" },      axes: ["curiosity", "persistence", "adaptability", "creativity"] as const, color: "#a78bfa" },
 ];
 
-const AXIS_LABELS_KO: Record<string, string> = {
-  analytical: "분석", intuitive: "직관", verbal: "언어", spatial: "공간",
-  warmth: "따뜻함", intensity: "강도", stability: "안정", openness: "개방",
-  assertiveness: "주장", empathy: "공감", playfulness: "유희", independence: "독립",
-  curiosity: "호기심", persistence: "끈기", adaptability: "적응", creativity: "창의",
-};
+type LocKey = "ko" | "en" | "ja" | "zh" | "es";
+const normLoc = (l: string): LocKey => ((["ko", "en", "ja", "zh", "es"].includes(l) ? l : "en") as LocKey);
 
 /** SVG radar chart — 16 axes in 4 groups of 4, rendered as concentric spiderweb */
-function RadarChart({ dna, size = 280 }: { dna: CreatureDNA; size?: number }) {
+function RadarChart({ dna, size = 280, locale }: { dna: CreatureDNA; size?: number; locale: string }) {
   const cx = size / 2;
   const cy = size / 2;
   const r = size * 0.42;
@@ -127,7 +124,7 @@ function RadarChart({ dna, size = 280 }: { dna: CreatureDNA; size?: number }) {
           fill={axisColors[i]}
           opacity="0.7"
         >
-          {AXIS_LABELS_KO[axes[i]] ?? axes[i]}
+          {getDnaAxisLabel(axes[i], locale)}
         </text>
       ))}
     </svg>
@@ -135,7 +132,7 @@ function RadarChart({ dna, size = 280 }: { dna: CreatureDNA; size?: number }) {
 }
 
 /** Shows recent DNA axis mutations from agent config history */
-function MutationHistory({ config }: { config: Record<string, unknown> }) {
+function MutationHistory({ config, locale }: { config: Record<string, unknown>; locale: string }) {
   const mutationTrait = config.mutation_trait as string | undefined;
   const recentShifts: { axis: string; direction: string; value: number }[] = [];
 
@@ -170,7 +167,7 @@ function MutationHistory({ config }: { config: Record<string, unknown> }) {
               {shift.direction === "up" ? "\u2191" : "\u2193"}
             </span>
             <span className="text-xs text-white/60">
-              {AXIS_LABELS_KO[shift.axis] ?? shift.axis}
+              {getDnaAxisLabel(shift.axis, locale)}
             </span>
             <span className={`ml-auto text-xs font-medium ${shift.direction === "up" ? "text-emerald-400/70" : "text-rose-400/70"}`}>
               {shift.direction === "up" ? "+" : "-"}{(shift.value * 100).toFixed(1)}%
@@ -183,7 +180,8 @@ function MutationHistory({ config }: { config: Record<string, unknown> }) {
 }
 
 export default function DNAPage() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
+  const loc = normLoc(locale);
   const agentState = useAgentStore((s) => s.agentState);
   // genome is stored as JSON with a .dna sub-object at runtime (from Supabase JSONB)
   const dna = (agentState?.genome as unknown as { dna?: CreatureDNA } | null)?.dna;
@@ -238,15 +236,15 @@ export default function DNAPage() {
 
         {/* Radar chart */}
         <div className="flex justify-center">
-          <RadarChart dna={activeDNA} size={300} />
+          <RadarChart dna={activeDNA} size={300} locale={locale} />
         </div>
 
         {/* Group bars */}
         <div className="space-y-4">
           {AXIS_GROUPS.map((group) => (
-            <div key={group.label}>
+            <div key={group.key}>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: group.color }}>
-                {group.label}
+                {group.labels[loc]}
               </p>
               <div className="space-y-2">
                 {group.axes.map((axis) => {
@@ -254,7 +252,7 @@ export default function DNAPage() {
                   return (
                     <div key={axis} className="flex items-center gap-3">
                       <span className="w-16 shrink-0 text-xs text-white/50">
-                        {AXIS_LABELS_KO[axis] ?? axis}
+                        {getDnaAxisLabel(axis, locale)}
                       </span>
                       <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
                         <motion.div
@@ -291,7 +289,7 @@ export default function DNAPage() {
                   transition={{ delay: i * 0.06 }}
                   className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs text-white/70"
                 >
-                  {trait.name.ko}
+                  {loc === "ko" ? trait.name.ko : trait.name.en}
                 </motion.span>
               ))}
             </div>
@@ -300,7 +298,7 @@ export default function DNAPage() {
 
         {/* Mutation history — recent DNA axis changes */}
         {dna && agentState?.config && (
-          <MutationHistory config={agentState.config as Record<string, unknown>} />
+          <MutationHistory config={agentState.config as Record<string, unknown>} locale={locale} />
         )}
 
         {/* Portrait Gallery — AI-generated creature portraits */}

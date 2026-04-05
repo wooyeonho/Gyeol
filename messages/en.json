@@ -28,7 +28,8 @@
     "breathingLabel": "Breathing",
     "eyeTracking": "Eye tracking",
     "restoring3d": "Restoring 3D...",
-    "generatePortrait": "Generate AI Portrait"
+    "generatePortrait": "Generate AI Portrait",
+    "generatingPortrait": "Generating portrait..."
   },
   "nav": {
     "home": "Home",
