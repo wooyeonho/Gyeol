@@ -106,7 +106,7 @@ export async function trySemanticCache(params: {
     const cachedResponse = (followUp as Array<{ content: string }> | null)?.[0]?.content;
     if (!cachedResponse || cachedResponse.length < 5) return null;
 
-    console.log(`[SemanticCache] HIT — similarity=${(match.similarity ?? 0).toFixed(3)}, reusing cached response`);
+    // Debug log removed — cache hit metrics tracked via return value
 
     // OPT-D: Stream cached response word-by-word (avg 40ms/word) so it feels
     // like live generation rather than a jarring instant dump.

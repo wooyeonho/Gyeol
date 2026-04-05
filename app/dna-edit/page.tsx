@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { deriveSpecies } from "@/lib/genome/species";
+import { deriveDNATheme } from "@/lib/theme/dna-theme";
+import { ThreeErrorBoundary } from "@/components/three-error-boundary";
+
+const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
+  ssr: false,
+  loading: () => <div className="h-full w-full rounded-3xl bg-black/40" />,
+});
 
 const AXIS_CATEGORIES: Record<string, string[]> = {
   cognitive: ["analytical", "intuitive", "verbal", "spatial"],
@@ -118,6 +127,28 @@ export default function DnaEditPage() {
     }
   };
 
+  // Derive species and theme from the edited DNA for real-time preview
+  const previewSpecies = useMemo(() => {
+    if (!editedDna) return null;
+    return deriveSpecies(editedDna);
+  }, [editedDna]);
+
+  const previewTheme = useMemo(() => {
+    if (!editedDna) return null;
+    return deriveDNATheme(editedDna);
+  }, [editedDna]);
+
+  // Derive verbal mode label for preview
+  const verbalLabel = useMemo(() => {
+    if (!editedDna) return null;
+    const v = editedDna.verbal;
+    if (v < 0.15) return { mode: "SILENT", desc: isKo ? "행동으로만 표현" : "Actions only", color: "text-red-400" };
+    if (v < 0.35) return { mode: "MINIMAL", desc: isKo ? "단어/소리만" : "Single words", color: "text-orange-400" };
+    if (v < 0.55) return { mode: "BRIEF", desc: isKo ? "짧은 문장" : "Short phrases", color: "text-yellow-300" };
+    if (v < 0.75) return { mode: "NORMAL", desc: isKo ? "자연스러운 대화" : "Natural speech", color: "text-white/70" };
+    return { mode: "ELOQUENT", desc: isKo ? "시적 표현" : "Poetic & rich", color: "text-purple-300" };
+  }, [editedDna, isKo]);
+
   return (
     <div className="min-h-screen bg-background px-4 pb-28 pt-16">
       <div className="mx-auto max-w-lg space-y-6">
@@ -139,6 +170,50 @@ export default function DnaEditPage() {
           </div>
         ) : editedDna ? (
           <>
+            {/* ===== Live DNA Preview ===== */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/60">
+              <div className="relative h-48 w-full">
+                <ThreeErrorBoundary
+                  fallback={
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] animate-pulse" />
+                    </div>
+                  }
+                >
+                  <VoidCanvas
+                    shape="creature"
+                    color={previewTheme ? `hsl(${Math.round(previewTheme.accentHue)}, ${Math.round(previewTheme.accentSaturation)}%, 55%)` : "#6366f1"}
+                    size={28}
+                    glow={50}
+                    vitality={1}
+                    enableThree={true}
+                    contained
+                    dna={editedDna}
+                    genLevel={1}
+                    restoring3dLabel=""
+                  />
+                </ThreeErrorBoundary>
+              </div>
+              {/* Species + verbal mode indicator */}
+              <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/40">{isKo ? "종" : "Species"}</span>
+                  <span className="text-xs font-medium text-white/80">
+                    {previewSpecies?.name ?? "—"}
+                  </span>
+                </div>
+                {verbalLabel && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-white/40">💬</span>
+                    <span className={`text-xs font-mono ${verbalLabel.color}`}>
+                      {verbalLabel.mode}
+                    </span>
+                    <span className="text-[10px] text-white/30">{verbalLabel.desc}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Cost display */}
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <div>

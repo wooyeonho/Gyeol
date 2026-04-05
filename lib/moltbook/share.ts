@@ -23,7 +23,7 @@ export async function shareMoltBookEntry(
   }
 
   if (Number(entry.confidence ?? 0) < 0.6) {
-    console.log("[MoltBook] Share: confidence too low", entry.confidence);
+    console.warn("[MoltBook] Share: confidence too low", entry.confidence);
     return false;
   }
 
@@ -53,6 +53,6 @@ export async function shareMoltBookEntry(
     summary: `Shared entry "${entryId}" publicly`,
   }).then(() => {});
 
-  console.log(`[MoltBook] Entry ${entryId} shared publicly by agent ${agentId}`);
+  // Debug log removed — autonomous_logs table records this action
   return true;
 }

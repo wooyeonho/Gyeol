@@ -48,7 +48,7 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
     .eq("agent_id", agentId);
 
   if ((count ?? 0) >= MAX_ENTRIES_PER_AGENT) {
-    console.log(`[MoltBook] Agent ${agentId} at capacity (${count}/${MAX_ENTRIES_PER_AGENT})`);
+    console.warn(`[MoltBook] Agent ${agentId} at capacity (${count}/${MAX_ENTRIES_PER_AGENT})`);
     return 0;
   }
 
@@ -119,6 +119,6 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
     }
   }
 
-  console.log(`[MoltBook] Distilled ${created} entries for agent ${agentId}`);
+  // Debug log removed — return value carries the count
   return created;
 }

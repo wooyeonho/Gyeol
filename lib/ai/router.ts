@@ -195,7 +195,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
       try {
         const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
         groqSettled = true;
-        console.log(`[AI] Using ${m.name} (maxTokens=${effectiveMaxTokens})`);
+        // Debug log removed — model selection is transparent to caller
         return { source: m.name, stream: res.body! };
       } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
     }
@@ -210,7 +210,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
       try {
         const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
         geminiSettled = true;
-        console.log("[AI] Gemini hedge won");
+        // Debug log removed — hedge race outcome is implicit
         resolve({ source: "gemini-hedge", stream });
       } catch (e) { reject(e); }
     }, HEDGE_DELAY_MS);
@@ -226,11 +226,11 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     if (!geminiSettled) {
       try {
         const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
-        console.log("[AI] Using Gemini Flash streaming fallback");
+        console.warn("[AI] Using Gemini Flash streaming fallback");
         return stream;
       } catch (e) { console.error("[AI] Gemini stream failed:", e); }
     }
-    console.log("[AI] All models failed, using in-character fallback");
+    console.warn("[AI] All models failed, using in-character fallback");
     return fallbackStream(getInCharacterFallback(systemPrompt));
   }
 }
@@ -250,7 +250,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
   try {
     const text = await callGemini(systemPrompt, messages, maxTokens, temp);
     if (text) {
-      console.log("[AI] Using Gemini");
+      // Debug log removed — model selection is transparent to caller
       return text;
     }
   } catch (e) { console.error("[AI] Gemini failed:", e); }
@@ -296,7 +296,7 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) {
-        console.log("[JSON] Using Gemini Flash fallback");
+        console.warn("[JSON] Using Gemini Flash fallback");
         return parsed as T;
       }
     }

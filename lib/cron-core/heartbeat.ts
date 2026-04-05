@@ -76,7 +76,7 @@ async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "cr
       const { executeCrawl } = await import("@/lib/cron-core/crawl");
       await executeCrawl();
     }
-    console.log(`[Heartbeat] immediate ${action} trigger succeeded (direct)`);
+    console.warn(`[Heartbeat] immediate ${action} trigger succeeded (direct)`);
   } catch (error) {
     console.error(`[Heartbeat] immediate ${action} trigger failed`, error);
   }
@@ -137,7 +137,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
     for (const agent of agents) {
       if (Date.now() - startedAt > HEARTBEAT_DEADLINE_MS) {
         skippedDeadline = agents.length - agents.indexOf(agent);
-        console.log(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
+        console.warn(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
         break;
       }
       try {

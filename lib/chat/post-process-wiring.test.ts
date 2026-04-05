@@ -312,8 +312,8 @@ describe("Graceful failure", () => {
   });
 
   it("intent classifier failure leaves intentSignals empty (wiring pattern)", () => {
-    let intentSignals: Partial<Record<string, number>> = {};
-    let detectedIntent: string | null = null;
+    const intentSignals: Partial<Record<string, number>> = {};
+    const detectedIntent: string | null = null;
 
     try {
       throw new Error("classifier broken");
