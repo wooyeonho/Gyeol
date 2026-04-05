@@ -14,6 +14,13 @@ import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { normalizeLocale } from "@/lib/i18n/config";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
+import {
+  computeResonance,
+  createInitialUserDNA,
+  resonanceTopOverlap,
+  updateUserDNA,
+  type UserDNA,
+} from "@/lib/genome/user-dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { checkSemanticCache } from "@/lib/chat/semantic-cache";
 
@@ -53,6 +60,39 @@ function computeInlineDnaShift(
     .filter((t) => !prevIds.has(t.id))
     .map((t) => ({ id: t.id, name: t.name }));
   return { changedAxes, newTraits };
+}
+
+/**
+ * Compute the post-turn Resonance Score (결맞춤) inline — no DB wait.
+ * Mirrors the user-DNA update performed by post-process so the score
+ * reflects the just-sent message.
+ */
+function computeInlineResonance(
+  agentState: Record<string, unknown> | null,
+  message: string,
+): {
+  score: number;
+  prevScore: number;
+  delta: number;
+  topOverlap: { axis: string; closeness: number }[];
+} | null {
+  const genome = agentState?.genome as { dna?: CreatureDNA } | null;
+  if (!genome?.dna) return null;
+  const config = (agentState?.config as Record<string, unknown> | null) ?? {};
+  const prevUserDNA = (config.user_dna as UserDNA | undefined) ?? createInitialUserDNA();
+  const { dna: nextUserDNA } = updateUserDNA(prevUserDNA, message);
+  const prevScore = computeResonance(prevUserDNA, genome.dna);
+  const score = computeResonance(nextUserDNA, genome.dna);
+  const overlap = resonanceTopOverlap(nextUserDNA, genome.dna, 3).map((o) => ({
+    axis: o.axis,
+    closeness: Math.round(o.closeness * 1000) / 1000,
+  }));
+  return {
+    score,
+    prevScore,
+    delta: Math.round((score - prevScore) * 10) / 10,
+    topOverlap: overlap,
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -172,6 +212,9 @@ export async function POST(req: NextRequest) {
 
     // ── P3A: Compute DNA mutation synchronously (pure, no IO) ──
     const inlineDna = computeInlineDnaShift(context.agentState, message);
+
+    // ── Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity ──
+    const inlineResonance = computeInlineResonance(context.agentState, message);
 
     // ── P5A: Memory moment — old memory recalled with high similarity ──
     const memoryMoment = context.memoryMoment;
@@ -297,6 +340,17 @@ export async function POST(req: NextRequest) {
         if (inlineDna.newTraits.length > 0) {
           const traitEvent = JSON.stringify({ type: "trait_emerged", traits: inlineDna.newTraits });
           controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
+        }
+
+        // ── Resonance event — always emit so the client can track '결맞춤' over time ──
+        if (inlineResonance) {
+          const resonanceEvent = JSON.stringify({
+            type: "resonance",
+            score: inlineResonance.score,
+            delta: inlineResonance.delta,
+            top_overlap: inlineResonance.topOverlap,
+          });
+          controller.enqueue(encoder.encode(`data: ${resonanceEvent}\n\n`));
         }
         controller.close();
       },

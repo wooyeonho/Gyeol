@@ -5,6 +5,7 @@ import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
 import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/genome/dna";
+import { createInitialUserDNA, updateUserDNA, type UserDNA } from "@/lib/genome/user-dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -176,10 +177,15 @@ export async function persistChatTurn(params: {
   const updatedPrefs = extractPreferencesFromTurn(params.message, params.reply, existingPrefs);
   const turnMood = detectTurnMood(params.message, params.reply);
 
+  // Reverse-extract user's own 16-axis DNA from message patterns
+  const existingUserDNA = (currentConfig.user_dna as UserDNA | undefined) ?? createInitialUserDNA();
+  const { dna: nextUserDNA } = updateUserDNA(existingUserDNA, params.message);
+
   const nextConfig = {
     ...currentConfig,
     usage_profile: nextUsageProfile,
     user_preferences: updatedPrefs,
+    user_dna: nextUserDNA,
   };
 
   // ── P1C Phase 2: Parallel DB writes (memory insert + state update + goal loop) ──

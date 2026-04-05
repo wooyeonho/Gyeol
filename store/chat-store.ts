@@ -28,7 +28,7 @@ import {
 import { processMessageReward, processWeeklyEventReward } from "@/lib/rewards/reward-middleware";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { content: string; age_days: number } }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { content: string; age_days: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -54,6 +54,7 @@ interface ChatStore {
   weeklyEvent: WeeklyEventState;
   weeklyEventProgress: WeeklyEventProgress;
   pendingWeeklyEventCompletion: boolean;
+  lastResonance: number | null;
   clearReward: () => void;
   claimDailyLoginBonus: (streakDays?: number) => void;
   hydrateRecentMessages: (messages: Message[]) => void;
@@ -162,6 +163,24 @@ async function handleStreamResponse(
                 }
                 return { messages: msgs };
               });
+            } else if (parsed.type === "resonance" && typeof parsed.score === "number") {
+              set((s) => {
+                const msgs = [...s.messages];
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = {
+                    ...last,
+                    resonance: {
+                      score: parsed.score as number,
+                      delta: (parsed.delta as number) ?? 0,
+                      topOverlap: Array.isArray(parsed.top_overlap)
+                        ? (parsed.top_overlap as { axis: string; closeness: number }[])
+                        : [],
+                    },
+                  };
+                }
+                return { messages: msgs, lastResonance: parsed.score as number };
+              });
             } else if (parsed.type === "memory_moment" && typeof parsed.content === "string") {
               // P5A: Memory moment — creature recalls an old memory
               set((s) => {
@@ -268,6 +287,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   weeklyEvent: readWeeklyEventState(),
   weeklyEventProgress: getWeeklyEventProgress(readWeeklyEventState()),
   pendingWeeklyEventCompletion: false,
+  lastResonance: null,
   clearReward: () => set({ lastReward: null }),
   hydrateRecentMessages: (messages) =>
     set((state) => ({
