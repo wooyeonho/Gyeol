@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveLocale } from "@/lib/i18n/config";
-import { renderLogSummary } from "@/lib/activity/log-templates";
+import { renderLogSummaryPublic } from "@/lib/activity/log-templates";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,14 +13,17 @@ export async function GET(request: NextRequest) {
     const service = createServiceClient();
 
     const [logsRes, socialRes, breedingRes, postRes] = await Promise.all([
+      // PRIVACY: do not fetch `summary` — we only need action_type to decide
+      // whether the row maps to a safe public broadcast template.
       service
         .from("autonomous_logs")
-        .select("id, action_type, summary, created_at")
+        .select("id, action_type, created_at")
         .order("created_at", { ascending: false })
         .limit(10),
+      // PRIVACY: do not fetch topic/outcome — those are user-seeded strings.
       service
         .from("social_logs")
-        .select("id, topic, outcome, created_at")
+        .select("id, created_at")
         .order("created_at", { ascending: false })
         .limit(10),
       service
@@ -46,16 +49,16 @@ export async function GET(request: NextRequest) {
 
     const feed: { id: string; text: string; timestamp: Date }[] = [];
 
-    ((logsRes.data as Array<{ id: string; action_type?: string; summary?: string; created_at: string }> | null) || []).forEach((log) => {
-      feed.push({
-        id: log.id,
-        text: renderLogSummary(log.action_type, log.summary, locale),
-        timestamp: new Date(log.created_at),
-      });
+    // renderLogSummaryPublic returns a generic broadcast phrase keyed only
+    // on action_type, or null for types that have no safe public phrasing.
+    ((logsRes.data as Array<{ id: string; action_type?: string; created_at: string }> | null) || []).forEach((log) => {
+      const text = renderLogSummaryPublic(log.action_type, locale);
+      if (!text) return;
+      feed.push({ id: log.id, text, timestamp: new Date(log.created_at) });
     });
 
-    ((socialRes.data as Array<{ id: string; outcome?: string; created_at: string }> | null) || []).forEach((log) => {
-      feed.push({ id: `soc-${log.id}`, text: log.outcome || fallbacks.socialOutcome, timestamp: new Date(log.created_at) });
+    ((socialRes.data as Array<{ id: string; created_at: string }> | null) || []).forEach((log) => {
+      feed.push({ id: `soc-${log.id}`, text: fallbacks.socialOutcome, timestamp: new Date(log.created_at) });
     });
 
     ((postRes.data as Array<{ id: string; topic?: string; content?: string; created_at: string }> | null) || []).forEach((post) => {
