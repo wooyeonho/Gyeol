@@ -47,6 +47,7 @@ import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
 import Celebration from "@/components/celebration";
+import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 
@@ -501,6 +502,11 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
+        {/* When portrait is present, fade the 3D creature into background aura */}
+        <div
+          className="absolute inset-0 transition-opacity duration-[1200ms]"
+          style={{ opacity: portraitUrl ? 0.35 : 1 }}
+        >
         <ThreeErrorBoundary
           fallback={
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
@@ -540,26 +546,45 @@ export default function Home() {
             idleBehaviorParams={idleBehaviorParams}
           />
         </ThreeErrorBoundary>
+        </div>
 
-        {/* AI-generated portrait overlay — creature's "face" */}
+        {/* AI-generated portrait — HERO character visual. When present,
+            becomes the dominant creature representation; procedural 3D
+            fades to background aura. */}
         {portraitUrl && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]"
+            className="absolute inset-0 flex items-end justify-center pointer-events-none z-[2] pb-20"
           >
-            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+            <div
+              className="relative aspect-square overflow-hidden rounded-[28%] border border-white/15 shadow-2xl shadow-black/60"
+              style={{
+                height: "min(72%, 320px)",
+                boxShadow: `0 0 48px color-mix(in srgb, ${appearance.palette.primary} 40%, transparent), 0 20px 60px rgba(0,0,0,0.5)`,
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={portraitUrl}
                 alt="Creature portrait"
-                className="w-full h-full object-cover opacity-85 mix-blend-screen"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-white/5" />
+              {/* Soft inner ring for polish */}
+              <div className="absolute inset-0 rounded-[28%] ring-1 ring-inset ring-white/10 pointer-events-none" />
+              {/* Bottom gradient to let name/stats pop off the frame */}
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none rounded-b-[28%]" />
             </div>
           </motion.div>
+        )}
+
+        {/* Portrait generator CTA — only visible when no portrait exists */}
+        {!portraitUrl && agentState && (
+          <PortraitGenerateButton
+            onGenerated={(url) => setPortraitUrl(url)}
+            label={t("creature.generatePortrait") ?? "AI 초상화 생성"}
+          />
         )}
 
         {/* Bottom gradient fade into chat area */}

@@ -27,7 +27,8 @@
     "awake": "깨어 있는 상태",
     "breathingLabel": "호흡 중",
     "eyeTracking": "시선 추적 중",
-    "restoring3d": "3D 복원 중..."
+    "restoring3d": "3D 복원 중...",
+    "generatePortrait": "AI 초상화 생성"
   },
   "nav": {
     "home": "홈",
