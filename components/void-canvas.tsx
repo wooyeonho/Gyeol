@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -238,41 +238,12 @@ export function VoidCanvas({
   const particleCount = reducedVisualMode ? 0 : isMobile ? Math.floor(particles / 2) : particles;
   const effectiveGlow = reducedVisualMode ? Math.min(glow, 35) : glow;
   const effectiveSize = reducedVisualMode ? Math.min(size, 24) : size;
-  const [shouldRenderThree, setShouldRenderThree] = useState(false);
 
-  useEffect(() => {
-    if (!enableThree || reducedVisualMode || typeof window === "undefined") {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let idleId: number | null = null;
-
-    const activate = () => {
-      if (!cancelled) {
-        setShouldRenderThree(true);
-      }
-    };
-
-    if ("requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(activate, { timeout: 1600 });
-    } else {
-      timeoutId = setTimeout(activate, 900);
-    }
-
-    return () => {
-      cancelled = true;
-      if (idleId !== null && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [enableThree, reducedVisualMode]);
-
-  const shouldUseThree = enableThree && !reducedVisualMode && shouldRenderThree;
+  // Render Three.js immediately when enabled — the VoidCanvasInner dynamic
+  // import already defers the heavy code. Adding a second idle-callback delay
+  // causes a visible sphere/blob flash on every mount, which makes the
+  // creature look like it "keeps changing back to a sphere" during nav.
+  const shouldUseThree = enableThree && !reducedVisualMode;
 
   return (
     <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
