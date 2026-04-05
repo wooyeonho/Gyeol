@@ -1,4 +1,3 @@
 {
-  "_comment": "Crons disabled — OpenClaw (Koyeb) is the primary scheduler. Vercel crons were causing double execution with DB contention and duplicate notifications. Re-enable only if OpenClaw is fully decommissioned.",
   "crons": []
 }
