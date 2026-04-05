@@ -486,10 +486,48 @@ function Scene({
 
   return (
     <>
-      {/* Enhanced lighting for toon shading — stronger directional + ambient for flat color steps */}
-      <ambientLight intensity={0.25 * activityDim} />
-      <directionalLight position={[2, 3, 4]} intensity={0.6 * activityDim} />
+      {/* Character-designer staging — 3-point lighting + rim light silhouette */}
+      <ambientLight intensity={0.2 * activityDim} />
+      {/* Key light: warm, upper-right — the dominant shaper */}
+      <directionalLight position={[3, 4, 5]} intensity={0.9 * activityDim} color="#fff4e0" />
+      {/* Fill light: cool, lower-left — softens shadows */}
+      <directionalLight position={[-3, 1, 2]} intensity={0.35 * activityDim} color="#8aa8ff" />
+      {/* Rim light: behind creature — carves silhouette from background */}
+      <directionalLight position={[-2, 2, -4]} intensity={0.8 * activityDim} color={color} />
       <pointLight color={color} intensity={tapGlow} />
+
+      {/* Pedestal stage — glowing disc the creature stands on */}
+      <group position={[0, -1.1, 0]}>
+        {/* Main disc */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <cylinderGeometry args={[1.4, 1.4, 0.08, 48, 1]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={0.4 * activityDim}
+            roughness={0.4}
+            metalness={0.6}
+            transparent
+            opacity={0.55 * activityDim}
+          />
+        </mesh>
+        {/* Inner glow ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+          <ringGeometry args={[1.15, 1.35, 48]} />
+          <meshBasicMaterial color={color} transparent opacity={0.7 * activityDim} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Outer halo ring — soft broadcast */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[1.4, 2.1, 48]} />
+          <meshBasicMaterial color={color} transparent opacity={0.12 * activityDim} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Contact shadow blob */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
+          <circleGeometry args={[0.7, 32]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.35 * activityDim} />
+        </mesh>
+      </group>
+
       <Float
         speed={floatSpeed * sleepFloatMult}
         rotationIntensity={rotationIntensity * sleepFloatMult}
@@ -591,7 +629,7 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
+        camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "default", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       >
