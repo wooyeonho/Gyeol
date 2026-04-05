@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DNA_AXES, type CreatureDNA, getDominantTraits } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
-import { getExpressedTraits, getTraitProfile } from "@/lib/genome/traits";
+import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 
 type DNARevealProps = {
@@ -194,7 +194,6 @@ function DescribeDNA(dna: CreatureDNA): string {
 export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealProps) {
   const [phase, setPhase] = useState<"intro" | "chart" | "traits" | "cta">("intro");
   const species = useMemo(() => deriveSpecies(dna), [dna]);
-  const traits = useMemo(() => getTraitProfile(dna).slice(0, 4), [dna]);
   const expressedTraits = useMemo(() => getExpressedTraits(dna), [dna]);
   const description = useMemo(() => DescribeDNA(dna), [dna]);
   let appearance: { primaryHue: number; primarySaturation: number; primaryLightness: number } | null = null;

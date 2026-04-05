@@ -88,7 +88,7 @@ export default function Soundscape({
       disposeRef.current = null;
       setPlaying(false);
     };
-  }, [enabled, soundProfile]);
+  }, [enabled, soundProfile, voiceHint]);
 
   if (!enabled) return null;
   return (

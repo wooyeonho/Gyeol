@@ -12,7 +12,6 @@ describe("trySetBirthday", () => {
   beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
 
   it("returns early when state not found", async () => {
-    const updateFn = vi.fn();
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
       from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) }) }) }),
     });
