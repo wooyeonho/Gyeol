@@ -132,76 +132,105 @@ function setMirroredIfEmpty(grid: Cell[][], midX: number, dx: number, y: number,
 }
 
 // ═══════════════════════════════════════════════════════
-//  PART POOLS — combinatorial variety
+//  CONTINUOUS PROCEDURAL PART PARAMETERS
+//  Every parameter is a float derived from DNA — no fixed pools.
+//  This creates truly INFINITE unique creatures.
 // ═══════════════════════════════════════════════════════
 
-// ── Ear type pool (20) ──
-const EAR_TYPES = [
-  "none", "round", "pointy", "cat", "bunny", "floppy", "antenna", "horn",
-  "wing-ear", "leaf", "bear", "fox", "demon", "elf", "fin", "mushroom",
-  "crystal", "feather", "curl-horn", "droopy",
-] as const;
-type EarType = (typeof EAR_TYPES)[number];
+/** Mix multiple DNA values into a 0..1 float via hash cascade */
+function dnaFloat(...vals: number[]): number {
+  let h = 5381;
+  for (const v of vals) {
+    const iv = Math.round(v * 100000);
+    h = ((h << 5) + h + iv) >>> 0;
+  }
+  return (h % 10000) / 10000;
+}
 
-// ── Arm/limb type pool (12) ──
-const ARM_TYPES = [
-  "none", "stubby", "flipper", "arms", "tentacle", "wing", "claw",
-  "paw", "branch", "ribbon-arm", "shield", "nub",
-] as const;
-type ArmType = (typeof ARM_TYPES)[number];
+/** Mix DNA values into an integer in range [min, max] */
+function dnaInt(min: number, max: number, ...vals: number[]): number {
+  return min + Math.round(dnaFloat(...vals) * (max - min));
+}
 
-// ── Tail style pool (16) ──
-const TAIL_STYLES = [
-  "none", "stub", "curl", "flame", "fish", "ribbon", "spike", "fluffy",
-  "lightning", "heart", "star-tip", "swirl", "split", "feathered",
-  "bubble", "chain",
-] as const;
-type TailStyle = (typeof TAIL_STYLES)[number];
+/** Returns true with probability p, deterministic per DNA mix */
+function dnaChance(p: number, ...vals: number[]): boolean {
+  return dnaFloat(...vals) < p;
+}
 
-// ── Extra feature pool (20) ──
-const EXTRA_FEATURES = [
-  "none", "horn-single", "horns-double", "crown", "antenna-pair",
-  "wings-small", "wings-large", "halo", "leaf-sprout", "bow",
-  "tiara", "mohawk", "flower", "star-mark", "gem", "scarf",
-  "third-eye", "crest", "cloud-puff", "sparkle-aura",
-] as const;
-type ExtraFeature = (typeof EXTRA_FEATURES)[number];
+// ── Continuous part parameter types ──
+interface EarParams {
+  height: number;      // 1-7 pixels
+  width: number;       // 1-4 pixels
+  pointiness: number;  // 0=round, 1=sharp
+  flop: number;        // 0=upright, 1=drooping
+  innerColor: boolean; // show inner ear accent
+  curl: number;        // 0=straight, 1=curled
+  separation: number;  // 0=close to head, 1=far out
+  thickness: number;   // 0=thin, 1=thick
+}
 
-// ── Pattern pool (14) ──
-const PATTERN_TYPES = [
-  "none", "spots", "stripes-h", "stripes-v", "diamonds", "stars",
-  "dots-scattered", "chevron", "waves", "scales", "hearts",
-  "zigzag", "cross", "gradient",
-] as const;
-type PatternType = (typeof PATTERN_TYPES)[number];
+interface ArmParams {
+  length: number;      // 0-6 pixels
+  thickness: number;   // 0=thin, 1=thick
+  wave: number;        // 0=straight, 1=wavy
+  endShape: number;    // 0=round, 0.5=hand, 1=claw
+  angle: number;       // 0=down, 1=up
+  hasArms: boolean;    // some creatures have no arms
+}
 
-// ── Eye style pool (10) — NEW ──
-const EYE_STYLES = [
-  "round", "oval", "cute-sparkle", "dot", "narrow", "wide",
-  "droopy", "fierce", "star-pupil", "heart-pupil",
-] as const;
-type EyeStyle = (typeof EYE_STYLES)[number];
+interface TailParams {
+  length: number;      // 0-7 pixels
+  curl: number;        // 0=straight, 1=curled
+  thickness: number;   // 0=thin, 1=thick
+  tipShape: number;    // 0=round, 0.5=pointed, 1=special (flame/star)
+  branching: number;   // 0=single, 1=split
+  hasTail: boolean;
+  direction: number;   // 0=horizontal, 1=diagonal up
+  fluffy: number;      // 0=smooth, 1=fluffy/wide
+}
 
-// ── Mouth style pool (10) — NEW ──
-const MOUTH_STYLES = [
-  "dot", "smile", "fang", "cat-mouth", "open", "tongue-out",
-  "whistle", "pout", "grin", "none",
-] as const;
-type MouthStyle = (typeof MOUTH_STYLES)[number];
+interface EyeParams {
+  size: number;        // 1-3 px wide
+  height: number;      // 1-3 px tall
+  sparkle: number;     // 0=none, 1=double sparkle
+  pupilSize: number;   // 0=small, 1=fills eye
+  expression: number;  // 0=droopy, 0.5=normal, 1=fierce
+  irisColor: boolean;  // show accent color in iris
+  separation: number;  // how far apart (continuous)
+}
 
-// ── Cheek/face marking pool (8) — NEW ──
-const FACE_MARKS = [
-  "none", "blush", "freckles", "whiskers", "tear-mark", "scar",
-  "star-cheek", "swirl-cheek",
-] as const;
-type FaceMark = (typeof FACE_MARKS)[number];
+interface MouthParams {
+  width: number;       // 0-4 px
+  open: number;        // 0=closed, 1=open
+  curve: number;       // 0=frown, 0.5=neutral, 1=smile
+  hasFang: boolean;
+  hasTongue: boolean;
+  hasMouth: boolean;
+}
 
-// ── Body modifier pool (8) — NEW ──
-const BODY_MODS = [
-  "none", "belly-patch", "collar", "belt", "cape", "spikes-back",
-  "shell", "mane",
-] as const;
-type BodyMod = (typeof BODY_MODS)[number];
+interface FeatureParams {
+  headType: number;    // 0=none, 0.3=horn, 0.6=crown/crest, 1=halo
+  headSize: number;    // 0=small, 1=large
+  hasWings: boolean;
+  wingSize: number;    // 0=small, 1=large
+  bodyMarkType: number; // 0=none, 0.3=belly, 0.6=collar, 1=cape
+  spikeCount: number;  // 0-4
+  hasSprout: boolean;
+}
+
+interface PatternParams {
+  density: number;     // 0=none, 1=heavy
+  scale: number;       // 0=fine, 1=coarse
+  angle: number;       // 0=horizontal, 0.5=diagonal, 1=vertical
+  type: number;        // continuous: 0=dots, 0.3=stripes, 0.6=diamonds, 1=waves
+  hasPattern: boolean;
+}
+
+interface FaceParams {
+  blushIntensity: number; // 0=none, 1=bright
+  markType: number;       // 0=none, 0.3=freckles, 0.6=whiskers, 1=special
+  hasFaceMarks: boolean;
+}
 
 // ═══════════════════════════════════════════════════════
 //  MAIN PROCEDURAL GENERATOR
@@ -238,26 +267,84 @@ function generateSprite(
   const asymSeed = p.orbitOffset / 360;       // 0..1
   const earTilt = (p.bandTilt + 24) / 48;     // normalized 0..1
 
-  // ── Select parts from DNA (each from a different hash mix) ──
-  const pick = (arr: readonly string[], ...seeds: number[]) => {
-    const h = seeds.reduce((a, s) => a * 31 + Math.round(s * 1000), 7919);
-    return arr[((h >>> 0) % (arr.length - 1)) + 1]; // skip "none" for DNA-driven picks
-  };
-  const pickWithNone = (arr: readonly string[], val: number, threshold: number, ...seeds: number[]) => {
-    if (val < threshold) return arr[0]; // "none"
-    const h = seeds.reduce((a, s) => a * 31 + Math.round(s * 1000), 7919);
-    return arr[((h >>> 0) % (arr.length - 1)) + 1];
+  // ═══════════════════════════════════════════════════════
+  //  CONTINUOUS PART PARAMETERS — derived from DNA floats
+  //  Every creature gets unique continuous values, not discrete types
+  // ═══════════════════════════════════════════════════════
+
+  const ear: EarParams = {
+    height: 1 + Math.round(dnaFloat(warmth, p.nodeCount, 0.1) * 6),
+    width: 1 + Math.round(dnaFloat(structure, p.bandCount, 0.2) * 3),
+    pointiness: dnaFloat(ferality, p.nodeCount, 0.3),
+    flop: dnaFloat(warmth, coherence, 0.4),
+    innerColor: dnaChance(0.55, warmth, luminosity, 0.5),
+    curl: dnaFloat(depth, p.orbitOffset / 360, 0.6),
+    separation: dnaFloat(p.bandTilt / 48, coherence, 0.7),
+    thickness: dnaFloat(warmth, growth, 0.8),
   };
 
-  const earType = pick(EAR_TYPES, p.nodeCount, warmth * 100, structure * 100) as EarType;
-  const armType = pick(ARM_TYPES, p.bandCount, ferality * 100, coherence * 100) as ArmType;
-  const tailStyle = pickWithNone(TAIL_STYLES, depth, 0.12, depth * 100, warmth * 50, p.orbitOffset) as TailStyle;
-  const extraFeature = pickWithNone(EXTRA_FEATURES, growth, 0.18, growth * 100, luminosity * 50, p.bandTilt) as ExtraFeature;
-  const patternType = pickWithNone(PATTERN_TYPES, surreality, 0.2, surreality * 100, structure * 50, p.nodeCount) as PatternType;
-  const eyeStyle = pick(EYE_STYLES, luminosity * 100, coherence * 50, p.nodeCount) as EyeStyle;
-  const mouthStyle = pick(MOUTH_STYLES, warmth * 100, ferality * 100, p.bandCount) as MouthStyle;
-  const faceMark = pickWithNone(FACE_MARKS, warmth, 0.3, warmth * 100, luminosity * 50, p.orbitOffset) as FaceMark;
-  const bodyMod = pickWithNone(BODY_MODS, growth + ferality, 0.5, growth * 100, ferality * 50, p.bandTilt) as BodyMod;
+  const arm: ArmParams = {
+    length: Math.round(dnaFloat(ferality, p.bandCount, 1.1) * 6),
+    thickness: dnaFloat(warmth, structure, 1.2),
+    wave: dnaFloat(surreality, p.orbitOffset / 360, 1.3),
+    endShape: dnaFloat(ferality, depth, 1.4),
+    angle: dnaFloat(growth, p.bandTilt / 48, 1.5),
+    hasArms: dnaChance(0.88, ferality, coherence, 1.6),
+  };
+
+  const tail: TailParams = {
+    length: Math.round(dnaFloat(depth, p.nodeCount, 2.1) * 7),
+    curl: dnaFloat(warmth, depth, 2.2),
+    thickness: dnaFloat(structure, depth, 2.3),
+    tipShape: dnaFloat(luminosity, depth, 2.4),
+    branching: dnaFloat(surreality, depth, 2.5),
+    hasTail: dnaChance(0.82, depth, ferality, 2.6),
+    direction: dnaFloat(p.bandTilt / 48, depth, 2.7),
+    fluffy: dnaFloat(warmth, growth, 2.8),
+  };
+
+  const eye: EyeParams = {
+    size: 1 + Math.round(dnaFloat(luminosity, coherence, 3.1) * 2),
+    height: 1 + Math.round(dnaFloat(luminosity, warmth, 3.2) * 2),
+    sparkle: dnaFloat(luminosity, growth, 3.3),
+    pupilSize: dnaFloat(coherence, ferality, 3.4),
+    expression: dnaFloat(ferality, warmth, 3.5),
+    irisColor: dnaChance(0.4, luminosity, surreality, 3.6),
+    separation: dnaFloat(p.nodeCount / 10, structure, 3.7),
+  };
+
+  const mouth: MouthParams = {
+    width: Math.round(dnaFloat(warmth, ferality, 4.1) * 4),
+    open: dnaFloat(ferality, surreality, 4.2),
+    curve: dnaFloat(warmth, luminosity, 4.3),
+    hasFang: dnaChance(0.2, ferality, depth, 4.4),
+    hasTongue: dnaChance(0.12, warmth, surreality, 4.5),
+    hasMouth: dnaChance(0.9, warmth, coherence, 4.6),
+  };
+
+  const feat: FeatureParams = {
+    headType: dnaFloat(growth, luminosity, 5.1),
+    headSize: dnaFloat(growth, structure, 5.2),
+    hasWings: dnaChance(0.25, surreality, growth, 5.3),
+    wingSize: dnaFloat(surreality, ferality, 5.4),
+    bodyMarkType: dnaFloat(warmth, growth, 5.5),
+    spikeCount: Math.round(dnaFloat(ferality, structure, 5.6) * 4),
+    hasSprout: dnaChance(0.15, growth, warmth, 5.7),
+  };
+
+  const pat: PatternParams = {
+    density: dnaFloat(surreality, structure, 6.1),
+    scale: dnaFloat(surreality, warmth, 6.2),
+    angle: dnaFloat(structure, p.bandTilt / 48, 6.3),
+    type: dnaFloat(surreality, depth, 6.4),
+    hasPattern: dnaChance(surreality * 0.8, surreality, p.nodeCount / 10, 6.5),
+  };
+
+  const face: FaceParams = {
+    blushIntensity: dnaFloat(warmth, luminosity, 7.1),
+    markType: dnaFloat(surreality, warmth, 7.2),
+    hasFaceMarks: dnaChance(0.45, warmth, luminosity, 7.3),
+  };
 
   // ── 1. BODY GENERATION ──
   // Body dimensions driven by DNA
@@ -273,7 +360,8 @@ function generateSprite(
   const headHW = Math.min(9, headWidth);
 
   // Position body: leave room for ears/crown on top, legs on bottom
-  const topMargin = earType === "bunny" ? 5 : earType === "antenna" ? 4 : 3;
+  // Reserve top space based on ear height (taller ears need more room)
+  const topMargin = Math.min(8, 3 + Math.max(0, Math.round(ear.height / 2) - 1));
   const bodyTop = Math.max(topMargin, Math.min(8, GRID - bodyHeight - 4)) + (frame === 1 ? -1 : 0);
   const bodyBottom = bodyTop + bodyHeight - 1;
 
@@ -334,329 +422,99 @@ function generateSprite(
     }
   }
 
-  // ── 2. EARS ──
+  // ── 2. EARS (continuous procedural) ──
   const earBaseY = bodyTop;
   const earBaseHW = halfWidths[0];
+  {
+    const ex = earBaseHW + Math.round(ear.separation * 2) - 1;
+    const h = ear.height;
+    const w = Math.max(1, ear.width);
+    const isUpright = ear.flop < 0.5;
 
-  switch (earType) {
-    case "round": {
-      // Small round bumps
-      const ex = earBaseHW - 1;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex, earBaseY - 2, 3);
-      break;
-    }
-    case "pointy": {
-      // Triangle ears
-      const ex = earBaseHW - 1;
-      for (let dy = 1; dy <= 3; dy++) {
-        setMirrored(grid, midX, ex + 1, earBaseY - dy, 3);
-        if (dy < 3) setMirrored(grid, midX, ex, earBaseY - dy, 3);
-      }
-      setMirrored(grid, midX, ex + 1, earBaseY - 3, 4); // highlight tip
-      break;
-    }
-    case "cat": {
-      // Classic cat ears: triangular, with inner accent
-      const ex = earBaseHW;
-      for (let dy = 1; dy <= 3; dy++) {
-        const w = 3 - dy;
-        for (let ddx = 0; ddx <= w; ddx++) {
-          setMirrored(grid, midX, ex + ddx, earBaseY - dy, 3);
+    if (isUpright) {
+      // Upright ears — grow upward from head top
+      for (let dy = 1; dy <= h; dy++) {
+        // Width tapers toward tip based on pointiness
+        const rowProgress = dy / h; // 0=base, 1=tip
+        const taper = ear.pointiness > 0.5
+          ? Math.max(1, Math.round(w * (1 - rowProgress * 0.7)))  // pointy: narrow at top
+          : Math.max(1, Math.round(w * (0.7 + Math.sin(rowProgress * Math.PI) * 0.3))); // round: bulge
+
+        for (let dx = 0; dx < taper; dx++) {
+          // Curl: offset x as we go up
+          const curlOffset = Math.round(ear.curl * (dy / h) * 2 * (ear.curl > 0.5 ? 1 : -1));
+          setMirrored(grid, midX, ex + dx + curlOffset, earBaseY - dy, 3);
+        }
+        // Inner ear accent color
+        if (ear.innerColor && dy > 1 && dy < h && taper > 1) {
+          const curlOffset = Math.round(ear.curl * (dy / h) * 2 * (ear.curl > 0.5 ? 1 : -1));
+          setMirrored(grid, midX, ex + curlOffset, earBaseY - dy, 5);
         }
       }
-      // Inner ear accent
-      setMirrored(grid, midX, ex, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex, earBaseY - 2, 5);
-      break;
-    }
-    case "bunny": {
-      // Long bunny ears
-      const ex = Math.max(2, earBaseHW - 2);
-      const earLen = 4 + Math.round(earTilt * 2);
-      for (let dy = 1; dy <= earLen; dy++) {
-        setMirrored(grid, midX, ex, earBaseY - dy, 3);
-        setMirrored(grid, midX, ex + 1, earBaseY - dy, 3);
-      }
-      // Inner pink
-      for (let dy = 2; dy < earLen; dy++) {
-        setMirrored(grid, midX, ex, earBaseY - dy, 5);
-      }
-      // Rounded top
-      setMirrored(grid, midX, ex, earBaseY - earLen, 4);
-      break;
-    }
-    case "floppy": {
-      // Floppy ears that droop down the sides
-      const ex = earBaseHW;
-      // Go up 1 then curve down
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY + 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY + 2, 3);
-      setMirrored(grid, midX, ex, earBaseY + 3, 3);
-      // Accent tips
-      setMirrored(grid, midX, ex, earBaseY + 3, 5);
-      break;
-    }
-    case "antenna": {
-      // Thin antenna with ball tip
-      const ex = Math.max(2, earBaseHW - 2);
-      for (let dy = 1; dy <= 4; dy++) {
-        setMirrored(grid, midX, ex, earBaseY - dy, 3);
-      }
-      // Ball tips
-      setMirrored(grid, midX, ex, earBaseY - 5, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY - 5, 5);
-      setMirrored(grid, midX, ex, earBaseY - 6, 5);
-      break;
-    }
-    case "horn": {
-      // Single or double horns
-      const ex = Math.max(2, earBaseHW - 1);
-      for (let dy = 1; dy <= 3; dy++) {
-        setMirrored(grid, midX, ex, earBaseY - dy, 5);
-      }
-      setMirrored(grid, midX, ex, earBaseY - 4, 4);
-      break;
-    }
-    case "wing-ear": {
-      // Small wing-shaped ears
-      const ex = earBaseHW;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 3);
-      setMirrored(grid, midX, ex + 2, earBaseY - 2, 3);
-      setMirrored(grid, midX, ex + 2, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY, 3);
-      break;
-    }
-    case "leaf": {
-      // Leaf-shaped ears
-      const ex = earBaseHW - 1;
-      setMirrored(grid, midX, ex, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 5);
-      setMirrored(grid, midX, ex, earBaseY - 3, 5);
-      // Stem
-      setMirrored(grid, midX, ex, earBaseY - 2, 3);
-      break;
-    }
-    case "bear": {
-      // Small rounded bear ears on top of head
-      const ex = earBaseHW - 1;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex, earBaseY - 2, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 1, 5); // inner ear
-      break;
-    }
-    case "fox": {
-      // Large triangular fox ears
-      const ex = earBaseHW;
-      for (let dy = 1; dy <= 4; dy++) {
-        const w = Math.max(0, 3 - dy);
-        for (let ddx = 0; ddx <= w; ddx++) {
-          setMirrored(grid, midX, ex + ddx, earBaseY - dy, 3);
+      // Tip highlight
+      const tipCurl = Math.round(ear.curl * 2 * (ear.curl > 0.5 ? 1 : -1));
+      setMirrored(grid, midX, ex + tipCurl, earBaseY - h, 4);
+    } else {
+      // Floppy/droopy ears — go up briefly then droop down
+      const upPart = Math.max(1, Math.round(h * 0.25));
+      const downPart = h - upPart;
+      // Up portion
+      for (let dy = 1; dy <= upPart; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          setMirrored(grid, midX, ex + dx, earBaseY - dy, 3);
         }
       }
-      setMirrored(grid, midX, ex, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex, earBaseY - 2, 5);
-      setMirrored(grid, midX, ex, earBaseY - 3, 4);
-      break;
-    }
-    case "demon": {
-      // Bat-like demon ears
-      const ex = earBaseHW;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 3);
-      setMirrored(grid, midX, ex + 2, earBaseY - 3, 3);
-      setMirrored(grid, midX, ex + 1, earBaseY - 3, 3);
-      setMirrored(grid, midX, ex, earBaseY - 2, 2);
-      setMirrored(grid, midX, ex + 2, earBaseY - 2, 3);
-      break;
-    }
-    case "elf": {
-      // Long pointed side ears
-      const ex = earBaseHW;
-      for (let i = 0; i < 4; i++) {
-        setMirrored(grid, midX, ex + i, earBaseY - 1 - Math.floor(i * 0.5), 3);
+      // Down portion — extends sideways and down
+      for (let dy = 0; dy < downPart; dy++) {
+        const sway = Math.round(Math.sin(dy * 0.8 + ear.curl * 3) * ear.curl);
+        for (let dx = 0; dx < Math.max(1, w - (dy > downPart - 2 ? 1 : 0)); dx++) {
+          setMirrored(grid, midX, ex + w + dx + sway, earBaseY - upPart + dy + 1, 3);
+        }
+        if (ear.innerColor && dy < downPart - 1) {
+          setMirrored(grid, midX, ex + w + sway, earBaseY - upPart + dy + 1, 5);
+        }
       }
-      setMirrored(grid, midX, ex + 4, earBaseY - 2, 4);
-      break;
+      // Tip accent
+      setMirrored(grid, midX, ex + w, earBaseY - upPart + downPart, 5);
     }
-    case "fin": {
-      // Fish fin ears
-      const ex = earBaseHW;
-      for (let dy = 0; dy < 3; dy++) {
-        setMirrored(grid, midX, ex + 1, earBaseY - dy - 1, 5);
-      }
-      setMirrored(grid, midX, ex, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex + 2, earBaseY - 2, 5);
-      break;
-    }
-    case "mushroom": {
-      // Mushroom cap ears
-      const ex = earBaseHW - 2;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      for (let dx = -1; dx <= 2; dx++) {
-        setMirrored(grid, midX, ex + dx, earBaseY - 2, 5);
-      }
-      setMirrored(grid, midX, ex, earBaseY - 3, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY - 3, 5);
-      break;
-    }
-    case "crystal": {
-      // Crystalline angular ears
-      const ex = earBaseHW;
-      setMirrored(grid, midX, ex, earBaseY - 1, 4);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 4);
-      setMirrored(grid, midX, ex, earBaseY - 3, 4);
-      setMirrored(grid, midX, ex + 1, earBaseY - 1, 4);
-      break;
-    }
-    case "feather": {
-      // Feathery ear tufts
-      const ex = earBaseHW;
-      for (let dy = 1; dy <= 3; dy++) {
-        setMirrored(grid, midX, ex + dy - 1, earBaseY - dy, 3);
-        if (dy < 3) setMirrored(grid, midX, ex + dy, earBaseY - dy, 4);
-      }
-      break;
-    }
-    case "curl-horn": {
-      // Curling ram horns
-      const ex = earBaseHW;
-      setMirrored(grid, midX, ex, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY - 2, 5);
-      setMirrored(grid, midX, ex + 2, earBaseY - 1, 5);
-      setMirrored(grid, midX, ex + 2, earBaseY, 5);
-      setMirrored(grid, midX, ex + 1, earBaseY + 1, 5);
-      break;
-    }
-    case "droopy": {
-      // Droopy long ears like a basset hound
-      const ex = earBaseHW;
-      setMirrored(grid, midX, ex, earBaseY - 1, 3);
-      for (let dy = 0; dy < 5; dy++) {
-        setMirrored(grid, midX, ex + 1, earBaseY + dy, 3);
-      }
-      setMirrored(grid, midX, ex, earBaseY + 4, 5);
-      break;
-    }
-    case "none":
-    default:
-      break;
   }
 
-  // ── 3. ARMS / LIMBS ──
+  // ── 3. ARMS / LIMBS (continuous procedural) ──
   const armY = bodyTop + headRows + Math.round((bodyHeight - headRows) * 0.2);
   const armHW = halfWidths[headRows + Math.round((bodyHeight - headRows) * 0.2)] || maxHalfWidth;
-  const sharpClaws = ferality > 0.6;
 
-  switch (armType) {
-    case "stubby": {
-      // Short stubby arms
-      setMirrored(grid, midX, armHW + 1, armY, 3);
-      setMirrored(grid, midX, armHW + 1, armY + 1, 3);
-      break;
-    }
-    case "flipper": {
-      // Flipper/fin arms
-      for (let dy = 0; dy < 3; dy++) {
-        setMirrored(grid, midX, armHW + 1, armY + dy, 3);
+  if (arm.hasArms && arm.length > 0) {
+    const len = Math.max(1, arm.length);
+    const thick = arm.thickness > 0.5;
+
+    for (let i = 0; i < len; i++) {
+      // Wave effect: sinusoidal horizontal offset
+      const waveOffset = Math.round(Math.sin(i * 1.2 + arm.wave * 4) * arm.wave * 1.5);
+      // Angle: arm direction (0=down, 1=up-angled)
+      const angleOffset = arm.angle > 0.6 ? -Math.round(i * 0.4) : 0;
+
+      setMirrored(grid, midX, armHW + 1 + waveOffset, armY + i + angleOffset, 3);
+      if (thick) {
+        setMirrored(grid, midX, armHW + 2 + waveOffset, armY + i + angleOffset, 3);
       }
-      setMirrored(grid, midX, armHW + 2, armY + 1, 3);
-      setMirrored(grid, midX, armHW + 2, armY + 2, 3);
-      break;
     }
-    case "arms": {
-      // Normal arms hanging down
-      const armLen = 2 + Math.round(ferality * 2);
-      for (let i = 0; i < armLen; i++) {
-        setMirrored(grid, midX, armHW + 1, armY + i, 3);
-      }
-      // Hand/claw
-      if (sharpClaws) {
-        setMirrored(grid, midX, armHW + 2, armY + armLen - 1, 5);
-        setMirrored(grid, midX, armHW + 1, armY + armLen, 5);
-      } else {
-        setMirrored(grid, midX, armHW + 1, armY + armLen, 3);
-      }
-      break;
+
+    // End shape: continuous from round → hand → claw
+    const endY = armY + len - 1 + (arm.angle > 0.6 ? -Math.round((len - 1) * 0.4) : 0);
+    const endWave = Math.round(Math.sin((len - 1) * 1.2 + arm.wave * 4) * arm.wave * 1.5);
+    if (arm.endShape > 0.7) {
+      // Claw/sharp end
+      setMirrored(grid, midX, armHW + 2 + endWave, endY, 5);
+      setMirrored(grid, midX, armHW + 1 + endWave, endY + 1, 5);
+      if (arm.endShape > 0.85) setMirrored(grid, midX, armHW + 2 + endWave, endY + 1, 5);
+    } else if (arm.endShape > 0.35) {
+      // Hand/paw
+      setMirrored(grid, midX, armHW + 1 + endWave, endY + 1, 3);
+      if (thick) setMirrored(grid, midX, armHW + 2 + endWave, endY + 1, 4);
+    } else {
+      // Round/nub
+      setMirrored(grid, midX, armHW + 1 + endWave, endY + 1, 3);
     }
-    case "tentacle": {
-      // Wavy tentacle arms
-      for (let i = 0; i < 4; i++) {
-        const wave = Math.round(Math.sin(i * 1.5) * 0.8);
-        setMirrored(grid, midX, armHW + 1 + wave, armY + i, 3);
-      }
-      setMirrored(grid, midX, armHW + 1, armY + 4, 5);
-      break;
-    }
-    case "wing": {
-      // Wing arms
-      for (let dy = 0; dy < 4; dy++) {
-        const wSpan = dy < 2 ? 3 : 2;
-        for (let wx = 1; wx <= wSpan; wx++) {
-          setMirrored(grid, midX, armHW + wx, armY + dy - 1, 3);
-        }
-      }
-      // Wing highlight
-      setMirrored(grid, midX, armHW + 2, armY - 1, 4);
-      setMirrored(grid, midX, armHW + 3, armY, 4);
-      break;
-    }
-    case "claw": {
-      // Sharp claw arms
-      for (let i = 0; i < 3; i++) setMirrored(grid, midX, armHW + 1, armY + i, 3);
-      setMirrored(grid, midX, armHW + 2, armY + 2, 5);
-      setMirrored(grid, midX, armHW + 2, armY + 3, 5);
-      setMirrored(grid, midX, armHW + 1, armY + 3, 5);
-      break;
-    }
-    case "paw": {
-      // Round paw arms
-      setMirrored(grid, midX, armHW + 1, armY, 3);
-      setMirrored(grid, midX, armHW + 1, armY + 1, 3);
-      setMirrored(grid, midX, armHW + 2, armY + 1, 3);
-      setMirrored(grid, midX, armHW + 2, armY + 2, 4); // paw pad
-      break;
-    }
-    case "branch": {
-      // Tree branch arms
-      setMirrored(grid, midX, armHW + 1, armY, 2);
-      setMirrored(grid, midX, armHW + 2, armY - 1, 5);
-      setMirrored(grid, midX, armHW + 2, armY, 2);
-      setMirrored(grid, midX, armHW + 3, armY, 5);
-      setMirrored(grid, midX, armHW + 3, armY + 1, 5);
-      break;
-    }
-    case "ribbon-arm": {
-      // Flowing ribbon arms
-      for (let i = 0; i < 5; i++) {
-        const wy = Math.round(Math.sin(i * 0.9) * 1);
-        setMirrored(grid, midX, armHW + 1 + i, armY + wy, i < 2 ? 3 : 5);
-      }
-      break;
-    }
-    case "shield": {
-      // Shield-like arms
-      for (let dy = -1; dy <= 2; dy++) {
-        setMirrored(grid, midX, armHW + 1, armY + dy, 3);
-        setMirrored(grid, midX, armHW + 2, armY + dy, 2);
-      }
-      break;
-    }
-    case "nub": {
-      // Tiny nub arms
-      setMirrored(grid, midX, armHW + 1, armY, 3);
-      break;
-    }
-    case "none":
-    default:
-      break;
   }
 
   // ── 4. LEGS ──
@@ -695,384 +553,152 @@ function generateSprite(
     }
   }
 
-  // ── 5. TAIL ──
+  // ── 5. TAIL (continuous procedural) ──
   const tailSide = rng() > 0.5 ? 1 : -1;
   const tailStartRow = Math.round(bodyHeight * 0.6);
   const tailBaseY = bodyTop + tailStartRow;
   const tailBaseHW = halfWidths[Math.min(tailStartRow, bodyHeight - 1)] || 3;
 
-  switch (tailStyle) {
-    case "stub": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
-      break;
-    }
-    case "curl": {
-      let tx = midX + tailSide * tailBaseHW;
-      let ty = tailBaseY;
-      for (let i = 0; i < 4; i++) {
-        setIfEmpty(grid, tx, ty, 3);
-        tx += tailSide;
-        if (i >= 2) ty--;
-      }
-      setIfEmpty(grid, tx, ty, 5); // accent tip
-      break;
-    }
-    case "flame": {
-      let tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 3; i++) {
-        setIfEmpty(grid, tx + tailSide * i, tailBaseY - i, 5);
-        if (i > 0) setIfEmpty(grid, tx + tailSide * i, tailBaseY - i + 1, 5);
-      }
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 3, 4); // flame tip
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY - 3, 4);
-      break;
-    }
-    case "fish": {
-      let tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 3; i++) {
-        setIfEmpty(grid, tx + tailSide * i, tailBaseY, 3);
-      }
-      // Fan
-      tx += tailSide * 3;
-      setIfEmpty(grid, tx, tailBaseY - 1, 5);
-      setIfEmpty(grid, tx, tailBaseY, 5);
-      setIfEmpty(grid, tx, tailBaseY + 1, 5);
-      setIfEmpty(grid, tx + tailSide, tailBaseY - 1, 5);
-      setIfEmpty(grid, tx + tailSide, tailBaseY + 1, 5);
-      break;
-    }
-    case "ribbon": {
-      let tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 5; i++) {
-        const wave = Math.round(Math.sin(i * 1.2) * 1);
-        setIfEmpty(grid, tx + tailSide * i, tailBaseY + wave, 5);
-      }
-      break;
-    }
-    case "spike": {
-      let tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 3; i++) {
-        setIfEmpty(grid, tx + tailSide * i, tailBaseY, 3);
-      }
-      // Spike tip
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 5);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 5);
-      break;
-    }
-    case "fluffy": {
-      let tx = midX + tailSide * tailBaseHW;
-      // Fluffy ball tail
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let ddx = 0; ddx < 3; ddx++) {
-          const xx = tx + tailSide * (ddx + 1);
-          setIfEmpty(grid, xx, tailBaseY + dy, ddx === 1 && dy === 0 ? 4 : 3);
+  if (tail.hasTail && tail.length > 0) {
+    const len = Math.max(1, tail.length);
+    const tx0 = midX + tailSide * tailBaseHW;
+    const thick = tail.thickness > 0.5;
+    const fluffRadius = Math.round(tail.fluffy * 1.5); // 0-1 extra rows above/below
+
+    for (let i = 0; i < len; i++) {
+      const progress = i / Math.max(1, len - 1);
+
+      // Curl: vertical offset that increases with progress
+      const curlY = Math.round(tail.curl * progress * progress * -3);
+      // Direction: 0=horizontal, 1=diagonal up
+      const dirY = Math.round(tail.direction * progress * -2);
+      const py = tailBaseY + curlY + dirY;
+      const px = tx0 + tailSide * (i + 1);
+
+      setIfEmpty(grid, px, py, 3);
+      if (thick) setIfEmpty(grid, px, py + 1, 3);
+
+      // Fluffy: extra pixels around tail
+      if (fluffRadius > 0 && i > 0 && i < len - 1) {
+        for (let fy = -fluffRadius; fy <= fluffRadius; fy++) {
+          if (fy === 0) continue;
+          setIfEmpty(grid, px, py + fy, 4);
         }
       }
-      break;
     }
-    case "lightning": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 5);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY - 1, 5);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 5);
-      setIfEmpty(grid, tx + tailSide * 4, tailBaseY - 1, 4);
-      break;
+
+    // Tip shape: continuous from round → pointed → special
+    const tipPx = tx0 + tailSide * (len + 1);
+    const tipCurlY = Math.round(tail.curl * -3);
+    const tipDirY = Math.round(tail.direction * -2);
+    const tipPy = tailBaseY + tipCurlY + tipDirY;
+
+    if (tail.tipShape > 0.7) {
+      // Special tip: flame/star burst
+      setIfEmpty(grid, tipPx, tipPy, 4);
+      setIfEmpty(grid, tipPx, tipPy - 1, 4);
+      setIfEmpty(grid, tipPx, tipPy + 1, 4);
+      if (tail.tipShape > 0.85) setIfEmpty(grid, tipPx + tailSide, tipPy, 4);
+    } else if (tail.tipShape > 0.35) {
+      // Pointed/accent tip
+      setIfEmpty(grid, tipPx, tipPy, 5);
+      if (tail.tipShape > 0.5) setIfEmpty(grid, tipPx, tipPy - 1, 5);
+    } else {
+      // Round/blob tip
+      setIfEmpty(grid, tipPx, tipPy, 3);
     }
-    case "heart": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY - 1, 5);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY + 1, 5);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 5);
-      break;
-    }
-    case "star-tip": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 4);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 4);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY + 1, 4);
-      setIfEmpty(grid, tx + tailSide * 4, tailBaseY, 4);
-      break;
-    }
-    case "swirl": {
-      const tx = midX + tailSide * tailBaseHW;
-      const pts: [number, number][] = [[1,0],[2,-1],[3,-1],[3,0],[2,1],[1,1],[1,0]];
-      for (let i = 0; i < pts.length; i++) {
-        setIfEmpty(grid, tx + tailSide * pts[i][0], tailBaseY + pts[i][1], i < 3 ? 3 : 5);
+
+    // Branching: split at end
+    if (tail.branching > 0.6 && len >= 3) {
+      const splitAt = tx0 + tailSide * len;
+      const splitBaseY = tailBaseY + Math.round(tail.curl * -3 * ((len - 1) / len)) + Math.round(tail.direction * -2 * ((len - 1) / len));
+      setIfEmpty(grid, splitAt + tailSide, splitBaseY - 1, 4);
+      setIfEmpty(grid, splitAt + tailSide, splitBaseY + 1, 4);
+      if (tail.branching > 0.8) {
+        setIfEmpty(grid, splitAt + tailSide * 2, splitBaseY - 2, 4);
+        setIfEmpty(grid, splitAt + tailSide * 2, splitBaseY + 2, 4);
       }
-      break;
     }
-    case "split": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 3);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY + 1, 3);
-      setIfEmpty(grid, tx + tailSide * 4, tailBaseY - 2, 4);
-      setIfEmpty(grid, tx + tailSide * 4, tailBaseY + 2, 4);
-      break;
-    }
-    case "feathered": {
-      const tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 4; i++) {
-        setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY, 3);
-        if (i > 0 && i < 3) {
-          setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY - 1, 4);
-          setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY + 1, 4);
-        }
-      }
-      break;
-    }
-    case "bubble": {
-      const tx = midX + tailSide * tailBaseHW;
-      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
-      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 4);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 4);
-      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 4);
-      break;
-    }
-    case "chain": {
-      const tx = midX + tailSide * tailBaseHW;
-      for (let i = 0; i < 4; i++) {
-        setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY + (i % 2 === 0 ? 0 : -1), i % 2 === 0 ? 2 : 3);
-      }
-      break;
-    }
-    case "none":
-    default:
-      break;
   }
 
-  // ── 6. EXTRA FEATURES ──
-  switch (extraFeature) {
-    case "horn-single": {
-      // Single horn on top center
-      for (let dy = 1; dy <= 3; dy++) {
-        setIfEmpty(grid, midX, bodyTop - dy, 5);
-        if (dy === 1) setIfEmpty(grid, midX - 1, bodyTop - dy, 5);
-      }
-      setIfEmpty(grid, midX, bodyTop - 4, 4);
-      break;
-    }
-    case "horns-double": {
-      const hx = Math.max(2, earBaseHW - 2);
-      for (let dy = 1; dy <= 3; dy++) {
-        setMirroredIfEmpty(grid, midX, hx, bodyTop - dy, 5);
-      }
-      setMirroredIfEmpty(grid, midX, hx, bodyTop - 4, 4);
-      break;
-    }
-    case "crown": {
-      const cw = Math.max(3, earBaseHW - 1);
-      for (let dx = -cw; dx <= cw; dx++) {
-        setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
-      }
-      // Crown points
-      setIfEmpty(grid, midX - cw + 1, bodyTop - 2, 5);
-      setIfEmpty(grid, midX, bodyTop - 2, 5);
-      setIfEmpty(grid, midX + cw - 1, bodyTop - 2, 5);
-      setIfEmpty(grid, midX, bodyTop - 3, 4);
-      break;
-    }
-    case "antenna-pair": {
-      const ax = 2;
-      for (let dy = 1; dy <= 3; dy++) {
-        setMirroredIfEmpty(grid, midX, ax, bodyTop - dy, 3);
-      }
-      setMirroredIfEmpty(grid, midX, ax, bodyTop - 4, 5);
-      break;
-    }
-    case "wings-small": {
-      const wy = bodyTop + headRows + 1;
-      const wBase = halfWidths[headRows + 1] || maxHalfWidth;
-      for (let dy = 0; dy < 3; dy++) {
-        setMirroredIfEmpty(grid, midX, wBase + 2, wy + dy, 4);
-        if (dy < 2) setMirroredIfEmpty(grid, midX, wBase + 3, wy + dy, 4);
-      }
-      break;
-    }
-    case "wings-large": {
-      const wy = bodyTop + headRows;
-      const wBase = halfWidths[headRows] || maxHalfWidth;
-      for (let dy = -1; dy < 4; dy++) {
-        const span = dy < 1 ? 4 : dy < 3 ? 3 : 2;
-        for (let wx = 1; wx <= span; wx++) {
-          setMirroredIfEmpty(grid, midX, wBase + wx + 1, wy + dy, dy < 1 ? 4 : 3);
+  // ── 6. EXTRA FEATURES (continuous procedural) ──
+  {
+    // Head feature: horn / crown / crest / halo — continuous
+    if (feat.headType > 0.15) {
+      const size = 1 + Math.round(feat.headSize * 3); // 1-4 pixels tall
+
+      if (feat.headType < 0.4) {
+        // Horn(s): single or mirrored based on continuous value
+        const mirrored = feat.headType > 0.25;
+        if (mirrored) {
+          const hx = Math.max(2, earBaseHW - 2);
+          for (let dy = 1; dy <= size; dy++) {
+            setMirroredIfEmpty(grid, midX, hx, bodyTop - dy, 5);
+          }
+          setMirroredIfEmpty(grid, midX, hx, bodyTop - size - 1, 4);
+        } else {
+          for (let dy = 1; dy <= size; dy++) {
+            setIfEmpty(grid, midX, bodyTop - dy, 5);
+            if (dy === 1) setIfEmpty(grid, midX - 1, bodyTop - dy, 5);
+          }
+          setIfEmpty(grid, midX, bodyTop - size - 1, 4);
         }
+      } else if (feat.headType < 0.7) {
+        // Crown / crest / mohawk — wide head decoration
+        const width = 1 + Math.round(feat.headSize * 3); // 1-4 half-width
+        for (let dx = -width; dx <= width; dx++) {
+          setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
+        }
+        // Prongs: number based on headSize
+        const prongs = 1 + Math.round(feat.headSize * 2);
+        const spacing = Math.max(1, Math.floor(width * 2 / Math.max(1, prongs)));
+        for (let i = 0; i < prongs; i++) {
+          const px = midX - width + i * spacing + Math.round(spacing / 2);
+          for (let dy = 2; dy <= 1 + Math.round(feat.headSize * 2); dy++) {
+            setIfEmpty(grid, px, bodyTop - dy, dy === 1 + Math.round(feat.headSize * 2) ? 4 : 5);
+          }
+        }
+      } else {
+        // Halo / floating ring
+        const haloY = bodyTop - 2 - Math.round(feat.headSize * 2);
+        const hw = 1 + Math.round(feat.headSize * 2);
+        for (let dx = -hw; dx <= hw; dx++) {
+          setIfEmpty(grid, midX + dx, haloY, 5);
+        }
+        setIfEmpty(grid, midX - hw - 1, haloY + 1, 5);
+        setIfEmpty(grid, midX + hw + 1, haloY + 1, 5);
       }
-      break;
     }
-    case "halo": {
-      // Floating ring above head
-      const haloY = bodyTop - 3;
-      for (let dx = -2; dx <= 2; dx++) {
-        setIfEmpty(grid, midX + dx, haloY, 5);
-      }
-      setIfEmpty(grid, midX - 3, haloY + 1, 5);
-      setIfEmpty(grid, midX + 3, haloY + 1, 5);
-      break;
-    }
-    case "leaf-sprout": {
-      // Little sprout on top
+
+    // Sprout on top
+    if (feat.hasSprout) {
       setIfEmpty(grid, midX, bodyTop - 1, 5);
       setIfEmpty(grid, midX - 1, bodyTop - 2, 5);
       setIfEmpty(grid, midX + 1, bodyTop - 2, 5);
-      setIfEmpty(grid, midX - 1, bodyTop - 3, 5);
-      setIfEmpty(grid, midX + 1, bodyTop - 3, 5);
-      break;
+      setIfEmpty(grid, midX, bodyTop - 3, 5);
     }
-    case "bow": {
-      // Cute bow on one ear
-      const bx = midX + earBaseHW;
-      setIfEmpty(grid, bx, bodyTop - 1, 5);
-      setIfEmpty(grid, bx + 1, bodyTop - 2, 5);
-      setIfEmpty(grid, bx + 1, bodyTop, 5);
-      setIfEmpty(grid, bx, bodyTop - 2, 5);
-      setIfEmpty(grid, bx, bodyTop, 5);
-      break;
-    }
-    case "tiara": {
-      // Small tiara on head
-      for (let dx = -2; dx <= 2; dx++) {
-        setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
-      }
-      setIfEmpty(grid, midX, bodyTop - 2, 4);
-      setIfEmpty(grid, midX - 1, bodyTop - 2, 5);
-      setIfEmpty(grid, midX + 1, bodyTop - 2, 5);
-      break;
-    }
-    case "mohawk": {
-      // Spiky mohawk down the center
-      for (let dy = 1; dy <= 4; dy++) {
-        setIfEmpty(grid, midX, bodyTop - dy, dy <= 2 ? 5 : 4);
-        if (dy <= 2) setIfEmpty(grid, midX - 1, bodyTop - dy, 5);
-      }
-      break;
-    }
-    case "flower": {
-      // Flower on head
-      setIfEmpty(grid, midX + earBaseHW - 1, bodyTop - 1, 5);
-      setIfEmpty(grid, midX + earBaseHW, bodyTop - 2, 5);
-      setIfEmpty(grid, midX + earBaseHW - 1, bodyTop - 2, 4);
-      setIfEmpty(grid, midX + earBaseHW, bodyTop - 1, 5);
-      setIfEmpty(grid, midX + earBaseHW - 2, bodyTop - 2, 5);
-      break;
-    }
-    case "star-mark": {
-      // Star mark on forehead
-      setIfEmpty(grid, midX, bodyTop + 1, 4);
-      setIfEmpty(grid, midX - 1, bodyTop + 2, 4);
-      setIfEmpty(grid, midX + 1, bodyTop + 2, 4);
-      setIfEmpty(grid, midX, bodyTop + 2, 4);
-      break;
-    }
-    case "gem": {
-      // Gem on forehead
-      setIfEmpty(grid, midX, bodyTop + 1, 5);
-      setIfEmpty(grid, midX, bodyTop + 2, 4);
-      break;
-    }
-    case "scarf": {
-      // Scarf around neck
-      const neckY = bodyTop + headRows;
-      for (let dx = -maxHalfWidth; dx < maxHalfWidth; dx++) {
-        setIfEmpty(grid, midX + dx, neckY, 5);
-      }
-      // Dangling end
-      setIfEmpty(grid, midX + maxHalfWidth, neckY + 1, 5);
-      setIfEmpty(grid, midX + maxHalfWidth, neckY + 2, 5);
-      break;
-    }
-    case "third-eye": {
-      // Third eye on forehead
-      setIfEmpty(grid, midX, bodyTop + 2, 6);
-      setIfEmpty(grid, midX, bodyTop + 3, 7);
-      break;
-    }
-    case "crest": {
-      // Fan-shaped crest
-      for (let dx = -2; dx <= 2; dx++) {
-        setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
-        if (Math.abs(dx) <= 1) setIfEmpty(grid, midX + dx, bodyTop - 2, 5);
-      }
-      setIfEmpty(grid, midX, bodyTop - 3, 4);
-      break;
-    }
-    case "cloud-puff": {
-      // Cloud puff on head
-      for (let dx = -1; dx <= 1; dx++) {
-        setIfEmpty(grid, midX + dx, bodyTop - 1, 4);
-        setIfEmpty(grid, midX + dx, bodyTop - 2, 4);
-      }
-      setIfEmpty(grid, midX - 2, bodyTop - 1, 4);
-      setIfEmpty(grid, midX + 2, bodyTop - 1, 4);
-      break;
-    }
-    case "sparkle-aura": {
-      // Sparkle dots around the creature
-      const spots: [number, number][] = [
-        [-3, bodyTop - 1], [3, bodyTop], [-4, bodyTop + 3],
-        [4, bodyTop + 4], [-2, bodyBottom + 2], [3, bodyBottom + 1],
-      ];
-      for (const [dx, sy] of spots) {
-        setIfEmpty(grid, midX + dx, sy, 4);
-      }
-      break;
-    }
-    case "none":
-    default:
-      break;
-  }
 
-  // ── 6b. BODY MODIFIERS ──
-  switch (bodyMod) {
-    case "belly-patch": {
-      // Lighter belly patch
-      const bellyStart = bodyTop + headRows + 2;
-      for (let dy = 0; dy < 3 && bellyStart + dy < bodyBottom; dy++) {
-        const bw = Math.max(1, halfWidths[headRows + 2 + dy] - 2);
-        for (let dx = 0; dx < bw; dx++) {
-          setMirrored(grid, midX, dx, bellyStart + dy, 4);
+    // Wings
+    if (feat.hasWings) {
+      const wy = bodyTop + headRows;
+      const wBase = halfWidths[headRows] || maxHalfWidth;
+      const wSpan = 2 + Math.round(feat.wingSize * 3); // 2-5 pixels wide
+      const wHeight = 2 + Math.round(feat.wingSize * 3); // 2-5 pixels tall
+
+      for (let dy = -Math.floor(wHeight / 2); dy < Math.ceil(wHeight / 2); dy++) {
+        // Wing tapers: widest at center
+        const rowProgress = Math.abs(dy) / Math.max(1, Math.floor(wHeight / 2));
+        const rowWidth = Math.max(1, Math.round(wSpan * (1 - rowProgress * 0.5)));
+        for (let wx = 1; wx <= rowWidth; wx++) {
+          const color: Cell = (dy < 0 || wx >= rowWidth) ? 4 : 3;
+          setMirroredIfEmpty(grid, midX, wBase + wx + 1, wy + dy, color);
         }
       }
-      break;
     }
-    case "collar": {
-      // Collar ring around neck
-      const neckY = bodyTop + headRows;
-      const nw = halfWidths[headRows] || 3;
-      for (let dx = 0; dx < nw + 1; dx++) {
-        setMirrored(grid, midX, dx, neckY, 5);
-      }
-      break;
-    }
-    case "belt": {
-      // Belt around waist
-      const beltY = bodyTop + headRows + Math.floor((bodyHeight - headRows) * 0.5);
-      const bw = halfWidths[beltY - bodyTop] || 3;
-      for (let dx = 0; dx < bw; dx++) {
-        setMirrored(grid, midX, dx, beltY, 2);
-      }
-      break;
-    }
-    case "cape": {
-      // Small cape on back
-      const capeY = bodyTop + headRows;
-      for (let dy = 0; dy < 4 && capeY + dy <= bodyBottom + 1; dy++) {
-        const cw = Math.min(maxHalfWidth + 1 + dy, 10);
-        for (let dx = maxHalfWidth; dx < cw; dx++) {
-          setMirrored(grid, midX, dx, capeY + dy, 2);
-        }
-      }
-      break;
-    }
-    case "spikes-back": {
-      // Spikes along the back
-      for (let i = 0; i < 3; i++) {
+
+    // Spikes along back
+    if (feat.spikeCount > 0) {
+      for (let i = 0; i < feat.spikeCount; i++) {
         const sy = bodyTop + headRows + i * 2;
         if (sy < bodyBottom) {
           const sw = halfWidths[sy - bodyTop] || 3;
@@ -1080,86 +706,93 @@ function generateSprite(
           setMirrored(grid, midX, sw + 1, sy - 1, 4);
         }
       }
-      break;
     }
-    case "shell": {
-      // Shell on back (darker body region)
-      const shellStart = bodyTop + headRows + 1;
-      for (let dy = 0; dy < 4 && shellStart + dy < bodyBottom; dy++) {
-        const sw = halfWidths[headRows + 1 + dy] || 3;
-        for (let dx = Math.floor(sw * 0.3); dx < sw; dx++) {
-          setMirrored(grid, midX, dx, shellStart + dy, 2);
-        }
-      }
-      break;
-    }
-    case "mane": {
-      // Mane around neck/head
-      const maneY = bodyTop + headRows - 1;
-      for (let dy = -1; dy <= 2; dy++) {
-        const mw = (halfWidths[headRows + dy] || 3) + 1;
-        setMirrored(grid, midX, mw, maneY + dy, 3);
-        setMirrored(grid, midX, mw + 1, maneY + dy, 4);
-      }
-      break;
-    }
-    case "none":
-    default:
-      break;
   }
 
-  // ── 7. PATTERNS ──
-  // Apply patterns to body pixels only (cell === 3, main color)
-  if (patternType !== "none") {
+  // ── 6b. BODY MODIFIERS (continuous procedural) ──
+  {
+    if (feat.bodyMarkType > 0.15) {
+      if (feat.bodyMarkType < 0.35) {
+        // Belly patch: lighter area on torso
+        const bellyStart = bodyTop + headRows + 2;
+        const bellyRows = 2 + Math.round(feat.headSize * 2);
+        for (let dy = 0; dy < bellyRows && bellyStart + dy < bodyBottom; dy++) {
+          const bw = Math.max(1, (halfWidths[headRows + 2 + dy] || 2) - 2);
+          for (let dx = 0; dx < bw; dx++) {
+            setMirrored(grid, midX, dx, bellyStart + dy, 4);
+          }
+        }
+      } else if (feat.bodyMarkType < 0.55) {
+        // Collar / necklace
+        const neckY = bodyTop + headRows;
+        const nw = halfWidths[headRows] || 3;
+        for (let dx = 0; dx < nw + 1; dx++) {
+          setMirrored(grid, midX, dx, neckY, 5);
+        }
+      } else if (feat.bodyMarkType < 0.75) {
+        // Belt / band around waist
+        const beltY = bodyTop + headRows + Math.floor((bodyHeight - headRows) * 0.5);
+        const bw = halfWidths[beltY - bodyTop] || 3;
+        for (let dx = 0; dx < bw; dx++) {
+          setMirrored(grid, midX, dx, beltY, 2);
+        }
+      } else if (feat.bodyMarkType < 0.9) {
+        // Cape behind body
+        const capeY = bodyTop + headRows;
+        const capeLen = 2 + Math.round(feat.headSize * 3);
+        for (let dy = 0; dy < capeLen && capeY + dy <= bodyBottom + 1; dy++) {
+          const cw = Math.min(maxHalfWidth + 1 + Math.round(dy * 0.7), 10);
+          for (let dx = maxHalfWidth; dx < cw; dx++) {
+            setMirrored(grid, midX, dx, capeY + dy, 2);
+          }
+        }
+      } else {
+        // Mane around neck
+        const maneY = bodyTop + headRows - 1;
+        for (let dy = -1; dy <= 2; dy++) {
+          const mw = (halfWidths[headRows + dy] || 3) + 1;
+          setMirrored(grid, midX, mw, maneY + dy, 3);
+          setMirrored(grid, midX, mw + 1, maneY + dy, 4);
+        }
+      }
+    }
+  }
+
+  // ── 7. PATTERNS (continuous procedural) ──
+  // Pattern is a continuous function of position, driven by DNA floats
+  if (pat.hasPattern && pat.density > 0.1) {
+    // Continuous pattern parameters create unique interference patterns
+    const freq = 1 + pat.scale * 4;  // spatial frequency
+    const angle = pat.angle * Math.PI; // pattern rotation angle
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+    const threshold = 1 - pat.density * 0.6; // higher density = more marks
+
     for (let y = bodyTop; y <= bodyBottom; y++) {
       for (let x = 0; x < GRID; x++) {
         if (grid[y][x] !== 3) continue;
-        let mark = false;
-        const relY = (y - bodyTop) / Math.max(1, bodyHeight - 1);
-        const relX = (x - midX) / 6;
 
-        switch (patternType) {
-          case "spots":
-            mark = ((x * 7 + y * 13) % 11) < Math.round(surreality * 3);
-            break;
-          case "stripes-h":
-            mark = (y % 3 === 0) && surreality > 0.3;
-            break;
-          case "stripes-v":
-            mark = (x % 3 === 0) && surreality > 0.3;
-            break;
-          case "diamonds":
-            mark = ((x + y) % 4 === 0) && surreality > 0.3;
-            break;
-          case "stars":
-            mark = ((x * 5 + y * 3) % 13 === 0) && surreality > 0.35;
-            break;
-          case "dots-scattered":
-            mark = ((x * 11 + y * 7) % 17 < 2) && surreality > 0.25;
-            break;
-          case "chevron":
-            mark = ((x + y) % 4 === 0 || (x - y + 20) % 4 === 0) && surreality > 0.3;
-            break;
-          case "waves":
-            mark = Math.round(Math.sin(x * 0.8) * 1.5 + y) % 3 === 0 && surreality > 0.3;
-            break;
-          case "scales":
-            mark = ((x + (y % 2)) % 2 === 0) && (y % 2 === 0) && surreality > 0.25;
-            break;
-          case "hearts":
-            mark = ((x * 3 + y * 7) % 19 === 0) && surreality > 0.35;
-            break;
-          case "zigzag":
-            mark = (y % 2 === 0 ? x % 4 === 0 : x % 4 === 2) && surreality > 0.3;
-            break;
-          case "cross":
-            mark = (x % 4 === 0 && y % 4 === 0) && surreality > 0.3;
-            break;
-          case "gradient":
-            mark = relY > 0.5 && ((x + y) % 2 === 0);
-            break;
+        // Rotate coordinates by pattern angle
+        const rx = (x - midX) * cosA + (y - bodyTop) * sinA;
+        const ry = -(x - midX) * sinA + (y - bodyTop) * cosA;
+
+        // Blend between pattern functions based on pat.type (continuous)
+        let v: number;
+        if (pat.type < 0.25) {
+          // Dots: hash-based scattered
+          v = ((Math.round(rx * freq) * 7 + Math.round(ry * freq) * 13) % 11) / 11;
+        } else if (pat.type < 0.5) {
+          // Stripes: sinusoidal
+          v = (Math.sin(rx * freq * 0.8) + 1) * 0.5;
+        } else if (pat.type < 0.75) {
+          // Diamonds / checker
+          v = (Math.sin(rx * freq * 0.6) * Math.sin(ry * freq * 0.6) + 1) * 0.5;
+        } else {
+          // Waves: compound sine
+          v = (Math.sin(rx * freq * 0.5 + Math.sin(ry * 0.7) * 2) + 1) * 0.5;
         }
-        if (mark) grid[y][x] = 5;
+
+        if (v > threshold) grid[y][x] = 5;
       }
     }
   }
@@ -1188,293 +821,148 @@ function generateSprite(
     }
   }
 
-  // ── 9. EYES (from eyeStyle — 10 unique styles) ──
+  // ── 9. EYES (continuous procedural) ──
   const eyeRowOffset = Math.round(headRows * 0.45);
   const eyeY = bodyTop + eyeRowOffset + (frame === 1 ? -1 : 0);
-  const eyeSpacing = Math.max(2, Math.floor(halfWidths[0] * 0.45));
+  const eyeSpacing = Math.max(2, Math.round(halfWidths[0] * (0.3 + eye.separation * 0.3)));
 
-  // Eye dimensions vary per style
-  const isBigStyle = ["round", "wide", "cute-sparkle", "star-pupil", "heart-pupil"].includes(eyeStyle);
-  const eyeW = isBigStyle ? 3 : 2;
-  const eyeH = eyeStyle === "narrow" ? 1 : (isBigStyle ? 3 : 2);
+  const eyeW = eye.size;
+  const eyeH = eye.height;
 
   const leftEyeX = midX - eyeSpacing - Math.floor(eyeW / 2);
   const rightEyeX = midX + eyeSpacing - Math.floor(eyeW / 2);
 
-  // Helper to draw one eye pair
-  const drawEyePair = (style: EyeStyle) => {
-    switch (style) {
-      case "round": {
-        // 3x3 classic round eyes with pupil and highlight
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Pupil 2x2 bottom-left
-        setCell(grid, leftEyeX, eyeY + 1, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-        setCell(grid, leftEyeX, eyeY + 2, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
-        setCell(grid, rightEyeX + 2, eyeY + 1, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 2, eyeY + 2, 7);
-        // Highlight top-right
-        setCell(grid, leftEyeX + 2, eyeY, 6);
-        setCell(grid, rightEyeX + 2, eyeY, 6);
-        break;
-      }
-      case "oval": {
-        // 2x3 tall oval eyes
-        for (let dy = 0; dy < 3; dy++) {
-          setCell(grid, leftEyeX, eyeY + dy, 6);
-          setCell(grid, leftEyeX + 1, eyeY + dy, 6);
-          setCell(grid, rightEyeX, eyeY + dy, 6);
-          setCell(grid, rightEyeX + 1, eyeY + dy, 6);
-        }
-        // Pupil in lower half
-        setCell(grid, leftEyeX, eyeY + 2, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
-        setCell(grid, rightEyeX, eyeY + 1, 7);
-        setCell(grid, rightEyeX, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
-        // Highlight
-        setCell(grid, leftEyeX, eyeY, 6);
-        setCell(grid, rightEyeX + 1, eyeY, 6);
-        break;
-      }
-      case "cute-sparkle": {
-        // 3x3 big sparkly eyes with double highlight (classic Pokémon cute)
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Iris color fills most of eye
-        setCell(grid, leftEyeX, eyeY + 1, 10);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 10);
-        setCell(grid, leftEyeX, eyeY + 2, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
-        setCell(grid, leftEyeX + 2, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 10);
-        setCell(grid, rightEyeX + 2, eyeY + 1, 10);
-        setCell(grid, rightEyeX, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 2, eyeY + 2, 7);
-        // Double sparkle highlights — big + small
-        setCell(grid, leftEyeX + 2, eyeY, 6);
-        setCell(grid, leftEyeX, eyeY + 2, 6);
-        setCell(grid, rightEyeX, eyeY, 6);
-        setCell(grid, rightEyeX + 2, eyeY + 2, 6);
-        break;
-      }
-      case "dot": {
-        // Tiny 1x1 dot eyes — very minimal
-        setCell(grid, leftEyeX, eyeY, 7);
-        setCell(grid, rightEyeX + 1, eyeY, 7);
-        break;
-      }
-      case "narrow": {
-        // 2x1 slit eyes — sleepy/cool look
-        setCell(grid, leftEyeX, eyeY, 7);
-        setCell(grid, leftEyeX + 1, eyeY, 7);
-        setCell(grid, rightEyeX, eyeY, 7);
-        setCell(grid, rightEyeX + 1, eyeY, 7);
-        break;
-      }
-      case "wide": {
-        // 3x3 wide-open surprised eyes
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Large centered pupil
-        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
-        // Tiny highlight
-        setCell(grid, leftEyeX + 2, eyeY, 6);
-        setCell(grid, rightEyeX, eyeY, 6);
-        break;
-      }
-      case "droopy": {
-        // 2x2 eyes with droopy lower lid — cute sad look
-        for (let dy = 0; dy < 2; dy++)
-          for (let dx = 0; dx < 2; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Pupil bottom
-        setCell(grid, leftEyeX, eyeY + 1, 7);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
-        // Droopy lid pixel on outside-bottom
-        setCell(grid, leftEyeX - 1, eyeY + 1, 1);
-        setCell(grid, rightEyeX + 2, eyeY + 1, 1);
-        break;
-      }
-      case "fierce": {
-        // 2x2 sharp angular eyes — determined look
-        for (let dy = 0; dy < 2; dy++)
-          for (let dx = 0; dx < 2; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Dark pupil fills inner half
-        setCell(grid, leftEyeX + 1, eyeY, 7);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-        setCell(grid, rightEyeX, eyeY, 7);
-        setCell(grid, rightEyeX, eyeY + 1, 7);
-        // Angry brow pixel above outer corner
-        setCell(grid, leftEyeX - 1, eyeY - 1, 1);
-        setCell(grid, leftEyeX, eyeY - 1, 1);
-        setCell(grid, rightEyeX + 1, eyeY - 1, 1);
-        setCell(grid, rightEyeX + 2, eyeY - 1, 1);
-        break;
-      }
-      case "star-pupil": {
-        // 3x3 eyes with star-shaped pupil
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Star pupil: cross pattern in accent color
-        setCell(grid, leftEyeX + 1, eyeY, 10);
-        setCell(grid, leftEyeX, eyeY + 1, 10);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-        setCell(grid, leftEyeX + 2, eyeY + 1, 10);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 10);
-        setCell(grid, rightEyeX + 1, eyeY, 10);
-        setCell(grid, rightEyeX, eyeY + 1, 10);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
-        setCell(grid, rightEyeX + 2, eyeY + 1, 10);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 10);
-        break;
-      }
-      case "heart-pupil": {
-        // 3x3 eyes with heart-shaped pupil
-        for (let dy = 0; dy < 3; dy++)
-          for (let dx = 0; dx < 3; dx++) {
-            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
-          }
-        // Heart shape: top bumps + bottom point
-        setCell(grid, leftEyeX, eyeY, 9);
-        setCell(grid, leftEyeX + 2, eyeY, 9);
-        setCell(grid, leftEyeX, eyeY + 1, 9);
-        setCell(grid, leftEyeX + 1, eyeY + 1, 9);
-        setCell(grid, leftEyeX + 2, eyeY + 1, 9);
-        setCell(grid, leftEyeX + 1, eyeY + 2, 9);
-        setCell(grid, rightEyeX, eyeY, 9);
-        setCell(grid, rightEyeX + 2, eyeY, 9);
-        setCell(grid, rightEyeX, eyeY + 1, 9);
-        setCell(grid, rightEyeX + 1, eyeY + 1, 9);
-        setCell(grid, rightEyeX + 2, eyeY + 1, 9);
-        setCell(grid, rightEyeX + 1, eyeY + 2, 9);
-        break;
+  {
+    // Draw eye whites
+    for (let dy = 0; dy < eyeH; dy++) {
+      for (let dx = 0; dx < eyeW; dx++) {
+        setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+        setCell(grid, rightEyeX + dx, eyeY + dy, 6);
       }
     }
-  };
-  drawEyePair(eyeStyle);
 
-  // ── 10. MOUTH (from mouthStyle) ──
-  const mouthY = eyeY + eyeH + (isBigStyle ? 0 : 1);
-  switch (mouthStyle) {
-    case "smile":
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      break;
-    case "fang":
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX - 1, mouthY + 1, 6);
-      break;
-    case "cat-mouth":
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX - 1, mouthY + 1, 8);
-      setCell(grid, midX + 1, mouthY + 1, 8);
-      break;
-    case "open":
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX - 1, mouthY + 1, 8);
-      setCell(grid, midX, mouthY + 1, 8);
-      break;
-    case "tongue-out":
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX, mouthY + 1, 9); // tongue = blush color
-      break;
-    case "whistle":
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX, mouthY + 1, 8);
-      break;
-    case "pout":
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX + 1, mouthY, 8);
-      break;
-    case "grin":
-      setCell(grid, midX - 2, mouthY, 8);
-      setCell(grid, midX - 1, mouthY, 8);
-      setCell(grid, midX, mouthY, 8);
-      setCell(grid, midX + 1, mouthY, 8);
-      setCell(grid, midX - 2, mouthY - 1, 8);
-      setCell(grid, midX + 1, mouthY - 1, 8);
-      break;
-    case "none":
-      break;
-    case "dot":
-    default:
-      setCell(grid, midX, mouthY, 8);
-      break;
+    // Pupil: size and position vary continuously
+    const pupilW = Math.max(1, Math.round(eyeW * (0.3 + eye.pupilSize * 0.5)));
+    const pupilH = Math.max(1, Math.round(eyeH * (0.3 + eye.pupilSize * 0.5)));
+    const pupilOffY = Math.max(0, eyeH - pupilH); // pupils sit at bottom
+
+    for (let dy = 0; dy < pupilH; dy++) {
+      for (let dx = 0; dx < pupilW; dx++) {
+        // Left eye: pupil toward inner side
+        setCell(grid, leftEyeX + (eyeW - pupilW) + dx, eyeY + pupilOffY + dy,
+          eye.irisColor && dy === 0 ? 10 : 7);
+        // Right eye: pupil toward inner side
+        setCell(grid, rightEyeX + dx, eyeY + pupilOffY + dy,
+          eye.irisColor && dy === 0 ? 10 : 7);
+      }
+    }
+
+    // Sparkle highlights: continuous intensity
+    if (eye.sparkle > 0.2 && eyeW >= 2 && eyeH >= 2) {
+      // Main highlight: top-right of each eye
+      setCell(grid, leftEyeX + eyeW - 1, eyeY, 6);
+      setCell(grid, rightEyeX + eyeW - 1, eyeY, 6);
+      // Second highlight (only if sparkle > 0.6)
+      if (eye.sparkle > 0.6 && eyeH >= 3) {
+        setCell(grid, leftEyeX, eyeY + eyeH - 1, 6);
+        setCell(grid, rightEyeX, eyeY + eyeH - 1, 6);
+      }
+    }
+
+    // Expression: droopy lids or fierce brows
+    if (eye.expression < 0.25 && eyeH >= 2) {
+      // Droopy: lid pixel on outside-bottom
+      setCell(grid, leftEyeX - 1, eyeY + eyeH - 1, 1);
+      setCell(grid, rightEyeX + eyeW, eyeY + eyeH - 1, 1);
+    } else if (eye.expression > 0.8) {
+      // Fierce: angry brow pixels
+      for (let dx = 0; dx < eyeW; dx++) {
+        setCell(grid, leftEyeX + dx, eyeY - 1, 1);
+        setCell(grid, rightEyeX + dx, eyeY - 1, 1);
+      }
+    }
   }
 
-  // ── 11. FACE MARKS (from faceMark) ──
+  // ── 10. MOUTH (continuous procedural) ──
+  const mouthY = eyeY + eyeH + (eyeH >= 3 ? 0 : 1);
+  if (mouth.hasMouth) {
+    const mw = Math.max(1, mouth.width);
+    const halfMW = Math.floor(mw / 2);
+
+    // Main mouth line
+    for (let dx = -halfMW; dx <= halfMW; dx++) {
+      setCell(grid, midX + dx, mouthY, 8);
+    }
+
+    // Smile curve: raised corners
+    if (mouth.curve > 0.65 && mw >= 2) {
+      setCell(grid, midX - halfMW - 1, mouthY - 1, 8);
+      setCell(grid, midX + halfMW + 1, mouthY - 1, 8);
+    }
+    // Frown curve: lowered corners
+    if (mouth.curve < 0.3 && mw >= 2) {
+      setCell(grid, midX - halfMW, mouthY + 1, 8);
+      setCell(grid, midX + halfMW, mouthY + 1, 8);
+    }
+
+    // Open mouth: second row
+    if (mouth.open > 0.5) {
+      for (let dx = -halfMW; dx <= halfMW; dx++) {
+        setCell(grid, midX + dx, mouthY + 1, 8);
+      }
+    }
+
+    // Fang
+    if (mouth.hasFang) {
+      setCell(grid, midX - halfMW, mouthY + 1, 6);
+    }
+
+    // Tongue
+    if (mouth.hasTongue) {
+      setCell(grid, midX, mouthY + 1, 9);
+      if (mouth.open > 0.5) setCell(grid, midX, mouthY + 2, 9);
+    }
+  }
+
+  // ── 11. FACE MARKS (continuous procedural) ──
   const blushY = eyeY + eyeH - 1;
   const blushSpread = eyeSpacing + eyeW;
-  switch (faceMark) {
-    case "blush":
+  if (face.hasFaceMarks) {
+    if (face.blushIntensity > 0.4) {
+      // Blush: intensity controls size
       setMirrored(grid, midX, blushSpread, blushY, 9);
-      setMirrored(grid, midX, blushSpread, blushY + 1, 9);
-      break;
-    case "freckles":
-      setMirrored(grid, midX, blushSpread - 1, blushY, 2);
-      setMirrored(grid, midX, blushSpread, blushY + 1, 2);
-      setMirrored(grid, midX, blushSpread + 1, blushY, 2);
-      break;
-    case "whiskers":
-      // 3 lines extending from cheeks
-      for (let i = 0; i < 3; i++) {
-        setMirrored(grid, midX, blushSpread + i, blushY - 1 + i, 1);
+      if (face.blushIntensity > 0.6) {
+        setMirrored(grid, midX, blushSpread, blushY + 1, 9);
       }
-      break;
-    case "tear-mark":
-      setMirrored(grid, midX, eyeSpacing, eyeY + eyeH, 5);
-      setMirrored(grid, midX, eyeSpacing, eyeY + eyeH + 1, 5);
-      break;
-    case "scar":
-      setMirrored(grid, midX, blushSpread, blushY - 1, 2);
-      setMirrored(grid, midX, blushSpread, blushY, 2);
-      setMirrored(grid, midX, blushSpread + 1, blushY + 1, 2);
-      break;
-    case "star-cheek":
-      setMirrored(grid, midX, blushSpread, blushY, 4);
-      setMirrored(grid, midX, blushSpread - 1, blushY, 4);
-      setMirrored(grid, midX, blushSpread, blushY - 1, 4);
-      break;
-    case "swirl-cheek":
-      setMirrored(grid, midX, blushSpread, blushY, 5);
-      setMirrored(grid, midX, blushSpread + 1, blushY - 1, 5);
-      setMirrored(grid, midX, blushSpread + 1, blushY, 5);
-      break;
-    case "none":
-    default:
-      break;
+      if (face.blushIntensity > 0.8) {
+        setMirrored(grid, midX, blushSpread - 1, blushY, 9);
+      }
+    }
+
+    // Face marks: type is continuous
+    if (face.markType > 0.15) {
+      if (face.markType < 0.35) {
+        // Freckles
+        setMirrored(grid, midX, blushSpread - 1, blushY, 2);
+        setMirrored(grid, midX, blushSpread, blushY + 1, 2);
+        setMirrored(grid, midX, blushSpread + 1, blushY, 2);
+      } else if (face.markType < 0.55) {
+        // Whiskers: length varies
+        const whiskerLen = 2 + Math.round(face.markType * 3);
+        for (let i = 0; i < whiskerLen; i++) {
+          setMirrored(grid, midX, blushSpread + i, blushY - 1 + Math.round(i * 0.5), 1);
+        }
+      } else if (face.markType < 0.75) {
+        // Tear/scar mark
+        setMirrored(grid, midX, eyeSpacing, eyeY + eyeH, 5);
+        setMirrored(grid, midX, eyeSpacing, eyeY + eyeH + 1, 5);
+      } else {
+        // Star/swirl cheek marks
+        setMirrored(grid, midX, blushSpread, blushY, 4);
+        setMirrored(grid, midX, blushSpread - 1, blushY, 4);
+        setMirrored(grid, midX, blushSpread, blushY - 1, 4);
+      }
+    }
   }
 
   // ── 12. AUTO-OUTLINE ──
