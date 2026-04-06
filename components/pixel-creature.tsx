@@ -131,37 +131,77 @@ function setMirroredIfEmpty(grid: Cell[][], midX: number, dx: number, y: number,
   setIfEmpty(grid, midX + dx - 1, y, v);
 }
 
-// ── Ear type pool ──
+// ═══════════════════════════════════════════════════════
+//  PART POOLS — combinatorial variety
+// ═══════════════════════════════════════════════════════
+
+// ── Ear type pool (20) ──
 const EAR_TYPES = [
-  "none", "round", "pointy", "cat", "bunny",
-  "floppy", "antenna", "horn", "wing-ear", "leaf",
+  "none", "round", "pointy", "cat", "bunny", "floppy", "antenna", "horn",
+  "wing-ear", "leaf", "bear", "fox", "demon", "elf", "fin", "mushroom",
+  "crystal", "feather", "curl-horn", "droopy",
 ] as const;
 type EarType = (typeof EAR_TYPES)[number];
 
-// ── Arm/limb type pool ──
+// ── Arm/limb type pool (12) ──
 const ARM_TYPES = [
-  "none", "stubby", "flipper", "arms", "tentacle", "wing",
+  "none", "stubby", "flipper", "arms", "tentacle", "wing", "claw",
+  "paw", "branch", "ribbon-arm", "shield", "nub",
 ] as const;
 type ArmType = (typeof ARM_TYPES)[number];
 
-// ── Tail style pool ──
+// ── Tail style pool (16) ──
 const TAIL_STYLES = [
   "none", "stub", "curl", "flame", "fish", "ribbon", "spike", "fluffy",
+  "lightning", "heart", "star-tip", "swirl", "split", "feathered",
+  "bubble", "chain",
 ] as const;
 type TailStyle = (typeof TAIL_STYLES)[number];
 
-// ── Extra feature pool ──
+// ── Extra feature pool (20) ──
 const EXTRA_FEATURES = [
   "none", "horn-single", "horns-double", "crown", "antenna-pair",
   "wings-small", "wings-large", "halo", "leaf-sprout", "bow",
+  "tiara", "mohawk", "flower", "star-mark", "gem", "scarf",
+  "third-eye", "crest", "cloud-puff", "sparkle-aura",
 ] as const;
 type ExtraFeature = (typeof EXTRA_FEATURES)[number];
 
-// ── Pattern pool ──
+// ── Pattern pool (14) ──
 const PATTERN_TYPES = [
-  "none", "spots", "stripes-h", "stripes-v", "diamonds", "stars", "dots-scattered",
+  "none", "spots", "stripes-h", "stripes-v", "diamonds", "stars",
+  "dots-scattered", "chevron", "waves", "scales", "hearts",
+  "zigzag", "cross", "gradient",
 ] as const;
 type PatternType = (typeof PATTERN_TYPES)[number];
+
+// ── Eye style pool (10) — NEW ──
+const EYE_STYLES = [
+  "round", "oval", "cute-sparkle", "dot", "narrow", "wide",
+  "droopy", "fierce", "star-pupil", "heart-pupil",
+] as const;
+type EyeStyle = (typeof EYE_STYLES)[number];
+
+// ── Mouth style pool (10) — NEW ──
+const MOUTH_STYLES = [
+  "dot", "smile", "fang", "cat-mouth", "open", "tongue-out",
+  "whistle", "pout", "grin", "none",
+] as const;
+type MouthStyle = (typeof MOUTH_STYLES)[number];
+
+// ── Cheek/face marking pool (8) — NEW ──
+const FACE_MARKS = [
+  "none", "blush", "freckles", "whiskers", "tear-mark", "scar",
+  "star-cheek", "swirl-cheek",
+] as const;
+type FaceMark = (typeof FACE_MARKS)[number];
+
+// ── Body modifier pool (8) — NEW ──
+const BODY_MODS = [
+  "none", "belly-patch", "collar", "belt", "cape", "spikes-back",
+  "shell", "mane",
+] as const;
+type BodyMod = (typeof BODY_MODS)[number];
 
 // ═══════════════════════════════════════════════════════
 //  MAIN PROCEDURAL GENERATOR
@@ -198,21 +238,26 @@ function generateSprite(
   const asymSeed = p.orbitOffset / 360;       // 0..1
   const earTilt = (p.bandTilt + 24) / 48;     // normalized 0..1
 
-  // Select part types from DNA
-  const earType: EarType = EAR_TYPES[p.nodeCount % EAR_TYPES.length];
-  const armType: ArmType = ARM_TYPES[p.bandCount % ARM_TYPES.length];
+  // ── Select parts from DNA (each from a different hash mix) ──
+  const pick = (arr: readonly string[], ...seeds: number[]) => {
+    const h = seeds.reduce((a, s) => a * 31 + Math.round(s * 1000), 7919);
+    return arr[((h >>> 0) % (arr.length - 1)) + 1]; // skip "none" for DNA-driven picks
+  };
+  const pickWithNone = (arr: readonly string[], val: number, threshold: number, ...seeds: number[]) => {
+    if (val < threshold) return arr[0]; // "none"
+    const h = seeds.reduce((a, s) => a * 31 + Math.round(s * 1000), 7919);
+    return arr[((h >>> 0) % (arr.length - 1)) + 1];
+  };
 
-  // Tail: depth controls presence and elaborateness
-  const tailIdx = depth < 0.15 ? 0 : Math.floor(depth * (TAIL_STYLES.length - 1)) + 1;
-  const tailStyle: TailStyle = TAIL_STYLES[Math.min(tailIdx, TAIL_STYLES.length - 1)];
-
-  // Extra features: growth controls
-  const extraIdx = growth < 0.2 ? 0 : Math.floor(growth * (EXTRA_FEATURES.length - 1)) + 1;
-  const extraFeature: ExtraFeature = EXTRA_FEATURES[Math.min(extraIdx, EXTRA_FEATURES.length - 1)];
-
-  // Patterns: surreality
-  const patIdx = surreality < 0.2 ? 0 : Math.floor(surreality * (PATTERN_TYPES.length - 1)) + 1;
-  const patternType: PatternType = PATTERN_TYPES[Math.min(patIdx, PATTERN_TYPES.length - 1)];
+  const earType = pick(EAR_TYPES, p.nodeCount, warmth * 100, structure * 100) as EarType;
+  const armType = pick(ARM_TYPES, p.bandCount, ferality * 100, coherence * 100) as ArmType;
+  const tailStyle = pickWithNone(TAIL_STYLES, depth, 0.12, depth * 100, warmth * 50, p.orbitOffset) as TailStyle;
+  const extraFeature = pickWithNone(EXTRA_FEATURES, growth, 0.18, growth * 100, luminosity * 50, p.bandTilt) as ExtraFeature;
+  const patternType = pickWithNone(PATTERN_TYPES, surreality, 0.2, surreality * 100, structure * 50, p.nodeCount) as PatternType;
+  const eyeStyle = pick(EYE_STYLES, luminosity * 100, coherence * 50, p.nodeCount) as EyeStyle;
+  const mouthStyle = pick(MOUTH_STYLES, warmth * 100, ferality * 100, p.bandCount) as MouthStyle;
+  const faceMark = pickWithNone(FACE_MARKS, warmth, 0.3, warmth * 100, luminosity * 50, p.orbitOffset) as FaceMark;
+  const bodyMod = pickWithNone(BODY_MODS, growth + ferality, 0.5, growth * 100, ferality * 50, p.bandTilt) as BodyMod;
 
   // ── 1. BODY GENERATION ──
   // Body dimensions driven by DNA
@@ -397,6 +442,109 @@ function generateSprite(
       setMirrored(grid, midX, ex, earBaseY - 2, 3);
       break;
     }
+    case "bear": {
+      // Small rounded bear ears on top of head
+      const ex = earBaseHW - 1;
+      setMirrored(grid, midX, ex, earBaseY - 1, 3);
+      setMirrored(grid, midX, ex + 1, earBaseY - 1, 3);
+      setMirrored(grid, midX, ex, earBaseY - 2, 3);
+      setMirrored(grid, midX, ex + 1, earBaseY - 2, 3);
+      setMirrored(grid, midX, ex + 1, earBaseY - 1, 5); // inner ear
+      break;
+    }
+    case "fox": {
+      // Large triangular fox ears
+      const ex = earBaseHW;
+      for (let dy = 1; dy <= 4; dy++) {
+        const w = Math.max(0, 3 - dy);
+        for (let ddx = 0; ddx <= w; ddx++) {
+          setMirrored(grid, midX, ex + ddx, earBaseY - dy, 3);
+        }
+      }
+      setMirrored(grid, midX, ex, earBaseY - 1, 5);
+      setMirrored(grid, midX, ex, earBaseY - 2, 5);
+      setMirrored(grid, midX, ex, earBaseY - 3, 4);
+      break;
+    }
+    case "demon": {
+      // Bat-like demon ears
+      const ex = earBaseHW;
+      setMirrored(grid, midX, ex, earBaseY - 1, 3);
+      setMirrored(grid, midX, ex + 1, earBaseY - 2, 3);
+      setMirrored(grid, midX, ex + 2, earBaseY - 3, 3);
+      setMirrored(grid, midX, ex + 1, earBaseY - 3, 3);
+      setMirrored(grid, midX, ex, earBaseY - 2, 2);
+      setMirrored(grid, midX, ex + 2, earBaseY - 2, 3);
+      break;
+    }
+    case "elf": {
+      // Long pointed side ears
+      const ex = earBaseHW;
+      for (let i = 0; i < 4; i++) {
+        setMirrored(grid, midX, ex + i, earBaseY - 1 - Math.floor(i * 0.5), 3);
+      }
+      setMirrored(grid, midX, ex + 4, earBaseY - 2, 4);
+      break;
+    }
+    case "fin": {
+      // Fish fin ears
+      const ex = earBaseHW;
+      for (let dy = 0; dy < 3; dy++) {
+        setMirrored(grid, midX, ex + 1, earBaseY - dy - 1, 5);
+      }
+      setMirrored(grid, midX, ex, earBaseY - 1, 5);
+      setMirrored(grid, midX, ex + 2, earBaseY - 2, 5);
+      break;
+    }
+    case "mushroom": {
+      // Mushroom cap ears
+      const ex = earBaseHW - 2;
+      setMirrored(grid, midX, ex, earBaseY - 1, 3);
+      for (let dx = -1; dx <= 2; dx++) {
+        setMirrored(grid, midX, ex + dx, earBaseY - 2, 5);
+      }
+      setMirrored(grid, midX, ex, earBaseY - 3, 5);
+      setMirrored(grid, midX, ex + 1, earBaseY - 3, 5);
+      break;
+    }
+    case "crystal": {
+      // Crystalline angular ears
+      const ex = earBaseHW;
+      setMirrored(grid, midX, ex, earBaseY - 1, 4);
+      setMirrored(grid, midX, ex + 1, earBaseY - 2, 4);
+      setMirrored(grid, midX, ex, earBaseY - 3, 4);
+      setMirrored(grid, midX, ex + 1, earBaseY - 1, 4);
+      break;
+    }
+    case "feather": {
+      // Feathery ear tufts
+      const ex = earBaseHW;
+      for (let dy = 1; dy <= 3; dy++) {
+        setMirrored(grid, midX, ex + dy - 1, earBaseY - dy, 3);
+        if (dy < 3) setMirrored(grid, midX, ex + dy, earBaseY - dy, 4);
+      }
+      break;
+    }
+    case "curl-horn": {
+      // Curling ram horns
+      const ex = earBaseHW;
+      setMirrored(grid, midX, ex, earBaseY - 1, 5);
+      setMirrored(grid, midX, ex + 1, earBaseY - 2, 5);
+      setMirrored(grid, midX, ex + 2, earBaseY - 1, 5);
+      setMirrored(grid, midX, ex + 2, earBaseY, 5);
+      setMirrored(grid, midX, ex + 1, earBaseY + 1, 5);
+      break;
+    }
+    case "droopy": {
+      // Droopy long ears like a basset hound
+      const ex = earBaseHW;
+      setMirrored(grid, midX, ex, earBaseY - 1, 3);
+      for (let dy = 0; dy < 5; dy++) {
+        setMirrored(grid, midX, ex + 1, earBaseY + dy, 3);
+      }
+      setMirrored(grid, midX, ex, earBaseY + 4, 5);
+      break;
+    }
     case "none":
     default:
       break;
@@ -458,6 +606,52 @@ function generateSprite(
       // Wing highlight
       setMirrored(grid, midX, armHW + 2, armY - 1, 4);
       setMirrored(grid, midX, armHW + 3, armY, 4);
+      break;
+    }
+    case "claw": {
+      // Sharp claw arms
+      for (let i = 0; i < 3; i++) setMirrored(grid, midX, armHW + 1, armY + i, 3);
+      setMirrored(grid, midX, armHW + 2, armY + 2, 5);
+      setMirrored(grid, midX, armHW + 2, armY + 3, 5);
+      setMirrored(grid, midX, armHW + 1, armY + 3, 5);
+      break;
+    }
+    case "paw": {
+      // Round paw arms
+      setMirrored(grid, midX, armHW + 1, armY, 3);
+      setMirrored(grid, midX, armHW + 1, armY + 1, 3);
+      setMirrored(grid, midX, armHW + 2, armY + 1, 3);
+      setMirrored(grid, midX, armHW + 2, armY + 2, 4); // paw pad
+      break;
+    }
+    case "branch": {
+      // Tree branch arms
+      setMirrored(grid, midX, armHW + 1, armY, 2);
+      setMirrored(grid, midX, armHW + 2, armY - 1, 5);
+      setMirrored(grid, midX, armHW + 2, armY, 2);
+      setMirrored(grid, midX, armHW + 3, armY, 5);
+      setMirrored(grid, midX, armHW + 3, armY + 1, 5);
+      break;
+    }
+    case "ribbon-arm": {
+      // Flowing ribbon arms
+      for (let i = 0; i < 5; i++) {
+        const wy = Math.round(Math.sin(i * 0.9) * 1);
+        setMirrored(grid, midX, armHW + 1 + i, armY + wy, i < 2 ? 3 : 5);
+      }
+      break;
+    }
+    case "shield": {
+      // Shield-like arms
+      for (let dy = -1; dy <= 2; dy++) {
+        setMirrored(grid, midX, armHW + 1, armY + dy, 3);
+        setMirrored(grid, midX, armHW + 2, armY + dy, 2);
+      }
+      break;
+    }
+    case "nub": {
+      // Tiny nub arms
+      setMirrored(grid, midX, armHW + 1, armY, 3);
       break;
     }
     case "none":
@@ -578,6 +772,76 @@ function generateSprite(
       }
       break;
     }
+    case "lightning": {
+      const tx = midX + tailSide * tailBaseHW;
+      setIfEmpty(grid, tx + tailSide, tailBaseY, 5);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY - 1, 5);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 5);
+      setIfEmpty(grid, tx + tailSide * 4, tailBaseY - 1, 4);
+      break;
+    }
+    case "heart": {
+      const tx = midX + tailSide * tailBaseHW;
+      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY - 1, 5);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY + 1, 5);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 5);
+      break;
+    }
+    case "star-tip": {
+      const tx = midX + tailSide * tailBaseHW;
+      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 4);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 4);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY + 1, 4);
+      setIfEmpty(grid, tx + tailSide * 4, tailBaseY, 4);
+      break;
+    }
+    case "swirl": {
+      const tx = midX + tailSide * tailBaseHW;
+      const pts: [number, number][] = [[1,0],[2,-1],[3,-1],[3,0],[2,1],[1,1],[1,0]];
+      for (let i = 0; i < pts.length; i++) {
+        setIfEmpty(grid, tx + tailSide * pts[i][0], tailBaseY + pts[i][1], i < 3 ? 3 : 5);
+      }
+      break;
+    }
+    case "split": {
+      const tx = midX + tailSide * tailBaseHW;
+      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 3);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY + 1, 3);
+      setIfEmpty(grid, tx + tailSide * 4, tailBaseY - 2, 4);
+      setIfEmpty(grid, tx + tailSide * 4, tailBaseY + 2, 4);
+      break;
+    }
+    case "feathered": {
+      const tx = midX + tailSide * tailBaseHW;
+      for (let i = 0; i < 4; i++) {
+        setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY, 3);
+        if (i > 0 && i < 3) {
+          setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY - 1, 4);
+          setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY + 1, 4);
+        }
+      }
+      break;
+    }
+    case "bubble": {
+      const tx = midX + tailSide * tailBaseHW;
+      setIfEmpty(grid, tx + tailSide, tailBaseY, 3);
+      setIfEmpty(grid, tx + tailSide * 2, tailBaseY, 4);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY, 4);
+      setIfEmpty(grid, tx + tailSide * 3, tailBaseY - 1, 4);
+      break;
+    }
+    case "chain": {
+      const tx = midX + tailSide * tailBaseHW;
+      for (let i = 0; i < 4; i++) {
+        setIfEmpty(grid, tx + tailSide * (i + 1), tailBaseY + (i % 2 === 0 ? 0 : -1), i % 2 === 0 ? 2 : 3);
+      }
+      break;
+    }
     case "none":
     default:
       break;
@@ -671,6 +935,174 @@ function generateSprite(
       setIfEmpty(grid, bx, bodyTop, 5);
       break;
     }
+    case "tiara": {
+      // Small tiara on head
+      for (let dx = -2; dx <= 2; dx++) {
+        setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
+      }
+      setIfEmpty(grid, midX, bodyTop - 2, 4);
+      setIfEmpty(grid, midX - 1, bodyTop - 2, 5);
+      setIfEmpty(grid, midX + 1, bodyTop - 2, 5);
+      break;
+    }
+    case "mohawk": {
+      // Spiky mohawk down the center
+      for (let dy = 1; dy <= 4; dy++) {
+        setIfEmpty(grid, midX, bodyTop - dy, dy <= 2 ? 5 : 4);
+        if (dy <= 2) setIfEmpty(grid, midX - 1, bodyTop - dy, 5);
+      }
+      break;
+    }
+    case "flower": {
+      // Flower on head
+      setIfEmpty(grid, midX + earBaseHW - 1, bodyTop - 1, 5);
+      setIfEmpty(grid, midX + earBaseHW, bodyTop - 2, 5);
+      setIfEmpty(grid, midX + earBaseHW - 1, bodyTop - 2, 4);
+      setIfEmpty(grid, midX + earBaseHW, bodyTop - 1, 5);
+      setIfEmpty(grid, midX + earBaseHW - 2, bodyTop - 2, 5);
+      break;
+    }
+    case "star-mark": {
+      // Star mark on forehead
+      setIfEmpty(grid, midX, bodyTop + 1, 4);
+      setIfEmpty(grid, midX - 1, bodyTop + 2, 4);
+      setIfEmpty(grid, midX + 1, bodyTop + 2, 4);
+      setIfEmpty(grid, midX, bodyTop + 2, 4);
+      break;
+    }
+    case "gem": {
+      // Gem on forehead
+      setIfEmpty(grid, midX, bodyTop + 1, 5);
+      setIfEmpty(grid, midX, bodyTop + 2, 4);
+      break;
+    }
+    case "scarf": {
+      // Scarf around neck
+      const neckY = bodyTop + headRows;
+      for (let dx = -maxHalfWidth; dx < maxHalfWidth; dx++) {
+        setIfEmpty(grid, midX + dx, neckY, 5);
+      }
+      // Dangling end
+      setIfEmpty(grid, midX + maxHalfWidth, neckY + 1, 5);
+      setIfEmpty(grid, midX + maxHalfWidth, neckY + 2, 5);
+      break;
+    }
+    case "third-eye": {
+      // Third eye on forehead
+      setIfEmpty(grid, midX, bodyTop + 2, 6);
+      setIfEmpty(grid, midX, bodyTop + 3, 7);
+      break;
+    }
+    case "crest": {
+      // Fan-shaped crest
+      for (let dx = -2; dx <= 2; dx++) {
+        setIfEmpty(grid, midX + dx, bodyTop - 1, 5);
+        if (Math.abs(dx) <= 1) setIfEmpty(grid, midX + dx, bodyTop - 2, 5);
+      }
+      setIfEmpty(grid, midX, bodyTop - 3, 4);
+      break;
+    }
+    case "cloud-puff": {
+      // Cloud puff on head
+      for (let dx = -1; dx <= 1; dx++) {
+        setIfEmpty(grid, midX + dx, bodyTop - 1, 4);
+        setIfEmpty(grid, midX + dx, bodyTop - 2, 4);
+      }
+      setIfEmpty(grid, midX - 2, bodyTop - 1, 4);
+      setIfEmpty(grid, midX + 2, bodyTop - 1, 4);
+      break;
+    }
+    case "sparkle-aura": {
+      // Sparkle dots around the creature
+      const spots: [number, number][] = [
+        [-3, bodyTop - 1], [3, bodyTop], [-4, bodyTop + 3],
+        [4, bodyTop + 4], [-2, bodyBottom + 2], [3, bodyBottom + 1],
+      ];
+      for (const [dx, sy] of spots) {
+        setIfEmpty(grid, midX + dx, sy, 4);
+      }
+      break;
+    }
+    case "none":
+    default:
+      break;
+  }
+
+  // ── 6b. BODY MODIFIERS ──
+  switch (bodyMod) {
+    case "belly-patch": {
+      // Lighter belly patch
+      const bellyStart = bodyTop + headRows + 2;
+      for (let dy = 0; dy < 3 && bellyStart + dy < bodyBottom; dy++) {
+        const bw = Math.max(1, halfWidths[headRows + 2 + dy] - 2);
+        for (let dx = 0; dx < bw; dx++) {
+          setMirrored(grid, midX, dx, bellyStart + dy, 4);
+        }
+      }
+      break;
+    }
+    case "collar": {
+      // Collar ring around neck
+      const neckY = bodyTop + headRows;
+      const nw = halfWidths[headRows] || 3;
+      for (let dx = 0; dx < nw + 1; dx++) {
+        setMirrored(grid, midX, dx, neckY, 5);
+      }
+      break;
+    }
+    case "belt": {
+      // Belt around waist
+      const beltY = bodyTop + headRows + Math.floor((bodyHeight - headRows) * 0.5);
+      const bw = halfWidths[beltY - bodyTop] || 3;
+      for (let dx = 0; dx < bw; dx++) {
+        setMirrored(grid, midX, dx, beltY, 2);
+      }
+      break;
+    }
+    case "cape": {
+      // Small cape on back
+      const capeY = bodyTop + headRows;
+      for (let dy = 0; dy < 4 && capeY + dy <= bodyBottom + 1; dy++) {
+        const cw = Math.min(maxHalfWidth + 1 + dy, 10);
+        for (let dx = maxHalfWidth; dx < cw; dx++) {
+          setMirrored(grid, midX, dx, capeY + dy, 2);
+        }
+      }
+      break;
+    }
+    case "spikes-back": {
+      // Spikes along the back
+      for (let i = 0; i < 3; i++) {
+        const sy = bodyTop + headRows + i * 2;
+        if (sy < bodyBottom) {
+          const sw = halfWidths[sy - bodyTop] || 3;
+          setMirrored(grid, midX, sw + 1, sy, 5);
+          setMirrored(grid, midX, sw + 1, sy - 1, 4);
+        }
+      }
+      break;
+    }
+    case "shell": {
+      // Shell on back (darker body region)
+      const shellStart = bodyTop + headRows + 1;
+      for (let dy = 0; dy < 4 && shellStart + dy < bodyBottom; dy++) {
+        const sw = halfWidths[headRows + 1 + dy] || 3;
+        for (let dx = Math.floor(sw * 0.3); dx < sw; dx++) {
+          setMirrored(grid, midX, dx, shellStart + dy, 2);
+        }
+      }
+      break;
+    }
+    case "mane": {
+      // Mane around neck/head
+      const maneY = bodyTop + headRows - 1;
+      for (let dy = -1; dy <= 2; dy++) {
+        const mw = (halfWidths[headRows + dy] || 3) + 1;
+        setMirrored(grid, midX, mw, maneY + dy, 3);
+        setMirrored(grid, midX, mw + 1, maneY + dy, 4);
+      }
+      break;
+    }
     case "none":
     default:
       break;
@@ -705,6 +1137,27 @@ function generateSprite(
           case "dots-scattered":
             mark = ((x * 11 + y * 7) % 17 < 2) && surreality > 0.25;
             break;
+          case "chevron":
+            mark = ((x + y) % 4 === 0 || (x - y + 20) % 4 === 0) && surreality > 0.3;
+            break;
+          case "waves":
+            mark = Math.round(Math.sin(x * 0.8) * 1.5 + y) % 3 === 0 && surreality > 0.3;
+            break;
+          case "scales":
+            mark = ((x + (y % 2)) % 2 === 0) && (y % 2 === 0) && surreality > 0.25;
+            break;
+          case "hearts":
+            mark = ((x * 3 + y * 7) % 19 === 0) && surreality > 0.35;
+            break;
+          case "zigzag":
+            mark = (y % 2 === 0 ? x % 4 === 0 : x % 4 === 2) && surreality > 0.3;
+            break;
+          case "cross":
+            mark = (x % 4 === 0 && y % 4 === 0) && surreality > 0.3;
+            break;
+          case "gradient":
+            mark = relY > 0.5 && ((x + y) % 2 === 0);
+            break;
         }
         if (mark) grid[y][x] = 5;
       }
@@ -735,81 +1188,293 @@ function generateSprite(
     }
   }
 
-  // ── 9. EYES ──
+  // ── 9. EYES (from eyeStyle — 10 unique styles) ──
   const eyeRowOffset = Math.round(headRows * 0.45);
   const eyeY = bodyTop + eyeRowOffset + (frame === 1 ? -1 : 0);
   const eyeSpacing = Math.max(2, Math.floor(halfWidths[0] * 0.45));
 
-  // Eye size from luminosity (2x2 to 3x3)
-  const bigEyes = luminosity > 0.55;
-  const eyeW = bigEyes ? 3 : 2;
-  const eyeH = bigEyes ? 3 : 2;
+  // Eye dimensions vary per style
+  const isBigStyle = ["round", "wide", "cute-sparkle", "star-pupil", "heart-pupil"].includes(eyeStyle);
+  const eyeW = isBigStyle ? 3 : 2;
+  const eyeH = eyeStyle === "narrow" ? 1 : (isBigStyle ? 3 : 2);
 
   const leftEyeX = midX - eyeSpacing - Math.floor(eyeW / 2);
   const rightEyeX = midX + eyeSpacing - Math.floor(eyeW / 2);
 
-  // Draw eye whites
-  for (let dy = 0; dy < eyeH; dy++) {
-    for (let dx = 0; dx < eyeW; dx++) {
-      setCell(grid, leftEyeX + dx, eyeY + dy, 6);
-      setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+  // Helper to draw one eye pair
+  const drawEyePair = (style: EyeStyle) => {
+    switch (style) {
+      case "round": {
+        // 3x3 classic round eyes with pupil and highlight
+        for (let dy = 0; dy < 3; dy++)
+          for (let dx = 0; dx < 3; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Pupil 2x2 bottom-left
+        setCell(grid, leftEyeX, eyeY + 1, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
+        setCell(grid, leftEyeX, eyeY + 2, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
+        setCell(grid, rightEyeX + 2, eyeY + 1, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 2, eyeY + 2, 7);
+        // Highlight top-right
+        setCell(grid, leftEyeX + 2, eyeY, 6);
+        setCell(grid, rightEyeX + 2, eyeY, 6);
+        break;
+      }
+      case "oval": {
+        // 2x3 tall oval eyes
+        for (let dy = 0; dy < 3; dy++) {
+          setCell(grid, leftEyeX, eyeY + dy, 6);
+          setCell(grid, leftEyeX + 1, eyeY + dy, 6);
+          setCell(grid, rightEyeX, eyeY + dy, 6);
+          setCell(grid, rightEyeX + 1, eyeY + dy, 6);
+        }
+        // Pupil in lower half
+        setCell(grid, leftEyeX, eyeY + 2, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
+        setCell(grid, rightEyeX, eyeY + 1, 7);
+        setCell(grid, rightEyeX, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
+        // Highlight
+        setCell(grid, leftEyeX, eyeY, 6);
+        setCell(grid, rightEyeX + 1, eyeY, 6);
+        break;
+      }
+      case "cute-sparkle": {
+        // 3x3 big sparkly eyes with double highlight (classic Pokémon cute)
+        for (let dy = 0; dy < 3; dy++)
+          for (let dx = 0; dx < 3; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Iris color fills most of eye
+        setCell(grid, leftEyeX, eyeY + 1, 10);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 10);
+        setCell(grid, leftEyeX, eyeY + 2, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
+        setCell(grid, leftEyeX + 2, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 10);
+        setCell(grid, rightEyeX + 2, eyeY + 1, 10);
+        setCell(grid, rightEyeX, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 2, eyeY + 2, 7);
+        // Double sparkle highlights — big + small
+        setCell(grid, leftEyeX + 2, eyeY, 6);
+        setCell(grid, leftEyeX, eyeY + 2, 6);
+        setCell(grid, rightEyeX, eyeY, 6);
+        setCell(grid, rightEyeX + 2, eyeY + 2, 6);
+        break;
+      }
+      case "dot": {
+        // Tiny 1x1 dot eyes — very minimal
+        setCell(grid, leftEyeX, eyeY, 7);
+        setCell(grid, rightEyeX + 1, eyeY, 7);
+        break;
+      }
+      case "narrow": {
+        // 2x1 slit eyes — sleepy/cool look
+        setCell(grid, leftEyeX, eyeY, 7);
+        setCell(grid, leftEyeX + 1, eyeY, 7);
+        setCell(grid, rightEyeX, eyeY, 7);
+        setCell(grid, rightEyeX + 1, eyeY, 7);
+        break;
+      }
+      case "wide": {
+        // 3x3 wide-open surprised eyes
+        for (let dy = 0; dy < 3; dy++)
+          for (let dx = 0; dx < 3; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Large centered pupil
+        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 7);
+        // Tiny highlight
+        setCell(grid, leftEyeX + 2, eyeY, 6);
+        setCell(grid, rightEyeX, eyeY, 6);
+        break;
+      }
+      case "droopy": {
+        // 2x2 eyes with droopy lower lid — cute sad look
+        for (let dy = 0; dy < 2; dy++)
+          for (let dx = 0; dx < 2; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Pupil bottom
+        setCell(grid, leftEyeX, eyeY + 1, 7);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
+        // Droopy lid pixel on outside-bottom
+        setCell(grid, leftEyeX - 1, eyeY + 1, 1);
+        setCell(grid, rightEyeX + 2, eyeY + 1, 1);
+        break;
+      }
+      case "fierce": {
+        // 2x2 sharp angular eyes — determined look
+        for (let dy = 0; dy < 2; dy++)
+          for (let dx = 0; dx < 2; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Dark pupil fills inner half
+        setCell(grid, leftEyeX + 1, eyeY, 7);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
+        setCell(grid, rightEyeX, eyeY, 7);
+        setCell(grid, rightEyeX, eyeY + 1, 7);
+        // Angry brow pixel above outer corner
+        setCell(grid, leftEyeX - 1, eyeY - 1, 1);
+        setCell(grid, leftEyeX, eyeY - 1, 1);
+        setCell(grid, rightEyeX + 1, eyeY - 1, 1);
+        setCell(grid, rightEyeX + 2, eyeY - 1, 1);
+        break;
+      }
+      case "star-pupil": {
+        // 3x3 eyes with star-shaped pupil
+        for (let dy = 0; dy < 3; dy++)
+          for (let dx = 0; dx < 3; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Star pupil: cross pattern in accent color
+        setCell(grid, leftEyeX + 1, eyeY, 10);
+        setCell(grid, leftEyeX, eyeY + 1, 10);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 7);
+        setCell(grid, leftEyeX + 2, eyeY + 1, 10);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 10);
+        setCell(grid, rightEyeX + 1, eyeY, 10);
+        setCell(grid, rightEyeX, eyeY + 1, 10);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 7);
+        setCell(grid, rightEyeX + 2, eyeY + 1, 10);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 10);
+        break;
+      }
+      case "heart-pupil": {
+        // 3x3 eyes with heart-shaped pupil
+        for (let dy = 0; dy < 3; dy++)
+          for (let dx = 0; dx < 3; dx++) {
+            setCell(grid, leftEyeX + dx, eyeY + dy, 6);
+            setCell(grid, rightEyeX + dx, eyeY + dy, 6);
+          }
+        // Heart shape: top bumps + bottom point
+        setCell(grid, leftEyeX, eyeY, 9);
+        setCell(grid, leftEyeX + 2, eyeY, 9);
+        setCell(grid, leftEyeX, eyeY + 1, 9);
+        setCell(grid, leftEyeX + 1, eyeY + 1, 9);
+        setCell(grid, leftEyeX + 2, eyeY + 1, 9);
+        setCell(grid, leftEyeX + 1, eyeY + 2, 9);
+        setCell(grid, rightEyeX, eyeY, 9);
+        setCell(grid, rightEyeX + 2, eyeY, 9);
+        setCell(grid, rightEyeX, eyeY + 1, 9);
+        setCell(grid, rightEyeX + 1, eyeY + 1, 9);
+        setCell(grid, rightEyeX + 2, eyeY + 1, 9);
+        setCell(grid, rightEyeX + 1, eyeY + 2, 9);
+        break;
+      }
     }
+  };
+  drawEyePair(eyeStyle);
+
+  // ── 10. MOUTH (from mouthStyle) ──
+  const mouthY = eyeY + eyeH + (isBigStyle ? 0 : 1);
+  switch (mouthStyle) {
+    case "smile":
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      break;
+    case "fang":
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX - 1, mouthY + 1, 6);
+      break;
+    case "cat-mouth":
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX - 1, mouthY + 1, 8);
+      setCell(grid, midX + 1, mouthY + 1, 8);
+      break;
+    case "open":
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX - 1, mouthY + 1, 8);
+      setCell(grid, midX, mouthY + 1, 8);
+      break;
+    case "tongue-out":
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX, mouthY + 1, 9); // tongue = blush color
+      break;
+    case "whistle":
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX, mouthY + 1, 8);
+      break;
+    case "pout":
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX + 1, mouthY, 8);
+      break;
+    case "grin":
+      setCell(grid, midX - 2, mouthY, 8);
+      setCell(grid, midX - 1, mouthY, 8);
+      setCell(grid, midX, mouthY, 8);
+      setCell(grid, midX + 1, mouthY, 8);
+      setCell(grid, midX - 2, mouthY - 1, 8);
+      setCell(grid, midX + 1, mouthY - 1, 8);
+      break;
+    case "none":
+      break;
+    case "dot":
+    default:
+      setCell(grid, midX, mouthY, 8);
+      break;
   }
 
-  if (bigEyes) {
-    // 3x3 eyes: large pupil area with iris color
-    // Bottom-left 2x2 = pupil
-    setCell(grid, leftEyeX, eyeY + 1, 7);
-    setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-    setCell(grid, leftEyeX, eyeY + 2, 7);
-    setCell(grid, leftEyeX + 1, eyeY + 2, 7);
-    // Iris accent in center
-    setCell(grid, leftEyeX + 1, eyeY + 1, 10); // accentDark as iris
-
-    setCell(grid, rightEyeX + 1, eyeY + 1, 7);
-    setCell(grid, rightEyeX + 2, eyeY + 1, 7);
-    setCell(grid, rightEyeX + 1, eyeY + 2, 7);
-    setCell(grid, rightEyeX + 2, eyeY + 2, 7);
-    setCell(grid, rightEyeX + 1, eyeY + 1, 10);
-
-    // Sparkle highlights (top-right of each eye) - the Pokemon sparkle!
-    setCell(grid, leftEyeX + 2, eyeY, 6);
-    setCell(grid, rightEyeX + 2, eyeY, 6);
-    // Second smaller highlight
-    setCell(grid, leftEyeX, eyeY + 2, 6);
-    setCell(grid, rightEyeX, eyeY + 2, 6);
-  } else {
-    // 2x2 eyes: simple pupil
-    setCell(grid, leftEyeX + 1, eyeY + 1, 7);
-    setCell(grid, rightEyeX, eyeY + 1, 7);
-
-    // Highlight dot (top-right)
-    setCell(grid, leftEyeX + 1, eyeY, 6);
-    setCell(grid, rightEyeX + 1, eyeY, 6);
-  }
-
-  // ── 10. MOUTH ──
-  const mouthY = eyeY + eyeH + (bigEyes ? 0 : 1);
-  if (warmth > 0.6) {
-    // Happy smile: 2 pixels wide
-    setCell(grid, midX - 1, mouthY, 8);
-    setCell(grid, midX, mouthY, 8);
-  } else if (ferality > 0.7) {
-    // Fang mouth
-    setCell(grid, midX - 1, mouthY, 8);
-    setCell(grid, midX, mouthY, 8);
-    setCell(grid, midX - 1, mouthY + 1, 6); // fang
-  } else {
-    // Simple dot mouth
-    setCell(grid, midX, mouthY, 8);
-  }
-
-  // ── 11. CHEEK BLUSH ──
-  if (warmth > 0.4) {
-    const blushY = eyeY + eyeH - 1;
-    const blushSpread = eyeSpacing + eyeW;
-    setMirrored(grid, midX, blushSpread, blushY, 9);
-    setMirrored(grid, midX, blushSpread, blushY + 1, 9);
+  // ── 11. FACE MARKS (from faceMark) ──
+  const blushY = eyeY + eyeH - 1;
+  const blushSpread = eyeSpacing + eyeW;
+  switch (faceMark) {
+    case "blush":
+      setMirrored(grid, midX, blushSpread, blushY, 9);
+      setMirrored(grid, midX, blushSpread, blushY + 1, 9);
+      break;
+    case "freckles":
+      setMirrored(grid, midX, blushSpread - 1, blushY, 2);
+      setMirrored(grid, midX, blushSpread, blushY + 1, 2);
+      setMirrored(grid, midX, blushSpread + 1, blushY, 2);
+      break;
+    case "whiskers":
+      // 3 lines extending from cheeks
+      for (let i = 0; i < 3; i++) {
+        setMirrored(grid, midX, blushSpread + i, blushY - 1 + i, 1);
+      }
+      break;
+    case "tear-mark":
+      setMirrored(grid, midX, eyeSpacing, eyeY + eyeH, 5);
+      setMirrored(grid, midX, eyeSpacing, eyeY + eyeH + 1, 5);
+      break;
+    case "scar":
+      setMirrored(grid, midX, blushSpread, blushY - 1, 2);
+      setMirrored(grid, midX, blushSpread, blushY, 2);
+      setMirrored(grid, midX, blushSpread + 1, blushY + 1, 2);
+      break;
+    case "star-cheek":
+      setMirrored(grid, midX, blushSpread, blushY, 4);
+      setMirrored(grid, midX, blushSpread - 1, blushY, 4);
+      setMirrored(grid, midX, blushSpread, blushY - 1, 4);
+      break;
+    case "swirl-cheek":
+      setMirrored(grid, midX, blushSpread, blushY, 5);
+      setMirrored(grid, midX, blushSpread + 1, blushY - 1, 5);
+      setMirrored(grid, midX, blushSpread + 1, blushY, 5);
+      break;
+    case "none":
+    default:
+      break;
   }
 
   // ── 12. AUTO-OUTLINE ──
