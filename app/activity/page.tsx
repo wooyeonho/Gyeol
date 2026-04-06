@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
@@ -9,6 +10,9 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { GrowthTimeline } from "@/components/growth-timeline";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 
 type ActivityItem =
   | {
@@ -60,28 +64,30 @@ export default function ActivityPage() {
     trackClientEvent(CLIENT_EVENT.activityOpened);
   }, []);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/activity");
-        if (!res.ok) {
-          setError(t("activity.loadError"));
-          setItems([]);
-          return;
-        }
-        const json = await res.json().catch(() => ({ items: [] }));
+  function load() {
+    setLoading(true);
+    setError(null);
+    fetch("/api/activity")
+      .then((res) => {
+        if (!res.ok) throw new Error("fetch");
+        return res.json().catch(() => ({ items: [] }));
+      })
+      .then((json) => {
         setItems(Array.isArray(json.items) ? json.items : []);
         setSelfAgent((json.selfAgent as ActivityAgent | null) ?? null);
-      } catch {
+      })
+      .catch(() => {
         setError(t("activity.loadError"));
         setItems([]);
         setSelfAgent(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    void load();
-  }, [t]);
+      })
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function togglePreserved(id: string, current: boolean) {
     const next = !current;
@@ -98,13 +104,7 @@ export default function ActivityPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={5} />;
 
   const appearance = resolveIdentityAppearance(
     {
@@ -117,60 +117,63 @@ export default function ActivityPage() {
       vitality: selfAgent?.vitality ?? 1,
       mood: selfAgent?.mood ?? null,
     },
-    locale
+    locale,
   );
 
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-5xl space-y-4">
-      <DiscoverPageHeader
-        eyebrow={t("activity.eyebrow")}
-        title={t("activity.title")}
-        subtitle={appearance.usageNarrative ?? t("activity.subtitle")}
-        appearance={appearance}
-      />
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+    <PageShell>
+      <motion.div variants={itemVariants}>
+        <DiscoverPageHeader
+          eyebrow={t("activity.eyebrow")}
+          title={t("activity.title")}
+          subtitle={appearance.usageNarrative ?? t("activity.subtitle")}
+          appearance={appearance}
+        />
+      </motion.div>
 
-      {/* Growth Timeline — autonomous changes over time */}
-      <div className="mb-6">
+      {error && (
+        <motion.div variants={itemVariants}>
+          <ErrorBanner message={error} onRetry={load} />
+        </motion.div>
+      )}
+
+      <motion.div variants={itemVariants}>
         <GrowthTimeline />
-      </div>
+      </motion.div>
 
-      <div className="space-y-3">
+      <motion.div variants={itemVariants} className="space-y-3">
         {items.map((item, i) => {
           const styleKey = item.kind === "log" ? (item.action_type ?? "") : (item.type ?? "");
           const baseStyle = TYPE_STYLES[styleKey] || "bg-white/5 border-white/10";
           return (
-          <div
-            key={item.kind + "-" + i}
-            className={`rounded-2xl p-4 border ${baseStyle}`}
-            style={{ boxShadow: `0 0 0 1px ${appearance.palette.primary}10 inset` }}
-          >
-            {item.kind === "log" ? (
-              <>
-                <div className="text-xs text-white/50">{item.action_type}</div>
-                <div className="text-sm mt-1">{item.summary}</div>
-              </>
-            ) : (
-              <>
+            <div
+              key={item.kind + "-" + i}
+              className={`rounded-2xl p-4 border ${baseStyle}`}
+              style={{ boxShadow: `0 0 0 1px ${appearance.palette.primary}10 inset` }}
+            >
+              {item.kind === "log" ? (
+                <>
+                  <div className="text-xs text-white/55">{item.action_type}</div>
+                  <div className="text-sm mt-1">{item.summary}</div>
+                </>
+              ) : (
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-xs text-white/50">{item.type}</div>
+                    <div className="text-xs text-white/55">{item.type}</div>
                     <div className="text-sm mt-1">{item.title || item.content?.slice(0, 80)}</div>
                   </div>
                   <button
                     onClick={() => void togglePreserved(item.id, item.is_preserved || false)}
-                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs"
+                    className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs text-white/70 hover:bg-white/[0.12] transition-colors active:scale-[0.97]"
                   >
                     {item.is_preserved ? t("activity.preserved") : t("activity.preserve")}
                   </button>
                 </div>
-              </>
-            )}
-          </div>
+              )}
+            </div>
           );
         })}
-        {items.length === 0 && (
+        {items.length === 0 && !error && (
           <AnimatedEmptyState
             icon="activity"
             title={t("activity.empty")}
@@ -178,9 +181,7 @@ export default function ActivityPage() {
             accentColor="#f59e0b"
           />
         )}
-      </div>
-      </div>
-      <BottomNav />
-    </div>
+      </motion.div>
+    </PageShell>
   );
 }

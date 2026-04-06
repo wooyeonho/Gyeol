@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDateTime } from "@/lib/i18n/format";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
+import { TabBar } from "@/components/discover/tab-bar";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import BreedingCard from "@/components/breeding-card";
 import type { Visual } from "@/components/breeding-card";
 
@@ -452,17 +456,11 @@ export default function SocialPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={4} />;
 
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <PageShell>
+      <motion.div variants={itemVariants}>
       <DiscoverPageHeader
         eyebrow={t("socialPage.eyebrow")}
         title={t("socialPage.title")}
@@ -492,33 +490,24 @@ export default function SocialPage() {
           ))}
         </div>
       </DiscoverPageHeader>
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      </motion.div>
+      {error && <ErrorBanner message={error} />}
 
       {/* Tab navigation */}
-      <div className="mb-4 flex gap-2">
-        {([
+      <TabBar
+        tabs={[
           { key: "feed" as const, label: t("social.feedTab") },
           { key: "friends" as const, label: t("social.friendsTab") },
           { key: "dm" as const, label: t("social.dmTab") },
-        ]).map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`rounded-full px-4 py-2 text-sm transition-colors ${
-              activeTab === tab.key
-                ? "border border-cyan-300/35 bg-cyan-400/15 text-cyan-100"
-                : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        ]}
+        active={activeTab}
+        onChange={setActiveTab}
+        sticky
+      />
 
       {/* Friends tab */}
       {activeTab === "friends" && (
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.friendsTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -583,7 +572,7 @@ export default function SocialPage() {
 
       {/* DM tab */}
       {activeTab === "dm" && (
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.dmTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
           {recentConversationLogs.length > 0 ? (
@@ -636,7 +625,7 @@ export default function SocialPage() {
 
       {/* Feed tab (existing content) */}
       {activeTab === "feed" && (<>
-      <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+      <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
@@ -762,7 +751,7 @@ export default function SocialPage() {
             return (
               <article
                 key={post.id}
-                className="rounded-[1.75rem] border border-white/10 bg-black/25 p-4"
+                className="rounded-2xl border border-white/10 bg-black/25 p-4"
                 style={{
                   boxShadow: `0 0 0 1px ${postAppearance.palette.primary}12 inset`,
                   borderLeftColor: `${postAppearance.palette.primary}50`,
@@ -912,7 +901,7 @@ export default function SocialPage() {
         </div>
       </section>
       {otherAgents.length > 0 && (
-        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.encounteredForms")}
           </p>
@@ -973,7 +962,7 @@ export default function SocialPage() {
       )}
 
       {curatedEncounterGroups.length > 0 && (
-        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.speciesCuration")}
           </p>
@@ -998,7 +987,7 @@ export default function SocialPage() {
       )}
 
       {giftExchanges.length > 0 && (
-        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.giftEchoes")}
           </p>
@@ -1014,7 +1003,7 @@ export default function SocialPage() {
 
       {/* Breeding section */}
       {mutualAgents.length > 0 && (
-        <section className="mb-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("breeding.sectionTitle")}
           </p>
@@ -1078,8 +1067,6 @@ export default function SocialPage() {
         )}
       </div>
       </>)}
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

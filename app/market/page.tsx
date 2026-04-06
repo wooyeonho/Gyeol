@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 import { IdentityPresence } from "@/components/identity-presence";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { TabBar } from "@/components/discover/tab-bar";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTranslations } from "@/components/i18n-provider";
 import { readRewardInventory, type RewardInventory } from "@/lib/rewards/variable-reward";
@@ -162,13 +165,7 @@ export default function MarketPage() {
     return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
   }, [items, locale]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={6} />;
 
   const categoryMap: Record<string, string> = {
     title: t("shop.categoryTitle"),
@@ -180,17 +177,16 @@ export default function MarketPage() {
   const inv = inventory ?? { coins: 0, emoji_dust: 0, title_shards: 0, appearance_shards: 0, evolution_points: 0, streak_freezes: 0 };
 
   return (
-    <div className="theme-page min-h-screen pt-20 pb-24 px-4">
-      <div className="mx-auto max-w-5xl">
+    <PageShell>
       {/* Header */}
-      <div className="mb-4">
+      <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={t("marketPage.eyebrow")}
           title={t("marketPage.title")}
           subtitle={appearance.usageNarrative ?? t("marketPage.subtitle")}
           appearance={appearance}
         />
-      </div>
+      </motion.div>
 
       {/* Inventory panel */}
       <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -214,28 +210,20 @@ export default function MarketPage() {
       </div>
 
       {notice && (
-        <div className="mb-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm">
+        <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100/90">
           {notice}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("shop")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${activeTab === "shop" ? "bg-white/15 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
-        >
-          {t("shop.title")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("market")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${activeTab === "market" ? "bg-white/15 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
-        >
-          {t("marketPage.title")}
-        </button>
-      </div>
+      <TabBar
+        tabs={[
+          { key: "shop" as const, label: t("shop.title") },
+          { key: "market" as const, label: t("marketPage.title") },
+        ]}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* Shop tab */}
       {activeTab === "shop" && (
@@ -333,7 +321,7 @@ export default function MarketPage() {
           )}
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="bg-white/[0.04] rounded-[1.75rem] p-4 border border-white/10">
+              <div key={item.id} className="bg-white/[0.04] rounded-2xl p-4 border border-white/10">
                 <div className="flex items-start gap-3">
                   <IdentityPresence
                     appearance={resolveIdentityAppearance(
@@ -379,8 +367,6 @@ export default function MarketPage() {
           )}
         </>
       )}
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

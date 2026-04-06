@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
 import { useChatStore } from "@/store/chat-store";
 import { haptic } from "@/lib/micro-interactions";
 import { initOrRefreshDailyChallenges } from "@/lib/engagement/daily-challenge";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { DiscoverGridSkeleton } from "@/components/discover/skeleton";
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -68,12 +69,12 @@ function CardIcon({ type }: { type: string }) {
 }
 
 const CARD_GRADIENTS = [
-  "from-cyan-500/20 to-blue-500/5",
-  "from-purple-500/20 to-fuchsia-500/5",
-  "from-amber-500/20 to-orange-500/5",
-  "from-emerald-500/20 to-teal-500/5",
-  "from-indigo-500/20 to-violet-500/5",
-  "from-rose-500/20 to-pink-500/5",
+  "from-cyan-500/30 to-blue-500/10",
+  "from-purple-500/30 to-fuchsia-500/10",
+  "from-amber-500/30 to-orange-500/10",
+  "from-emerald-500/30 to-teal-500/10",
+  "from-indigo-500/30 to-violet-500/10",
+  "from-rose-500/30 to-pink-500/10",
 ];
 
 const cardVariants = {
@@ -220,19 +221,22 @@ export default function DiscoverPage() {
     [counts.activity, counts.album, counts.social, counts.explore, counts.room, counts.constellation, t],
   );
 
+  if (loading) return <DiscoverGridSkeleton />;
+
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <PageShell>
+        <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={t("discover.eyebrow")}
           title={t("discover.title")}
           subtitle={t("discover.subtitle")}
         />
+        </motion.div>
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         {/* Daily Challenge progress bar */}
-        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
+        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-base">⚡</span>
@@ -259,11 +263,11 @@ export default function DiscoverPage() {
 
         {/* Section label */}
         <div className="flex items-center gap-2 px-1">
-          <div className="h-px flex-1 bg-white/[0.06]" />
+          <div className="h-px flex-1 bg-white/[0.12]" />
           <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30">
             {t("discover.eyebrow")}
           </span>
-          <div className="h-px flex-1 bg-white/[0.06]" />
+          <div className="h-px flex-1 bg-white/[0.12]" />
         </div>
 
         {/* 2×3 Bento Grid */}
@@ -277,19 +281,15 @@ export default function DiscoverPage() {
               <Link
                 href={card.href}
                 onClick={() => haptic("tap")}
-                className={`group relative flex flex-col overflow-hidden rounded-[1.5rem] bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
+                className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
               >
-                <div className="absolute inset-0 rounded-[1.5rem] border border-white/10 group-hover:border-white/20 transition-colors" />
+                <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
                 <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors w-fit mb-2">
                   <CardIcon type={card.iconType} />
                 </div>
                 <h2 className="text-sm font-semibold tracking-tight text-white leading-tight">{card.title}</h2>
                 <p className="theme-text-faint text-xs mt-0.5">
-                  {loading ? (
-                    <span className="inline-block h-3 w-10 animate-pulse rounded bg-white/10" />
-                  ) : (
-                    t("discover.itemsCount").replace("{count}", String(card.count))
-                  )}
+                  {t("discover.itemsCount").replace("{count}", String(card.count))}
                 </p>
                 <p className="theme-text-subtle mt-auto pt-2 text-xs leading-5 line-clamp-2">{card.body}</p>
               </Link>
@@ -297,7 +297,7 @@ export default function DiscoverPage() {
           ))}
         </motion.section>
 
-        {!loading && counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && counts.room === 0 && counts.constellation === 0 && (
+        {counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && counts.room === 0 && counts.constellation === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -312,11 +312,11 @@ export default function DiscoverPage() {
 
         {/* More Ways divider */}
         <div className="flex items-center gap-2 px-1 pt-2">
-          <div className="h-px flex-1 bg-white/[0.06]" />
+          <div className="h-px flex-1 bg-white/[0.12]" />
           <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30">
             {t("discover.moreWays")}
           </span>
-          <div className="h-px flex-1 bg-white/[0.06]" />
+          <div className="h-px flex-1 bg-white/[0.12]" />
         </div>
 
         <section className="grid grid-cols-3 gap-2">
@@ -329,15 +329,13 @@ export default function DiscoverPage() {
               key={item.href}
               href={item.href}
               onClick={() => haptic("tap")}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-4 text-center transition-all hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-4 text-center transition-all hover:bg-white/[0.12] hover:border-white/10 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <span className="text-xl">{item.icon}</span>
               <span className="text-xs font-medium text-white/70">{item.label}</span>
             </Link>
           ))}
         </section>
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

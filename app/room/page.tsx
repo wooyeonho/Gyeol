@@ -7,6 +7,7 @@ import ARViewer from "@/components/ar-viewer";
 import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import { BottomNav } from "@/components/bottom-nav";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
@@ -58,7 +59,10 @@ export default function RoomPage() {
       <div className="flex-1 relative min-h-[60vh]">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-16 w-16 rounded-2xl skeleton-shimmer" />
+              <div className="h-3 w-24 rounded skeleton-shimmer" />
+            </div>
           </div>
         ) : (
           <RoomScene
