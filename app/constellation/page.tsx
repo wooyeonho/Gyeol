@@ -7,6 +7,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { BottomNav } from "@/components/bottom-nav";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { PageSkeleton } from "@/components/discover/skeleton";
 
 const ConstellationScene = dynamic(() => import("@/components/constellation-scene"), { ssr: false });
 
@@ -103,7 +104,10 @@ export default function ConstellationPage() {
       <div className="flex-1 min-h-[50vh] relative">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-16 w-16 rounded-full skeleton-shimmer" />
+              <div className="h-3 w-24 rounded skeleton-shimmer" />
+            </div>
           </div>
         ) : (
           <ConstellationScene

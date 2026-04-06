@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import type { CompareResult } from "@/app/api/compare/route";
 
 export default function ComparePage() {
@@ -39,22 +41,12 @@ export default function ComparePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) {
-    return (
-      <div className="theme-page min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-sm text-white/60">{t("compare.matching")}</span>
-          <span className="w-3 h-3 rounded-full bg-rose-400 animate-pulse" />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={4} />;
 
   if (error) {
     return (
-      <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-        <div className="mx-auto max-w-lg text-center">
+      <PageShell>
+        <div className="mx-auto max-w-lg text-center py-12">
           <p className="text-white/60 mb-4">{error}</p>
           <div className="flex flex-wrap justify-center gap-3">
             {error === t("compare.authError") ? (
@@ -96,8 +88,7 @@ export default function ComparePage() {
             </Link>
           </div>
         </div>
-        <BottomNav />
-      </div>
+      </PageShell>
     );
   }
 
@@ -129,12 +120,13 @@ export default function ComparePage() {
   const oppColor = result.opponent.visual?.color ?? oppAppearance.palette.primary;
 
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <PageShell>
+        <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={t("compare.eyebrow")}
           title={t("compare.title")}
         />
+        </motion.div>
 
         {/* VS Header */}
         <div className="mb-6 flex items-center justify-center gap-6">
@@ -251,8 +243,6 @@ export default function ComparePage() {
             {t("compare.viewLeaderboard")}
           </Link>
         </div>
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

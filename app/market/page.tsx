@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { FEATURE_FLAG } from "@/lib/experiments/catalog";
 import { useFeatureFlag } from "@/lib/experiments/client";
 import type { EntitlementKey, PlanDefinition } from "@/lib/billing/catalog";
 import { IdentityPresence } from "@/components/identity-presence";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { TabBar } from "@/components/discover/tab-bar";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { useTranslations } from "@/components/i18n-provider";
 import { readRewardInventory, type RewardInventory } from "@/lib/rewards/variable-reward";
@@ -163,13 +165,7 @@ export default function MarketPage() {
     return Array.from(groups.values()).sort((a, b) => b.items.length - a.items.length).slice(0, 3);
   }, [items, locale]);
 
-  if (loading) {
-    return (
-      <div className="theme-page min-h-screen flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={6} />;
 
   const categoryMap: Record<string, string> = {
     title: t("shop.categoryTitle"),
@@ -181,17 +177,16 @@ export default function MarketPage() {
   const inv = inventory ?? { coins: 0, emoji_dust: 0, title_shards: 0, appearance_shards: 0, evolution_points: 0, streak_freezes: 0 };
 
   return (
-    <div className="theme-page min-h-screen pt-20 pb-24 px-4">
-      <div className="mx-auto max-w-5xl">
+    <PageShell>
       {/* Header */}
-      <div className="mb-4">
+      <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={t("marketPage.eyebrow")}
           title={t("marketPage.title")}
           subtitle={appearance.usageNarrative ?? t("marketPage.subtitle")}
           appearance={appearance}
         />
-      </div>
+      </motion.div>
 
       {/* Inventory panel */}
       <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -372,8 +367,6 @@ export default function MarketPage() {
           )}
         </>
       )}
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { WeeklyEventCard } from "@/components/weekly-event-card";
@@ -14,6 +14,8 @@ import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { ErrorBanner } from "@/components/discover/error-banner";
 import { TabBar } from "@/components/discover/tab-bar";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 
 type Tab = "level" | "messages" | "vitality";
 
@@ -141,17 +143,11 @@ export default function LeaderboardPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="theme-page min-h-screen flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={8} />;
 
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20">
-      <div className="mx-auto max-w-5xl">
+    <PageShell>
+        <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={t("leaderboard.eyebrow")}
           title={t("leaderboard.title")}
@@ -184,8 +180,7 @@ export default function LeaderboardPage() {
             </div>
           )}
         </DiscoverPageHeader>
-
-        <div className="h-4" />
+        </motion.div>
 
         <div className="mb-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
@@ -222,7 +217,9 @@ export default function LeaderboardPage() {
           <ErrorBanner message={error} />
         )}
 
-        <TabBar tabs={tabs} active={tab} onChange={setTab} />
+        <motion.div variants={itemVariants}>
+          <TabBar tabs={tabs} active={tab} onChange={setTab} sticky />
+        </motion.div>
 
         {context?.self && (
           <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -413,8 +410,6 @@ export default function LeaderboardPage() {
             })}
           </div>
         )}
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

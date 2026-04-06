@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { IdentityPresence } from "@/components/identity-presence";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
@@ -11,6 +11,8 @@ import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { ErrorBanner } from "@/components/discover/error-banner";
 import { TabBar } from "@/components/discover/tab-bar";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import BreedingCard from "@/components/breeding-card";
 import type { Visual } from "@/components/breeding-card";
 
@@ -454,17 +456,11 @@ export default function SocialPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="theme-page min-h-screen flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton rows={4} />;
 
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <PageShell>
+      <motion.div variants={itemVariants}>
       <DiscoverPageHeader
         eyebrow={t("socialPage.eyebrow")}
         title={t("socialPage.title")}
@@ -494,6 +490,7 @@ export default function SocialPage() {
           ))}
         </div>
       </DiscoverPageHeader>
+      </motion.div>
       {error && <ErrorBanner message={error} />}
 
       {/* Tab navigation */}
@@ -505,6 +502,7 @@ export default function SocialPage() {
         ]}
         active={activeTab}
         onChange={setActiveTab}
+        sticky
       />
 
       {/* Friends tab */}
@@ -1069,8 +1067,6 @@ export default function SocialPage() {
         )}
       </div>
       </>)}
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

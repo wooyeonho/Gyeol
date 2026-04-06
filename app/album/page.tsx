@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BottomNav } from "@/components/bottom-nav";
+import { motion } from "framer-motion";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { PageShell, itemVariants } from "@/components/discover/page-shell";
+import { PageSkeleton } from "@/components/discover/skeleton";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { ManifestationTimeline } from "@/components/manifestation-timeline";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
@@ -80,20 +82,19 @@ export default function AlbumPage() {
     return rows;
   }, [appearance, config?.usage_profile?.updated_at, createdAt, milestones, t]);
 
+  if (loading) return <PageSkeleton rows={5} />;
+
   return (
-    <div className="theme-page min-h-screen px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-5xl space-y-4">
+    <PageShell>
+        <motion.div variants={itemVariants}>
         <DiscoverPageHeader
           eyebrow={appearance.title}
           title={t("album.title")}
           subtitle={appearance.usageNarrative ?? t("album.subtitle")}
           appearance={appearance}
         />
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <span className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
-          </div>
-        ) : milestones.length === 0 ? (
+        </motion.div>
+        {milestones.length === 0 ? (
           <AnimatedEmptyState
             icon="album"
             title={t("album.empty")}
@@ -215,8 +216,6 @@ export default function AlbumPage() {
             {t("album.activity")}
           </Link>
         </div>
-      </div>
-      <BottomNav />
-    </div>
+    </PageShell>
   );
 }

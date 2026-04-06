@@ -52,7 +52,7 @@ export function AgentCard({
         <div className="flex items-start gap-3">
           <IdentityPresence appearance={appearance} size="md" />
           <div className="min-w-0 flex-1 pt-1">
-            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/55">
               {appearance.title}
             </p>
             <p className="mt-1.5 text-base font-semibold text-white leading-tight truncate">
@@ -74,7 +74,7 @@ export function AgentCard({
                 key={s.label}
                 className="rounded-xl border border-white/[0.06] bg-black/30 px-2.5 py-2 backdrop-blur-sm"
               >
-                <p className="text-[9px] font-medium uppercase tracking-wider text-white/40">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-white/55">
                   {s.label}
                 </p>
                 <p
