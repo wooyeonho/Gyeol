@@ -41,7 +41,7 @@ export default function ComparePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <div className="theme-page min-h-screen flex flex-col items-center justify-center gap-4">
         <div className="flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
           <span className="text-sm text-white/60">{t("compare.matching")}</span>
@@ -240,13 +240,13 @@ export default function ComparePage() {
           <button
             type="button"
             onClick={loadMatch}
-            className="flex-1 rounded-xl bg-cyan-500/20 border border-cyan-400/30 py-3 text-center text-sm font-medium text-cyan-200 hover:bg-cyan-500/30"
+            className="flex-1 rounded-full border border-cyan-300/30 bg-cyan-400/15 py-3 text-center text-sm font-medium text-cyan-100 hover:bg-cyan-400/25 transition-colors"
           >
             {t("compare.rematch")}
           </button>
           <Link
             href="/leaderboard"
-            className="flex-1 rounded-xl bg-white/5 border border-white/10 py-3 text-center text-sm font-medium text-white/70 hover:text-white"
+            className="flex-1 rounded-full border border-white/[0.06] bg-white/[0.04] py-3 text-center text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
           >
             {t("compare.viewLeaderboard")}
           </Link>

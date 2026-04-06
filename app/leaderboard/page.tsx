@@ -11,6 +11,8 @@ import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import type { LeaderboardEntry, LeaderboardResponse } from "@/app/api/leaderboard/route";
 import { useChatStore } from "@/store/chat-store";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
+import { TabBar } from "@/components/discover/tab-bar";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 
 type Tab = "level" | "messages" | "vitality";
@@ -188,7 +190,7 @@ export default function LeaderboardPage() {
         <div className="mb-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
-          <section className="theme-panel rounded-[1.75rem] p-5">
+          <section className="theme-panel rounded-2xl p-5">
             <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
               {t("leaderboard.socialProof")}
             </p>
@@ -201,14 +203,14 @@ export default function LeaderboardPage() {
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/compare"
-                className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
+                className="inline-flex items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
               >
                 {t("leaderboard.compareNow")}
               </Link>
               <button
                 type="button"
                 onClick={() => void handleShareProfile()}
-                className="theme-subpanel inline-flex min-h-12 items-center justify-center rounded-2xl px-4 py-3 text-base theme-text-muted transition-colors hover:brightness-105"
+                className="inline-flex items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
               >
                 {t("leaderboard.createShareCard")}
               </button>
@@ -217,31 +219,14 @@ export default function LeaderboardPage() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">
-            {error}
-          </div>
+          <ErrorBanner message={error} />
         )}
 
-        <div className="mb-5 flex flex-wrap gap-2">
-          {tabs.map((tabOption) => (
-            <button
-              key={tabOption.key}
-              type="button"
-              onClick={() => setTab(tabOption.key)}
-              className={`min-h-12 rounded-full px-4 py-2 text-base font-medium transition-colors ${
-                tab === tabOption.key
-                  ? "bg-cyan-500/20 border border-cyan-400/30 text-cyan-200"
-                  : "theme-subpanel theme-text-subtle hover:brightness-105"
-              }`}
-            >
-              {tabOption.label}
-            </button>
-          ))}
-        </div>
+        <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
         {context?.self && (
           <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div className="theme-panel-strong rounded-[1.75rem] p-5">
+            <div className="theme-panel-strong rounded-2xl p-5">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-100/80">
                 {t("leaderboard.yourPosition")}
               </p>
@@ -267,7 +252,7 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            <div className="theme-panel rounded-[1.75rem] p-5">
+            <div className="theme-panel rounded-2xl p-5">
               <p className="theme-text-subtle text-xs font-medium uppercase tracking-[0.2em]">
                 {t("leaderboard.nearbyRivals")}
               </p>
@@ -368,7 +353,7 @@ export default function LeaderboardPage() {
               return (
                 <div
                   key={`${entry.rank}-${entry.agent_id}`}
-                  className={`group relative flex items-center gap-4 overflow-hidden rounded-[1.75rem] border p-4 transition-all duration-300 hover:-translate-y-0.5 ${
+                  className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 ${
                     entry.is_self
                       ? "border-cyan-300/25 bg-cyan-400/10"
                       : isTop3

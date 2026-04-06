@@ -9,6 +9,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { BottomNav } from "@/components/bottom-nav";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 import { AgentCard } from "@/components/discover/agent-card";
 
@@ -91,7 +92,7 @@ export default function ExplorePage() {
           title={t("explore.title")}
           subtitle={t("explore.subtitle")}
         />
-        {error && <div className="rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+        {error && <ErrorBanner message={error} />}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {agents.map((a) => {
             const appearance = resolveIdentityAppearance(

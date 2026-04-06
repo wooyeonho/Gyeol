@@ -232,7 +232,7 @@ export default function DiscoverPage() {
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         {/* Daily Challenge progress bar */}
-        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
+        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-base">⚡</span>
@@ -277,9 +277,9 @@ export default function DiscoverPage() {
               <Link
                 href={card.href}
                 onClick={() => haptic("tap")}
-                className={`group relative flex flex-col overflow-hidden rounded-[1.5rem] bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
+                className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
               >
-                <div className="absolute inset-0 rounded-[1.5rem] border border-white/10 group-hover:border-white/20 transition-colors" />
+                <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
                 <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors w-fit mb-2">
                   <CardIcon type={card.iconType} />
                 </div>

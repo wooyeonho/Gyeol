@@ -31,7 +31,7 @@ export function DiscoverPageHeader({
 }) {
   return (
     <header
-      className={`theme-panel rounded-[2rem] shadow-[0_0_80px_rgba(34,211,238,0.05)] ${
+      className={`theme-panel rounded-2xl shadow-[0_0_80px_rgba(34,211,238,0.05)] ${
         tight ? "p-5" : "p-6"
       }`}
     >

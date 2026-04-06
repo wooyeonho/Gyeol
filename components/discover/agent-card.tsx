@@ -31,7 +31,7 @@ export function AgentCard({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] transition-all duration-300 hover:-translate-y-1 hover:border-white/15 active:scale-[0.98]"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] transition-all duration-300 hover:-translate-y-1 hover:border-white/15 active:scale-[0.98]"
       style={{
         background: appearance.scene?.backgroundGradient
           ? `${appearance.scene.backgroundGradient}, linear-gradient(135deg, rgba(255,255,255,0.035) 0%, rgba(0,0,0,0.4) 100%)`
@@ -40,7 +40,7 @@ export function AgentCard({
     >
       {/* Overlay gradient for readability */}
       <div
-        className="pointer-events-none absolute inset-0 rounded-[1.75rem]"
+        className="pointer-events-none absolute inset-0 rounded-2xl"
         style={{
           background:
             "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.6) 100%)",

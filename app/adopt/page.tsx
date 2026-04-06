@@ -6,6 +6,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 import { AgentCard } from "@/components/discover/agent-card";
 
@@ -78,11 +79,7 @@ export default function AdoptPage() {
           title={t("adoptPage.title")}
           subtitle={t("adoptPage.subtitle")}
         />
-        {error && (
-          <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-            {error}
-          </div>
-        )}
+        {error && <ErrorBanner message={error} />}
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((item) => {
             const appearance = resolveIdentityAppearance(

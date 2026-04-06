@@ -115,7 +115,7 @@ export default function ConstellationPage() {
         )}
       </div>
       <div className="grid gap-4 p-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="theme-panel space-y-2 rounded-[1.75rem] p-4">
+        <div className="theme-panel space-y-2 rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("constellationPage.clusters")}
           </p>
@@ -126,7 +126,7 @@ export default function ConstellationPage() {
             </div>
           ))}
         </div>
-        <div className="theme-panel rounded-[1.75rem] p-4">
+        <div className="theme-panel rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("constellationPage.timelineEyebrow")}
           </p>

@@ -128,7 +128,7 @@ export default function AlbumPage() {
           <div className="mb-6">
             <ManifestationTimeline />
           </div>
-          <div className="mb-5 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
               {t("album.timelineEyebrow")}
             </p>
@@ -198,19 +198,19 @@ export default function AlbumPage() {
             type="button"
             onClick={() => void handleShare()}
             disabled={shareLoading}
-            className="rounded-full bg-cyan-500/20 border border-cyan-400/30 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-50"
+            className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-100 hover:bg-cyan-400/25 transition-colors disabled:opacity-50"
           >
             {shareLoading ? "..." : shareUrl ? t("album.shareReady") : t("album.shareAction")}
           </button>
           <Link
             href="/"
-            className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"
+            className="rounded-full border border-white/[0.06] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
           >
             {t("album.home")}
           </Link>
           <Link
             href="/activity"
-            className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white"
+            className="rounded-full border border-white/[0.06] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
           >
             {t("album.activity")}
           </Link>

@@ -9,6 +9,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { GrowthTimeline } from "@/components/growth-timeline";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
+import { ErrorBanner } from "@/components/discover/error-banner";
 
 type ActivityItem =
   | {
@@ -100,7 +101,7 @@ export default function ActivityPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="theme-page min-h-screen flex items-center justify-center">
         <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
       </div>
     );
@@ -129,7 +130,7 @@ export default function ActivityPage() {
         subtitle={appearance.usageNarrative ?? t("activity.subtitle")}
         appearance={appearance}
       />
-      {error && <div className="mb-3 rounded-lg bg-red-500/10 border border-red-400/30 px-3 py-2 text-sm text-red-200">{error}</div>}
+      {error && <ErrorBanner message={error} />}
 
       {/* Growth Timeline — autonomous changes over time */}
       <div className="mb-6">

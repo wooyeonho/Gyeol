@@ -23,7 +23,7 @@ export function WeeklyEventCard({
   const completionRate = Math.min(100, (progress.progress / progress.target) * 100);
 
   return (
-    <div className={`theme-panel rounded-[1.75rem] p-4 ${className}`}>
+    <div className={`theme-panel rounded-2xl p-4 ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-fuchsia-300">
