@@ -66,10 +66,13 @@ describe("heartbeat integration", () => {
   it("returns 0 processed when no agents exist", async () => {
     (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
-    const selectMock = vi.fn().mockResolvedValue({ data: null });
+    const eqMock = vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) });
+    const selectMock = vi.fn().mockReturnValue({ eq: eqMock, data: null, then: (fn: (v: { data: null }) => void) => Promise.resolve(fn({ data: null })) });
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
       from: vi.fn().mockReturnValue({
-        select: selectMock,
+        select: vi.fn().mockImplementation(() => {
+          return { data: null, eq: eqMock, then: (fn: (v: { data: null }) => void) => Promise.resolve(fn({ data: null })) };
+        }),
       }),
     });
 

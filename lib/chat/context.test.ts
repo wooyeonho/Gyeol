@@ -87,6 +87,7 @@ function createWriter() {
         }),
       };
     },
+    rpc: async () => ({ data: null, error: null }),
   };
 }
 

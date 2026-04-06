@@ -9,6 +9,7 @@
  */
 
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import type { createServiceClient } from "@/lib/supabase/service";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
@@ -78,7 +79,10 @@ export async function trySemanticCache(params: {
       return true;
     });
 
-    if (!match) return null;
+    if (!match) {
+      recordServerEvent(PRODUCT_EVENT.semanticCacheMiss, { agentId: params.agentId });
+      return null;
+    }
 
     // Find the assistant response that followed this cached user message.
     // Strategy: find the user chat row matching this memory content, then get the next assistant row.
@@ -106,7 +110,11 @@ export async function trySemanticCache(params: {
     const cachedResponse = (followUp as Array<{ content: string }> | null)?.[0]?.content;
     if (!cachedResponse || cachedResponse.length < 5) return null;
 
-    console.log(`[SemanticCache] HIT — similarity=${(match.similarity ?? 0).toFixed(3)}, reusing cached response`);
+    recordServerEvent(PRODUCT_EVENT.semanticCacheHit, {
+      agentId: params.agentId,
+      similarity: match.similarity ?? 0,
+      cachedResponseLength: cachedResponse.length,
+    });
 
     // OPT-D: Stream cached response word-by-word (avg 40ms/word) so it feels
     // like live generation rather than a jarring instant dump.

@@ -74,9 +74,10 @@ describe("GET /api/cron/heartbeat", () => {
     (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     (releaseCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     const { createServiceClient } = await import("@/lib/supabase/service");
+    const mockEqResult = { data: [], single: vi.fn().mockResolvedValue({ data: null }) };
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
       from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [] }) }),
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(mockEqResult) }),
       }),
     });
     const { GET } = await import("./route");
