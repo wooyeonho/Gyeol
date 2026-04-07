@@ -16,6 +16,9 @@
  *   node dist/openclaw/src/index.js crawl      → Run crawl cycle only
  */
 
+import http from "http";
+import crypto from "crypto";
+
 import {
   executeHeartbeat,
   executeDream,
@@ -32,7 +35,43 @@ import {
   executeProactivePush,
 } from "../../lib/cron-core";
 
+import { loadConfig, EngineConfig } from "./config";
 import { runCrawlCycle } from "./crawler";
+
+// ── Lifeline (HTTP watchdog) ─────────────────────────────
+function buildAuthHeaders(cronSecret: string, useHmac: boolean): Record<string, string> {
+  if (!useHmac) {
+    return { Authorization: `Bearer ${cronSecret}` };
+  }
+  const timestamp = Date.now().toString();
+  const signature = crypto.createHmac("sha256", cronSecret).update(timestamp).digest("hex");
+  return { "X-Cron-Timestamp": timestamp, "X-Cron-Signature": signature };
+}
+
+async function executeLifeline(): Promise<unknown> {
+  const appUrl = (process.env.GYEOL_APP_URL || "").replace(/\/$/, "");
+  const cronSecret = process.env.CRON_SECRET || "";
+  const useHmac = process.env.USE_HMAC_AUTH === "true";
+  if (!appUrl || !cronSecret) return { ok: false, error: "Missing GYEOL_APP_URL or CRON_SECRET" };
+
+  const url = `${appUrl}/api/cron/lifeline`;
+  const headers = buildAuthHeaders(cronSecret, useHmac);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      signal: controller.signal,
+    });
+    const body = await res.text();
+    return { ok: res.ok, status: res.status, body: body.slice(0, 200) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ── Job registry (shared with plugin.ts) ─────────────────
 const JOBS: Record<string, () => Promise<unknown>> = {
@@ -49,6 +88,7 @@ const JOBS: Record<string, () => Promise<unknown>> = {
   war: executeWar,
   recap: executeRecap,
   proactivepush: executeProactivePush,
+  lifeline: executeLifeline,
 };
 
 function ts(): string {
@@ -104,42 +144,117 @@ if (mode === "run-once") {
       process.exit(1);
     });
 } else {
-  // Default: start OpenClaw gateway
-  console.log(`[${ts()}] Starting GYEOL × OpenClaw gateway...`);
-  console.log(`[${ts()}] OpenClaw gateway will load config from openclaw.json5`);
-  console.log(`[${ts()}] Gyeol plugin registers ${Object.keys(JOBS).length} cron jobs`);
+  // Default: start server
+  // Try OpenClaw gateway first; fall back to standalone HTTP + scheduler
+  const config = loadConfig();
 
-  const { spawn } = require("child_process");
-  const port = process.env.PORT || "8000";
+  // ── Standalone HTTP server (health check + manual crawl trigger) ──
+  // This runs regardless of whether OpenClaw gateway starts,
+  // providing the original /health and /crawl endpoints.
+  const server = http.createServer((_req, res) => {
+    const path = _req.url || "/";
 
-  const gatewayProcess = spawn(
-    "npx",
-    ["openclaw", "gateway", "--port", port, "--verbose"],
-    {
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        OPENCLAW_CONFIG: "./openclaw.json5",
-        OPENCLAW_HOME: process.cwd(),
-      },
+    // Health check — no auth required (for Koyeb/platform probes)
+    if (path === "/health" || path === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          service: "gyeol-openclaw",
+          version: "3.0.0",
+          uptime: process.uptime(),
+          target: config.appUrl,
+          timestamp: new Date().toISOString(),
+        })
+      );
+      return;
     }
-  );
 
-  gatewayProcess.on("error", (err: Error) => {
-    console.error(`[${ts()}] Gateway failed to start:`, err.message);
-    process.exit(1);
+    // Manual crawl trigger — requires auth
+    if (path === "/crawl" && _req.method === "POST") {
+      const auth = _req.headers.authorization?.replace("Bearer ", "");
+      if (!auth || !timingSafeEqual(auth, config.cronSecret)) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
+      runCrawlCycle(config).catch((err) => console.error("[Manual crawl]", err));
+      res.writeHead(202, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "crawl_started" }));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end("Not found");
   });
 
-  gatewayProcess.on("exit", (code: number | null) => {
-    console.log(`[${ts()}] Gateway exited with code ${code}`);
-    process.exit(code || 0);
+  server.listen(config.port, () => {
+    console.log(`[${ts()}] Health server on :${config.port}`);
+    console.log(`[${ts()}] Target: ${config.appUrl}`);
+    console.log(`[${ts()}] Auth mode: ${config.useHmacAuth ? "HMAC-SHA256" : "Bearer token"}`);
   });
 
-  // Graceful shutdown
-  for (const signal of ["SIGTERM", "SIGINT"] as const) {
-    process.on(signal, () => {
-      console.log(`[${ts()}] Received ${signal}, shutting down gateway...`);
-      gatewayProcess.kill(signal);
+  // ── Try starting OpenClaw gateway ──
+  tryStartGateway(config);
+}
+
+// ── Timing-safe comparison (prevents timing attacks) ──
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+// ── OpenClaw Gateway launcher ──
+function tryStartGateway(config: EngineConfig): void {
+  console.log(`[${ts()}] Attempting to start OpenClaw gateway...`);
+
+  try {
+    const { spawn } = require("child_process");
+
+    const gatewayProcess = spawn(
+      "npx",
+      ["openclaw", "gateway", "--port", String(config.port + 1), "--verbose", "--allow-unconfigured"],
+      {
+        stdio: "inherit",
+        env: {
+          ...process.env,
+          OPENCLAW_CONFIG: "./openclaw.json5",
+          OPENCLAW_HOME: process.cwd(),
+        },
+      }
+    );
+
+    gatewayProcess.on("error", (err: Error) => {
+      console.warn(`[${ts()}] OpenClaw gateway not available: ${err.message}`);
+      console.log(`[${ts()}] Falling back to standalone scheduler...`);
+      startFallbackScheduler(config);
     });
+
+    gatewayProcess.on("exit", (code: number | null) => {
+      if (code !== 0) {
+        console.warn(`[${ts()}] OpenClaw gateway exited with code ${code}`);
+        console.log(`[${ts()}] Falling back to standalone scheduler...`);
+        startFallbackScheduler(config);
+      }
+    });
+
+    // Graceful shutdown
+    for (const signal of ["SIGTERM", "SIGINT"] as const) {
+      process.on(signal, () => {
+        console.log(`[${ts()}] Received ${signal}, shutting down...`);
+        gatewayProcess.kill(signal);
+      });
+    }
+  } catch {
+    console.warn(`[${ts()}] OpenClaw not installed, using standalone scheduler`);
+    startFallbackScheduler(config);
   }
+}
+
+// ── Fallback scheduler (when OpenClaw gateway is not available) ──
+function startFallbackScheduler(_config: EngineConfig): void {
+  console.log(`[${ts()}] Starting fallback scheduler (no OpenClaw gateway)`);
+
+  const { startScheduler } = require("./scheduler");
+  startScheduler(_config);
 }
