@@ -125,7 +125,7 @@ export default async function RootLayout({
           <WebPushManager />
           <NavigationHub />
           <AnalyticsProvider>
-            <main id="main-content">{children}</main>
+            <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
           </AnalyticsProvider>
         </I18nProvider>
       </body>

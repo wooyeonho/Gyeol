@@ -407,13 +407,14 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     });
   }
 
-  // 6. autonomous logs — sanitized
+  // 6. autonomous logs — sanitized (up to 5 for richer autonomous→chat continuity)
   if (p.autonomousLogs.length > 0) {
     parts.push(L.recentLogs);
-    p.autonomousLogs.slice(0, 3).forEach((l) => {
+    p.autonomousLogs.slice(0, 5).forEach((l) => {
       const text = l.content || l.summary;
       if (text) parts.push(`- ${sanitizeForPrompt(text)}`);
     });
+    parts.push("(You may naturally reference these inner reflections when relevant to the conversation.)");
   }
 
   // 7. vitality + stages

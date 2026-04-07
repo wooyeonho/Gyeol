@@ -5,6 +5,7 @@ import { resolveIdleBehavior, type IdleBehavior } from "@/lib/creature/idle-beha
 import { deriveAffinityMood } from "@/lib/creature/affinity-tracker";
 import { createForceState, stepForceSimulation, type ForceState, type Vec2 } from "@/lib/creature/force-system";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { getCircadianTint } from "@/lib/circadian";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";
 
@@ -45,8 +46,16 @@ export type CreatureState = {
   forceState: ForceState;
 };
 
-const DROWSY_AFTER_S = 30;
-const SLEEP_AFTER_S = 120;
+// Circadian-aware idle thresholds: creatures get sleepy faster at night
+function getIdleThresholds(): { drowsy: number; sleep: number } {
+  const { phase } = getCircadianTint();
+  switch (phase) {
+    case "late-night": return { drowsy: 15, sleep: 60 };
+    case "night":      return { drowsy: 20, sleep: 80 };
+    case "dawn":       return { drowsy: 25, sleep: 100 };
+    default:           return { drowsy: 30, sleep: 120 };
+  }
+}
 
 function getBreathRate(vitality: number, activity: CreatureActivity): number {
   const base = 0.18 + vitality * 0.12; // 0.18–0.30 Hz
@@ -211,9 +220,10 @@ export function useCreatureState(
       const idleMs = Date.now() - lastInt;
       const idleSec = idleMs / 1000;
 
+      const thresholds = getIdleThresholds();
       let activity: CreatureActivity = "awake";
-      if (idleSec > SLEEP_AFTER_S) activity = "sleeping";
-      else if (idleSec > DROWSY_AFTER_S) activity = "drowsy";
+      if (idleSec > thresholds.sleep) activity = "sleeping";
+      else if (idleSec > thresholds.drowsy) activity = "drowsy";
 
       const rate = getBreathRate(vitality, activity);
       breathAccumRef.current += dt * rate;

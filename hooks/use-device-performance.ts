@@ -46,7 +46,13 @@ function computeProfile(): DevicePerformanceResult {
   const slowNetwork = /2g|3g/i.test(connection?.effectiveType ?? "");
   const lowConcurrency = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
   const lowMemory = (nav.deviceMemory ?? 8) <= 4;
-  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory || saveData || slowNetwork;
+  // WebGL availability check — fallback to CSS creature on devices without GPU support
+  let noWebGL = false;
+  try {
+    const canvas = document.createElement("canvas");
+    noWebGL = !canvas.getContext("webgl2") && !canvas.getContext("webgl");
+  } catch { noWebGL = true; }
+  const reducedVisualMode = prefersReducedMotion || lowConcurrency || lowMemory || saveData || slowNetwork || noWebGL;
   const isLowDevice = evaluateLowDeviceProfile({
     userAgent: navigator.userAgent,
     hardwareConcurrency: navigator.hardwareConcurrency || 4,

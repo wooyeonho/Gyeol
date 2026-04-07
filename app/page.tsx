@@ -50,6 +50,8 @@ import Celebration from "@/components/celebration";
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
+import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
+import { MysteryBoxOverlay } from "@/components/mystery-box-overlay";
 
 export default function Home() {
   const { locale, t } = useTranslations();
@@ -64,6 +66,8 @@ export default function Home() {
   const greetingInjectedRef = useRef(false);
   const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
+  const [activeMysteryBox, setActiveMysteryBox] = useState<MysteryBoxType | null>(null);
+  const sessionMsgCountRef = useRef(0);
 
   useEffect(() => {
     fetchAgentState();
@@ -266,11 +270,22 @@ export default function Home() {
       for (let i = prev; i < curr; i++) {
         if (messages[i] && messages[i].role === "user") {
           creature.boostConversationEnergy(0.25);
+          sessionMsgCountRef.current += 1;
+          // Mystery box drop check
+          if (shouldDropMysteryBox({
+            messageCount: agentState?.total_messages ?? 0,
+            streakDays: agentState?.streak_days ?? 0,
+            sessionMessageCount: sessionMsgCountRef.current,
+          })) {
+            const box = generateMysteryBox(undefined, agentState?.streak_days ?? 0);
+            addPendingBox(box);
+            setActiveMysteryBox(box);
+          }
           break;
         }
       }
     }
-  }, [messages, creature, historyLoaded]);
+  }, [messages, creature, historyLoaded, agentState?.total_messages, agentState?.streak_days]);
 
   // Creature reward reaction — visual pulse when rewards fire
   // Use object reference equality to deduplicate: creature dep changes every render,
@@ -721,6 +736,15 @@ export default function Home() {
         subtitle={agentState?.celebration_pending?.subtitle}
         onEnd={handleCelebrationEnd}
       />
+      {activeMysteryBox && (
+        <MysteryBoxOverlay
+          box={activeMysteryBox}
+          onClose={() => {
+            popPendingBox();
+            setActiveMysteryBox(null);
+          }}
+        />
+      )}
       <BottomNav />
     </div>
   );

@@ -42,6 +42,12 @@ export async function GET() {
     const unlockedIds = (unlocked ?? []).map((u) => u.achievement_id);
     const mutationsCount = state?.genome?.mutations?.length ?? 0;
 
+    // Time-based hidden achievement detection (night_owl, early_bird)
+    const currentHour = new Date().getHours();
+    const timeActions: string[] = [];
+    if (currentHour >= 2 && currentHour < 4) timeActions.push("chat_at_3am");
+    if (currentHour >= 4 && currentHour < 6) timeActions.push("chat_at_5am");
+
     // Check for newly unlocked
     const newlyUnlocked = checkNewAchievements(
       {
@@ -49,6 +55,7 @@ export async function GET() {
         streak_days: state?.streak_days ?? 0,
         gen_level: state?.gen_level ?? 1,
         mutations_count: mutationsCount,
+        actions: timeActions,
       },
       unlockedIds,
     );

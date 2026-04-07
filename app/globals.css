@@ -421,6 +421,24 @@ select {
   outline-offset: 2px;
 }
 
+/* ── RTL layout foundation (Arabic, Hebrew, etc.) ── */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row { flex-direction: row-reverse; }
+[dir="rtl"] .ml-auto { margin-left: unset; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: unset; margin-left: auto; }
+[dir="rtl"] .ml-3 { margin-left: unset; margin-right: 0.75rem; }
+[dir="rtl"] .mr-3 { margin-right: unset; margin-left: 0.75rem; }
+[dir="rtl"] .pl-3 { padding-left: unset; padding-right: 0.75rem; }
+[dir="rtl"] .pr-3 { padding-right: unset; padding-left: 0.75rem; }
+[dir="rtl"] .left-4 { left: unset; right: 1rem; }
+[dir="rtl"] .right-4 { right: unset; left: 1rem; }
+[dir="rtl"] .text-left { text-align: right; }
+[dir="rtl"] .text-right { text-align: left; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

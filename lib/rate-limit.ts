@@ -2,7 +2,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_PER_WINDOW = 30;
-const FAIL_MODE = process.env.RATE_LIMIT_FAIL_MODE === "open" ? "open" : "closed";
+// Always fail-closed: deny requests on error to prevent bypass.
+// Previously allowed env override to "open" — removed for security hardening.
+const FAIL_MODE = "closed" as const;
 
 /**
  * Plan-based rate limit tiers.
@@ -105,11 +107,7 @@ export async function checkRateLimit(key: string, tier?: string | null): Promise
 
     return true;
   } catch (e) {
-    if (FAIL_MODE === "closed") {
-      console.error("[RateLimit] fallback deny due to error", e);
-      return false;
-    }
-    console.error("[RateLimit] fallback allow due to error", e);
-    return true;
+    console.error("[RateLimit] deny due to error (fail-closed)", e);
+    return false;
   }
 }
