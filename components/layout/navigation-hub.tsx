@@ -32,13 +32,17 @@ export function NavigationHub() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="theme-panel fixed top-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center rounded-full shadow-lg theme-text-subtle transition-colors hover:brightness-105"
-        aria-label={t("common.openMenu")}
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      <nav aria-label={t("common.openMenu")} role="navigation">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="theme-panel fixed top-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center rounded-full shadow-lg theme-text-subtle transition-colors hover:brightness-105"
+          aria-label={t("common.openMenu")}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </nav>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex flex-col items-center pt-[10vh] px-4">

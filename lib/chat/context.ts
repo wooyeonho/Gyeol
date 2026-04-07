@@ -128,7 +128,7 @@ export async function buildChatPromptContext(params: {
       .select("summary")
       .eq("agent_id", params.agentId)
       .order("created_at", { ascending: false })
-      .limit(3),
+      .limit(5),
   ]);
 
   const agentState = (agentStateRow ?? null) as AgentStateRow | null;
