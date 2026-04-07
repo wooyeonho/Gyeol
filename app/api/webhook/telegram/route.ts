@@ -30,6 +30,15 @@ export async function POST(req: NextRequest) {
     if (!message?.chat?.id || !message.from?.id) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
+
+    // Replay protection: reject Telegram messages older than 5 minutes
+    const messageDate = message.date;
+    if (typeof messageDate === "number") {
+      const ageMs = Date.now() - messageDate * 1000;
+      if (ageMs > 5 * 60 * 1000) {
+        return NextResponse.json({ ok: true }); // Silently discard stale messages
+      }
+    }
     const chatId = message.chat.id;
     const text = (message.text ?? "").trim();
 

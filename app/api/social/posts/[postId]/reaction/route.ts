@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
 
@@ -16,6 +17,11 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(`social-react:${user.id}`);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   try {
     const { postId } = await params;

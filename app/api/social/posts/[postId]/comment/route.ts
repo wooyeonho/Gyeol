@@ -5,6 +5,7 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/moderation";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
@@ -22,6 +23,12 @@ export async function POST(
     const content = typeof body?.content === "string" ? body.content : "";
     if (!postId || !content.trim()) {
       return NextResponse.json({ error: "Comment content required" }, { status: 400 });
+    }
+
+    // Rate limit: 10 comments per minute per user to prevent spam
+    const allowed = await checkRateLimit(`comment:${user.id}`);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many comments. Please slow down." }, { status: 429 });
     }
 
     const service = createServiceClient();
