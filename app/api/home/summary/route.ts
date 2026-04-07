@@ -32,8 +32,9 @@ function dayKey(value: string) {
   return value.slice(0, 10);
 }
 
-function countStreakDays(activityDates: string[]) {
+function countStreakDays(activityDates: string[], freezeDates: string[] = []) {
   if (activityDates.length === 0) return { streakDays: 0, todayActive: false };
+  const freezeSet = new Set(freezeDates.map(dayKey));
   const uniqueDays = [...new Set(activityDates.map(dayKey))].sort((a, b) => (a > b ? -1 : 1));
   const today = new Date();
   const todayKey = today.toISOString().slice(0, 10);
@@ -42,21 +43,28 @@ function countStreakDays(activityDates: string[]) {
   const todayDate = new Date(`${todayKey}T00:00:00.000Z`);
 
   const diffDays = Math.floor((todayDate.getTime() - latestDate.getTime()) / 86400000);
+  // Allow 1-day gap if a freeze covers the missing day
   if (diffDays > 1) {
-    return { streakDays: 0, todayActive: false };
+    // Check if all gap days are covered by freezes
+    let gapCovered = true;
+    for (let d = 1; d < diffDays; d++) {
+      const gapDate = new Date(latestDate.getTime() + d * 86400000).toISOString().slice(0, 10);
+      if (!freezeSet.has(gapDate)) { gapCovered = false; break; }
+    }
+    if (!gapCovered) return { streakDays: 0, todayActive: false };
   }
 
   let streakDays = 0;
   let cursor = latestDate;
   const uniqueSet = new Set(uniqueDays);
-  while (uniqueSet.has(cursor.toISOString().slice(0, 10))) {
+  while (uniqueSet.has(cursor.toISOString().slice(0, 10)) || freezeSet.has(cursor.toISOString().slice(0, 10))) {
     streakDays += 1;
     cursor = new Date(cursor.getTime() - 86400000);
   }
 
   return {
     streakDays,
-    todayActive: uniqueSet.has(todayKey),
+    todayActive: uniqueSet.has(todayKey) || freezeSet.has(todayKey),
   };
 }
 
@@ -233,7 +241,10 @@ export async function GET(request?: Request) {
       ...recentLogRows.map((item) => item.created_at).filter(Boolean),
       ...recentArtifactRows.map((item) => item.created_at).filter(Boolean),
     ] as string[];
-    const { streakDays, todayActive } = countStreakDays(allActivityDates);
+    // Parse streak freeze dates from query params (client-side localStorage bridge)
+    const freezeParam = request ? new URL(request.url).searchParams.get("freezeDates") : null;
+    const freezeDates = freezeParam ? freezeParam.split(",").filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)) : [];
+    const { streakDays, todayActive } = countStreakDays(allActivityDates, freezeDates);
     const sortedTasks = sortResearchTasks(
       ((pendingTasks ?? []) as Array<{
         attempt_count?: number | null;

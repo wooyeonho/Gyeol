@@ -608,6 +608,7 @@
     "memoryCount": "memories",
     "daysAlive": "days",
     "adopt": "Adopt",
+    "comingSoon": "La adopción estará disponible cuando se habilite el soporte multi-agente.",
     "adoptError": "Failed to adopt.",
     "eyebrow": "Adoption board",
     "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
@@ -847,7 +848,8 @@
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
     "countdownH": "h",
-    "countdownM": "m"
+    "countdownM": "m",
+    "weekdaysSingle": ["D", "L", "M", "X", "J", "V", "S"]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1116,7 +1118,9 @@
   },
   "mysteryBox": {
     "opening": "Abriendo...",
-    "opened": "¡Abierto!"
+    "opened": "¡Abierto!",
+    "title": "Caja Misteriosa",
+    "claim": "Reclamar"
   },
   "death": {
     "echo": "ECHO",

@@ -17,6 +17,7 @@ import { ActiveCounter } from "@/components/active-counter";
 import { ComebackBanner } from "@/components/comeback-banner";
 import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
+import { getStreakFreezeDates } from "@/lib/economy/shop";
 
 export type HomeSummaryItem = {
   id: string;
@@ -124,7 +125,9 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
 
     async function loadSummary() {
       try {
-        const res = await fetch("/api/home/summary", { cache: "no-store" });
+        const freezeDates = getStreakFreezeDates();
+        const freezeParam = freezeDates.length > 0 ? `?freezeDates=${freezeDates.join(",")}` : "";
+        const res = await fetch(`/api/home/summary${freezeParam}`, { cache: "no-store" });
         if (!res.ok) return;
         const json = await res.json().catch(() => ({ recap: null }));
         if (!cancelled) {

@@ -74,6 +74,14 @@ export default function AdoptPage() {
         />
       </motion.div>
 
+      <motion.div
+        variants={itemVariants}
+        className="rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90"
+        role="status"
+      >
+        🚧 {t("adoptPage.comingSoon")}
+      </motion.div>
+
       {error && (
         <motion.div variants={itemVariants}>
           <ErrorBanner message={error} onRetry={load} />
@@ -106,8 +114,9 @@ export default function AdoptPage() {
             >
               <button
                 onClick={() => void adopt(item.agent_id)}
-                disabled={submittingId === item.agent_id}
-                className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20 active:scale-[0.97] disabled:opacity-50"
+                disabled
+                title={t("adoptPage.comingSoon")}
+                className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/40 cursor-not-allowed disabled:opacity-50"
               >
                 {t("adoptPage.adopt")}
               </button>

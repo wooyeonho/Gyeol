@@ -5,6 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/components/i18n-provider";
 
+const WEEKDAY_LABELS: Record<string, string[]> = {
+  ko: ["일", "월", "화", "수", "목", "금", "토"],
+  en: ["S", "M", "T", "W", "T", "F", "S"],
+  ja: ["日", "月", "火", "水", "木", "金", "土"],
+  zh: ["日", "一", "二", "三", "四", "五", "六"],
+  es: ["D", "L", "M", "X", "J", "V", "S"],
+};
+
 const STREAK_MILESTONES = [3, 5, 7, 10, 14, 21, 30, 50, 100] as const;
 
 type StreakDisplayProps = {
@@ -166,9 +174,8 @@ export function StreakDisplay({
           const d = new Date();
           d.setDate(d.getDate() - (6 - i));
           const dayIndex = d.getDay();
-          const koLabels = ["일", "월", "화", "수", "목", "금", "토"];
-          const enLabels = ["S", "M", "T", "W", "T", "F", "S"];
-          const dayLabel = (locale === "ko" ? koLabels : enLabels)[dayIndex];
+          const labels = WEEKDAY_LABELS[locale] ?? WEEKDAY_LABELS.en;
+          const dayLabel = labels[dayIndex];
           const isToday = i === weeklyActivity.length - 1;
           return (
             <motion.div

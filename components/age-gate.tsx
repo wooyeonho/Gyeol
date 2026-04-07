@@ -43,7 +43,7 @@ export function AgeGate({ onComplete }: AgeGateProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 px-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 px-4" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
       <motion.section
         className="w-full max-w-xl rounded-[2rem] border border-white/15 bg-black/75 p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-xl sm:p-8"
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -53,7 +53,7 @@ export function AgeGate({ onComplete }: AgeGateProps) {
         <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-100/85">
           {t("ageGate.eyebrow")}
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 id="age-gate-title" className="mt-3 text-3xl font-semibold tracking-tight text-white">
           {t("ageGate.title")}
         </h1>
         <p className="mt-4 text-base leading-7 text-white/82">

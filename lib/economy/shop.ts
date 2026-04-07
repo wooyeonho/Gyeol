@@ -139,6 +139,11 @@ export function purchaseShopItem(itemId: ShopItemId): PurchaseResult {
 
   writeRewardInventory(updated);
 
+  // Auto-activate streak freeze on purchase
+  if (itemId === "streak_freeze_use") {
+    activateStreakFreeze();
+  }
+
   // Persist purchased items
   const purchasedKey = "gyeol_shop_purchased_v1";
   try {
@@ -157,6 +162,41 @@ export function purchaseShopItem(itemId: ShopItemId): PurchaseResult {
 export function getPurchasedItems(): string[] {
   try {
     return JSON.parse(localStorage.getItem("gyeol_shop_purchased_v1") ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
+// ── Streak Freeze Activation ──
+
+const STREAK_FREEZE_KEY = "gyeol_streak_freeze_active_v1";
+
+/**
+ * Activate a streak freeze for the current day.
+ * Called after purchasing "streak_freeze_use" from the shop.
+ * Stores today's date so the server can check whether a freeze covers a gap.
+ */
+export function activateStreakFreeze(): void {
+  if (typeof window === "undefined") return;
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const existing = JSON.parse(localStorage.getItem(STREAK_FREEZE_KEY) ?? "[]") as string[];
+    if (!existing.includes(today)) {
+      existing.push(today);
+      // Keep only the last 7 days of freezes
+      const recent = existing.slice(-7);
+      localStorage.setItem(STREAK_FREEZE_KEY, JSON.stringify(recent));
+    }
+  } catch { /* non-fatal */ }
+}
+
+/**
+ * Get all active streak freeze dates (YYYY-MM-DD).
+ */
+export function getStreakFreezeDates(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(STREAK_FREEZE_KEY) ?? "[]") as string[];
   } catch {
     return [];
   }

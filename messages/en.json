@@ -609,6 +609,7 @@
     "daysAlive": "days",
     "adopt": "Adopt",
     "adoptError": "Failed to adopt.",
+    "comingSoon": "Adoption will be available after multi-agent support is enabled.",
     "eyebrow": "Adoption board",
     "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
     "vitalityLabel": "Vitality",
@@ -853,7 +854,8 @@
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
     "countdownH": "h",
-    "countdownM": "m"
+    "countdownM": "m",
+    "weekdaysSingle": ["S", "M", "T", "W", "T", "F", "S"]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1122,7 +1124,9 @@
   },
   "mysteryBox": {
     "opening": "Opening...",
-    "opened": "Opened!"
+    "opened": "Opened!",
+    "title": "Mystery Box",
+    "claim": "Claim"
   },
   "death": {
     "echo": "ECHO",

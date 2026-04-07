@@ -45,7 +45,9 @@ export function LocaleSwitcher({
                 setLocale(nextLocale);
                 void onLocaleChange?.(nextLocale);
               }}
-              className="rounded-full px-3 py-1.5 text-sm transition-all duration-200"
+              aria-current={active ? "true" : undefined}
+              aria-label={LOCALE_DISPLAY_NAMES[item]}
+              className="rounded-full px-3 py-1.5 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               style={
                 active
                   ? {
