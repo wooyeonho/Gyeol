@@ -71,10 +71,15 @@ function checkCsrfOrigin(request: NextRequest): boolean {
 
 // ══════════════════════════════════════════
 // IP-based Rate Limiting (in-memory, per-instance)
+// NOTE: This is a first-line burst-protection layer only.
+// In multi-instance deployments (Vercel serverless), each instance has its own
+// bucket so limits are per-instance, not global. Critical endpoints (chat,
+// social, etc.) use DB-backed atomic rate limiting via lib/rate-limit.ts
+// for true distributed enforcement.
 // ══════════════════════════════════════════
 const IP_WINDOW_MS = 60_000; // 1 minute
-const IP_MAX_REQUESTS = 120; // per minute per IP for API routes
-const IP_MAX_AUTH_REQUESTS = 10; // stricter for auth routes
+const IP_MAX_REQUESTS = 100; // per minute per IP for API routes
+const IP_MAX_AUTH_REQUESTS = 8; // stricter for auth routes
 
 type RateBucket = { count: number; resetAt: number };
 const ipBuckets = new Map<string, RateBucket>();

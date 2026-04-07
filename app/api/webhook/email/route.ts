@@ -16,6 +16,15 @@ export async function GET(req: NextRequest) {
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Replay protection: reject requests older than 5 minutes
+  const timestampHeader = req.headers.get("x-webhook-timestamp");
+  if (timestampHeader) {
+    const ts = Number(timestampHeader);
+    if (Number.isNaN(ts) || Math.abs(Date.now() - ts) > 5 * 60 * 1000) {
+      return NextResponse.json({ error: "Request expired" }, { status: 403 });
+    }
+  }
   try {
     const service = createServiceClient();
     const { data: agents } = await service.from("agents").select("id, user_id").limit(1000);

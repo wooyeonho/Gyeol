@@ -6,6 +6,7 @@ import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/modera
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 5 posts per minute per user
+  const allowed = await checkRateLimit(`social-post:${user.id}`);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many posts. Please slow down." }, { status: 429 });
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
