@@ -32,7 +32,43 @@ import {
   executeProactivePush,
 } from "../../lib/cron-core";
 
+import crypto from "crypto";
 import { runCrawlCycle } from "./crawler";
+
+// ── Lifeline (HTTP watchdog) ─────────────────────────────
+function buildAuthHeaders(cronSecret: string, useHmac: boolean): Record<string, string> {
+  if (!useHmac) {
+    return { Authorization: `Bearer ${cronSecret}` };
+  }
+  const timestamp = Date.now().toString();
+  const signature = crypto.createHmac("sha256", cronSecret).update(timestamp).digest("hex");
+  return { "X-Cron-Timestamp": timestamp, "X-Cron-Signature": signature };
+}
+
+async function executeLifeline(): Promise<unknown> {
+  const appUrl = (process.env.GYEOL_APP_URL || "").replace(/\/$/, "");
+  const cronSecret = process.env.CRON_SECRET || "";
+  const useHmac = process.env.USE_HMAC_AUTH === "true";
+  if (!appUrl || !cronSecret) return { ok: false, error: "Missing GYEOL_APP_URL or CRON_SECRET" };
+
+  const url = `${appUrl}/api/cron/lifeline`;
+  const headers = buildAuthHeaders(cronSecret, useHmac);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      signal: controller.signal,
+    });
+    const body = await res.text();
+    return { ok: res.ok, status: res.status, body: body.slice(0, 200) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ── Job registry (shared with plugin.ts) ─────────────────
 const JOBS: Record<string, () => Promise<unknown>> = {
@@ -49,6 +85,7 @@ const JOBS: Record<string, () => Promise<unknown>> = {
   war: executeWar,
   recap: executeRecap,
   proactivepush: executeProactivePush,
+  lifeline: executeLifeline,
 };
 
 function ts(): string {

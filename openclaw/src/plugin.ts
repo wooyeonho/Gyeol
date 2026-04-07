@@ -12,6 +12,8 @@
  * provides the runtime (gateway, auth, heartbeat, retry, persistence).
  */
 
+import crypto from "crypto";
+
 import {
   executeHeartbeat,
   executeDream,
@@ -134,6 +136,64 @@ const GYEOL_JOBS: GyeolJob[] = [
   },
 ];
 
+// ── Lifeline Watchdog (HTTP) ─────────────────────────────
+// Lifeline stays as HTTP — it's a watchdog that must test the HTTP path
+// to verify the Gyeol app (Vercel) is responding correctly.
+const LIFELINE_SCHEDULE = "*/30 * * * *";
+const LIFELINE_TIMEOUT_MS = 120_000;
+
+function buildAuthHeaders(cronSecret: string, useHmac: boolean): Record<string, string> {
+  if (!useHmac) {
+    return { Authorization: `Bearer ${cronSecret}` };
+  }
+  const timestamp = Date.now().toString();
+  const signature = crypto
+    .createHmac("sha256", cronSecret)
+    .update(timestamp)
+    .digest("hex");
+  return {
+    "X-Cron-Timestamp": timestamp,
+    "X-Cron-Signature": signature,
+  };
+}
+
+async function executeLifeline(logger: { info: (msg: string) => void; error: (msg: string) => void }): Promise<{ ok: boolean; status?: number; body?: string }> {
+  const appUrl = (process.env.GYEOL_APP_URL || "").replace(/\/$/, "");
+  const cronSecret = process.env.CRON_SECRET || "";
+  const useHmac = process.env.USE_HMAC_AUTH === "true";
+
+  if (!appUrl || !cronSecret) {
+    logger.error("[Lifeline] Missing GYEOL_APP_URL or CRON_SECRET");
+    return { ok: false };
+  }
+
+  const url = `${appUrl}/api/cron/lifeline`;
+  const headers = buildAuthHeaders(cronSecret, useHmac);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LIFELINE_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      signal: controller.signal,
+    });
+    const body = await res.text();
+    if (res.ok) {
+      logger.info(`[${new Date().toISOString()}] OK lifeline (${res.status}): ${body.slice(0, 200)}`);
+    } else {
+      logger.error(`[${new Date().toISOString()}] FAIL lifeline (${res.status}): ${body.slice(0, 300)}`);
+    }
+    return { ok: res.ok, status: res.status, body: body.slice(0, 200) };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`[${new Date().toISOString()}] FAIL lifeline: ${msg}`);
+    return { ok: false };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ── Timestamp helper ────────────────────────────────────
 function ts(): string {
   return new Date().toISOString();
@@ -183,7 +243,22 @@ export default function gyeolCronPlugin(api: any): void {
     });
   }
 
-  // 2. Register a combined "run all" tool
+  // 2. Register lifeline watchdog tool (HTTP — tests the Vercel app path)
+  api.registerTool({
+    name: "gyeol_lifeline",
+    label: "Gyeol Lifeline Watchdog",
+    description: "Test the Gyeol app HTTP endpoint to verify it is alive (watchdog)",
+    parameters: { type: "object" as const, properties: {} },
+    execute: async (_toolCallId: string, _params: unknown) => {
+      const result = await executeLifeline(logger);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      };
+    },
+  });
+
+  // 3. Register a combined "run all" tool
   api.registerTool({
     name: "gyeol_run_all",
     label: "Gyeol Run All Jobs",
@@ -242,6 +317,13 @@ export default function gyeolCronPlugin(api: any): void {
         });
         logger.info(`  ${job.name.padEnd(24)} ${job.schedule}`);
       }
+
+      // Lifeline watchdog (HTTP — must test the HTTP path, not direct execution)
+      new Cron(LIFELINE_SCHEDULE, async () => {
+        logger.info(`[${ts()}] -> Running lifeline (HTTP watchdog)`);
+        await executeLifeline(logger);
+      });
+      logger.info(`  ${"lifeline".padEnd(24)} ${LIFELINE_SCHEDULE} (HTTP watchdog)`);
 
       // Startup catch-up for critical jobs (30s delay)
       const STARTUP_DELAY_MS = 30_000;
