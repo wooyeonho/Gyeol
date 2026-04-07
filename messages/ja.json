@@ -608,6 +608,7 @@
     "memoryCount": "memories",
     "daysAlive": "days",
     "adopt": "Adopt",
+    "comingSoon": "マルチエージェント対応後にアダプション機能が利用可能になります。",
     "adoptError": "Failed to adopt.",
     "eyebrow": "Adoption board",
     "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
@@ -846,8 +847,9 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
-    "countdownH": "h",
-    "countdownM": "m"
+    "countdownH": "時間",
+    "countdownM": "分",
+    "weekdaysSingle": ["日", "月", "火", "水", "木", "金", "土"]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1116,7 +1118,9 @@
   },
   "mysteryBox": {
     "opening": "開いています...",
-    "opened": "開きました！"
+    "opened": "開きました！",
+    "title": "ミステリーボックス",
+    "claim": "受け取る"
   },
   "death": {
     "echo": "ECHO",

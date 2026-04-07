@@ -609,6 +609,7 @@
     "daysAlive": "일",
     "adopt": "입양하기",
     "adoptError": "입양에 실패했습니다.",
+    "comingSoon": "입양 기능은 멀티 에이전트 지원 후 활성화됩니다.",
     "eyebrow": "입양 보드",
     "subtitle": "이 보드의 존재들은 각자만의 모습과 삶의 흔적을 가지고 있어요. 한 가지 틀에 갇혀 있지 않아요.",
     "vitalityLabel": "활력",
@@ -853,7 +854,8 @@
     "warningKeep": "오늘 대화하지 않으면 {count}일 연속 기록이 끊어집니다!",
     "dangerTimer": "스트릭 위험! 자정까지 {countdown} 남았습니다.",
     "countdownH": "시간",
-    "countdownM": "분"
+    "countdownM": "분",
+    "weekdaysSingle": ["일", "월", "화", "수", "목", "금", "토"]
   },
   "manifestation": {
     "originForm": "형태의 기원",
@@ -1122,7 +1124,9 @@
   },
   "mysteryBox": {
     "opening": "열리고 있어...",
-    "opened": "열렸어!"
+    "opened": "열렸어!",
+    "title": "미스터리 박스",
+    "claim": "받기"
   },
   "death": {
     "echo": "ECHO",

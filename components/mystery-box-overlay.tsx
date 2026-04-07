@@ -37,6 +37,9 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm px-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("mysteryBox.title")}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -135,7 +138,7 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
                 className="w-full rounded-full py-3 text-sm font-bold text-black transition-colors"
                 style={{ background: style.color }}
               >
-                받기
+                {t("mysteryBox.claim")}
               </motion.button>
             </motion.div>
           )}

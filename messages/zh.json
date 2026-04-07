@@ -608,6 +608,7 @@
     "memoryCount": "memories",
     "daysAlive": "days",
     "adopt": "Adopt",
+    "comingSoon": "多代理支持启用后即可使用领养功能。",
     "adoptError": "Failed to adopt.",
     "eyebrow": "Adoption board",
     "subtitle": "This board is for beings whose shape and life history are already distinct. Nothing here is locked into one species, one gender, or one emotional register.",
@@ -846,8 +847,9 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
-    "countdownH": "h",
-    "countdownM": "m"
+    "countdownH": "时",
+    "countdownM": "分",
+    "weekdaysSingle": ["日", "一", "二", "三", "四", "五", "六"]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1116,7 +1118,9 @@
   },
   "mysteryBox": {
     "opening": "正在打开...",
-    "opened": "打开了！"
+    "opened": "打开了！",
+    "title": "神秘盒子",
+    "claim": "领取"
   },
   "death": {
     "echo": "ECHO",
