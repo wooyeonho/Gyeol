@@ -1,0 +1,96 @@
+{
+  // ──────────────────────────────────────────────
+  // GYEOL × OpenClaw Gateway Configuration
+  // ──────────────────────────────────────────────
+  // OpenClaw open-source gateway powers Gyeol's autonomous engine.
+  // Docs: https://docs.openclaw.ai/gateway/configuration
+
+  gateway: {
+    mode: "local",
+    host: "0.0.0.0",          // Accept connections from health-check probes
+    port: "${PORT:8000}",
+    auth: {
+      sharedSecret: "${CRON_SECRET}",
+    },
+  },
+
+  // ── AI Model Providers ───────────────────────
+  agents: {
+    defaults: {
+      model: {
+        primary: "groq/llama-3.3-70b-versatile",
+        fallbacks: [
+          "groq/llama-3.1-8b-instant",
+        ],
+      },
+      models: [
+        "groq/llama-3.3-70b-versatile",
+        "groq/llama-3.1-8b-instant",
+      ],
+
+      // ── Heartbeat ────────────────────────────
+      heartbeat: {
+        every: "2h",
+        target: "none",
+        lightContext: true,
+        isolatedSession: true,
+        activeHours: {
+          start: "00:00",
+          end: "24:00",        // 24/7 — Gyeol agents never sleep
+        },
+        prompt: "Read HEARTBEAT.md. Execute each checklist item by calling the registered Gyeol cron tools. If nothing needs attention, reply HEARTBEAT_OK.",
+      },
+    },
+  },
+
+  models: {
+    providers: {
+      groq: {
+        api: "openai-completions",
+        baseURL: "https://api.groq.com/openai/v1",
+        apiKey: "${GROQ_API_KEY}",
+        models: [
+          "llama-3.3-70b-versatile",
+          "llama-3.1-8b-instant",
+        ],
+      },
+    },
+  },
+
+  // ── Cron Scheduler ───────────────────────────
+  // OpenClaw built-in cron replaces the custom node-cron scheduler.
+  // Each job runs as an isolated session calling Gyeol's API endpoints.
+  cron: {
+    enabled: true,
+    maxConcurrentRuns: 2,
+    retry: {
+      maxAttempts: 3,
+      backoffMs: [30000, 60000, 300000],
+      retryOn: ["rate_limit", "overloaded", "network", "server_error"],
+    },
+    sessionRetention: "24h",
+  },
+
+  // ── Hooks (for external triggers) ────────────
+  hooks: {
+    enabled: true,
+    path: "/hooks",
+    token: "${CRON_SECRET}",
+  },
+
+  // ── Workspace ────────────────────────────────
+  workspace: {
+    bootstrapFiles: [
+      "HEARTBEAT.md",
+      "AGENT.md",
+    ],
+  },
+
+  // ── Plugins ──────────────────────────────────
+  plugins: {
+    "gyeol-cron": {
+      enabled: true,
+      path: "./dist/openclaw/src/plugin.js",
+    },
+  },
+}

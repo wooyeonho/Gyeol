@@ -1,56 +1,102 @@
-import http from "http";
-import { loadConfig } from "./config";
-import { startScheduler, runOnce } from "./scheduler";
+/**
+ * GYEOL × OpenClaw Gateway Entry Point
+ *
+ * Starts the OpenClaw gateway with Gyeol's cron plugin.
+ * The gateway provides:
+ *   - Built-in cron scheduler (replaces custom node-cron)
+ *   - Agent heartbeat system
+ *   - Health check endpoints
+ *   - Retry/backoff for failed jobs
+ *   - Persistent job storage across restarts
+ *
+ * Modes:
+ *   node dist/openclaw/src/index.js            → Start gateway (default)
+ *   node dist/openclaw/src/index.js run-once   → Run all jobs once and exit
+ *   node dist/openclaw/src/index.js run-once <job>  → Run specific job
+ *   node dist/openclaw/src/index.js crawl      → Run crawl cycle only
+ */
+
+import {
+  executeHeartbeat,
+  executeDream,
+  executeSocial,
+  executeHealth,
+  executeLearner,
+  executeCrawl,
+  executeRetention,
+  executeWorld,
+  executeTimeCapsule,
+  executeRecap,
+  executeRedemption,
+  executeWar,
+  executeProactivePush,
+} from "../../lib/cron-core";
+
 import { runCrawlCycle } from "./crawler";
 
-const config = loadConfig();
+// ── Job registry (shared with plugin.ts) ─────────────────
+const JOBS: Record<string, () => Promise<unknown>> = {
+  health: executeHealth,
+  heartbeat: executeHeartbeat,
+  timecapsule: executeTimeCapsule,
+  social: executeSocial,
+  learner: () => executeLearner(),
+  crawl: executeCrawl,
+  dream: executeDream,
+  world: executeWorld,
+  retention: executeRetention,
+  redemption: executeRedemption,
+  war: executeWar,
+  recap: executeRecap,
+  proactivepush: executeProactivePush,
+};
 
-const server = http.createServer((_req, res) => {
-  const path = _req.url || "/";
+function ts(): string {
+  return new Date().toISOString();
+}
 
-  if (path === "/health" || path === "/") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        ok: true,
-        service: "openclaw-engine",
-        version: "1.0.0",
-        uptime: process.uptime(),
-        target: config.appUrl,
-        timestamp: new Date().toISOString(),
-      })
-    );
+async function runOnce(jobName?: string): Promise<void> {
+  const targets = jobName ? { [jobName]: JOBS[jobName] } : JOBS;
+
+  if (jobName && !JOBS[jobName]) {
+    console.error(`Unknown job: ${jobName}. Available: ${Object.keys(JOBS).join(", ")}`);
     return;
   }
 
-  if (path === "/crawl" && _req.method === "POST") {
-    const auth = _req.headers.authorization?.replace("Bearer ", "");
-    if (auth !== config.cronSecret) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
+  for (const [name, execute] of Object.entries(targets)) {
+    console.log(`[${ts()}] Running ${name} once...`);
+    try {
+      const result = await execute();
+      console.log(`[${ts()}] OK ${name}: ${JSON.stringify(result).slice(0, 200)}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[${ts()}] FAIL ${name}: ${msg}`);
     }
-    runCrawlCycle(config).catch((err) => console.error("[Manual crawl]", err));
-    res.writeHead(202, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "crawl_started" }));
-    return;
   }
+}
 
-  res.writeHead(404);
-  res.end("Not found");
-});
-
+// ── CLI Entrypoint ────────────────────────────────────────
 const mode = process.argv[2];
 
 if (mode === "run-once") {
   const jobName = process.argv[3];
-  runOnce(config, jobName)
+  runOnce(jobName)
     .then(() => process.exit(0))
     .catch((err) => {
       console.error(err);
       process.exit(1);
     });
 } else if (mode === "crawl") {
+  // Legacy crawl mode
+  const config = {
+    appUrl: (process.env.GYEOL_APP_URL || "").replace(/\/$/, ""),
+    cronSecret: process.env.CRON_SECRET || "",
+    port: parseInt(process.env.PORT || "8000", 10),
+    crawlUrls: (process.env.CRAWL_URLS || "").split(",").map((u: string) => u.trim()).filter(Boolean),
+    crawlMaxPages: parseInt(process.env.CRAWL_MAX_PAGES || "10", 10),
+    crawlDepth: parseInt(process.env.CRAWL_DEPTH || "1", 10),
+    useHmacAuth: process.env.USE_HMAC_AUTH === "true",
+  };
   runCrawlCycle(config)
     .then(() => process.exit(0))
     .catch((err) => {
@@ -58,8 +104,42 @@ if (mode === "run-once") {
       process.exit(1);
     });
 } else {
-  server.listen(config.port, () => {
-    console.log(`[OpenClaw] Health server on :${config.port}`);
-    startScheduler(config);
+  // Default: start OpenClaw gateway
+  console.log(`[${ts()}] Starting GYEOL × OpenClaw gateway...`);
+  console.log(`[${ts()}] OpenClaw gateway will load config from openclaw.json5`);
+  console.log(`[${ts()}] Gyeol plugin registers ${Object.keys(JOBS).length} cron jobs`);
+
+  const { spawn } = require("child_process");
+  const port = process.env.PORT || "8000";
+
+  const gatewayProcess = spawn(
+    "npx",
+    ["openclaw", "gateway", "--port", port, "--verbose"],
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        OPENCLAW_CONFIG: "./openclaw.json5",
+        OPENCLAW_HOME: process.cwd(),
+      },
+    }
+  );
+
+  gatewayProcess.on("error", (err: Error) => {
+    console.error(`[${ts()}] Gateway failed to start:`, err.message);
+    process.exit(1);
   });
+
+  gatewayProcess.on("exit", (code: number | null) => {
+    console.log(`[${ts()}] Gateway exited with code ${code}`);
+    process.exit(code || 0);
+  });
+
+  // Graceful shutdown
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.on(signal, () => {
+      console.log(`[${ts()}] Received ${signal}, shutting down gateway...`);
+      gatewayProcess.kill(signal);
+    });
+  }
 }
