@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { haptic } from "@/lib/micro-interactions";
 import {
   initOrRefreshDailyChallenges,
+  writeDailyChallengeState,
   generateDailyChallenges,
   getTodayDateString,
   getPerfectDayBonus,
@@ -36,6 +37,36 @@ export default function ChallengesPage() {
     if (typeof window === "undefined" || !state) return false;
     return isAllChallengesCompleted(state) && !state.perfectDayClaimed;
   });
+
+  // Sync challenge state with server for cross-device persistence
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncToServer = useCallback((s: DailyChallengeState) => {
+    // Debounce: wait 2s after last change before syncing
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      fetch("/api/challenges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: s }),
+      }).catch(() => { /* best-effort sync */ });
+    }, 2000);
+  }, []);
+
+  // On mount, try loading from server (overrides stale localStorage)
+  const serverLoadedRef = useRef(false);
+  useEffect(() => {
+    if (serverLoadedRef.current) return;
+    serverLoadedRef.current = true;
+    fetch("/api/challenges")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.state?.date === getTodayDateString()) {
+          setState(data.state);
+          writeDailyChallengeState(data.state);
+        }
+      })
+      .catch(() => { /* use localStorage fallback */ });
+  }, []);
 
   const perfectBonus = getPerfectDayBonus();
   const completedCount = state?.challenges.filter((c) => c.completed).length ?? 0;
@@ -200,7 +231,16 @@ export default function ChallengesPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => { haptic("success"); setShowPerfect(false); }}
+                  onClick={() => {
+                    haptic("success");
+                    setShowPerfect(false);
+                    if (state) {
+                      const updated = { ...state, perfectDayClaimed: true };
+                      setState(updated);
+                      writeDailyChallengeState(updated);
+                      syncToServer(updated);
+                    }
+                  }}
                   className="mt-6 rounded-full bg-amber-400 px-8 py-2.5 text-sm font-bold text-black hover:bg-amber-300 transition-colors"
                 >
                   {t("common.claim") || "받기"}
