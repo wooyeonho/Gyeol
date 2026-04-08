@@ -282,6 +282,9 @@
     "rewardTitleShards": "title",
     "rewardAppearance": "appearance",
     "rewardFreeze": "freeze",
+    "dailyChallenges": "Today's Challenges",
+    "allComplete": "All Complete!",
+    "perfectDayBonus": "Perfect Day Bonus: +50 coins, +8 evo pts, +5 dust!",
     "newTracesRecorded": "{count} new traces were recorded.",
     "recentCount": "{count} recent",
     "milestone": "Milestone",
@@ -966,6 +969,7 @@
   },
   "livingFeed": {
     "whileAway": "While you were away",
+    "missedYou": "A lot happened while you were gone",
     "hoursAway": "{n}h ago",
     "minutesAgo": "{n}m ago",
     "daysAgo": "{n}d ago",

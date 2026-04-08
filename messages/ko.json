@@ -282,6 +282,9 @@
     "rewardTitleShards": "칭호",
     "rewardAppearance": "외형",
     "rewardFreeze": "프리즈",
+    "dailyChallenges": "오늘의 챌린지",
+    "allComplete": "모두 완료!",
+    "perfectDayBonus": "퍼펙트 데이 보너스: +50 코인, +8 진화 포인트, +5 더스트!",
     "newTracesRecorded": "{count}개의 새로운 흔적이 기록되었습니다.",
     "recentCount": "최근 {count}개",
     "milestone": "마일스톤",
@@ -966,6 +969,7 @@
   },
   "livingFeed": {
     "whileAway": "당신이 없는 동안",
+    "missedYou": "내가 없는 동안 많은 일이 있었어",
     "hoursAway": "{n}시간 전",
     "minutesAgo": "{n}분 전",
     "daysAgo": "{n}일 전",

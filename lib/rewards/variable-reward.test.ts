@@ -42,6 +42,7 @@ describe("variable reward engine", () => {
   it("applies reward deltas to inventory", () => {
     const reward = createDailyLoginReward(7);
     const inventory = applyRewardToInventory(createEmptyRewardInventory(), reward);
-    expect(inventory.coins).toBeGreaterThanOrEqual(2);
+    expect(inventory.coins).toBeGreaterThanOrEqual(5);
+    expect(inventory.evolution_points).toBeGreaterThanOrEqual(1);
   });
 });

@@ -18,6 +18,7 @@ import { ComebackBanner } from "@/components/comeback-banner";
 import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
 import { getStreakFreezeDates } from "@/lib/economy/shop";
+import { initOrRefreshDailyChallenges, generateDailyChallenges, type DailyChallengeState } from "@/lib/engagement/daily-challenge";
 
 export type HomeSummaryItem = {
   id: string;
@@ -101,6 +102,13 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
 
   const [now, setNow] = useState(new Date());
   const [recap, setRecap] = useState<HomeRecap | null>(null);
+  const [dailyChallenges, setDailyChallenges] = useState<DailyChallengeState | null>(null);
+
+  // Initialize daily challenges on mount
+  useEffect(() => {
+    const state = initOrRefreshDailyChallenges();
+    setDailyChallenges(state);
+  }, []);
   // Start collapsed if messages exist; expand if empty
   const hasMessages = messages.length > 0;
   // Default to collapsed so the chat input stays above the fold even on smaller
@@ -204,6 +212,8 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
 
   const streakDays = recap?.streak.days ?? 0;
   const weeklyActivity = recap?.streak.weekly_activity ?? [];
+  const challengesCompleted = dailyChallenges?.challenges.filter((c) => c.completed).length ?? 0;
+  const challengesTotal = dailyChallenges?.challenges.length ?? 3;
   const rewardInventoryRows = [
     rewardInventory.coins ? `${rewardInventory.coins} ${t("home.rewardCoins")}` : null,
     rewardInventory.evolution_points ? `${rewardInventory.evolution_points} ${t("home.rewardEvo")}` : null,
@@ -283,6 +293,22 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                   <span className="h-1 w-1 rounded-full bg-white/30" />
                   <span className="text-amber-300">
                     {t("home.streakDaysShort").replace("{count}", String(streakDays))}
+                  </span>
+                </>
+              )}
+              {dailyChallenges && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/30" />
+                  <span className={challengesCompleted === challengesTotal ? "text-emerald-300" : "text-white/60"}>
+                    {challengesCompleted}/{challengesTotal}
+                  </span>
+                  <span className="flex gap-0.5">
+                    {dailyChallenges.challenges.map((c) => (
+                      <span
+                        key={c.id}
+                        className={`h-1.5 w-1.5 rounded-full ${c.completed ? "bg-emerald-400" : "bg-white/20"}`}
+                      />
+                    ))}
                   </span>
                 </>
               )}
@@ -425,6 +451,61 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                     </div>
                   </div>
                 </div>
+
+                {/* Daily challenges */}
+                {dailyChallenges && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-white">{t("home.dailyChallenges") ?? "Today's Challenges"}</p>
+                      {challengesCompleted === challengesTotal && (
+                        <span className="rounded-full bg-emerald-400/15 border border-emerald-400/25 px-2 py-0.5 text-xs text-emerald-300">
+                          {t("home.allComplete") ?? "All Complete!"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {dailyChallenges.challenges.map((c) => {
+                        const challenge = generateDailyChallenges(dailyChallenges.date).find((ch) => ch.id === c.id);
+                        const pct = c.target > 0 ? Math.min(100, (c.progress / c.target) * 100) : 0;
+                        return (
+                          <div key={c.id} className="flex items-center gap-3">
+                            <span className="text-base flex-shrink-0">{challenge?.icon ?? "?"}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs truncate ${c.completed ? "text-emerald-300 line-through" : "text-white/80"}`}>
+                                  {challenge?.label[locale === "ko" ? "ko" : "en"] ?? c.id}
+                                </span>
+                                <span className="text-xs text-white/50 ml-2 flex-shrink-0">
+                                  {c.progress}/{c.target}
+                                </span>
+                              </div>
+                              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/8">
+                                <motion.div
+                                  className="h-1.5 rounded-full"
+                                  style={{
+                                    background: c.completed
+                                      ? "rgb(52, 211, 153)"
+                                      : `linear-gradient(90deg, ${appearance.palette.primary}, ${appearance.palette.secondary})`,
+                                  }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ duration: 0.6, ease: "easeOut" }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {challengesCompleted === challengesTotal && !dailyChallenges.perfectDayClaimed && (
+                      <div className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-center">
+                        <p className="text-xs text-amber-200">
+                          {t("home.perfectDayBonus") ?? "Perfect Day Bonus: +50 coins, +8 evo pts, +5 dust!"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Quick links */}
                 <div className="flex gap-2">

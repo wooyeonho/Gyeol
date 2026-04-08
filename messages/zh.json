@@ -282,6 +282,9 @@
     "rewardTitleShards": "title",
     "rewardAppearance": "appearance",
     "rewardFreeze": "freeze",
+    "dailyChallenges": "今日挑战",
+    "allComplete": "全部完成！",
+    "perfectDayBonus": "完美日奖励：+50币、+8进化点、+5尘！",
     "newTracesRecorded": "{count} new traces were recorded.",
     "recentCount": "{count} recent",
     "milestone": "Milestone",
@@ -863,6 +866,7 @@
   },
   "livingFeed": {
     "whileAway": "你不在的时候",
+    "missedYou": "你不在的时候发生了很多事",
     "hoursAway": "{n}小时前",
     "minutesAgo": "{n}分钟前",
     "daysAgo": "{n}天前",

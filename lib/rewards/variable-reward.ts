@@ -297,21 +297,22 @@ export function applyRewardToInventory(
 
 export function createDailyLoginReward(streakDays = 0): RewardResult {
   const streakMultiplier = getStreakRewardMultiplier(streakDays);
-  const coins = roundScaledValue(1, streakMultiplier);
+  const coins = roundScaledValue(5, streakMultiplier);
+  const evolution_points = roundScaledValue(1, streakMultiplier);
 
   return {
-    tier: "small",
+    tier: "medium",
     source: "daily_login",
     label: {
-      ko: "일일 로그인 보너스",
-      en: "Daily login bonus",
+      ko: "일일 체크인 보너스",
+      en: "Daily check-in bonus",
     },
     detail: {
-      ko: "앱을 연 것만으로 코인을 받았습니다.",
-      en: "You earned coins just for showing up today.",
+      ko: `오늘도 돌아와줬군요! ${coins}코인과 진화 포인트 ${evolution_points}을 받았습니다.`,
+      en: `Welcome back! You earned ${coins} coins and ${evolution_points} evolution point${evolution_points > 1 ? "s" : ""}.`,
     },
-    icon: "📅",
-    delta: { coins },
+    icon: "🎁",
+    delta: { coins, evolution_points },
     streakMultiplier,
     guaranteed: true,
   };

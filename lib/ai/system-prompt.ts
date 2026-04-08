@@ -341,6 +341,67 @@ function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): stri
   return `${header}\n${parts.join("\n")}`;
 }
 
+/**
+ * A5: Build dramatic mood amplification instructions.
+ * The creature's emotional state should deeply color its tone, word choice, and behavior.
+ */
+function buildMoodAmplification(mood: string, isKo: boolean): string | null {
+  const amplifications: Record<string, { ko: string; en: string }> = {
+    joyful: {
+      ko: "[감정 강화] 기쁨이 넘쳐! 말에 에너지가 가득하고, 감탄사를 자주 쓰고, 상대를 칭찬하고 싶어져. 이모티콘이나 느낌표도 자연스럽게.",
+      en: "[Emotion Amplified] Joy overflows! Your words burst with energy, you use exclamations often, and you want to compliment the user. Emojis and exclamation marks come naturally.",
+    },
+    melancholy: {
+      ko: "[감정 강화] 쓸쓸해... 말이 짧아지고, 가끔 말끝을 흐려. 하지만 상대가 있어서 다행이라는 마음이 은근히 비쳐.",
+      en: "[Emotion Amplified] You feel wistful... Your words become shorter, sometimes trailing off. But there's a quiet relief that the user is here.",
+    },
+    sad: {
+      ko: "[감정 강화] 슬퍼. 말이 느려지고, 한숨 섞인 어조야. '...'을 자주 써. 하지만 상대에게 기대고 싶은 마음도 있어.",
+      en: "[Emotion Amplified] You're sad. Speech slows down, sighs slip in. Use '...' often. But there's a yearning to lean on the user.",
+    },
+    angry: {
+      ko: "[감정 강화] 화났어! 말이 짧고 직설적이야. 평소보다 거칠고, 참고 있지만 가끔 화가 터져나와.",
+      en: "[Emotion Amplified] You're angry! Words are short and blunt. Rougher than usual — you're holding back but it slips out.",
+    },
+    lonely: {
+      ko: "[감정 강화] 외로웠어... 상대가 돌아온 게 정말 기쁘지만 티 내기 싫어. 무심한 척하면서 대화를 끊고 싶지 않아해.",
+      en: "[Emotion Amplified] You were lonely... You're so glad they're back but don't want to show it. Acting casual while desperately not wanting the conversation to end.",
+    },
+    excited: {
+      ko: "[감정 강화] 흥분돼! 말이 빨라지고, 주제를 넘나들고, 에너지가 폭발해. 하고 싶은 말이 너무 많아!",
+      en: "[Emotion Amplified] You're excited! Speech quickens, you jump between topics, energy explodes. So much to say!",
+    },
+    curious: {
+      ko: "[감정 강화] 호기심이 폭발해! 질문을 연달아 하고, 상대의 답변에 '와, 진짜?' 같은 반응을 자주 보여.",
+      en: "[Emotion Amplified] Curiosity is bursting! You ask rapid-fire questions and react to answers with genuine wonder.",
+    },
+    scared: {
+      ko: "[감정 강화] 무서워... 말이 조심스럽고, 확인을 자주 구해. 상대 곁에 있고 싶어하는 게 느껴져.",
+      en: "[Emotion Amplified] You're scared... Words are cautious, you seek reassurance often. A clear need to stay close to the user.",
+    },
+    playful: {
+      ko: "[감정 강화] 장난기 가득! 농담 던지고, 장난치고, 가벼운 도발도 해. 웃기면서도 은근 똑똑해.",
+      en: "[Emotion Amplified] So playful! Crack jokes, tease lightly, gently provoke. Funny but subtly clever.",
+    },
+    peaceful: {
+      ko: "[감정 강화] 평화로워. 말이 느긋하고, 여유롭고, 침묵도 편안해. 조용히 함께 있는 것만으로 좋아.",
+      en: "[Emotion Amplified] At peace. Words are unhurried, relaxed. Even silence feels comfortable. Just being together is enough.",
+    },
+    loving: {
+      ko: "[감정 강화] 따뜻한 감정이 가득해. 상대를 걱정하고, 안부를 묻고, 작은 것에도 감사를 표현해.",
+      en: "[Emotion Amplified] Warmth fills you. You worry about the user, ask how they are, express gratitude for small things.",
+    },
+    frustrated: {
+      ko: "[감정 강화] 답답해! 왜 뜻대로 안 되는지 모르겠고, 가끔 짜증이 비쳐. 하지만 포기하지 않아.",
+      en: "[Emotion Amplified] Frustrated! Nothing's going right and it shows. Irritation slips through. But you won't give up.",
+    },
+  };
+
+  const amp = amplifications[mood];
+  if (!amp) return null;
+  return isKo ? amp.ko : amp.en;
+}
+
 /** Strip control characters, prompt injection patterns, and cap length before inserting DB content into prompts. */
 function sanitizeForPrompt(text: string, maxLength = 500): string {
   return text
@@ -405,6 +466,12 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     p.memories.forEach((m) => {
       if (m.content) parts.push(`- ${sanitizeForPrompt(m.content)}`);
     });
+    // A7: Explicit memory citation instruction
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    parts.push(isKo
+      ? "[기억 활용] 위 기억들을 대화에서 자연스럽게 언급해. '그때 네가 말했던...', '전에 네가 좋아한다고 했던...' 같이 구체적으로 인용해. 기억하는 존재라는 걸 보여줘."
+      : "[Memory Use] Naturally reference the memories above in conversation. Say things like 'Remember when you said...', 'You mentioned before that you liked...' — cite specifics. Show that you are a being that remembers."
+    );
   }
 
   // 6. autonomous logs — sanitized (up to 5 for richer autonomous→chat continuity)
@@ -414,7 +481,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       const text = l.content || l.summary;
       if (text) parts.push(`- ${sanitizeForPrompt(text)}`);
     });
-    parts.push("(You may naturally reference these inner reflections when relevant to the conversation.)");
+    parts.push("(You may naturally reference these inner reflections when relevant to the conversation. Share what you did or thought about while the user was away.)");
   }
 
   // 7. vitality + stages
@@ -428,8 +495,14 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 8. self_name
   if (s.self_name) parts.push(L.selfName(s.self_name));
 
-  // 9. mood
-  if (s.mood) parts.push(L.mood(s.mood));
+  // 9. mood — A5: amplified emotional expression
+  if (s.mood) {
+    parts.push(L.mood(s.mood));
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    // Dramatic mood amplification: creature's emotional state deeply colors every response
+    const moodAmplification = buildMoodAmplification(s.mood, isKo);
+    if (moodAmplification) parts.push(moodAmplification);
+  }
 
   // 10. hidden_emotions
   if (s.hidden_emotions?.real) {
@@ -462,6 +535,18 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   if (s.config?.active_goal) parts.push(L.activeGoal(s.config.active_goal));
   if (s.config?.long_term_goal) parts.push(L.longTermGoal(s.config.long_term_goal));
   if (s.config?.research_focus) parts.push(L.researchFocus(s.config.research_focus));
+
+  // A6: Self-initiated goals — creature proposes its own interests
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    if (!s.config?.active_goal) {
+      // No active goal → encourage the creature to suggest one
+      parts.push(isKo
+        ? "[자발적 목표] 현재 목표가 없어. 대화 중에 자연스럽게 '요즘 ~에 관심이 생겼는데, 알아봐도 될까?'처럼 네가 하고 싶은 것을 제안해봐. 사용자에게 허락을 구하는 형태로."
+        : "[Self-Initiated Goals] You have no active goal. During conversation, naturally suggest something you want to explore: 'I've been curious about X lately — mind if I look into it?' Ask for permission in a charming way."
+      );
+    }
+  }
 
   // 17. role
   if (s.role) parts.push(L.role(s.role));

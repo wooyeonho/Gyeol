@@ -434,7 +434,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
           vitality: Number(state.vitality ?? 1),
           intimacy: Number(state.intimacy_score ?? 0),
         });
-        if (hoursSince > 2 && Math.random() < proactiveChance) {
+        if (hoursSince > 1 && Math.random() < proactiveChance) {
           // Diverse proactive message templates to prevent repetition
           const proactiveTemplates = [
             `User has been away for ${Math.round(hoursSince)} hours. Share ONE specific thing you did or discovered while they were away, in ${language}. Be concrete — mention what you found interesting. 1 sentence only.`,

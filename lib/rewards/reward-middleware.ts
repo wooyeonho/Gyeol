@@ -21,6 +21,25 @@ import {
 } from "@/lib/rewards/variable-reward";
 import { haptic, playSound } from "@/lib/micro-interactions";
 
+const FIRST_MSG_KEY = "gyeol_first_daily_message_v1";
+
+function isFirstDailyMessage(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    return window.localStorage.getItem(FIRST_MSG_KEY) !== today;
+  } catch {
+    return false;
+  }
+}
+
+function markFirstDailyMessage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(FIRST_MSG_KEY, new Date().toISOString().slice(0, 10));
+  } catch { /* ignore */ }
+}
+
 function persistRewardState(inventory: RewardInventory, messagesSinceReward: number) {
   writeRewardInventory(inventory);
   writeMessagesSinceReward(messagesSinceReward);
@@ -54,8 +73,12 @@ export function processMessageReward(
   // Effective comeback multiplier combines plan bonus
   const effectiveComebackMul = Math.max(comebackMul, planMul);
 
+  // First message of the day always gets a guaranteed reward
+  const firstDaily = isFirstDailyMessage();
+  if (firstDaily) markFirstDailyMessage();
+
   const reward = rollReward(streakDays, {
-    forceReward: guaranteedProgress.messagesUntilGuaranteed === 0,
+    forceReward: firstDaily || guaranteedProgress.messagesUntilGuaranteed === 0,
     source: "message",
     comebackMultiplier: effectiveComebackMul,
   });

@@ -79,10 +79,13 @@ export function computeProactiveChance(input: {
   intimacy: number;
 }): number {
   const { hoursSinceUser, vitality, intimacy } = input;
-  let chance = 0.05;
-  if (hoursSinceUser > 2) chance += 0.1;
-  if (hoursSinceUser > 12) chance += 0.08;
-  if (vitality > 0.7) chance += 0.04;
-  if (intimacy > 30) chance += 0.03;
-  return Math.min(0.35, chance);
+  // Higher base chance so the creature consistently feels alive.
+  // Away > 4h: almost always leaves a message. Away > 8h: guaranteed.
+  let chance = 0.30;
+  if (hoursSinceUser > 4) chance += 0.25;
+  if (hoursSinceUser > 8) chance += 0.25;
+  if (hoursSinceUser > 24) chance += 0.15;
+  if (vitality > 0.7) chance += 0.05;
+  if (intimacy > 30) chance += 0.05;
+  return Math.min(0.95, chance);
 }

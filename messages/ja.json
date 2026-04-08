@@ -282,6 +282,9 @@
     "rewardTitleShards": "title",
     "rewardAppearance": "appearance",
     "rewardFreeze": "freeze",
+    "dailyChallenges": "今日のチャレンジ",
+    "allComplete": "全部完了！",
+    "perfectDayBonus": "パーフェクトデイボーナス: +50コイン、+8進化pt、+5ダスト！",
     "newTracesRecorded": "{count} new traces were recorded.",
     "recentCount": "{count} recent",
     "milestone": "Milestone",
@@ -863,6 +866,7 @@
   },
   "livingFeed": {
     "whileAway": "あなたがいない間に",
+    "missedYou": "いない間にいろいろあったよ",
     "hoursAway": "{n}時間前",
     "minutesAgo": "{n}分前",
     "daysAgo": "{n}日前",

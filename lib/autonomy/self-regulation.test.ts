@@ -76,13 +76,13 @@ describe("self-regulation", () => {
   });
 
   describe("computeProactiveChance", () => {
-    it("should compute minimum base chance", () => {
-      expect(computeProactiveChance({ hoursSinceUser: 1, vitality: 0.5, intimacy: 10 })).toBe(0.05);
+    it("should compute base chance for recently active users", () => {
+      expect(computeProactiveChance({ hoursSinceUser: 1, vitality: 0.5, intimacy: 10 })).toBe(0.30);
     });
 
-    it("should increase chance based on hours, vitality, and intimacy but cap at 0.35", () => {
-      // 0.05 (base) + 0.1 (>2h) + 0.08 (>12h) + 0.04 (>0.7v) + 0.03 (>30i) = 0.30
-      expect(computeProactiveChance({ hoursSinceUser: 20, vitality: 0.9, intimacy: 50 })).toBeCloseTo(0.30);
+    it("should increase chance based on hours, vitality, and intimacy but cap at 0.95", () => {
+      // 0.30 (base) + 0.25 (>4h) + 0.25 (>8h) + 0.15 (>24h) + 0.05 (>0.7v) + 0.05 (>30i) = 1.05 → capped 0.95
+      expect(computeProactiveChance({ hoursSinceUser: 30, vitality: 0.9, intimacy: 50 })).toBeCloseTo(0.95);
     });
   });
 });

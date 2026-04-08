@@ -165,6 +165,8 @@ export function LivingFeed({
     return null;
   }
 
+  const longAbsence = data.hours_away >= 24;
+
   const allItems = [
     ...data.growth_events.map((e) => ({ ...e, category: "growth" as const })),
     ...data.dreams.map((d) => ({
@@ -217,16 +219,16 @@ export function LivingFeed({
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="pointer-events-auto mx-auto w-full max-w-[720px] px-2"
       >
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl">
+        <div className={`overflow-hidden rounded-2xl border backdrop-blur-xl ${longAbsence ? "border-purple-400/25 bg-gradient-to-b from-purple-500/10 via-black/60 to-black/60" : "border-white/10 bg-black/60"}`}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ backgroundColor: "var(--creature-primary, #22d3ee)" }} />
-                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: "var(--creature-primary, #22d3ee)" }} />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ backgroundColor: longAbsence ? "#a855f7" : "var(--creature-primary, #22d3ee)" }} />
+                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: longAbsence ? "#a855f7" : "var(--creature-primary, #22d3ee)" }} />
               </span>
-              <p className="text-xs font-medium uppercase tracking-wider text-white/70">
-                {t("livingFeed.whileAway")}
+              <p className={`text-xs font-medium uppercase tracking-wider ${longAbsence ? "text-purple-300/90" : "text-white/70"}`}>
+                {longAbsence ? (t("livingFeed.missedYou") ?? t("livingFeed.whileAway")) : t("livingFeed.whileAway")}
               </p>
               {data.hours_away >= 1 ? (
                 <span className="text-xs text-white/40">
