@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FocusTrap } from "@/components/focus-trap";
 import { DNA_AXES, type CreatureDNA, getDominantTraits } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits, getTraitProfile } from "@/lib/genome/traits";
@@ -202,6 +203,7 @@ export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealPr
   }, []);
 
   return (
+    <FocusTrap active onEscape={onContinue}>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -376,5 +378,6 @@ export function DNAReveal({ dna, soulReading, onContinue, onShare }: DNARevealPr
         </AnimatePresence>
       </div>
     </motion.div>
+    </FocusTrap>
   );
 }
