@@ -127,6 +127,32 @@ export const settingsPatchBodySchema = z.object({
   recap_email: z.boolean().optional(),
 }).strict();
 
+// ── /api/social/posts/[postId]/comment POST ──
+export const socialCommentBodySchema = z.object({
+  content: z.string().min(1, "Comment content required").max(2000),
+});
+
+// ── /api/social/posts/[postId]/report POST ──
+export const socialReportBodySchema = z.object({
+  reason: z.string().min(1, "Report reason required").max(80),
+  detail: z.string().max(280).optional().default(""),
+});
+
+// ── /api/time-capsule POST ──
+export const timeCapsuleBodySchema = z.object({
+  message: z.string().min(1).max(5000),
+  deliver_at: z.string().refine((d) => !Number.isNaN(new Date(d).getTime()), {
+    message: "Invalid date format",
+  }),
+});
+
+// ── /api/v1/agent/memory POST ──
+export const v1MemoryBodySchema = z.object({
+  agent_id: agentId,
+  content: z.string().min(1).max(10000),
+  type: z.string().max(50).optional().default("conversation"),
+});
+
 // ── /api/demo/chat POST ──
 export const demoChatBodySchema = z.object({
   message: z.string().min(1).max(500),

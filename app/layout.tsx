@@ -112,6 +112,18 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        {/* Pretendard Variable: preloaded for performance (moved from CSS @import) */}
+        <link
+          rel="preload"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          as="style"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
       <body className="bg-background text-foreground min-h-screen antialiased">
         <I18nProvider initialLocale={locale}>
           <a

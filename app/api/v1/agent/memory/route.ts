@@ -2,7 +2,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
+import { parseBody, v1MemoryBodySchema } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -14,13 +16,16 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimit(`v1-memory:${getApiKeyIdentifier(request)}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await request.json().catch(() => ({}));
-    const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const content = typeof body?.content === "string" ? sanitizeUserInput(body.content) : "";
-    const type = typeof body?.type === "string" ? body.type : "conversation";
-    if (!agentId || !content) {
-      return NextResponse.json({ error: "agent_id and content required" }, { status: 400 });
+    const parsed = await parseBody(request, v1MemoryBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { agent_id: agentId, type } = parsed.data;
+    const fence = checkElectricFence(parsed.data.content);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+    }
+    const content = sanitizeUserInput(parsed.data.content);
 
     const service = createServiceClient();
     const { data: agent } = await service.from("agents").select("id, user_id").eq("id", agentId).maybeSingle();

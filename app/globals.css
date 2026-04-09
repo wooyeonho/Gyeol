@@ -1,7 +1,5 @@
-/* ── Pretendard Variable (Korean-optimized, CDN subset) ── */
-/* Must come BEFORE @import "tailwindcss" which expands into thousands of rules.
-   CSS spec: @import must precede all rules aside from @charset and @layer. */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+/* ── Pretendard Variable is loaded via <link> in layout.tsx for performance ── */
+/* Moved from CSS @import (render-blocking) to HTML <link rel="stylesheet"> */
 
 @import "tailwindcss";
 

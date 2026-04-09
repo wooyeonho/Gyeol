@@ -253,6 +253,21 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  // ── CORS: allow external callers for v1 API ──
+  if (pathname.startsWith("/api/v1")) {
+    const origin = request.headers.get("origin") ?? "*";
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key");
+    response.headers.set("Access-Control-Max-Age", "86400");
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 204,
+        headers: response.headers,
+      });
+    }
+  }
+
   // ── CSRF: validate Origin for state-changing API requests ──
   if (
     pathname.startsWith("/api") &&

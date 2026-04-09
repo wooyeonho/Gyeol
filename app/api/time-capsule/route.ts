@@ -3,6 +3,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody, timeCapsuleBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -13,14 +15,17 @@ export async function POST(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const message = typeof body?.message === "string" ? sanitizeUserInput(body.message) : "";
-    const deliverAtRaw = typeof body?.deliver_at === "string" ? body.deliver_at : "";
-    if (!message || !deliverAtRaw) {
-      return NextResponse.json({ error: "message and deliver_at required" }, { status: 400 });
+    const parsed = await parseBody(req, timeCapsuleBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const deliverAt = new Date(deliverAtRaw);
-    if (Number.isNaN(deliverAt.getTime()) || deliverAt.getTime() <= Date.now()) {
+    const fence = checkElectricFence(parsed.data.message);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+    }
+    const message = sanitizeUserInput(parsed.data.message);
+    const deliverAt = new Date(parsed.data.deliver_at);
+    if (deliverAt.getTime() <= Date.now()) {
       return NextResponse.json({ error: "deliver_at must be a future date" }, { status: 400 });
     }
     const maxFuture = new Date();

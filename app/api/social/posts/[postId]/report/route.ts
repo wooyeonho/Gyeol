@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody, socialReportBodySchema } from "@/lib/validation/schemas";
 
 const REPORT_THRESHOLD_FOR_PENDING = 3;
 
@@ -19,12 +21,19 @@ export async function POST(
 
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const reason = typeof body?.reason === "string" ? sanitizeUserInput(body.reason).slice(0, 80) : "";
-    const detail = typeof body?.detail === "string" ? sanitizeUserInput(body.detail).slice(0, 280) : "";
-    if (!postId || !reason) {
-      return NextResponse.json({ error: "Report reason required" }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
     }
+    const parsed = await parseBody(req, socialReportBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const fenceCheck = checkElectricFence(`${parsed.data.reason} ${parsed.data.detail}`);
+    if (fenceCheck.blocked) {
+      return NextResponse.json({ error: "Blocked content detected" }, { status: 400 });
+    }
+    const reason = sanitizeUserInput(parsed.data.reason);
+    const detail = sanitizeUserInput(parsed.data.detail);
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

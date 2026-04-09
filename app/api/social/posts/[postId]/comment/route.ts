@@ -6,6 +6,7 @@ import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/modera
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialCommentBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(
   req: NextRequest,
@@ -19,10 +20,13 @@ export async function POST(
 
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const content = typeof body?.content === "string" ? body.content : "";
-    if (!postId || !content.trim()) {
-      return NextResponse.json({ error: "Comment content required" }, { status: 400 });
+    const parsed = await parseBody(req, socialCommentBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const content = parsed.data.content;
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
     }
 
     // Rate limit: 10 comments per minute per user to prevent spam
