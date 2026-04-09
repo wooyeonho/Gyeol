@@ -16,6 +16,8 @@ import dynamic from "next/dynamic";
 import type { CreatureDNA } from "@/lib/genome/dna";
 
 const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
+const DungeonExplorer = dynamic(() => import("@/components/dungeon-explorer").then(m => m.DungeonExplorer), { ssr: false });
+const PvPRankCard = dynamic(() => import("@/components/pvp-rank-card").then(m => m.PvPRankCard), { ssr: false });
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -321,6 +323,12 @@ export default function DiscoverPage() {
             </p>
           </motion.div>
         )}
+
+        {/* Dungeon & Encounters */}
+        {dna && <DungeonExplorer locale={locale} />}
+
+        {/* PvP Ranking */}
+        {dna && <PvPRankCard locale={locale} />}
 
         {/* More Ways divider */}
         <div className="flex items-center gap-2 px-1 pt-2">

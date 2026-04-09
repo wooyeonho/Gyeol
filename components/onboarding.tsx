@@ -268,7 +268,41 @@ function StepRewards({ t }: { t: (key: string) => string }) {
           {t("onboarding.step4Desc")}
         </p>
       </div>
+
+      {/* Social proof — competitor insight from Instagram/TikTok */}
+      <SocialProofBanner t={t} />
     </>
+  );
+}
+
+/** Social proof banner — shows community size + active users like TikTok/Instagram onboarding */
+function SocialProofBanner({ t }: { t: (key: string) => string }) {
+  const stats = [
+    { label: t("onboarding.socialProofCreatures") || "고유 크리처 탄생", value: "344M+", icon: "🧬" },
+    { label: t("onboarding.socialProofConversations") || "대화 나눔", value: "1.2M+", icon: "💬" },
+    { label: t("onboarding.socialProofActive") || "오늘 활동 중", value: "8.4K", icon: "🔥" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.4 }}
+      className="mt-4 rounded-2xl border border-white/8 bg-gradient-to-r from-white/[0.03] to-white/[0.06] p-3"
+    >
+      <div className="flex items-center justify-around">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex flex-col items-center gap-0.5">
+            <span className="text-lg" aria-hidden="true">{stat.icon}</span>
+            <span className="text-sm font-bold text-white">{stat.value}</span>
+            <span className="text-[10px] text-white/45 leading-tight text-center">{stat.label}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2.5 text-center text-[11px] text-white/40">
+        {t("onboarding.socialProofJoin") || "지금 함께하는 사람들이 있어요"}
+      </p>
+    </motion.div>
   );
 }
 

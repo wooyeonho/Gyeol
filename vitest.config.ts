@@ -22,8 +22,8 @@ export default defineConfig({
       exclude: ["**/*.test.ts", "**/*.contract.test.ts", "node_modules/**"],
       thresholds: {
         statements: 60,
-        branches: 55,
-        functions: 55,
+        branches: 60,
+        functions: 60,
         lines: 60,
       },
     },
