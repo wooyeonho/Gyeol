@@ -214,9 +214,10 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [settingsRes, billingRes] = await Promise.all([
+        const [settingsRes, billingRes, achievementsRes] = await Promise.all([
           fetch("/api/settings"),
           fetch("/api/billing/me"),
+          fetch("/api/achievements"),
         ]);
         if (settingsRes.status === 401) {
           router.push("/login?next=%2Fsettings");
@@ -231,6 +232,19 @@ export default function SettingsPage() {
         if (billingRes.ok) {
           const billingJson = await billingRes.json().catch(() => null);
           setBilling((billingJson as BillingData | null) ?? null);
+        }
+        if (achievementsRes.ok) {
+          const achJson = await achievementsRes.json().catch(() => null);
+          if (achJson?.achievements) {
+            const unlocked: UnlockedAchievement[] = (achJson.achievements as Array<{ id: string; unlocked: boolean; newly_unlocked: boolean }>)
+              .filter((a: { unlocked: boolean }) => a.unlocked)
+              .map((a: { id: string }) => ({
+                achievement_id: a.id,
+                unlocked_at: new Date().toISOString(),
+                seen: true,
+              }));
+            setUnlockedAchievements(unlocked);
+          }
         }
       } catch {
         setError(t("settings.loadError"));
@@ -609,6 +623,19 @@ export default function SettingsPage() {
         <section className="theme-panel rounded-3xl p-4">
           <p className="theme-text-faint text-xs uppercase tracking-[0.2em] mb-3">{t("settings.activityHeatmap") || "Activity"}</p>
           <StreakHeatmap activeDates={streakDates} accentColor={accentColor} />
+        </section>
+
+        {/* Achievement Showcase */}
+        <section className="theme-panel rounded-3xl p-5">
+          <AchievementShowcase
+            unlockedAchievements={unlockedAchievements}
+            stats={{
+              total_messages: state?.total_messages ?? 0,
+              streak_days: 0,
+              gen_level: state?.gen_level ?? 1,
+            }}
+            locale={locale}
+          />
         </section>
 
         <section className="theme-panel rounded-3xl p-4">
