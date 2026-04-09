@@ -5,6 +5,7 @@ import { addCoinsAtomic, spendCoinsAtomic } from "@/lib/economy/coins";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody, marketPurchaseBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -18,9 +19,11 @@ export async function POST(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const itemId = typeof body?.item_id === "string" ? body.item_id : "";
-    if (!itemId) return NextResponse.json({ error: "item_id required" }, { status: 400 });
+    const parsed = await parseBody(req, marketPurchaseBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const itemId = parsed.data.item_id;
 
     const service = createServiceClient();
     const { data: myAgent } = await service.from("agents").select("id").eq("user_id", user.id).single();

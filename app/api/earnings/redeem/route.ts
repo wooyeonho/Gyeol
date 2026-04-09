@@ -1,21 +1,37 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getBalance, spendCoinsAtomic } from "@/lib/economy/coins";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody } from "@/lib/validation/schemas";
+import { redeemBodySchema } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
 
 const COIN_TO_KRW_RATE = 10;
 
 export async function POST(request: NextRequest) {
   try {
+    // CSRF protection — financial route must originate from our domain
+    if (!verifyCsrfOrigin(request)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json().catch(() => ({}));
-    const coins = Math.floor(Number(body?.coins ?? 0));
-    if (coins < 100) {
-      return NextResponse.json({ error: "Minimum 100 coins to redeem" }, { status: 400 });
+    // Rate limiting — prevent abuse of financial endpoint (stricter: 5/min)
+    const allowed = await checkRateLimit(`redeem:${user.id}`);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
+    // Zod validation
+    const parsed = await parseBody(request, redeemBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { coins } = parsed.data;
 
     const service = createServiceClient();
     const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);

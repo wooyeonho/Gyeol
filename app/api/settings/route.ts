@@ -8,6 +8,7 @@ import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody, settingsPatchBodySchema } from "@/lib/validation/schemas";
 
 export async function GET() {
   try {
@@ -46,7 +47,11 @@ export async function PATCH(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
+    const parsed = await parseBody(request, settingsPatchBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ error: "No agent" }, { status: 400 });

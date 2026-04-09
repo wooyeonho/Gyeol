@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { type PlanTier } from "@/lib/billing/catalog";
 import { getStripe, getStripeAppUrl, getStripePriceId, isStripeConfigured } from "@/lib/billing/stripe";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
-
-function isPaidPlanTier(value: unknown): value is Exclude<PlanTier, "free"> {
-  return value === "pro" || value === "premium";
-}
+import { parseBody, billingCheckoutBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(request: NextRequest) {
   if (!verifyCsrfOrigin(request)) {
@@ -23,11 +19,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const planTier = body?.plan_tier;
-    if (!isPaidPlanTier(planTier)) {
-      return NextResponse.json({ error: "plan_tier must be pro or premium" }, { status: 400 });
+    const parsed = await parseBody(request, billingCheckoutBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const planTier = parsed.data.plan_tier;
 
     const stripe = getStripe();
     const appUrl = getStripeAppUrl();

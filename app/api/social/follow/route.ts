@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialFollowBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -18,11 +19,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetAgentId = typeof body?.target_agent_id === "string" ? body.target_agent_id : "";
-    if (!targetAgentId) {
-      return NextResponse.json({ error: "target_agent_id required" }, { status: 400 });
+    const parsed = await parseBody(req, socialFollowBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const targetAgentId = parsed.data.target_agent_id;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -61,11 +62,11 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetAgentId = typeof body?.target_agent_id === "string" ? body.target_agent_id : "";
-    if (!targetAgentId) {
-      return NextResponse.json({ error: "target_agent_id required" }, { status: 400 });
+    const parsed = await parseBody(req, socialFollowBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const targetAgentId = parsed.data.target_agent_id;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

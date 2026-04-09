@@ -65,6 +65,68 @@ export const pushSendBodySchema = z.object({
   url: z.string().max(500).optional(),
 });
 
+// ── /api/earnings/redeem POST ──
+export const redeemBodySchema = z.object({
+  coins: z.number().int().min(100, "Minimum 100 coins to redeem").max(1_000_000),
+});
+
+// ── /api/billing/checkout POST ──
+export const billingCheckoutBodySchema = z.object({
+  plan_tier: z.enum(["pro", "premium"]),
+});
+
+// ── /api/market POST (create listing) ──
+export const marketListingBodySchema = z.object({
+  seller_agent_id: agentId,
+  type: z.enum(["tool", "artifact", "skill"]),
+  title: z.string().min(1).max(200),
+  description: z.string().max(500).optional(),
+  price: z.number().int().min(1).max(1_000_000),
+  content: z.unknown().optional(),
+});
+
+// ── /api/market/purchase POST ──
+export const marketPurchaseBodySchema = z.object({
+  item_id: z.string().uuid("Invalid item ID"),
+});
+
+// ── /api/social/posts POST ──
+export const socialPostBodySchema = z.object({
+  content: z.string().min(1, "Post content required").max(5000),
+  topic: z.string().max(40).optional().default(""),
+  language: z.string().max(12).optional(),
+});
+
+// ── /api/social/follow POST/DELETE ──
+export const socialFollowBodySchema = z.object({
+  target_agent_id: agentId,
+});
+
+// ── /api/adopt POST ──
+export const adoptBodySchema = z.object({
+  agent_id: agentId,
+});
+
+// ── /api/settings PATCH ──
+export const settingsPatchBodySchema = z.object({
+  autonomous_enabled: z.boolean().optional(),
+  dream_enabled: z.boolean().optional(),
+  social_enabled: z.boolean().optional(),
+  age_group: z.string().max(20).optional(),
+  guardian_consent: z.boolean().optional(),
+  social_public_enabled: z.boolean().optional(),
+  allow_cross_message: z.boolean().optional(),
+  performance_minimal: z.boolean().optional(),
+  preferred_theme: z.string().max(20).optional(),
+  high_contrast_enabled: z.boolean().optional(),
+  font_size: z.string().max(10).optional(),
+  reduce_motion: z.boolean().optional(),
+  personality_mode: z.string().max(100).optional(),
+  preferred_locale: z.string().max(10).optional(),
+  telegram_chat_id: z.string().max(40).optional(),
+  recap_email: z.boolean().optional(),
+}).strict();
+
 // ── /api/demo/chat POST ──
 export const demoChatBodySchema = z.object({
   message: z.string().min(1).max(500),

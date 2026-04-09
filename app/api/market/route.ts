@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody, marketListingBodySchema } from "@/lib/validation/schemas";
 
 export async function GET(request: NextRequest) {
   try {
@@ -138,11 +139,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   try {
-    const body = await request.json().catch(() => ({}));
-    const { seller_agent_id, type, title, description, price, content } = body;
-    if (!seller_agent_id || !type || !title || price == null) {
-      return NextResponse.json({ error: "seller_agent_id, type, title, price required" }, { status: 400 });
+    const parsed = await parseBody(request, marketListingBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { seller_agent_id, type, title, description, price, content } = parsed.data;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -151,11 +152,11 @@ export async function POST(request: NextRequest) {
     const myAgentId = agents?.[0]?.id;
     if (myAgentId !== seller_agent_id) return NextResponse.json({ error: "Not your agent" }, { status: 403 });
     const { data: row } = await service.from("market_items").insert({
-      seller_agent_id: seller_agent_id,
-      type: String(type),
-      title: String(title).slice(0, 200),
-      description: description ? String(description).slice(0, 500) : null,
-      price: Math.max(0, Math.floor(Number(price))),
+      seller_agent_id,
+      type,
+      title,
+      description: description ?? null,
+      price,
       content: content ?? null,
       is_active: true,
     }).select("id").single();

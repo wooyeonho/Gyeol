@@ -7,6 +7,7 @@ import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialPostBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -26,10 +27,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const content = typeof body?.content === "string" ? body.content.trim() : "";
-    const topic = typeof body?.topic === "string" ? body.topic.trim().slice(0, 40) : "";
-    const language = typeof body?.language === "string" ? body.language.trim().slice(0, 12) : null;
+    const parsed = await parseBody(req, socialPostBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const content = parsed.data.content.trim();
+    const topic = (parsed.data.topic ?? "").trim();
+    const language = parsed.data.language?.trim() ?? null;
     if (!content) {
       return NextResponse.json({ error: "Post content required" }, { status: 400 });
     }
