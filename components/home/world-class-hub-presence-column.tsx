@@ -53,7 +53,7 @@ export function WorldClassHubPresenceColumn({
           <div className="min-w-0 flex-1">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/60">{currentPresenceLabel}</p>
             <p className="mt-1 text-sm font-medium text-white">{appearance.title}</p>
-            <p className="mt-1 text-xs leading-5 text-white/58">{appearance.usageNarrative ?? appearance.subtitle}</p>
+            <p className="mt-1 text-xs leading-5 text-white/65">{appearance.usageNarrative ?? appearance.subtitle}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {appearance.chips.map((chip) => (
                 <span

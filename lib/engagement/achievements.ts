@@ -43,6 +43,7 @@ export type AchievementCondition =
   | { type: "mutations_collected"; count: number }
   | { type: "market_purchases"; count: number }
   | { type: "first_action"; action: string }
+  | { type: "perfect_day_streak"; count: number }
   | { type: "custom"; key: string; value: number };
 
 export interface AchievementReward {
@@ -306,6 +307,76 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     condition: { type: "first_action", action: "adopt_echo" },
     reward: { coins: 300, evolution_points: 20, exclusive_title: "Resurrector" },
   },
+
+  // ── Perfect Day milestones ──
+  {
+    id: "perfect_beginner",
+    category: "streak",
+    rarity: "common",
+    icon: "✨",
+    label: i18n("완벽한 시작", "Perfect Beginner", "完璧な始まり", "完美的开始", "Principiante Perfecto"),
+    description: i18n(
+      "3일 연속 모든 일일 챌린지를 완료했습니다.",
+      "Completed all daily challenges for 3 consecutive days.",
+      "3日連続で全てのデイリーチャレンジを達成しました。",
+      "连续3天完成所有每日挑战。",
+      "Completaste todos los desafíos diarios durante 3 días consecutivos.",
+    ),
+    hidden: false,
+    condition: { type: "perfect_day_streak", count: 3 },
+    reward: { coins: 30, evolution_points: 5 },
+  },
+  {
+    id: "perfect_week",
+    category: "streak",
+    rarity: "rare",
+    icon: "🌟",
+    label: i18n("완벽한 한 주", "Perfect Week", "完璧な一週間", "完美的一周", "Semana Perfecta"),
+    description: i18n(
+      "7일 연속 모든 일일 챌린지를 완료했습니다.",
+      "Completed all daily challenges for 7 consecutive days.",
+      "7日連続で全てのデイリーチャレンジを達成しました。",
+      "连续7天完成所有每日挑战。",
+      "Completaste todos los desafíos diarios durante 7 días consecutivos.",
+    ),
+    hidden: false,
+    condition: { type: "perfect_day_streak", count: 7 },
+    reward: { coins: 80, evolution_points: 10, title_shards: 1 },
+  },
+  {
+    id: "perfect_fortnight",
+    category: "streak",
+    rarity: "epic",
+    icon: "💎",
+    label: i18n("완벽한 2주", "Perfect Fortnight", "完璧な2週間", "完美的两周", "Quincena Perfecta"),
+    description: i18n(
+      "14일 연속 모든 일일 챌린지를 완료했습니다.",
+      "Completed all daily challenges for 14 consecutive days.",
+      "14日連続で全てのデイリーチャレンジを達成しました。",
+      "连续14天完成所有每日挑战。",
+      "Completaste todos los desafíos diarios durante 14 días consecutivos.",
+    ),
+    hidden: false,
+    condition: { type: "perfect_day_streak", count: 14 },
+    reward: { coins: 200, evolution_points: 20, appearance_shards: 2 },
+  },
+  {
+    id: "perfect_month",
+    category: "streak",
+    rarity: "legendary",
+    icon: "👑",
+    label: i18n("완벽한 한 달", "Perfect Month", "完璧な一ヶ月", "完美的一个月", "Mes Perfecto"),
+    description: i18n(
+      "30일 연속 모든 일일 챌린지를 완료했습니다. 당신은 전설입니다.",
+      "Completed all daily challenges for 30 consecutive days. You are a legend.",
+      "30日連続で全てのデイリーチャレンジを達成。あなたは伝説です。",
+      "连续30天完成所有每日挑战。你是传奇。",
+      "Completaste todos los desafíos diarios durante 30 días consecutivos. Eres una leyenda.",
+    ),
+    hidden: false,
+    condition: { type: "perfect_day_streak", count: 30 },
+    reward: { coins: 500, evolution_points: 50, exclusive_title: "Perfectionist" },
+  },
 ];
 
 /**
@@ -323,6 +394,7 @@ export function checkNewAchievements(
     vitality_recovered?: number;
     mutations_count?: number;
     market_purchases?: number;
+    perfect_day_streak?: number;
     actions?: string[];
     custom?: Record<string, number>;
   },
@@ -355,6 +427,7 @@ function meetsCondition(
     vitality_recovered?: number;
     mutations_count?: number;
     market_purchases?: number;
+    perfect_day_streak?: number;
     actions?: string[];
     custom?: Record<string, number>;
   },
@@ -382,6 +455,8 @@ function meetsCondition(
       return (stats.market_purchases ?? 0) >= condition.count;
     case "first_action":
       return (stats.actions ?? []).includes(condition.action);
+    case "perfect_day_streak":
+      return (stats.perfect_day_streak ?? 0) >= condition.count;
     case "custom":
       return (stats.custom?.[condition.key] ?? 0) >= condition.value;
   }
@@ -443,6 +518,10 @@ export function computeAchievementProgress(
       break;
     case "market_purchases":
       current = stats.market_purchases ?? 0;
+      target = cond.count;
+      break;
+    case "perfect_day_streak":
+      current = stats.perfect_day_streak ?? 0;
       target = cond.count;
       break;
     case "first_action":

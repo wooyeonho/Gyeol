@@ -156,7 +156,7 @@ function MutationHistory({ config, locale }: { config: Record<string, unknown>; 
 
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
         Recent Mutations
       </p>
       <div className="space-y-1.5">
@@ -222,7 +222,7 @@ export default function DNAPage() {
           {speciesInfo && (
             <p className="mt-1 text-sm text-cyan-300/60">{speciesInfo.name}</p>
           )}
-          <div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/40">
+          <div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/50">
             <span>Gen {agentState?.gen_level ?? 1}</span>
             {speciesInfo?.archetype && (
               <>
@@ -268,7 +268,7 @@ export default function DNAPage() {
                           transition={{ duration: 0.6, ease: "easeOut" }}
                         />
                       </div>
-                      <span className="w-8 shrink-0 text-right text-xs text-white/40">
+                      <span className="w-8 shrink-0 text-right text-xs text-white/50">
                         {Math.round(val * 100)}
                       </span>
                     </div>
@@ -298,7 +298,7 @@ export default function DNAPage() {
         {/* Items & Equipment */}
         {dna && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
               {t("dna.equipment") || "장비 & 아이템"}
             </p>
             <ItemsInventory />
@@ -308,7 +308,7 @@ export default function DNAPage() {
         {/* Expressed traits */}
         {traits.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
               {t("dna.expressedTraits") || "발현 특성"}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -336,7 +336,7 @@ export default function DNAPage() {
         {dna && <PortraitGallery />}
 
         {!dna && (
-          <p className="text-center text-sm text-white/30 py-4">
+          <p className="text-center text-sm text-white/40 py-4">
             {t("dna.noData") || "DNA forms as you converse more."}
           </p>
         )}

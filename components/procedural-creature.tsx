@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -15,6 +15,7 @@ import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { getExpression, lerpExpression, type ExpressionState } from "@/lib/creature/expression-system";
+import { playEmotionSound, getCreatureVoiceVolume } from "@/lib/creature/emotion-sounds";
 
 interface ProceduralCreatureProps {
   dna: CreatureDNA;
@@ -163,6 +164,30 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   useEffect(() => {
     expressionTargetRef.current = getExpression(mood);
   }, [mood]);
+
+  // ── Emotion voice system — play sound on significant mood change ──
+  const lastEmotionSoundMoodRef = useRef<string | null>(null);
+  const lastEmotionSoundTimeRef = useRef(0);
+  const EMOTION_SOUND_DEBOUNCE_MS = 5000; // max once every 5 seconds
+
+  useEffect(() => {
+    if (!mood) return;
+    // Skip if same mood as last played
+    if (mood === lastEmotionSoundMoodRef.current) return;
+    // Debounce: skip if played too recently
+    const now = Date.now();
+    if (now - lastEmotionSoundTimeRef.current < EMOTION_SOUND_DEBOUNCE_MS) return;
+    // Only play if page/tab is visible (creature not in background)
+    if (typeof document !== "undefined" && document.hidden) return;
+    // Only play if volume is audible
+    if (getCreatureVoiceVolume() <= 0) return;
+
+    lastEmotionSoundMoodRef.current = mood;
+    lastEmotionSoundTimeRef.current = now;
+    // DNA warmth as pitch modifier (creature-unique voice)
+    const dnaModifier = dna?.warmth ?? 0.5;
+    playEmotionSound(mood, dnaModifier);
+  }, [mood, dna?.warmth]);
 
   // Idle behavior lerp refs — smooth transitions between idle states (rate 0.03/frame)
   const idleRotationSpeedRef = useRef(1);

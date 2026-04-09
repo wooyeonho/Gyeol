@@ -23,7 +23,10 @@ import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
 import { createClient } from "@/lib/supabase/client";
+import { AchievementShowcase } from "@/components/achievement-showcase";
 import { StreakHeatmap } from "@/components/streak-heatmap";
+import { type UnlockedAchievement } from "@/lib/engagement/achievements";
+import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import {
   isFontSize,
   isThemeMode,
@@ -203,6 +206,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [missions, setMissions] = useState<LocalMission[]>(() => readLocalMissions());
   const [draftMission, setDraftMission] = useState("");
+  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievement[]>([]);
   const router = useRouter();
   const supabase = createClient();
   const showPlansSurface = useFeatureFlag(FEATURE_FLAG.plansSurface);

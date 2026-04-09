@@ -146,7 +146,7 @@ export default function CarePage() {
               >
                 <span className="text-3xl">🍖</span>
                 <span className="text-sm font-medium text-white">{t("care.feed") || "먹이주기"}</span>
-                <span className="text-xs text-white/40">🪙 5</span>
+                <span className="text-xs text-white/50">🪙 5</span>
               </button>
               <button
                 type="button"
@@ -156,24 +156,24 @@ export default function CarePage() {
               >
                 <span className="text-3xl">🛏</span>
                 <span className="text-sm font-medium text-white">{t("care.rest") || "재우기"}</span>
-                <span className="text-xs text-white/40">🪙 3</span>
+                <span className="text-xs text-white/50">🪙 3</span>
               </button>
             </div>
 
-            <p className="text-center text-xs text-white/30">
+            <p className="text-center text-xs text-white/40">
               {t("care.touchHint") || "홈에서 생명체를 쓰다듬으면 기분이 올라가요"}
             </p>
 
             {/* Care activity heatmap */}
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/40">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
                 {t("care.activityLog") || "돌봄 기록"}
               </p>
               <CareHeatmap />
             </div>
           </>
         ) : (
-          <p className="text-center text-sm text-white/40 py-16">
+          <p className="text-center text-sm text-white/50 py-16">
             {t("care.noAgent") || "에이전트를 먼저 생성해주세요"}
           </p>
         )}

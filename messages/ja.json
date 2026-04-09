@@ -41,7 +41,14 @@
     "settings": "Settings",
     "chat": "チャット",
     "discover": "発見",
-    "profile": "プロフィール"
+    "profile": "プロフィール",
+    "notifications": "通知"
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllRead": "すべて既読",
+    "clearAll": "すべて削除",
+    "empty": "新しい通知はありません"
   },
   "auth": {
     "login": "ログイン",

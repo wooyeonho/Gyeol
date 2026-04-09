@@ -19,6 +19,7 @@ import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
 import { getStreakFreezeDates } from "@/lib/economy/shop";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
+import { shouldCreaturePing, getCreaturePingPrompt, markPingDelivered } from "@/lib/engagement/creature-ping";
 
 export type HomeSummaryItem = {
   id: string;
@@ -147,6 +148,16 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
     };
   }, []);
 
+  // BeReal-style creature ping — once per day at a random hour
+  const [creaturePing, setCreaturePing] = useState<string | null>(null);
+  useEffect(() => {
+    if (shouldCreaturePing() && !isStreaming) {
+      const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
+      setCreaturePing(getCreaturePingPrompt(mood));
+      markPingDelivered();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const userMessages = useMemo(
     () => messages.filter((message) => message.role === "user").length,
     [messages],
@@ -229,6 +240,40 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
     <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
       <ComebackBanner onComebackDetected={onComebackDetected} />
       <DuoStreakAlertBanner />
+      {/* BeReal-style creature ping */}
+      <AnimatePresence>
+        {creaturePing && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="mb-2 rounded-2xl border border-purple-400/20 bg-purple-500/10 px-4 py-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💬</span>
+                <div>
+                  <p className="text-xs font-medium text-purple-200">{selfName}의 메시지</p>
+                  <p className="text-sm text-white/80">{creaturePing}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isStreaming) {
+                    void sendMessage(creaturePing, { source: "prompt", locale, totalMessages });
+                  }
+                  setCreaturePing(null);
+                  haptic("tap");
+                }}
+                className="rounded-full bg-purple-500/20 px-3 py-1.5 text-xs font-medium text-purple-200 hover:bg-purple-500/30"
+              >
+                답장하기
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <motion.section
         className="overflow-hidden rounded-[2rem] border border-white/15 bg-black/55 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl"
         layout

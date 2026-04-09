@@ -119,7 +119,8 @@ export function RewardToast({ reward, locale, onDismiss }: RewardToastProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: isJackpot ? 0 : -20, scale: 0.95 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          aria-live="polite"
+          role="alert"
+          aria-live="assertive"
         >
           {isJackpot && (
             <>
