@@ -406,6 +406,11 @@ export function stepForceSimulation(
   // Scale pulse
   const scalePulse = computeScalePulse(dna, env, prev);
 
+  // Fear trembling — micro-vibration when scared/anxious
+  const tremble = computeTremble(env.mood, dna, env.time);
+  px += tremble.x;
+  py += tremble.y;
+
   // Advance wander phase (time-based, DNA-influenced speed)
   const wanderAdvance = dt * (0.5 + dna.curiosity * 0.5 + dna.playfulness * 0.3);
 
@@ -562,6 +567,31 @@ function getMoodForce(
         y: smoothNoise(t * 0.15 + s * 0.5, t * 0.2) * 0.012,
       };
   }
+}
+
+// ─── Helper: Fear Trembling ─────────────────────────────────────────
+
+/**
+ * Micro-vibration when the creature is scared or anxious.
+ * Uses high-frequency noise to create a shivering effect.
+ * Amplitude scales with instability (1 - stability) and fear intensity.
+ */
+function computeTremble(
+  mood: string | null,
+  dna: CreatureDNA,
+  time: number,
+): Vec2 {
+  const fearMoods = ["scared", "anxious", "terrified", "nervous"];
+  if (!mood || !fearMoods.includes(mood)) return { x: 0, y: 0 };
+
+  const instability = 1 - dna.stability;
+  const intensity = mood === "terrified" ? 1.0 : mood === "scared" ? 0.7 : 0.4;
+  const amplitude = 0.003 * instability * intensity;
+
+  return {
+    x: Math.sin(time * 47.3) * amplitude + Math.sin(time * 31.7) * amplitude * 0.5,
+    y: Math.cos(time * 53.1) * amplitude + Math.cos(time * 37.9) * amplitude * 0.5,
+  };
 }
 
 // ─── Helper: Boundary Force ──────────────────────────────────────────

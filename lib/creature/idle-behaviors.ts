@@ -16,6 +16,9 @@ export type IdleBehavior =
   | "restless"     // fidgeting, wants attention
   | "meditating"   // deep calm, minimal movement
   | "nesting"      // settling in, comfort seeking
+  | "grooming"     // self-grooming, scratching/tidying (bored → self-care)
+  | "nodding"      // head-bobbing agreement gesture
+  | "headShake"    // side-to-side disagreement gesture
   | "drowsy"       // getting sleepy
   | "sleeping"     // fully asleep
   | "dreaming";    // asleep with dream visuals (REM)
@@ -128,6 +131,42 @@ const BEHAVIOR_PARAMS: Record<IdleBehavior, IdleBehaviorParams> = {
     showDreamParticles: false,
     appendageSpeed: 0.4,
   },
+  grooming: {
+    scaleOscillation: 0.025,
+    rotationSpeed: 0.4,
+    bobAmplitude: 0.015,
+    bobFrequency: 1.6,  // rhythmic scratching motion
+    eyeOpenness: 0.7,
+    emissiveMult: 0.85,
+    particleSpeed: 0.3,
+    bodyTilt: -0.08,    // tilted into grooming position
+    showDreamParticles: false,
+    appendageSpeed: 2.0, // active limbs
+  },
+  nodding: {
+    scaleOscillation: 0.01,
+    rotationSpeed: 0.3,
+    bobAmplitude: 0.08,  // strong vertical bob = nod
+    bobFrequency: 2.5,
+    eyeOpenness: 0.9,
+    emissiveMult: 1.0,
+    particleSpeed: 0.8,
+    bodyTilt: 0.03,
+    showDreamParticles: false,
+    appendageSpeed: 0.8,
+  },
+  headShake: {
+    scaleOscillation: 0.015,
+    rotationSpeed: 3.0,   // fast side-to-side rotation = shake
+    bobAmplitude: 0.01,
+    bobFrequency: 0.5,
+    eyeOpenness: 0.8,
+    emissiveMult: 0.9,
+    particleSpeed: 0.6,
+    bodyTilt: 0,
+    showDreamParticles: false,
+    appendageSpeed: 1.2,
+  },
   drowsy: {
     scaleOscillation: 0.008,
     rotationSpeed: 0.15,
@@ -211,6 +250,8 @@ export function resolveIdleBehavior(params: {
       if (dna.curiosity > 0.7) return "curious";
       if (dna.playfulness > 0.7) return "playing";
       if (dna.independence > 0.7) return "daydreaming";
+      // Grooming: bored creatures with moderate independence groom themselves
+      if (idleSeconds > 25 && dna.independence > 0.4 && dna.playfulness < 0.5) return "grooming";
     }
 
     return "daydreaming";

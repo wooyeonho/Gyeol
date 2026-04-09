@@ -8,6 +8,7 @@ import { getRequestLocale } from "@/lib/i18n/server";
 import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
 import { WebPushManager } from "@/components/push-manager";
+import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
   ko: {
@@ -125,6 +126,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="bg-background text-foreground min-h-screen antialiased">
+        <ReducedMotionProvider>
         <I18nProvider initialLocale={locale}>
           <a
             href="#main-content"
@@ -140,6 +142,7 @@ export default async function RootLayout({
             <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
           </AnalyticsProvider>
         </I18nProvider>
+        </ReducedMotionProvider>
       </body>
     </html>
   );

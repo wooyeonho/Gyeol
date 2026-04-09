@@ -90,19 +90,113 @@ const BOX_ICONS: Record<BoxRarity, string> = {
   legendary: "👑",
 };
 
+// ── Pity System (Genshin-style guaranteed rarity) ──
+
+const PITY_KEY = "gyeol_mystery_box_pity_v1";
+
+interface PityState {
+  /** Boxes opened since last epic or legendary */
+  sinceEpic: number;
+  /** Boxes opened since last legendary */
+  sinceLegendary: number;
+}
+
+function readPityState(): PityState {
+  if (typeof window === "undefined") return { sinceEpic: 0, sinceLegendary: 0 };
+  try {
+    const raw = window.localStorage.getItem(PITY_KEY);
+    return raw ? (JSON.parse(raw) as PityState) : { sinceEpic: 0, sinceLegendary: 0 };
+  } catch {
+    return { sinceEpic: 0, sinceLegendary: 0 };
+  }
+}
+
+function writePityState(state: PityState): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PITY_KEY, JSON.stringify(state));
+  } catch { /* ignore */ }
+}
+
+/** Pity thresholds — guaranteed rarity after N boxes without it */
+const EPIC_PITY_THRESHOLD = 20;
+const LEGENDARY_PITY_THRESHOLD = 50;
+
+/** Soft pity — increasing chance as you approach threshold */
+const LEGENDARY_SOFT_PITY_START = 35;
+const EPIC_SOFT_PITY_START = 12;
+
 /**
- * Determine box rarity based on a probability roll.
- * Rarity chances: common 50%, rare 30%, epic 15%, legendary 5%
+ * Determine box rarity based on a probability roll with pity system.
+ *
+ * Pity guarantees:
+ * - Epic+ guaranteed every 20 boxes (soft pity starts at 12)
+ * - Legendary guaranteed every 50 boxes (soft pity starts at 35)
+ *
+ * Base rates: common 50%, rare 30%, epic 15%, legendary 5%
  */
 export function rollBoxRarity(streakDays = 0): BoxRarity {
+  const pity = readPityState();
   const roll = Math.random();
+
   // Streak bonus: each 7 days increases legendary+epic chance slightly
   const streakBonus = Math.min(0.10, Math.floor(streakDays / 7) * 0.02);
 
-  if (roll < 0.05 + streakBonus * 0.5) return "legendary";
-  if (roll < 0.20 + streakBonus) return "epic";
-  if (roll < 0.50 + streakBonus * 0.5) return "rare";
-  return "common";
+  // Hard pity: guaranteed legendary
+  if (pity.sinceLegendary >= LEGENDARY_PITY_THRESHOLD) {
+    writePityState({ sinceEpic: 0, sinceLegendary: 0 });
+    return "legendary";
+  }
+
+  // Hard pity: guaranteed epic+
+  if (pity.sinceEpic >= EPIC_PITY_THRESHOLD) {
+    const isLegendary = roll < 0.25; // 25% chance the pity-forced epic is actually legendary
+    writePityState({
+      sinceEpic: 0,
+      sinceLegendary: isLegendary ? 0 : pity.sinceLegendary + 1,
+    });
+    return isLegendary ? "legendary" : "epic";
+  }
+
+  // Soft pity: increasing chance as approaching threshold
+  let legendaryBoost = 0;
+  if (pity.sinceLegendary >= LEGENDARY_SOFT_PITY_START) {
+    legendaryBoost = (pity.sinceLegendary - LEGENDARY_SOFT_PITY_START) * 0.04;
+  }
+  let epicBoost = 0;
+  if (pity.sinceEpic >= EPIC_SOFT_PITY_START) {
+    epicBoost = (pity.sinceEpic - EPIC_SOFT_PITY_START) * 0.03;
+  }
+
+  let rarity: BoxRarity;
+  if (roll < 0.05 + streakBonus * 0.5 + legendaryBoost) {
+    rarity = "legendary";
+  } else if (roll < 0.20 + streakBonus + epicBoost) {
+    rarity = "epic";
+  } else if (roll < 0.50 + streakBonus * 0.5) {
+    rarity = "rare";
+  } else {
+    rarity = "common";
+  }
+
+  // Update pity counters
+  const isEpicPlus = rarity === "epic" || rarity === "legendary";
+  writePityState({
+    sinceEpic: isEpicPlus ? 0 : pity.sinceEpic + 1,
+    sinceLegendary: rarity === "legendary" ? 0 : pity.sinceLegendary + 1,
+  });
+
+  return rarity;
+}
+
+/** Get current pity counter for UI display */
+export function getPityProgress(): { sinceEpic: number; sinceLegendary: number; epicThreshold: number; legendaryThreshold: number } {
+  const pity = readPityState();
+  return {
+    ...pity,
+    epicThreshold: EPIC_PITY_THRESHOLD,
+    legendaryThreshold: LEGENDARY_PITY_THRESHOLD,
+  };
 }
 
 /**
