@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { useTranslations } from "@/components/i18n-provider";
+import { useCelebrationStore } from "@/store/celebration-store";
 
 interface EvolutionCeremonyProps {
   level: number;
@@ -35,12 +36,23 @@ export function EvolutionCeremony({
   const [phase, setPhase] = useState<"cinematic" | "card">("cinematic");
   const [copied, setCopied] = useState(false);
 
+  const celebrate = useCelebrationStore((s) => s.celebrate);
+
   const handleCinematicEnd = useCallback(() => {
     if (phase !== "cinematic") return;
     haptic("success");
     playSound("levelUp");
     setPhase("card");
-  }, [phase]);
+
+    // Global firework celebration for evolution
+    celebrate({
+      title: t("evolution.congratsTitle") || "진화 완료!",
+      subtitle: `${selfName} → Gen ${level}`,
+      reward: mutation ? { type: "mutation", amount: 1, icon: "🧬" } : undefined,
+      variant: "firework",
+      autoDismissMs: 4000,
+    });
+  }, [phase, celebrate, t, selfName, level, mutation]);
 
   // Fallback timeout in case onAnimationComplete doesn't fire (e.g. tab backgrounded)
   useEffect(() => {
