@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { haptic } from "@/lib/micro-interactions";
+import { FocusTrap } from "@/components/focus-trap";
 import type { AgeGroup } from "@/lib/safety/age-gate";
 
 type AgeGateProps = {
@@ -43,7 +44,8 @@ export function AgeGate({ onComplete }: AgeGateProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 px-4" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+    <FocusTrap active>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 px-4" aria-labelledby="age-gate-title">
       <motion.section
         className="w-full max-w-xl rounded-[2rem] border border-white/15 bg-black/75 p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-xl sm:p-8"
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -145,5 +147,6 @@ export function AgeGate({ onComplete }: AgeGateProps) {
         </div>
       </motion.section>
     </div>
+    </FocusTrap>
   );
 }

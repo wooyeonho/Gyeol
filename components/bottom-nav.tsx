@@ -8,7 +8,12 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { haptic } from "@/lib/micro-interactions";
-import { NotificationBellButton, NotificationCenter } from "@/components/notification-center";
+import dynamic from "next/dynamic";
+import { NotificationBellButton } from "@/components/notification-center";
+const NotificationCenter = dynamic(() => import("@/components/notification-center").then(m => ({ default: m.NotificationCenter })), {
+  ssr: false,
+  loading: () => null,
+});
 
 function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
   const common = "h-4 w-4";

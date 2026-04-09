@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { useTranslations } from "@/components/i18n-provider";
 import { useCelebrationStore } from "@/store/celebration-store";
+import { FocusTrap } from "@/components/focus-trap";
 
 interface EvolutionCeremonyProps {
   level: number;
@@ -120,6 +121,7 @@ export function EvolutionCeremony({
   }, [onComplete]);
 
   return (
+    <FocusTrap active onEscape={handleClose}>
     <AnimatePresence mode="wait">
       {phase === "cinematic" && (
         <motion.div
@@ -320,5 +322,6 @@ export function EvolutionCeremony({
         </motion.div>
       )}
     </AnimatePresence>
+    </FocusTrap>
   );
 }

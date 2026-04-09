@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 import {
   useNotificationStore,
   type Notification,
@@ -240,6 +241,7 @@ export function NotificationCenter({
   return (
     <AnimatePresence>
       {open && (
+        <FocusTrap active onEscape={onClose}>
         <>
           {/* Backdrop */}
           <motion.div
@@ -344,6 +346,7 @@ export function NotificationCenter({
             </div>
           </motion.div>
         </>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );

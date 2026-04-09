@@ -233,6 +233,25 @@ export const iotPreferencesBodySchema = z.object({
   }),
 });
 
+// ── /api/chat POST ──
+export const chatBodySchema = z.object({
+  message: z.string().min(1, "No message").max(8000, "Message too long"),
+  locale: z.string().optional(),
+});
+
+// ── /api/analytics/track POST ──
+export const analyticsTrackBodySchema = z.object({
+  event_name: z.string().min(1).max(64),
+  anonymous_id: z.string().max(128).optional(),
+  locale: z.string().max(12).optional(),
+  path: z.string().max(256).optional(),
+  properties: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .default({}),
+  session_id: z.string().max(128).optional(),
+});
+
 /**
  * Parse and validate request body with a Zod schema.
  * Returns `{ success: true, data }` on success or `{ success: false, error }` on failure.

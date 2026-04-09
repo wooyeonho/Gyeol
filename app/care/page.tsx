@@ -7,7 +7,12 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import type { CareState } from "@/lib/creature/care-loop";
-import { CareHeatmap, logCareActivity } from "@/components/care-heatmap";
+import dynamic from "next/dynamic";
+import { logCareActivity } from "@/components/care-heatmap";
+const CareHeatmap = dynamic(() => import("@/components/care-heatmap").then(m => ({ default: m.CareHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-32 rounded-2xl bg-white/5 animate-pulse" />,
+});
 
 function GaugeBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   const pct = Math.max(0, Math.min(100, value));

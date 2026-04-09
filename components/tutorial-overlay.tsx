@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FocusTrap } from "@/components/focus-trap";
 
 /* ── Constants ── */
 
@@ -245,14 +246,13 @@ export function TutorialOverlay({ onComplete }: TutorialOverlayProps) {
   return (
     <AnimatePresence>
       {visible && (
+        <FocusTrap active onEscape={handleSkip}>
         <motion.div
           className="fixed inset-0 z-[100] flex flex-col justify-center px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          role="dialog"
-          aria-modal="true"
           aria-label="Tutorial"
         >
           {/* Spotlight layer */}
@@ -322,6 +322,7 @@ export function TutorialOverlay({ onComplete }: TutorialOverlayProps) {
             </AnimatePresence>
           </div>
         </motion.div>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );

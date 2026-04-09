@@ -8,6 +8,15 @@ export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
   const [justReconnected, setJustReconnected] = useState(false);
 
+  // Register service worker for offline caching (unconditionally)
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // SW registration failed — offline caching unavailable
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => {

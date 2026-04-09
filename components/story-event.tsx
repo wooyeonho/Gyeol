@@ -8,6 +8,7 @@ import {
   makeChoice,
 } from "@/lib/game/narrative-system";
 import { haptic } from "@/lib/micro-interactions";
+import { FocusTrap } from "@/components/focus-trap";
 
 const CHOICE_TYPE_COLORS: Record<string, string> = {
   kind: "#f472b6",
@@ -54,6 +55,7 @@ export function StoryEventModal({ event, locale = "ko", onComplete, onDismiss }:
   }, [chosenResult, onComplete, onDismiss]);
 
   return (
+    <FocusTrap active onEscape={onDismiss}>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -192,5 +194,6 @@ export function StoryEventModal({ event, locale = "ko", onComplete, onDismiss }:
         </AnimatePresence>
       </motion.div>
     </motion.div>
+    </FocusTrap>
   );
 }

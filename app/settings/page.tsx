@@ -23,8 +23,15 @@ import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
 import { createClient } from "@/lib/supabase/client";
-import { AchievementShowcase } from "@/components/achievement-showcase";
-import { StreakHeatmap } from "@/components/streak-heatmap";
+import dynamic from "next/dynamic";
+const AchievementShowcase = dynamic(() => import("@/components/achievement-showcase").then(m => ({ default: m.AchievementShowcase })), {
+  ssr: false,
+  loading: () => <div className="h-40 rounded-2xl bg-white/5 animate-pulse" />,
+});
+const StreakHeatmap = dynamic(() => import("@/components/streak-heatmap").then(m => ({ default: m.StreakHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-28 rounded-2xl bg-white/5 animate-pulse" />,
+});
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import {

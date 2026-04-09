@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SHORTCUTS, type ShortcutDef } from "@/lib/keyboard-shortcuts";
+import { FocusTrap } from "@/components/focus-trap";
 
 /* ── Helper: format display key ── */
 
@@ -81,6 +82,7 @@ export function KeyboardShortcutHelp() {
   return (
     <AnimatePresence>
       {isOpen && (
+        <FocusTrap active onEscape={close}>
         <motion.div
           className="fixed inset-0 z-[110] flex items-center justify-center px-4"
           variants={overlayVariants}
@@ -170,6 +172,7 @@ export function KeyboardShortcutHelp() {
             </div>
           </motion.div>
         </motion.div>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );

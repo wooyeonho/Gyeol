@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { FocusTrap } from "@/components/focus-trap";
 
 /* ── Hook: useSearchModal ── */
 
@@ -307,6 +308,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
+        <FocusTrap active onEscape={onClose}>
         <motion.div
           className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4"
           variants={backdropVariants}
@@ -323,6 +325,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
           {/* Content remounts on each open → state resets naturally */}
           <SearchModalContent onClose={onClose} />
         </motion.div>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );

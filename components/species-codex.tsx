@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FocusTrap } from "@/components/focus-trap";
 import { DNA_AXES, type CreatureDNA, type DNAAxis } from "@/lib/genome/dna";
 import {
   getSpeciesCatalog,
@@ -348,6 +349,7 @@ function SpeciesDetailModal({
   const discovered = !!codex;
 
   return (
+    <FocusTrap active onEscape={onClose}>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -498,6 +500,7 @@ function SpeciesDetailModal({
         )}
       </motion.div>
     </motion.div>
+    </FocusTrap>
   );
 }
 

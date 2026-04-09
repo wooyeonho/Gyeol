@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { haptic, playSound } from "@/lib/micro-interactions";
+import { FocusTrap } from "@/components/focus-trap";
 
 interface OnboardingProps {
   onComplete: (personalityMode?: string) => void;
@@ -56,6 +57,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }, [onComplete]);
 
   return (
+    <FocusTrap active onEscape={handleSkip}>
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 px-4">
       <motion.section
         className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/15 bg-black/70 p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-xl sm:p-8"
@@ -161,6 +163,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         </div>
       </motion.section>
     </div>
+    </FocusTrap>
   );
 }
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 
 type Portrait = {
   id: string;
@@ -235,6 +236,7 @@ export function PortraitGallery() {
       {/* Full-screen portrait viewer */}
       <AnimatePresence>
         {selected && (
+          <FocusTrap active onEscape={() => setSelectedId(null)}>
           <motion.div
             key="viewer"
             initial={{ opacity: 0 }}
@@ -286,6 +288,7 @@ export function PortraitGallery() {
               </button>
             </motion.div>
           </motion.div>
+          </FocusTrap>
         )}
       </AnimatePresence>
     </div>

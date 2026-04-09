@@ -7,6 +7,7 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { isMissingEnvError } from "@/lib/env/required";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
+import { chatBodySchema } from "@/lib/validation/schemas";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { buildChatPromptContext } from "@/lib/chat/context";
 import { persistChatTurn } from "@/lib/chat/post-process";
@@ -82,10 +83,15 @@ function computeInlineResonance(
 export async function POST(req: NextRequest) {
   try {
     const requestStartedAt = Date.now();
-    const payload = (await req.json()) as { message?: unknown; locale?: unknown };
-    const rawMessage = typeof payload.message === "string" ? payload.message : "";
-    if (!rawMessage.trim()) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
-    if (rawMessage.length > 8000) return new Response(JSON.stringify({ error: "Message too long" }), { status: 413 });
+    const payload = await req.json();
+    const parsed = chatBodySchema.safeParse(payload);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      const errorMsg = firstIssue?.message ?? "Invalid request";
+      const status = errorMsg === "Message too long" ? 413 : 400;
+      return new Response(JSON.stringify({ error: errorMsg }), { status });
+    }
+    const rawMessage = parsed.data.message;
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
     const message = sanitizeUserInput(rawMessage);
@@ -122,7 +128,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    const locale = typeof payload.locale === "string" ? payload.locale : undefined;
+    const locale = parsed.data.locale;
     const context = await buildChatPromptContext({
       agentId,
       locale,
@@ -162,7 +168,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
-    const userLang = detectUserLanguage(payload.message as string);
+    const userLang = detectUserLanguage(rawMessage);
     const langRule = userLang
       ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
       : "";
