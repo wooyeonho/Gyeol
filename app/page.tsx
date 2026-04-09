@@ -29,6 +29,7 @@ const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => 
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
+import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -56,6 +57,7 @@ const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay
 
 export default function Home() {
   const { locale, t } = useTranslations();
+  const showTutorial = useShouldShowTutorial();
   const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
@@ -650,7 +652,7 @@ export default function Home() {
               {agentState.genome.species}
             </p>
           )}
-          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50">
+          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50" aria-live="polite">
             <span>Gen {agentState?.gen_level ?? 1}</span>
             {agentState?.genome?.species && (
               <>
@@ -749,6 +751,7 @@ export default function Home() {
         />
       )}
       <BottomNav />
+      {showTutorial && <TutorialOverlay />}
     </div>
   );
 }
