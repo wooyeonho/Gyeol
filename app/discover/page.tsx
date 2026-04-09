@@ -11,6 +11,11 @@ import { initOrRefreshDailyChallenges } from "@/lib/engagement/daily-challenge";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { DiscoverGridSkeleton } from "@/components/discover/skeleton";
+import { useAgentStore } from "@/store/agent-store";
+import dynamic from "next/dynamic";
+import type { CreatureDNA } from "@/lib/genome/dna";
+
+const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -98,6 +103,9 @@ type DiscoverCounts = {
 export default function DiscoverPage() {
   const { locale, t } = useTranslations();
   const weeklyEventProgress = useChatStore((s) => s.weeklyEventProgress);
+  const agentState = useAgentStore((s) => s.agentState);
+  const dna = (agentState?.genome as unknown as { dna?: CreatureDNA } | null)?.dna ?? null;
+  const genLevel = (agentState?.gen_level as number) ?? 1;
   const [counts, setCounts] = useState<DiscoverCounts>({
     activity: 0,
     album: 0,
@@ -235,31 +243,35 @@ export default function DiscoverPage() {
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
-        {/* Daily Challenge progress bar */}
-        <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base">⚡</span>
-              <span className="text-sm font-medium text-white/80">
-                {t("discover.dailyChallenges") || "오늘의 챌린지"}
-              </span>
+        {/* Daily Special Challenges — procedural quests */}
+        {dna ? (
+          <DailySpecialChallenge dna={dna} genLevel={genLevel} locale={locale} />
+        ) : (
+          <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base">⚡</span>
+                <span className="text-sm font-medium text-white/80">
+                  {t("discover.dailyChallenges") || "오늘의 챌린지"}
+                </span>
+              </div>
+              <span className="text-xs text-white/40">{challengeCompleted}/{challengeTotal}</span>
             </div>
-            <span className="text-xs text-white/40">{challengeCompleted}/{challengeTotal}</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-purple-400"
-              initial={{ width: "0%" }}
-              animate={{ width: `${(challengeCompleted / challengeTotal) * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
-          </div>
-          {challengeCompleted === challengeTotal && (
-            <p className="mt-1.5 text-xs text-amber-300/80">
-              {t("discover.perfectDay") || "완벽한 하루! 보상을 받을 수 있어요 🎁"}
-            </p>
-          )}
-        </Link>
+            <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-purple-400"
+                initial={{ width: "0%" }}
+                animate={{ width: `${(challengeCompleted / challengeTotal) * 100}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+            </div>
+            {challengeCompleted === challengeTotal && (
+              <p className="mt-1.5 text-xs text-amber-300/80">
+                {t("discover.perfectDay") || "완벽한 하루! 보상을 받을 수 있어요 🎁"}
+              </p>
+            )}
+          </Link>
+        )}
 
         {/* Section label */}
         <div className="flex items-center gap-2 px-1">

@@ -8,10 +8,14 @@ import { breedCreatures } from "@/lib/genome/dna";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { logger } from "@/lib/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 const log = logger.child({ route: "api/breeding" });
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -132,7 +132,6 @@ describe("checkElectricFence", () => {
       reason: "Blocked by safety rules",
     });
   });
-});
 
   it("blocks path traversal attempts", () => {
     expect(checkElectricFence("../../etc/passwd").blocked).toBe(true);

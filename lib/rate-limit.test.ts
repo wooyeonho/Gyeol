@@ -23,7 +23,7 @@ describe("checkRateLimit", () => {
     expect(allowed).toBe(false);
   });
 
-  it("can fail open when configured", async () => {
+  it("always fails closed even with env override (security hardening)", async () => {
     process.env.RATE_LIMIT_FAIL_MODE = "open";
     (createServiceClient as Mock).mockImplementation(() => {
       throw new Error("db unavailable");
@@ -31,6 +31,7 @@ describe("checkRateLimit", () => {
 
     const { checkRateLimit } = await import("./rate-limit");
     const allowed = await checkRateLimit("chat:user-1");
-    expect(allowed).toBe(true);
+    // Fail-open was removed in security hardening — always deny on error
+    expect(allowed).toBe(false);
   });
 });

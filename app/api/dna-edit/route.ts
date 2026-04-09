@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { spendCoinsAtomic, getBalance } from "@/lib/economy/coins";
 import { dnaEditBodySchema, parseBody } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   calculateEditCost,
   validateEdits,
@@ -16,11 +18,17 @@ import { deriveSpecies } from "@/lib/genome/species";
  * Body: { agentId, edits: Record<DNAAxis, number> }
  * Charges coins based on total adjustment magnitude.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const authClient = await createServerSupabase();
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`dna-edit:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const parsed = await parseBody(req, dnaEditBodySchema);
     if (!parsed.success) {

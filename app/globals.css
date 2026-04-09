@@ -1,5 +1,4 @@
-/* ── Pretendard Variable is loaded via <link> in layout.tsx for performance ── */
-/* Moved from CSS @import (render-blocking) to HTML <link rel="stylesheet"> */
+/* ── Pretendard Variable is loaded via next/font/local for optimal performance ── */
 
 @import "tailwindcss";
 
@@ -152,7 +151,7 @@
   --radius-2xl: var(--radius-2xl);
   --radius-full: var(--radius-full);
 
-  --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: var(--font-pretendard), 'Pretendard Variable', Pretendard, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
 }
 

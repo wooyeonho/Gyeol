@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -10,6 +11,13 @@ import { NavigationHub } from "@/components/layout/navigation-hub";
 import { WebPushManager } from "@/components/push-manager";
 import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
 import { CookieConsent } from "@/components/cookie-consent";
+
+const pretendard = localFont({
+  src: "../public/fonts/PretendardVariable.woff2",
+  display: "swap",
+  variable: "--font-pretendard",
+  weight: "100 900",
+});
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
   ko: {
@@ -113,20 +121,8 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
 
   return (
-    <html lang={locale}>
-      <head>
-        {/* Pretendard Variable: preloaded for performance (moved from CSS @import) */}
-        <link
-          rel="preload"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-          as="style"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-      </head>
-      <body className="bg-background text-foreground min-h-screen antialiased">
+    <html lang={locale} className={pretendard.variable}>
+      <body className={`${pretendard.className} bg-background text-foreground min-h-screen antialiased`}>
         <ReducedMotionProvider>
         <I18nProvider initialLocale={locale}>
           <a

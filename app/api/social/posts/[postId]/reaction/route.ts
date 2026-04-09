@@ -6,6 +6,7 @@ import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 
 const log = logger.child({ route: "api/social/posts/[postId]/reaction" });
 
@@ -15,6 +16,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ postId: string }> },
 ) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
