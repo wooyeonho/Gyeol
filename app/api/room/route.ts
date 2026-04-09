@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { getDemoAgentState, getDemoRoomObjects } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { logRouteError } from "@/lib/ops/logger";
+import { parseBody, roomPatchBodySchema } from "@/lib/validation/schemas";
 
 export async function GET() {
   try {
@@ -84,17 +85,17 @@ export async function PATCH(req: Request) {
     const agentId = agents?.[0]?.id;
     if (!agentId) return NextResponse.json({ error: "No agent" }, { status: 404 });
 
-    const body = await req.json().catch(() => ({}));
-    const arPosition = body.ar_position as [number, number, number] | undefined;
-    if (arPosition && Array.isArray(arPosition) && arPosition.length === 3) {
-      const { data: state } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
-      const channels = (state?.channels as Record<string, unknown>) ?? {};
-      await service.from("agent_state").update({
-        channels: { ...channels, ar_position: { x: arPosition[0], y: arPosition[1], z: arPosition[2] } },
-      }).eq("agent_id", agentId);
-      return NextResponse.json({ ok: true });
+    const parsed = await parseBody(req, roomPatchBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+    const arPosition = parsed.data.ar_position;
+    const { data: state } = await service.from("agent_state").select("channels").eq("agent_id", agentId).single();
+    const channels = (state?.channels as Record<string, unknown>) ?? {};
+    await service.from("agent_state").update({
+      channels: { ...channels, ar_position: { x: arPosition[0], y: arPosition[1], z: arPosition[2] } },
+    }).eq("agent_id", agentId);
+    return NextResponse.json({ ok: true });
   } catch (e) {
     logRouteError("PATCH /api/room error", e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

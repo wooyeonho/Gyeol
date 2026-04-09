@@ -252,6 +252,17 @@ export const analyticsTrackBodySchema = z.object({
   session_id: z.string().max(128).optional(),
 });
 
+// ── /api/room PATCH ──
+export const roomPatchBodySchema = z.object({
+  ar_position: z.tuple([z.number(), z.number(), z.number()]),
+});
+
+// ── /api/creature/portrait POST ──
+export const creaturePortraitBodySchema = z.object({
+  context: z.enum(["portrait", "full_body", "action", "dream"]).optional().default("portrait"),
+  mood: z.string().max(50).optional(),
+});
+
 /**
  * Parse and validate request body with a Zod schema.
  * Returns `{ success: true, data }` on success or `{ success: false, error }` on failure.

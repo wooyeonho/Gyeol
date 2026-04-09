@@ -5,10 +5,12 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { generatePortraitPrompt, generateAvatarPrompt } from "@/lib/genome/portrait-prompt";
 import { deriveSpecies } from "@/lib/genome/species";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { logger } from "@/lib/logger";
+import { parseBody, creaturePortraitBodySchema } from "@/lib/validation/schemas";
 
 const log = logger.child({ route: "api/creature/portrait" });
 
@@ -88,9 +90,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const context = (body?.context as "portrait" | "full_body" | "action" | "dream") || "portrait";
-    const mood = typeof body?.mood === "string" ? body.mood : undefined;
+    const parsed = await parseBody(request, creaturePortraitBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const context = parsed.data.context;
+    const mood = parsed.data.mood;
+
+    if (mood) {
+      const fence = checkElectricFence(mood);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
+    }
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

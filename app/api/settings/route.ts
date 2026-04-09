@@ -8,6 +8,7 @@ import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { parseBody, settingsPatchBodySchema } from "@/lib/validation/schemas";
 
 export async function GET() {
@@ -78,6 +79,10 @@ export async function PATCH(request: NextRequest) {
     if (isFontSize(body.font_size)) config.font_size = body.font_size;
     if (typeof body.reduce_motion === "boolean") config.reduce_motion = body.reduce_motion;
     if (typeof body.personality_mode === "string" && body.personality_mode.trim()) {
+      const fence = checkElectricFence(body.personality_mode);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
       config.personality_mode = body.personality_mode.trim();
     }
     if (typeof body.preferred_locale === "string") {
