@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "verify:stripe": "node scripts/verify-stripe-setup.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
-    "pre-deploy": "node scripts/pre-deploy-check.mjs"
+    "pre-deploy": "node scripts/pre-deploy-check.mjs",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -36,6 +37,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",

@@ -3,6 +3,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveLocale } from "@/lib/i18n/config";
 import { renderLogSummaryPublic } from "@/lib/activity/log-templates";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/social/global-feed" });
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,7 +83,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (e) {
-    console.error("GET /api/social/global-feed error", e);
+    log.error("GET /api/social/global-feed error", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return NextResponse.json({
         feed: [

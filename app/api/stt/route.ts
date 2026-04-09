@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/stt" });
 
 const GROQ_WHISPER_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => "Unknown error");
-        console.error("[STT] Groq Whisper error:", res.status, errText);
+        log.error("[STT] Groq Whisper error:", { status: res.status, detail: errText });
         return new Response(JSON.stringify({ error: "Transcription failed" }), { status: 502 });
       }
 
@@ -68,11 +71,11 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       clearTimeout(timer);
-      console.error("[STT] Whisper request failed:", e);
+      log.error("[STT] Whisper request failed:", e instanceof Error ? e : { detail: String(e) });
       return new Response(JSON.stringify({ error: "Transcription timeout" }), { status: 504 });
     }
   } catch (e) {
-    console.error("[STT]", e);
+    log.error("[STT]", e instanceof Error ? e : { detail: String(e) });
     return new Response(JSON.stringify({ error: "Internal error" }), { status: 500 });
   }
 }

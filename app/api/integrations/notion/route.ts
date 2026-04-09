@@ -4,7 +4,10 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
+
+const log = logger.child({ route: "api/integrations/notion" });
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("integrations/notion POST", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -117,7 +120,7 @@ export async function GET() {
 
     return NextResponse.json({ synced });
   } catch (e) {
-    console.error("integrations/notion GET", e);
+    log.error("GET failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

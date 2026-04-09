@@ -1,6 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+// Bundle analyzer — run with ANALYZE=true npm run build
+const withBundleAnalyzer = process.env.ANALYZE === "true"
+  ? (await import("@next/bundle-analyzer")).default({ enabled: true })
+  : (config: NextConfig) => config;
+
 const nextConfig: NextConfig = {
   async headers() {
     // CSP is now set dynamically in middleware.ts with per-request nonces.
@@ -35,7 +40,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // Sentry webpack plugin options
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,

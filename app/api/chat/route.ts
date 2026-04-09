@@ -25,6 +25,9 @@ import {
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { trySemanticCache } from "@/lib/chat/semantic-cache";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/chat" });
 
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       billingTier = (sub as { plan_tier?: string } | null)?.plan_tier ?? null;
     } catch (e) {
-      console.warn("[Chat] billing tier lookup failed, defaulting to free:", e instanceof Error ? e.message : e);
+      log.warn("[Chat] billing tier lookup failed, defaulting to free:", e instanceof Error ? e.message : e);
     }
     const allowed = await checkRateLimit(`chat:${user.id}`, billingTier);
     if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
@@ -145,7 +148,7 @@ export async function POST(req: NextRequest) {
             .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
             .eq("agent_id", agentId)
             .then(({ error: syncErr }: { error: { message: string } | null }) => {
-              if (syncErr) console.error("[Chat] preferred_locale sync failed", syncErr);
+              if (syncErr) log.error("[Chat] preferred_locale sync failed", syncErr instanceof Error ? syncErr : { detail: String(syncErr) });
             });
         });
       }
@@ -309,13 +312,13 @@ export async function POST(req: NextRequest) {
           messageLength: message.length,
           userId: user.id,
         });
-        console.error("[PostStream]", error);
+        log.error("[PostStream]", error instanceof Error ? error : { detail: String(error) });
       }
     });
 
     return new Response(metaStream, { headers });
   } catch (e: unknown) {
-    console.error("[Chat]", e);
+    log.error("[Chat]", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return new Response(
         JSON.stringify({ error: "Service unavailable: missing server configuration", code: "MISSING_ENV" }),

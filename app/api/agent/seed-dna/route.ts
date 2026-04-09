@@ -4,6 +4,10 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { deriveSpecies } from "@/lib/genome/species";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { seedDnaBodySchema, parseBody } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/agent/seed-dna" });
 
 /**
  * POST /api/agent/seed-dna
@@ -16,15 +20,15 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-    const payload = (await req.json()) as { dna?: Record<string, number> };
-    if (!payload.dna || typeof payload.dna !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid DNA" }), { status: 400 });
+    const parsed = await parseBody(req, seedDnaBodySchema);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: parsed.error }), { status: 400 });
     }
 
     // Validate and clamp all 16 axes
     const dna = {} as Record<string, number>;
     for (const axis of DNA_AXES) {
-      const val = payload.dna[axis];
+      const val = parsed.data.dna[axis];
       if (typeof val !== "number" || isNaN(val)) {
         return new Response(JSON.stringify({ error: `Invalid axis: ${axis}` }), { status: 400 });
       }
@@ -62,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(JSON.stringify({ ok: true, seeded: true }), { status: 200 });
   } catch (e) {
-    console.error("[SeedDNA]", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return new Response(JSON.stringify({ error: "Internal error" }), { status: 500 });
   }
 }

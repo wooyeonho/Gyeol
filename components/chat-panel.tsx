@@ -13,6 +13,7 @@ import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
+import { TypingIndicator } from "@/components/typing-indicator";
 import { getSimpleModeFromAge } from "@/lib/i18n/jargon-map";
 
 function getFirstSessionConfig(t: (key: string) => string) {
@@ -226,6 +227,14 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             simpleModeLevel={simpleModeLevel}
             locale={locale}
           />
+          {isStreaming && (
+            <div className="px-2 pb-2">
+              <TypingIndicator
+                accentColor={appearance.palette.primary}
+                creatureName={appearance.name}
+              />
+            </div>
+          )}
         </div>
 
         {/* Silent mode — verbal < 0.15: touch interaction instead of text */}

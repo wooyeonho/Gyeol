@@ -3,7 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import type { DailyChallengeState } from "@/lib/engagement/daily-challenge";
+
+const log = logger.child({ route: "api/challenges" });
 
 /**
  * GET /api/challenges — Retrieve persisted challenge state from server.
@@ -30,7 +33,7 @@ export async function GET() {
 
     return NextResponse.json({ state: challengeState });
   } catch (e) {
-    console.error("GET /api/challenges error", e);
+    log.error("GET failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("POST /api/challenges error", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

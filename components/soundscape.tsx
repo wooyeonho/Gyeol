@@ -21,12 +21,18 @@ export default function Soundscape({
   label,
   accentColor = "#ffffff",
   voiceHint,
+  mood,
+  dnaModifier,
 }: {
   enabled: boolean;
   soundProfile?: SoundProfile | null;
   label?: string;
   accentColor?: string;
   voiceHint?: VoiceHint | null;
+  /** Current creature mood — triggers emotion sounds on change */
+  mood?: string | null;
+  /** DNA pitch modifier 0..1 for emotion sounds */
+  dnaModifier?: number;
 }) {
   const [playing, setPlaying] = useState(false);
   const disposeRef = useRef<(() => void) | null>(null);
@@ -89,6 +95,18 @@ export default function Soundscape({
       setPlaying(false);
     };
   }, [enabled, soundProfile]);
+
+  // ── Creature emotion sounds — play on mood change ──
+  const lastMoodRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!enabled || !mood || mood === lastMoodRef.current) return;
+    lastMoodRef.current = mood;
+    import("@/lib/creature/emotion-sounds").then(({ shouldPlayEmotionSound, playEmotionSound }) => {
+      if (shouldPlayEmotionSound(mood)) {
+        playEmotionSound(mood, dnaModifier ?? 0.5);
+      }
+    }).catch(() => {});
+  }, [enabled, mood, dnaModifier]);
 
   if (!enabled) return null;
   return (

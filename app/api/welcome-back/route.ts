@@ -7,6 +7,9 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 import { checkComebackBonus, claimComebackBonus } from "@/lib/retention/comeback-reward";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/welcome-back" });
 
 export const dynamic = "force-dynamic";
 
@@ -290,7 +293,7 @@ export async function GET() {
     setTtlCache(cacheKey, payload, 30_000);
     return NextResponse.json(payload);
   } catch (error) {
-    console.error("GET /api/welcome-back error", error);
+    log.error("GET /api/welcome-back error", error instanceof Error ? error : { detail: String(error) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

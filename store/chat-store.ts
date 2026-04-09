@@ -255,7 +255,7 @@ async function handleStreamResponse(
       });
       return;
     }
-    console.error("[Chat]", e);
+    logWarn("Chat stream error", { error: e instanceof Error ? e.message : String(e) });
     set((s) => {
       const msgs = [...s.messages];
       msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: copy.streamError, error: true };
@@ -265,7 +265,7 @@ async function handleStreamResponse(
     try {
       await useAgentStore.getState().fetchAgentState({ silent: true });
     } catch (e) {
-      console.error("[Chat] agent refresh failed", e);
+      logWarn("Agent refresh after chat failed", { error: e instanceof Error ? e.message : String(e) });
     }
     // Roll variable reward on successful completion (delegated to reward-middleware)
     const lastMsg = get().messages[get().messages.length - 1];

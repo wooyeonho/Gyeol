@@ -6,6 +6,9 @@ import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveLocale } from "@/lib/i18n/config";
 import { renderLogSummary } from "@/lib/activity/log-templates";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/activity" });
 
 const TYPE_FILTER: Record<string, string[]> = {
   dream: ["dream_journal", "dream"],
@@ -97,7 +100,7 @@ export async function GET(request: NextRequest) {
         : null,
     });
   } catch (e) {
-    console.error("GET /api/activity error", e);
+    log.error("GET /api/activity error", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       const demo = getDemoAgentState();
       return NextResponse.json({

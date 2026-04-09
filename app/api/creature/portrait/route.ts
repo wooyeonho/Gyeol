@@ -8,6 +8,9 @@ import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { generatePortraitPrompt, generateAvatarPrompt } from "@/lib/genome/portrait-prompt";
 import { deriveSpecies } from "@/lib/genome/species";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/creature/portrait" });
 
 const CF_SDXL_PATH = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
 
@@ -27,7 +30,7 @@ async function generateImageCF(prompt: string): Promise<string | null> {
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      console.error(`[Portrait] CF image ${res.status}`, await res.text().catch(() => ""));
+      log.error(`[Portrait] CF image ${res.status}`, { detail: await res.text().catch(() => "") });
       return null;
     }
     const buffer = await res.arrayBuffer();

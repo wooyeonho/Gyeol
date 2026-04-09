@@ -9,6 +9,7 @@ import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
 import { WebPushManager } from "@/components/push-manager";
 import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
   ko: {
@@ -137,6 +138,7 @@ export default async function RootLayout({
           <DocumentLocaleSync />
           <ThemePreferenceSync />
           <WebPushManager />
+          <CookieConsent />
           <NavigationHub />
           <AnalyticsProvider>
             <main id="main-content" role="main" aria-label="GYEOL">{children}</main>

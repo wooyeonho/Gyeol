@@ -131,6 +131,16 @@ export function MessageList({
               whileTap={{ scale: 0.98 }}
             >
               {m.content}
+              {/* KakaoTalk-style sent indicator */}
+              <div className="mt-1 flex justify-end">
+                {isStreaming && i === messages.length - 2 ? (
+                  <span className="text-[10px] text-white/30">...</span>
+                ) : (
+                  <svg className="h-3 w-3 text-white/30" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="2 8 6 12 14 4" />
+                  </svg>
+                )}
+              </div>
             </motion.div>
           ) : (
             <motion.div

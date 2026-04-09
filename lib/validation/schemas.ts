@@ -169,6 +169,50 @@ export const demoChatBodySchema = z.object({
   dna: z.record(z.string(), z.number()).optional(),
 });
 
+// ── /api/agent/seed-dna POST ──
+export const seedDnaBodySchema = z.object({
+  dna: z.record(z.string(), z.number().min(0).max(1)),
+});
+
+// ── /api/invite/apply POST ──
+export const inviteApplyBodySchema = z.object({
+  code: z.string().min(1).max(50).transform((s) => s.trim().toLowerCase()),
+});
+
+// ── /api/integrations/* POST (token save) ──
+export const integrationTokenBodySchema = z.object({
+  access_token: z.string().min(1, "access_token required"),
+  channel_id: z.string().max(100).optional(),
+});
+
+// ── /api/integrations/slack POST (message send) ──
+export const slackMessageBodySchema = z.object({
+  message: z.string().min(1).max(3000),
+});
+
+// ── /api/social/posts/[postId]/reaction POST ──
+export const socialReactionBodySchema = z.object({
+  emoji: z.string().min(1).max(8),
+});
+
+// ── /api/iot POST ──
+export const iotBodySchema = z.object({
+  agentId: z.string().uuid(),
+  event: z.string().min(1).max(100),
+  value: z.unknown().optional(),
+});
+
+// ── /api/referral/apply POST ──
+export const referralApplyBodySchema = z.object({
+  code: z.string().min(1).max(50),
+});
+
+// ── /api/events/war POST ──
+export const warEventBodySchema = z.object({
+  action: z.enum(["join", "attack", "defend", "retreat"]),
+  target_id: z.string().uuid().optional(),
+});
+
 /**
  * Parse and validate request body with a Zod schema.
  * Returns `{ success: true, data }` on success or `{ success: false, error }` on failure.

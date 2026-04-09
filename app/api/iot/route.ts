@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/iot" });
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: "Update failed" }, { status: 500 });
     return NextResponse.json({ ok: true, preferences });
   } catch (e) {
-    console.error("iot POST", e);
+    log.error("iot POST", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -46,7 +49,7 @@ export async function GET() {
     const { data: state } = await service.from("agent_state").select("iot_preferences").eq("agent_id", agent.id).single();
     return NextResponse.json({ preferences: state?.iot_preferences ?? {} });
   } catch (e) {
-    console.error("iot GET", e);
+    log.error("iot GET", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

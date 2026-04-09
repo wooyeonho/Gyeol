@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { randomBytes } from "crypto";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/share" });
 
 function generateSlug(): string {
   return randomBytes(12).toString("base64url");
@@ -28,7 +31,7 @@ export async function POST() {
 
     return NextResponse.json({ url, slug });
   } catch (e) {
-    console.error("POST /api/share error", e);
+    log.error("POST /api/share error", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

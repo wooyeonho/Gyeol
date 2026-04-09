@@ -20,6 +20,12 @@ export default defineConfig({
       reporter: ["text", "json-summary"],
       include: ["lib/**/*.ts", "store/**/*.ts", "hooks/**/*.ts", "app/api/**/*.ts"],
       exclude: ["**/*.test.ts", "**/*.contract.test.ts", "node_modules/**"],
+      thresholds: {
+        statements: 60,
+        branches: 55,
+        functions: 55,
+        lines: 60,
+      },
     },
   },
 });

@@ -6,6 +6,9 @@ import { sanitizeUserInput } from "@/lib/sanitize";
 import { createAssistantTapStream } from "@/lib/chat/stream";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
 import { demoChatBodySchema, parseBody } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/demo/chat" });
 
 const DEMO_MAX_TURNS = 3;
 
@@ -184,7 +187,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
-    console.error("[DemoChat]", e);
+    log.error("[DemoChat]", e instanceof Error ? e : { detail: String(e) });
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

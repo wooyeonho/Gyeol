@@ -9,6 +9,9 @@ import { timeTravelBodySchema, parseBody } from "@/lib/validation/schemas";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/time-travel" });
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
-    console.error("time-travel POST", e);
+    log.error("time-travel POST", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return NextResponse.json(
         { error: "Service unavailable: missing server configuration", code: "MISSING_ENV" },

@@ -3,7 +3,10 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
+
+const log = logger.child({ route: "api/integrations/slack" });
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("integrations/slack POST", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

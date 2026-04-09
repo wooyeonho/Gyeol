@@ -5,6 +5,9 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/generate" });
 
 /**
  * Cloudflare Workers AI image generation via Stable Diffusion XL.
@@ -31,7 +34,7 @@ async function generateImageCF(prompt: string): Promise<string | null> {
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      console.error(`[Generate] CF image ${res.status}`, await res.text().catch(() => ""));
+      log.error(`[Generate] CF image ${res.status}`, { detail: await res.text().catch(() => "") });
       return null;
     }
     // CF returns raw PNG bytes — keep timeout active during body download
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       // Non-fatal: image was generated, just didn't persist metadata
-      console.warn("[Generate] persist error:", e);
+      log.warn("[Generate] persist error:", e instanceof Error ? e.message : String(e));
     }
 
     return NextResponse.json({ url: imageUrl, prompt, type, status: "completed" });

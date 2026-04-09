@@ -7,6 +7,9 @@ import { getPrimaryAgent } from "@/lib/agents/primary";
 import { breedCreatures } from "@/lib/genome/dna";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/breeding" });
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -136,7 +139,7 @@ export async function POST(req: NextRequest) {
       mutated_axes: mutatedAxes,
     });
   } catch (e) {
-    console.error("breeding POST", e);
+    log.error("breeding POST", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

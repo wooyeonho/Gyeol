@@ -3,6 +3,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { getDemoWorldState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/world/state" });
 
 export async function GET() {
   try {
@@ -15,7 +18,7 @@ export async function GET() {
     const { data } = await service.from("world_state").select("*").eq("id", "global").single();
     return NextResponse.json({ worldState: data ?? null });
   } catch (e) {
-    console.error("GET /api/world/state error", e);
+    log.error("GET /api/world/state error", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return NextResponse.json({ worldState: getDemoWorldState(), demo_mode: true });
     }

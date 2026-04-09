@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/referral/apply" });
 
 const REFERRAL_REWARD_COINS = 100;
 
@@ -73,7 +76,7 @@ export async function POST(req: Request) {
       if (insertError.code === "23505") {
         return NextResponse.json({ error: "Already redeemed" }, { status: 409 });
       }
-      console.error("referral insert error", insertError);
+      log.error("referral insert error", insertError instanceof Error ? insertError : { detail: String(insertError) });
       return NextResponse.json({ error: "Internal error" }, { status: 500 });
     }
 
@@ -93,11 +96,11 @@ export async function POST(req: Request) {
         p_reason: "referral_reward",
       });
       if (referrerErr || referrerData === false) {
-        console.error("referral: failed to award coins to referrer", referrerErr ?? "RPC returned false");
+        log.error("referral: failed to award coins to referrer", referrerErr instanceof Error ? referrerErr : { detail: String(referrerErr ?? "RPC returned false") });
         coinsAwarded = false;
       }
     } else {
-      console.error("referral: could not resolve agent for referrer", invite.user_id);
+      log.error("referral: could not resolve agent for referrer", { detail: String(invite.user_id) });
       coinsAwarded = false;
     }
     if (referredResult.agentId) {
@@ -107,11 +110,11 @@ export async function POST(req: Request) {
         p_reason: "referral_reward",
       });
       if (referredErr || referredData === false) {
-        console.error("referral: failed to award coins to referred user", referredErr ?? "RPC returned false");
+        log.error("referral: failed to award coins to referred user", referredErr instanceof Error ? referredErr : { detail: String(referredErr ?? "RPC returned false") });
         coinsAwarded = false;
       }
     } else {
-      console.error("referral: could not resolve agent for referred user", user.id);
+      log.error("referral: could not resolve agent for referred user", { detail: String(user.id) });
       coinsAwarded = false;
     }
 
@@ -124,7 +127,7 @@ export async function POST(req: Request) {
         : "Referral recorded. Coins will be credited once your profile is ready.",
     });
   } catch (e) {
-    console.error("POST /api/referral/apply error", e);
+    log.error("POST /api/referral/apply error", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
 import { useTranslations } from "@/components/i18n-provider";
-import Soundscape from "@/components/soundscape";
+const Soundscape = dynamic(() => import("@/components/soundscape"), { ssr: false, loading: () => null });
 import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
@@ -46,12 +46,12 @@ import { WorldClassHub } from "@/components/world-class-hub";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
-import Celebration from "@/components/celebration";
+const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
-import { MysteryBoxOverlay } from "@/components/mystery-box-overlay";
+const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
 
 export default function Home() {
   const { locale, t } = useTranslations();

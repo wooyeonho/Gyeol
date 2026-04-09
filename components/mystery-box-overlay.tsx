@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { type MysteryBox, type BoxRarity } from "@/lib/engagement/mystery-box";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 
 interface MysteryBoxOverlayProps {
   box: MysteryBox;
@@ -35,10 +36,9 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
   }, []);
 
   return (
+    <FocusTrap active onEscape={onClose}>
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm px-6"
-      role="dialog"
-      aria-modal="true"
       aria-label={t("mysteryBox.title")}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -151,5 +151,6 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
         )}
       </div>
     </motion.div>
+    </FocusTrap>
   );
 }

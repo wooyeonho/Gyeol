@@ -5,6 +5,9 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/social/posts/[postId]/reaction" });
 
 const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
 
@@ -85,7 +88,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, active: true, reaction_type: reactionType });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/reaction error", error);
+    log.error("POST /api/social/posts/[postId]/reaction error", error instanceof Error ? error : { detail: String(error) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

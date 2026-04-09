@@ -6,6 +6,9 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { socialGiftBodySchema, parseBody } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/social/gift" });
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, coins, target_agent_id: targetAgentId });
   } catch (e) {
-    console.error("social/gift POST", e);
+    log.error("social/gift POST", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
