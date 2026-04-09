@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { authorizeV1ApiKey, getApiKeyIdentifier, resolveAuthorizedUserId } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:create");
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ agent_id: agent.id });
   } catch (e) {
-    console.error("v1/agent/create POST", e);
+    logger.error("v1/agent/create POST", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

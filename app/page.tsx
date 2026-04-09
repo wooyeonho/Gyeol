@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
@@ -602,11 +603,13 @@ export default function Home() {
                 boxShadow: `0 0 48px color-mix(in srgb, ${appearance.palette.primary} 40%, transparent), 0 20px 60px rgba(0,0,0,0.5)`,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={portraitUrl}
                 alt="Creature portrait"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
+                priority
               />
               {/* Soft inner ring for polish */}
               <div className="absolute inset-0 rounded-[28%] ring-1 ring-inset ring-white/10 pointer-events-none" />

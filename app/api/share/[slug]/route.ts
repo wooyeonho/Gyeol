@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveLocale } from "@/lib/i18n/config";
 import { loadShareCardData } from "@/lib/share/card";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -24,7 +25,7 @@ export async function GET(
     if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(data);
   } catch (e) {
-    console.error("GET /api/share/[slug] error", e);
+    logger.error("GET /api/share/[slug] error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

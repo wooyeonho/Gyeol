@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, marketListingBodySchema } from "@/lib/validation/schemas";
 
@@ -145,6 +146,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { seller_agent_id, type, title, description, price, content } = parsed.data;
+    const fenceInput = [title, description].filter(Boolean).join(" ");
+    const fence = checkElectricFence(fenceInput);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+    }
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

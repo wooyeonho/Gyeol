@@ -5,6 +5,7 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
+import { logger } from "@/lib/logger";
 
 type AgentSnapshot = {
   agent_id: string;
@@ -425,7 +426,7 @@ export async function GET(request?: Request) {
     setTtlCache(cacheKey, payload, 15_000);
     return NextResponse.json(payload);
   } catch (error) {
-    console.error("GET /api/social error", error);
+    logger.error("GET /api/social error", error instanceof Error ? error : { error });
     if (isMissingEnvError(error)) {
       const demo = getDemoAgentState();
       return NextResponse.json({

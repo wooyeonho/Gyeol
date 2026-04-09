@@ -8,6 +8,7 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialReportBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 const REPORT_THRESHOLD_FOR_PENDING = 3;
 
@@ -85,7 +86,7 @@ export async function POST(
       moderation_status: reportCount >= REPORT_THRESHOLD_FOR_PENDING ? "pending" : "approved",
     });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/report error", error);
+    logger.error("POST /api/social/posts/[postId]/report error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

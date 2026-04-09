@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { authorizeV1ApiKey, getApiKeyIdentifier, resolveAuthorizedUserId } from "@/lib/api/v1-auth";
 import { recordApiUsage } from "@/lib/analytics/api-usage";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:list");
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     recordApiUsage("v1:agent:list", getApiKeyIdentifier(request), { user_id: userResolution.userId });
     return NextResponse.json({ agents: list });
   } catch (e) {
-    console.error("v1/agent/list GET", e);
+    logger.error("v1/agent/list GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

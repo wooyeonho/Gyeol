@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody } from "@/lib/validation/schemas";
 import { redeemBodySchema } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 const COIN_TO_KRW_RATE = 10;
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, krw_requested: krw, status: "pending" });
   } catch (e) {
-    console.error("earnings/redeem POST", e);
+    logger.error("earnings/redeem POST", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -82,7 +83,7 @@ export async function GET() {
 
     return NextResponse.json({ requests: requests ?? [], rate: COIN_TO_KRW_RATE });
   } catch (e) {
-    console.error("earnings/redeem GET", e);
+    logger.error("earnings/redeem GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

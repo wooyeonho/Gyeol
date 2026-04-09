@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
 import { checkLLMHealth } from "@/lib/ops/llm-health";
+import { logger } from "@/lib/logger";
 
 const REQUIRED_ENV_KEYS = [
   "CRON_SECRET",
@@ -100,7 +101,7 @@ export async function GET(request?: NextRequest) {
         else alertSummary24h.warning += 1;
       }
     } catch (e) {
-      console.error("ops/readiness alert lookup", e);
+      logger.error("ops/readiness alert lookup", e instanceof Error ? e : { error: e });
     }
 
     const states = (statesRes.data ?? []) as Array<{
@@ -140,7 +141,7 @@ export async function GET(request?: NextRequest) {
     try {
       llmHealth = await checkLLMHealth();
     } catch (e) {
-      console.error("ops/readiness llm health check", e);
+      logger.error("ops/readiness llm health check", e instanceof Error ? e : { error: e });
     }
 
     const recommendations: string[] = [];
@@ -189,7 +190,7 @@ export async function GET(request?: NextRequest) {
       recommendations,
     });
   } catch (e) {
-    console.error("ops/readiness GET", e);
+    logger.error("ops/readiness GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

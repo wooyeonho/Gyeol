@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
@@ -16,7 +17,7 @@ export async function POST() {
     await service.from("agent_state").update({ pending_evolution: null }).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("POST /api/agent/evolution/clear error", e);
+    logger.error("POST /api/agent/evolution/clear error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { logger } from "@/lib/logger";
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest) {
 
     // If message is provided, send to Slack channel
     if (typeof body?.message === "string" && body.message.trim()) {
+      const fence = checkElectricFence(body.message);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
       const { data: conn } = await service
         .from("user_connections")
         .select("id, token_encrypted, metadata")

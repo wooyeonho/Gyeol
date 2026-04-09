@@ -5,6 +5,7 @@ import { sanitizeUserInput } from "@/lib/sanitize";
 import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { runSynchronousChatTurn } from "@/lib/chat/sync-turn";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:chat");
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reply: result.reply || "..." });
   } catch (e) {
-    console.error("v1/agent/chat POST", e);
+    logger.error("v1/agent/chat POST", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

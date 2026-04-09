@@ -6,8 +6,10 @@ import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/modera
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialPostBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -36,6 +38,11 @@ export async function POST(req: NextRequest) {
     const language = parsed.data.language?.trim() ?? null;
     if (!content) {
       return NextResponse.json({ error: "Post content required" }, { status: 400 });
+    }
+
+    const fence = checkElectricFence(content);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
     }
 
     const service = createServiceClient();
@@ -78,7 +85,7 @@ export async function POST(req: NextRequest) {
       post: createdPost,
     });
   } catch (error) {
-    console.error("POST /api/social/posts error", error);
+    logger.error("POST /api/social/posts error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

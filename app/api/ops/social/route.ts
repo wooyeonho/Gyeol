@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
+import { logger } from "@/lib/logger";
 
 type ReportRow = {
   id: string;
@@ -101,7 +102,7 @@ export async function GET() {
       queue,
     });
   } catch (error) {
-    console.error("GET /api/ops/social error", error);
+    logger.error("GET /api/ops/social error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -145,7 +146,7 @@ export async function PATCH(request: NextRequest) {
       report_status: reportStatus,
     });
   } catch (error) {
-    console.error("PATCH /api/ops/social error", error);
+    logger.error("PATCH /api/ops/social error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

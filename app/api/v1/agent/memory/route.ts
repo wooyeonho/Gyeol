@@ -6,6 +6,7 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { parseBody, v1MemoryBodySchema } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:memory");
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("v1/agent/memory POST", e);
+    logger.error("v1/agent/memory POST", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

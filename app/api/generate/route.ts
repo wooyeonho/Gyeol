@@ -5,6 +5,8 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody, generateBodySchema } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/generate" });
@@ -86,12 +88,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-    const type = body?.type === "image" ? "image" : "avatar";
+    const parsed = await parseBody(request, generateBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const prompt = parsed.data.prompt.trim();
+    const type = parsed.data.type;
 
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+    const fence = checkElectricFence(prompt);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
     }
 
     if (!isGenerationAvailable()) {

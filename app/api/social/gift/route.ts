@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { socialGiftBodySchema, parseBody } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/social/gift" });
@@ -29,6 +30,12 @@ export async function POST(req: NextRequest) {
     }
     const targetAgentId = parsed.data.target_agent_id;
     const coins = parsed.data.coins;
+    if (parsed.data.message) {
+      const fence = checkElectricFence(parsed.data.message);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
+    }
     const message = sanitizeUserInput(parsed.data.message);
 
     const service = createServiceClient();

@@ -12,6 +12,7 @@ import {
 } from "@/lib/engagement/pity-system";
 import { useTranslations } from "@/components/i18n-provider";
 import { FocusTrap } from "@/components/focus-trap";
+import { useCelebrationStore } from "@/store/celebration-store";
 
 interface MysteryBoxOverlayProps {
   box: MysteryBox;
@@ -29,6 +30,7 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
   const { t } = useTranslations();
   const [phase, setPhase] = useState<"shake" | "crack" | "reveal">("shake");
   const [pityCount, setPityCount] = useState(() => getPityCount());
+  const celebrate = useCelebrationStore((s) => s.celebrate);
   const style = RARITY_STYLE[box.rarity];
 
   // Process pity when the box is revealed
@@ -43,6 +45,24 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
       // Update pity counter based on box rarity result
       const newCount = processPityAfterOpen(box.rarity);
       setPityCount(newCount);
+
+      // Trigger global celebration for epic+ draws
+      if (box.rarity === "legendary") {
+        celebrate({
+          title: "LEGENDARY!",
+          subtitle: box.reward.label,
+          reward: { type: box.reward.type, amount: box.reward.amount, icon: "✨" },
+          variant: "firework",
+          autoDismissMs: 4000,
+        });
+      } else if (box.rarity === "epic") {
+        celebrate({
+          title: "EPIC!",
+          subtitle: box.reward.label,
+          reward: { type: box.reward.type, amount: box.reward.amount, icon: "💎" },
+          variant: "sparkle",
+        });
+      }
     }, 1700);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

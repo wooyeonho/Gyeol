@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     await service.from("agent_state").update({ celebration_pending: null }).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("POST /api/agent/celebration/clear error", e);
+    logger.error("POST /api/agent/celebration/clear error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

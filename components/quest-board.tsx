@@ -10,6 +10,7 @@ import {
   saveQuests,
   completeQuest,
 } from "@/lib/game/quest-system";
+import { useCelebrationStore } from "@/store/celebration-store";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -411,6 +412,8 @@ export function QuestBoard({
     [quests, updateQuests],
   );
 
+  const celebrate = useCelebrationStore((s) => s.celebrate);
+
   const handleClaim = useCallback(
     (quest: Quest) => {
       const rewards = completeQuest(quest);
@@ -419,11 +422,21 @@ export function QuestBoard({
       setClaimRewards(rewards);
       onRewardClaimed?.(rewards);
 
+      // Trigger global celebration for hard+ quests
+      if (quest.difficulty === "hard" || quest.difficulty === "legendary") {
+        celebrate({
+          title: isKo ? "퀘스트 완료!" : "Quest Complete!",
+          subtitle: isKo ? quest.title.ko : quest.title.en,
+          reward: { type: "coins", amount: rewards.coins, icon: "🪙" },
+          variant: quest.difficulty === "legendary" ? "firework" : "sparkle",
+        });
+      }
+
       // Remove claimed quest from list
       const next = quests.filter((q) => q.id !== quest.id);
       updateQuests(next);
     },
-    [quests, updateQuests, onRewardClaimed],
+    [quests, updateQuests, onRewardClaimed, celebrate, isKo],
   );
 
   const handleClaimDone = useCallback(() => {

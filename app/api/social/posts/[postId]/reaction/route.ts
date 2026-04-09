@@ -7,10 +7,9 @@ import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody, socialReactionToggleBodySchema } from "@/lib/validation/schemas";
 
 const log = logger.child({ route: "api/social/posts/[postId]/reaction" });
-
-const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
 
 export async function POST(
   req: NextRequest,
@@ -32,11 +31,14 @@ export async function POST(
 
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const reactionType = typeof body?.reaction_type === "string" ? body.reaction_type : "";
-    if (!postId || !ALLOWED_REACTIONS.has(reactionType)) {
-      return NextResponse.json({ error: "Invalid reaction" }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
     }
+    const parsed = await parseBody(req, socialReactionToggleBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const reactionType = parsed.data.reaction_type;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

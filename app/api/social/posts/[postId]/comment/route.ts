@@ -8,6 +8,8 @@ import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialCommentBodySchema } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   req: NextRequest,
@@ -31,6 +33,11 @@ export async function POST(
     const content = parsed.data.content;
     if (!postId) {
       return NextResponse.json({ error: "Post ID required" }, { status: 400 });
+    }
+
+    const fence = checkElectricFence(content);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
     }
 
     // Rate limit: 10 comments per minute per user to prevent spam
@@ -89,7 +96,7 @@ export async function POST(
       comment: createdComment,
     });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/comment error", error);
+    logger.error("POST /api/social/posts/[postId]/comment error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

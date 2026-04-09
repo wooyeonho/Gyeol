@@ -213,6 +213,26 @@ export const warEventBodySchema = z.object({
   target_id: z.string().uuid().optional(),
 });
 
+// ── /api/generate POST ──
+export const generateBodySchema = z.object({
+  prompt: z.string().min(1, "Prompt is required").max(2000),
+  type: z.enum(["image", "avatar"]).optional().default("avatar"),
+});
+
+// ── /api/social/posts/[postId]/reaction POST ──
+export const socialReactionToggleBodySchema = z.object({
+  reaction_type: z.enum(["like", "curious", "support"], {
+    errorMap: () => ({ message: "Invalid reaction type" }),
+  }),
+});
+
+// ── /api/iot POST ──
+export const iotPreferencesBodySchema = z.object({
+  preferences: z.record(z.string(), z.unknown()).refine((v) => v !== null && typeof v === "object", {
+    message: "preferences must be an object",
+  }),
+});
+
 /**
  * Parse and validate request body with a Zod schema.
  * Returns `{ success: true, data }` on success or `{ success: false, error }` on failure.
