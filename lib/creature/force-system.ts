@@ -585,12 +585,29 @@ function computeTremble(
   if (!mood || !fearMoods.includes(mood)) return { x: 0, y: 0 };
 
   const instability = 1 - dna.stability;
-  const intensity = mood === "terrified" ? 1.0 : mood === "scared" ? 0.7 : 0.4;
-  const amplitude = 0.003 * instability * intensity;
+  // Fear level proportional to mood severity: terrified > scared > anxious/nervous
+  const fearLevel = mood === "terrified" ? 1.0 : mood === "scared" ? 0.7 : 0.4;
+  const amplitude = 0.003 * instability * fearLevel;
+
+  // Base tremble: mid-frequency shiver
+  const baseX = Math.sin(time * 47.3) * amplitude + Math.sin(time * 31.7) * amplitude * 0.5;
+  const baseY = Math.cos(time * 53.1) * amplitude + Math.cos(time * 37.9) * amplitude * 0.5;
+
+  // High-frequency micro-vibration layer (10-15Hz range)
+  // Very small amplitude (0.005-0.01) scaled by fear level for subtle nervous energy
+  const microAmp = (0.005 + fearLevel * 0.005) * instability;
+  const microX =
+    Math.sin(time * 62.83) * microAmp * 0.6 +  // ~10Hz (2π * 10)
+    Math.sin(time * 81.68) * microAmp * 0.3 +  // ~13Hz (2π * 13)
+    Math.sin(time * 94.25) * microAmp * 0.1;   // ~15Hz (2π * 15)
+  const microY =
+    Math.cos(time * 69.11) * microAmp * 0.6 +  // ~11Hz
+    Math.cos(time * 87.96) * microAmp * 0.3 +  // ~14Hz
+    Math.cos(time * 75.40) * microAmp * 0.1;   // ~12Hz
 
   return {
-    x: Math.sin(time * 47.3) * amplitude + Math.sin(time * 31.7) * amplitude * 0.5,
-    y: Math.cos(time * 53.1) * amplitude + Math.cos(time * 37.9) * amplitude * 0.5,
+    x: baseX + microX,
+    y: baseY + microY,
   };
 }
 

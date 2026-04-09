@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 type ApiKeyRow = {
   id?: string;
@@ -67,8 +68,8 @@ export async function authorizeV1ApiKey(
         .update({ last_used_at: new Date().toISOString() })
         .eq("id", row.id)
     ).then(({ error: updateErr }: { error: { message: string } | null }) => {
-      if (updateErr) console.warn("[V1Auth] last_used_at update failed:", updateErr.message);
-    }).catch((err: unknown) => console.warn("[V1Auth] last_used_at update failed:", err));
+      if (updateErr) logger.warn("[V1Auth] last_used_at update failed", { error: updateErr.message });
+    }).catch((err: unknown) => logger.warn("[V1Auth] last_used_at update failed", { error: err instanceof Error ? err.message : String(err) }));
     return {
       id: row.id,
       identifier: getApiKeyIdentifier(request),
@@ -85,11 +86,11 @@ export async function authorizeV1ApiKey(
     const a = Buffer.from(raw);
     const b = Buffer.from(envKey);
     if (crypto.timingSafeEqual(a, b)) {
-      console.warn(
+      logger.warn(
         "[V1Auth] DEPRECATED: Legacy env-based API key used. " +
         "This method lacks tenant binding and will be removed in a future release. " +
-        "Please migrate to database-bound API keys (api_keys table). " +
-        `Identifier: ${getApiKeyIdentifier(request)}`
+        "Please migrate to database-bound API keys (api_keys table).",
+        { identifier: getApiKeyIdentifier(request) }
       );
       return {
         id: null,

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 /** Target dimension used by the pgvector column in the memories table. */
 const TARGET_DIM = 768;
 
@@ -32,7 +34,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     const values: number[] = data.embedding?.values || [];
     return values.length > 0 ? padToTargetDim(values) : [];
   } catch (e) {
-    console.error("[Embed] Gemini failed:", e instanceof Error ? e.message : e);
+    logger.error("[Embed] Gemini failed", { error: e instanceof Error ? e.message : e });
   }
   const cfAccountId = process.env.CF_ACCOUNT_ID;
   const cfApiToken = process.env.CF_API_TOKEN;
@@ -47,7 +49,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       const vec: number[] = data.result?.data?.[0] || [];
       return vec.length > 0 ? padToTargetDim(vec) : [];
     } catch (e) {
-      console.error("[Embed] CF failed:", e);
+      logger.error("[Embed] CF failed", e instanceof Error ? e : { error: e });
     }
   }
   return [];
@@ -88,9 +90,9 @@ export async function generateEmbeddingBatch(texts: string[]): Promise<number[][
       );
       if (embeddings.length === texts.length) return embeddings;
       // Partial result — fall through to individual calls
-      console.error(`[Embed] Batch returned ${embeddings.length}/${texts.length}, falling back`);
+      logger.error(`[Embed] Batch returned ${embeddings.length}/${texts.length}, falling back`);
     } catch (e) {
-      console.error("[Embed] Gemini batch failed:", e);
+      logger.error("[Embed] Gemini batch failed", e instanceof Error ? e : { error: e });
     }
   }
 

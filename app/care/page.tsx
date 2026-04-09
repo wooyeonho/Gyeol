@@ -7,6 +7,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import type { CareState } from "@/lib/creature/care-loop";
+import { CareHeatmap, logCareActivity } from "@/components/care-heatmap";
 
 function GaugeBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   const pct = Math.max(0, Math.min(100, value));
@@ -71,6 +72,7 @@ export default function CarePage() {
         const data = await res.json();
         setCare(data.careState);
         haptic("success");
+        logCareActivity();
         useAgentStore.getState().fetchAgentState();
       }
     } finally {
@@ -161,6 +163,14 @@ export default function CarePage() {
             <p className="text-center text-xs text-white/30">
               {t("care.touchHint") || "홈에서 생명체를 쓰다듬으면 기분이 올라가요"}
             </p>
+
+            {/* Care activity heatmap */}
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/40">
+                {t("care.activityLog") || "돌봄 기록"}
+              </p>
+              <CareHeatmap />
+            </div>
           </>
         ) : (
           <p className="text-center text-sm text-white/40 py-16">

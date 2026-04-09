@@ -1120,7 +1120,8 @@
     "opening": "Abriendo...",
     "opened": "¡Abierto!",
     "title": "Caja Misteriosa",
-    "claim": "Reclamar"
+    "claim": "Reclamar",
+    "pityEncouragement": "¡Ya casi!"
   },
   "death": {
     "echo": "ECHO",

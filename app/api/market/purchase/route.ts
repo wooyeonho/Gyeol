@@ -5,6 +5,7 @@ import { addCoinsAtomic, spendCoinsAtomic } from "@/lib/economy/coins";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { logger } from "@/lib/logger";
 import { parseBody, marketPurchaseBodySchema } from "@/lib/validation/schemas";
 
 export async function POST(req: NextRequest) {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     });
     if (purchaseInsertError) {
       // Optional table across environments; non-fatal.
-      console.warn("market_purchases insert skipped", purchaseInsertError.message);
+      logger.warn("market_purchases insert skipped", { error: purchaseInsertError.message });
     }
 
     const learned = item.content ? String(item.content).slice(0, 1200) : `${item.title}: ${item.description ?? ""}`.trim();

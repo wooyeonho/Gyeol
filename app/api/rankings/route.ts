@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -34,7 +35,7 @@ export async function GET() {
       .slice(0, 50);
     return NextResponse.json({ rankings });
   } catch (e) {
-    console.error("rankings GET", e);
+    logger.error("rankings GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 interface Msg { role: string; content: string }
 interface GroqCompletionResponse {
@@ -197,7 +199,7 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
         groqSettled = true;
         // Debug log removed — model selection is transparent to caller
         return { source: m.name, stream: res.body! };
-      } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
+      } catch (e) { logger.error(`[AI] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
     }
     throw new Error("All Groq models failed");
   })();
@@ -226,11 +228,11 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
     if (!geminiSettled) {
       try {
         const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
-        console.warn("[AI] Using Gemini Flash streaming fallback");
+        logger.warn("[AI] Using Gemini Flash streaming fallback");
         return stream;
-      } catch (e) { console.error("[AI] Gemini stream failed:", e); }
+      } catch (e) { logger.error("[AI] Gemini stream failed", e instanceof Error ? e : { error: e }); }
     }
-    console.warn("[AI] All models failed, using in-character fallback");
+    logger.warn("[AI] All models failed, using in-character fallback");
     return fallbackStream(getInCharacterFallback(systemPrompt));
   }
 }
@@ -244,7 +246,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
       const data = (await res.json()) as GroqCompletionResponse;
       return data.choices?.[0]?.message?.content || "";
-    } catch (e) { console.error(`[AI] ${m.name} failed:`, e); }
+    } catch (e) { logger.error(`[AI] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
   }
   // Gemini fallback (higher quality than CF 1B)
   try {
@@ -253,7 +255,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
       // Debug log removed — model selection is transparent to caller
       return text;
     }
-  } catch (e) { console.error("[AI] Gemini failed:", e); }
+  } catch (e) { logger.error("[AI] Gemini failed", e instanceof Error ? e : { error: e }); }
   // CF 1B removed — quality too low. Return empty string as final fallback.
   return "";
 }
@@ -273,7 +275,7 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) return parsed as T;
-    } catch (e) { console.error(`[JSON] ${m.name} attempt 1 failed:`, e); }
+    } catch (e) { logger.error(`[JSON] ${m.name} attempt 1 failed`, e instanceof Error ? e : { error: e }); }
   }
 
   // Retry once after 500ms backoff (all models again)
@@ -286,7 +288,7 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) return parsed as T;
-    } catch (e) { console.error(`[JSON] ${m.name} attempt 2 failed:`, e); }
+    } catch (e) { logger.error(`[JSON] ${m.name} attempt 2 failed`, e instanceof Error ? e : { error: e }); }
   }
 
   // Gemini Flash fallback — supports JSON output natively
@@ -296,12 +298,12 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) {
-        console.warn("[JSON] Using Gemini Flash fallback");
+        logger.warn("[JSON] Using Gemini Flash fallback");
         return parsed as T;
       }
     }
-  } catch (e) { console.error("[JSON] Gemini fallback failed:", e); }
+  } catch (e) { logger.error("[JSON] Gemini fallback failed", e instanceof Error ? e : { error: e }); }
 
-  console.error("[JSON] All retries exhausted, returning null");
+  logger.error("[JSON] All retries exhausted, returning null");
   return null;
 }

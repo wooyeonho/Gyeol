@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isClientEventName } from "@/lib/analytics/catalog";
+import { logger } from "@/lib/logger";
 
 type AnalyticsPayload = {
   anonymous_id?: unknown;
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true }, { status: 202 });
   } catch (error) {
-    console.error("POST /api/analytics/track error", error);
+    logger.error("POST /api/analytics/track error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

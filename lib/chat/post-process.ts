@@ -1,4 +1,5 @@
 import type { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
@@ -32,12 +33,12 @@ async function runEvolutionHooks(agentId: string, totalMessages: number, message
   const tasks: Promise<void>[] = [];
 
   if (totalMessages % 10 === 0) {
-    tasks.push(analyzePersonality(agentId).catch((e) => console.error("[Evolution]", e)));
+    tasks.push(analyzePersonality(agentId).catch((e) => logger.error("[Evolution]", e instanceof Error ? e : { error: e })));
   }
 
-  tasks.push(checkEvolution(agentId).then(() => undefined).catch((e) => console.error("[GenLevel]", e)));
-  tasks.push(processHiddenEmotions(agentId, message, reply).catch((e) => console.error("[Emotions]", e)));
-  tasks.push(updateVoiceParams(agentId).catch((e) => console.error("[Voice]", e)));
+  tasks.push(checkEvolution(agentId).then(() => undefined).catch((e) => logger.error("[GenLevel]", e instanceof Error ? e : { error: e })));
+  tasks.push(processHiddenEmotions(agentId, message, reply).catch((e) => logger.error("[Emotions]", e instanceof Error ? e : { error: e })));
+  tasks.push(updateVoiceParams(agentId).catch((e) => logger.error("[Voice]", e instanceof Error ? e : { error: e })));
 
   await Promise.allSettled(tasks);
 }
@@ -165,7 +166,7 @@ export async function persistChatTurn(params: {
     const initialSpecies = deriveSpecies(initialDNA);
     currentGenome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
     genomeBackfilled = true;
-    console.warn(`[PostProcess] Backfilled genome for agent ${params.agentId}`);
+    logger.warn(`[PostProcess] Backfilled genome for agent ${params.agentId}`);
   }
   let nextGenome = currentGenome;
   let mutationChangedAxes: string[] = [];
@@ -199,7 +200,7 @@ export async function persistChatTurn(params: {
     if (changedAxes.length > 0) {
       const validation = validateDNATransition(currentGenome.dna, finalDNA);
       if (!validation.valid && validation.correctedDna) {
-        console.warn(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
+        logger.warn(`[CreatureControl] DNA transition corrected: ${validation.violations.join(", ")}`);
         finalDNA = validation.correctedDna;
       }
       // Enforce personality safety (prevent harmful DNA combinations)
@@ -244,7 +245,7 @@ export async function persistChatTurn(params: {
         content: params.message,
         embedding,
       }).then(({ error }) => {
-        if (error) console.error("[PostProcess] Memory insert failed:", error.message);
+        if (error) logger.error("[PostProcess] Memory insert failed", { error: error.message });
       })
     : Promise.resolve();
 

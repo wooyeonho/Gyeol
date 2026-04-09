@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * GDPR Article 17 — Right to Erasure ("Right to be Forgotten")
@@ -82,7 +83,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ ok: true, deleted_at: new Date().toISOString() });
   } catch (error) {
-    console.error("GDPR delete error:", error);
+    logger.error("GDPR delete error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Deletion failed" }, { status: 500 });
   }
 }

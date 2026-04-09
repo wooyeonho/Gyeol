@@ -1,4 +1,5 @@
 import type { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import type { UserPreferences } from "@/lib/creature/preference-memory";
@@ -97,7 +98,7 @@ async function loadPromptMemories(params: {
 
     return { memories, memoryMoment };
   } catch (e) {
-    console.error("[Context] Memory loading failed:", e instanceof Error ? e.message : e);
+    logger.error("[Context] Memory loading failed", { error: e instanceof Error ? e.message : e });
     return { memories: [] };
   }
 }

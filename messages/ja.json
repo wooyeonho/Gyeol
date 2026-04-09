@@ -1120,7 +1120,8 @@
     "opening": "開いています...",
     "opened": "開きました！",
     "title": "ミステリーボックス",
-    "claim": "受け取る"
+    "claim": "受け取る",
+    "pityEncouragement": "もうすぐです！"
   },
   "death": {
     "echo": "ECHO",

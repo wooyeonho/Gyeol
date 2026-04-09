@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 const CF_SDXL_PATH = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
 
@@ -54,7 +55,7 @@ export async function generateImage(
       }),
     });
     if (!res.ok) {
-      console.error("CF SDXL error", res.status, await res.text());
+      logger.error("CF SDXL error", { status: res.status, body: (await res.text()).slice(0, 500) });
       return null;
     }
     const blob = await res.blob();
@@ -62,7 +63,7 @@ export async function generateImage(
     const base64 = Buffer.from(buf).toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (e) {
-    console.error("generateImage error", e);
+    logger.error("generateImage error", e instanceof Error ? e : { error: e });
     return null;
   }
 }

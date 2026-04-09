@@ -8,6 +8,7 @@ import { getDemoHomeSummary } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveLocale } from "@/lib/i18n/config";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
+import { logger } from "@/lib/logger";
 
 type SummaryItem = {
   id: string;
@@ -348,7 +349,7 @@ export async function GET(request?: Request) {
     setTtlCache(cacheKey, payload, 20_000);
     return NextResponse.json(payload);
   } catch (error) {
-    console.error("GET /api/home/summary error", error);
+    logger.error("GET /api/home/summary error", error instanceof Error ? error : { error });
     if (isMissingEnvError(error)) {
       const locale = resolveLocale({
         acceptLanguage: request?.headers.get("accept-language") ?? null,

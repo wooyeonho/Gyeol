@@ -3,6 +3,7 @@
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { logger } from "@/lib/logger";
 
 export async function executeTimeCapsule(): Promise<CronResult> {
   const lockKey = "cron:time-capsule";
@@ -59,7 +60,7 @@ export async function executeTimeCapsule(): Promise<CronResult> {
         await db.from("time_capsules").update({ delivered: true }).eq("id", capsule.id);
         processed++;
       } catch (e) {
-        console.error("[TimeCapsuleCron] deliver failed", capsule.id, e);
+        logger.error("[TimeCapsuleCron] deliver failed", { capsuleId: capsule.id, error: e instanceof Error ? e.message : String(e) });
       }
     }
 

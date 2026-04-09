@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 
 const CreatureStatsCard = dynamic(() => import("@/components/creature-stats-card").then(m => m.CreatureStatsCard), { ssr: false });
 const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(m => m.SkillTreeView), { ssr: false });
+const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -292,6 +293,16 @@ export default function DNAPage() {
             dna={activeDNA}
             genLevel={agentState?.gen_level as number ?? 1}
           />
+        )}
+
+        {/* Items & Equipment */}
+        {dna && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+              {t("dna.equipment") || "장비 & 아이템"}
+            </p>
+            <ItemsInventory />
+          </div>
         )}
 
         {/* Expressed traits */}

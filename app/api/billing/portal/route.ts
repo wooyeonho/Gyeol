@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getStripe, getStripeAppUrl, isStripeConfigured } from "@/lib/billing/stripe";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfOrigin(req)) {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ portal_url: portal.url, url: portal.url });
   } catch (error) {
-    console.error("POST /api/billing/portal error", error);
+    logger.error("POST /api/billing/portal error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

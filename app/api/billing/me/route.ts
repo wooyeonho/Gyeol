@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { type PlanTier } from "@/lib/billing/catalog";
 import { getLatestSubscription, getResolvedBillingState } from "@/lib/billing/service";
 import { isMockBillingEnabled } from "@/lib/billing/mock-billing";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { resolveLocale, type Locale } from "@/lib/i18n/config";
+import { logger } from "@/lib/logger";
 
 function isPlanTier(value: unknown): value is PlanTier {
   return value === "free" || value === "pro" || value === "premium";
@@ -28,17 +31,24 @@ export async function GET(request?: Request) {
     const service = createServiceClient();
     return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)));
   } catch (error) {
-    console.error("GET /api/billing/me error", error);
+    logger.error("GET /api/billing/me error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(`billing-me:${user.id}`);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   if (!isMockBillingEnabled()) {
     return NextResponse.json({ error: "Mock billing disabled" }, { status: 403 });
   }
@@ -70,17 +80,24 @@ export async function POST(request: Request) {
 
     return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)), { status: 201 });
   } catch (error) {
-    console.error("POST /api/billing/me error", error);
+    logger.error("POST /api/billing/me error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
-export async function DELETE(request?: Request) {
+export async function DELETE(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(`billing-me:${user.id}`);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   if (!isMockBillingEnabled()) {
     return NextResponse.json({ error: "Mock billing disabled" }, { status: 403 });
   }
@@ -110,7 +127,7 @@ export async function DELETE(request?: Request) {
 
     return NextResponse.json(await getResolvedBillingState(service, user.id, getRequestLocale(request)));
   } catch (error) {
-    console.error("DELETE /api/billing/me error", error);
+    logger.error("DELETE /api/billing/me error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

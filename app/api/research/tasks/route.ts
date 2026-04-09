@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { computeEffectivePriority, sortResearchTasks } from "@/lib/goals/task-utils";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   const supabase = await createClient();
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json({ tasks });
   } catch (error) {
-    console.error("GET /api/research/tasks error", error);
+    logger.error("GET /api/research/tasks error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -80,7 +81,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("PATCH /api/research/tasks error", error);
+    logger.error("PATCH /api/research/tasks error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

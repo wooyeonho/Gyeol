@@ -18,6 +18,7 @@ import { ComebackBanner } from "@/components/comeback-banner";
 import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
 import { getStreakFreezeDates } from "@/lib/economy/shop";
+import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 
 export type HomeSummaryItem = {
   id: string;
@@ -154,6 +155,7 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
+  const intimacyScore = typeof agentState?.intimacy_score === "number" ? agentState.intimacy_score : 0;
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
   const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
@@ -336,6 +338,9 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                     {`${t("home.currentVitality")} \u00b7 ${Math.round(vitality * 100)}%`}
                   </span>
                 </div>
+
+                {/* Affinity gauge */}
+                {intimacyScore > 0 && <AffinityHeartGauge score={intimacyScore} />}
 
                 {/* Growth + prompts */}
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">

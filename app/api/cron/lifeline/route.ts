@@ -4,6 +4,7 @@ import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { createServiceClient } from "@/lib/supabase/service";
 import { emitSystemAlert } from "@/lib/ops/alerts";
+import { logger } from "@/lib/logger";
 
 type JobTarget = {
   name: string;
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
         .in("job_name", JOB_TARGETS.map((j) => `cron:${j.name}`));
       lockRows = (data ?? []) as Array<{ job_name: string; updated_at: string }>;
     } catch (e) {
-      console.error("[Lifeline] lock table lookup failed", e);
+      logger.error("[Lifeline] lock table lookup failed", e instanceof Error ? e : { error: e });
       lockRows = [];
     }
 

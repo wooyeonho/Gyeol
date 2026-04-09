@@ -1,19 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { applyInviteCodeForUser } from "@/lib/invite/apply";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { inviteApplyBodySchema, parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/invite/apply" });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`invite-apply:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const parsed = await parseBody(request, inviteApplyBodySchema);
     if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 });

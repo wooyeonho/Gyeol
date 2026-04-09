@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 export type PromiseEntry = { content: string; due_date: string; fulfilled?: boolean };
 
@@ -21,7 +22,7 @@ export async function processPromises(agentId: string): Promise<void> {
           content: "You once said: \"" + (p.content?.slice(0, 500) ?? "") + "\". Today is the day we talked about.",
         });
       } catch (e) {
-        console.error("promise chat insert", e);
+        logger.error("promise chat insert", e instanceof Error ? e : { error: e });
       }
       next.push({ ...p, fulfilled: true });
     } else {

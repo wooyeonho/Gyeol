@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { absorbSharedKnowledge } from "@/lib/moltbook";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const absorbed = await absorbSharedKnowledge(agentId, body.entryId);
     return NextResponse.json({ absorbed });
   } catch (e) {
-    console.error("POST /api/molthub/star error", e);
+    logger.error("POST /api/molthub/star error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

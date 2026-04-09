@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
 import { logger } from "@/lib/logger";
@@ -10,6 +11,9 @@ import { NextRequest, NextResponse } from "next/server";
 const log = logger.child({ route: "api/integrations/notion" });
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

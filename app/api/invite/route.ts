@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { randomBytes } from "crypto";
+import { logger } from "@/lib/logger";
 
 function generateCode(): string {
   return randomBytes(6).toString("base64url").toLowerCase().replace(/[+/=]/g, "a");
@@ -36,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json({ code, url });
   } catch (e) {
-    console.error("GET /api/invite error", e);
+    logger.error("GET /api/invite error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

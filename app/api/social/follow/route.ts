@@ -5,6 +5,7 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialFollowBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, following: true, target_agent_id: targetAgentId });
   } catch (error) {
-    console.error("POST /api/social/follow error", error);
+    logger.error("POST /api/social/follow error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -82,7 +83,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ ok: true, following: false, target_agent_id: targetAgentId });
   } catch (error) {
-    console.error("DELETE /api/social/follow error", error);
+    logger.error("DELETE /api/social/follow error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

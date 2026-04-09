@@ -5,6 +5,8 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialReportBodySchema } from "@/lib/validation/schemas";
 
 const REPORT_THRESHOLD_FOR_PENDING = 3;
@@ -13,11 +15,17 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ postId: string }> },
 ) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(`social-report:${user.id}`);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
   try {
     const { postId } = await params;

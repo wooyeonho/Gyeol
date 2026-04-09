@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { buildPersonalizedPush } from "@/lib/retention/personalized-push";
 import type { PushContext } from "@/lib/retention/personalized-push";
+import { logger } from "@/lib/logger";
 
 export async function executeProactivePush(): Promise<CronResult> {
   try {
@@ -101,14 +102,14 @@ export async function executeProactivePush(): Promise<CronResult> {
         );
         if (pushRes.ok) sentCount++;
       } catch (err) {
-        console.error(`[ProactivePush] agent ${agent.agent_id} failed:`, err instanceof Error ? err.message : err);
+        logger.error(`[ProactivePush] agent ${agent.agent_id} failed`, { error: err instanceof Error ? err.message : err });
         // Continue with remaining agents
       }
     }
 
     return { processed: sentCount, sent: sentCount, success: true, timestamp: new Date().toISOString() };
   } catch (e) {
-    console.error("Proactive push cron error", e);
+    logger.error("Proactive push cron error", e instanceof Error ? e : { error: e });
     return { processed: 0, error: "Internal error", timestamp: new Date().toISOString() };
   }
 }

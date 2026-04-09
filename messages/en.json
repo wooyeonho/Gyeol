@@ -1126,7 +1126,8 @@
     "opening": "Opening...",
     "opened": "Opened!",
     "title": "Mystery Box",
-    "claim": "Claim"
+    "claim": "Claim",
+    "pityEncouragement": "Almost there!"
   },
   "death": {
     "echo": "ECHO",

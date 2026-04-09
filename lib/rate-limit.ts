@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_PER_WINDOW = 30;
@@ -50,7 +51,7 @@ export async function checkRateLimit(key: string, tier?: string | null): Promise
     const userId = extractUserId(key);
     if (!userId) {
       // Reject requests without a valid user UUID to prevent shared-bucket bypass
-      console.warn("[RateLimit] no UUID in key, denying:", key);
+      logger.warn("[RateLimit] no UUID in key, denying", { key });
       return false;
     }
 
@@ -74,7 +75,7 @@ export async function checkRateLimit(key: string, tier?: string | null): Promise
 
     // Fallback: if the new RPC isn't deployed yet, use the legacy path.
     // This has a small TOCTOU window but is better than failing entirely.
-    console.warn("[RateLimit] atomic RPC unavailable, using legacy path:", rpcError.message);
+    logger.warn("[RateLimit] atomic RPC unavailable, using legacy path", { error: rpcError.message });
 
     const { data: existing } = await service
       .from("rate_limits")
@@ -107,7 +108,7 @@ export async function checkRateLimit(key: string, tier?: string | null): Promise
 
     return true;
   } catch (e) {
-    console.error("[RateLimit] deny due to error (fail-closed)", e);
+    logger.error("[RateLimit] deny due to error (fail-closed)", e instanceof Error ? e : { error: e });
     return false;
   }
 }

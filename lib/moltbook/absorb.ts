@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { logger } from "@/lib/logger";
 
 /**
  * Absorb a shared MoltBook entry from MoltHub into the agent's own MoltBook.
@@ -20,13 +21,13 @@ export async function absorbSharedKnowledge(
     .single();
 
   if (fetchErr || !entry) {
-    console.error("[MoltHub] Absorb: entry not found or not public", fetchErr?.message);
+    logger.error("[MoltHub] Absorb: entry not found or not public", { error: fetchErr?.message });
     return false;
   }
 
   // Cannot absorb own entry
   if (entry.agent_id === agentId) {
-    console.warn("[MoltHub] Absorb: cannot absorb own entry");
+    logger.warn("[MoltHub] Absorb: cannot absorb own entry");
     return false;
   }
 
@@ -39,7 +40,7 @@ export async function absorbSharedKnowledge(
     .maybeSingle();
 
   if (existingStar) {
-    console.warn("[MoltHub] Absorb: already absorbed this entry");
+    logger.warn("[MoltHub] Absorb: already absorbed this entry");
     return false;
   }
 
@@ -63,7 +64,7 @@ export async function absorbSharedKnowledge(
   });
 
   if (insertErr) {
-    console.error("[MoltHub] Absorb insert error:", insertErr.message);
+    logger.error("[MoltHub] Absorb insert error", { error: insertErr.message });
     return false;
   }
 
@@ -74,7 +75,7 @@ export async function absorbSharedKnowledge(
   });
 
   if (starErr) {
-    console.error("[MoltHub] Star insert error:", starErr.message);
+    logger.error("[MoltHub] Star insert error", { error: starErr.message });
     // Entry was already copied — star failure is non-fatal, retry will dedup via star check
   }
 

@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { parseBody, timeCapsuleBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
         content: message,
       });
       if (insertContent.error) {
-        console.error("time-capsule insert", insertContent.error);
+        logger.error("time-capsule insert", { error: insertContent.error });
         return NextResponse.json({ error: "Failed to create capsule" }, { status: 500 });
       }
     }
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("time-capsule POST", e);
+    logger.error("time-capsule POST", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -99,7 +104,7 @@ export async function GET() {
     }));
     return NextResponse.json({ capsules });
   } catch (e) {
-    console.error("time-capsule GET", e);
+    logger.error("time-capsule GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

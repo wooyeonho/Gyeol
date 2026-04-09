@@ -1126,7 +1126,8 @@
     "opening": "열리고 있어...",
     "opened": "열렸어!",
     "title": "미스터리 박스",
-    "claim": "받기"
+    "claim": "받기",
+    "pityEncouragement": "거의 다 왔어요!"
   },
   "death": {
     "echo": "ECHO",

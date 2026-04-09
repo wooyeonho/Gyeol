@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { logger } from "@/lib/logger";
 
 const BATCH_SIZE = 10;
 const MAX_ENTRIES_PER_AGENT = 200;
@@ -48,7 +49,7 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
     .eq("agent_id", agentId);
 
   if ((count ?? 0) >= MAX_ENTRIES_PER_AGENT) {
-    console.warn(`[MoltBook] Agent ${agentId} at capacity (${count}/${MAX_ENTRIES_PER_AGENT})`);
+    logger.warn(`[MoltBook] Agent ${agentId} at capacity (${count}/${MAX_ENTRIES_PER_AGENT})`);
     return 0;
   }
 
@@ -112,10 +113,10 @@ export async function distillMemoriesToMoltBook(agentId: string): Promise<number
       if (!error) {
         created++;
       } else {
-        console.error("[MoltBook] Insert error:", error.message);
+        logger.error("[MoltBook] Insert error", { error: error.message });
       }
     } catch (e) {
-      console.error("[MoltBook] Distill entry error:", e);
+      logger.error("[MoltBook] Distill entry error", e instanceof Error ? e : { error: e });
     }
   }
 

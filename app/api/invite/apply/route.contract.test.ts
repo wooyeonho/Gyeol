@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -14,6 +15,14 @@ vi.mock("@/lib/agents/primary", () => ({
 
 vi.mock("@/lib/economy/coins", () => ({
   addCoinsAtomic: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
 }));
 
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +84,7 @@ describe("/api/invite/apply contract", () => {
     });
 
     const response = await POST(
-      new Request("http://localhost/api/invite/apply", {
+      new NextRequest("http://localhost/api/invite/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: "abc123" }),

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripe, getStripeAppUrl, getStripePriceId, isStripeConfigured } from "@/lib/billing/stripe";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { parseBody, billingCheckoutBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   if (!verifyCsrfOrigin(request)) {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       session_id: session.id,
     });
   } catch (error) {
-    console.error("POST /api/billing/checkout error", error);
+    logger.error("POST /api/billing/checkout error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

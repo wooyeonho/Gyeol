@@ -4,6 +4,7 @@ import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { ensureNpcAgents } from "@/lib/society/npc-seed";
+import { logger } from "@/lib/logger";
 
 const WEATHERS = [
   { name: "평온한 날", memory_accuracy_modifier: 0, mutation_modifier: 0, social_modifier: 0, life_interval_modifier: 1.0 },
@@ -32,10 +33,10 @@ export async function executeWorld(): Promise<CronResult> {
     try {
       const npc = await ensureNpcAgents();
       if (npc.created > 0) {
-        console.warn(`[World] NPC seed: created ${npc.created}, existing ${npc.existing}`);
+        logger.warn(`[World] NPC seed: created ${npc.created}, existing ${npc.existing}`);
       }
     } catch (e) {
-      console.warn("[World] NPC seed skipped:", e instanceof Error ? e.message : e);
+      logger.warn("[World] NPC seed skipped", { error: e instanceof Error ? e.message : e });
     }
 
     return { processed: 1, weather: weather.name, agents: count, timestamp: new Date().toISOString() };

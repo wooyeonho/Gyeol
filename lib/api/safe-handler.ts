@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logger } from "@/lib/logger";
 
 /**
  * Wraps an API route handler with consistent error handling.
@@ -27,7 +28,7 @@ export function safeHandler(
       return await handler(req);
     } catch (error) {
       const label = options?.label ?? req.url;
-      console.error(`[${label}]`, error);
+      logger.error(`[${label}]`, error instanceof Error ? error : { error });
 
       if (isMissingEnvError(error)) {
         if (options?.demoFallback) return options.demoFallback();

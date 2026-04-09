@@ -1120,7 +1120,8 @@
     "opening": "正在打开...",
     "opened": "打开了！",
     "title": "神秘盒子",
-    "claim": "领取"
+    "claim": "领取",
+    "pityEncouragement": "快到了！"
   },
   "death": {
     "echo": "ECHO",

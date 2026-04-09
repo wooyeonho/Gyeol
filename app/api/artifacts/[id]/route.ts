@@ -1,13 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`artifacts:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const service = createServiceClient();
     const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
@@ -31,7 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await service.from("artifacts").update(updates).eq("id", id).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("PATCH /api/artifacts/[id] error", e);
+    logger.error("PATCH /api/artifacts/[id] error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

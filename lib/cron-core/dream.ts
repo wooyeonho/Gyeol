@@ -8,6 +8,7 @@ import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
+import { logger } from "@/lib/logger";
 
 export async function executeDream(): Promise<CronResult> {
   const lockKey = "cron:dream";
@@ -92,7 +93,7 @@ export async function executeDream(): Promise<CronResult> {
         await db.from("agent_state").update({ last_dream_at: new Date().toISOString() }).eq("agent_id", agentId);
         processed++;
       } catch (e) {
-        console.error(`[Dream] ${agent.id}:`, e);
+        logger.error(`[Dream] ${agent.id}`, e instanceof Error ? e : { error: e });
       }
     }
     return { processed, timestamp: new Date().toISOString() };

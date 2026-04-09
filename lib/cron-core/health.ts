@@ -4,6 +4,7 @@ import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { computeAutonomyHealthScore } from "@/lib/ops/health-score";
 import { emitSystemAlert } from "@/lib/ops/alerts";
+import { logger } from "@/lib/logger";
 
 export async function executeHealth(): Promise<CronResult> {
   try {
@@ -65,7 +66,7 @@ export async function executeHealth(): Promise<CronResult> {
         };
       });
     } catch (e) {
-      console.error("health cron freshness lookup", e);
+      logger.error("health cron freshness lookup", e instanceof Error ? e : { error: e });
     }
 
     const staleCronJobs = cronFreshness.filter((j) => j.stale).length;
@@ -127,7 +128,7 @@ export async function executeHealth(): Promise<CronResult> {
       autonomy_health: autonomyHealth,
     };
   } catch (e) {
-    console.error("health check", e);
+    logger.error("health check", e instanceof Error ? e : { error: e });
     return {
       ok: false,
       processed: 0,

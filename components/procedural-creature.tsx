@@ -35,6 +35,8 @@ interface ProceduralCreatureProps {
   genLevel?: number;
   /** Idle behavior visual parameters — computed from resolveIdleBehavior */
   idleBehaviorParams?: IdleBehaviorParams;
+  /** Whether the creature is currently eating (triggers chomp animation) */
+  isEating?: boolean;
 }
 
 const SPHERE_DETAIL = 4;
@@ -111,6 +113,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   forceState,
   genLevel = 1,
   idleBehaviorParams,
+  isEating = false,
 }: ProceduralCreatureProps) {
   const energy = conversationEnergy ?? 0;
 
@@ -172,6 +175,36 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const idleDreamParticlesRef = useRef(0);
   // Dream particle refs
   const dreamParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null, null]);
+
+  // Tail mood-driven animation state — smoothly lerped toward mood targets
+  const tailAnimFreqRef = useRef(1); // current tail wag frequency (Hz)
+  const tailAnimAmpRef = useRef(0.2); // current tail wag amplitude
+  const tailAnimPhaseRef = useRef(0); // accumulated phase for smooth frequency changes
+
+  // Tear particle refs (4 tear drops)
+  const tearParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null]);
+  const tearOffsetsRef = useRef(
+    Array.from({ length: 4 }, (_, i) => ({
+      x: (i % 2 === 0 ? -1 : 1) * (0.12 + Math.sin(i * 2.7) * 0.04),
+      drift: (Math.sin(i * 1.3 + 0.5) - 0.5) * 0.02,
+      phase: i * 0.7, // staggered spawn timing
+      y: 0, // current fall position (reset when respawned)
+    })),
+  );
+  const tearActiveRef = useRef(0); // 0..1 lerp target for tear visibility
+
+  // Eating animation state
+  const eatingTimerRef = useRef(0); // counts down from 2s when eating starts
+  const eatingActiveRef = useRef(false);
+  const foodParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null]);
+  const foodParticleVelocities = useRef(
+    Array.from({ length: 3 }, (_, i) => ({
+      x: (Math.sin(i * 2.1) - 0.5) * 0.3,
+      y: 0.2 + Math.sin(i * 1.7) * 0.15,
+      z: (Math.cos(i * 3.2) - 0.5) * 0.2,
+      life: 0,
+    })),
+  );
 
   const baseAppearance = useMemo(
     () => deriveDNAAppearance(dna, species, genLevel),
@@ -567,6 +600,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     return () => { toonGradient.dispose(); };
   }, [toonGradient]);
 
+  const mouthPos = useMemo((): [number, number, number] => {
+    const height = 0.06 * (1 + morphWeights.bodyStretch * 0.3);
+    const depth = 0.38 * (1 + morphWeights.bodyBulge * 0.12);
+    return [0, height, depth];
+  }, [morphWeights]);
+
   // Animation loop
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -774,16 +813,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       crownRef.current.rotation.z = Math.cos(windPhase * 0.7) * 0.08 * activityMult;
       crownRef.current.scale.setScalar(1 + breathSin * 0.05);
     }
-    if (sideLeftRef.current) {
-      const flapPhase = t * 0.8 * idleAppSpeed;
-      sideLeftRef.current.rotation.z = 0.4 + Math.sin(flapPhase) * 0.15 * activityMult + breathSin * 0.08;
-      sideLeftRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
-    }
-    if (sideRightRef.current) {
-      const flapPhase = t * 0.8 * idleAppSpeed + Math.PI * 0.3;
-      sideRightRef.current.rotation.z = -0.4 - Math.sin(flapPhase) * 0.15 * activityMult - breathSin * 0.08;
-      sideRightRef.current.position.y = Math.sin(flapPhase * 1.3) * 0.02 * activityMult;
-    }
+    // Side appendage animation is now handled in the mood-driven tail/appendage section below
     for (let vi = 0; vi < 3; vi++) {
       const veilMesh = veilRefs.current[vi];
       if (!veilMesh) continue;
@@ -793,13 +823,55 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       veilMesh.scale.y = 1 + breathSin * 0.04;
     }
 
-    // Tail wag — modulated by idle appendage speed
+    // ── Tail/Appendage mood-driven animation ──────────────────────────
+    // Derive target frequency and amplitude from current mood
+    let tailTargetFreq = 1.0; // default calm sway: 1Hz
+    let tailTargetAmp = 0.2;  // default calm amplitude
+    const moodLower = mood ?? "";
+    if (moodLower === "joyful" || moodLower === "excited" || moodLower === "thrilled" || moodLower === "playful" || moodLower === "energetic") {
+      // Happy/excited: fast wagging 3-4Hz, large amplitude
+      tailTargetFreq = 3.0 + dna.playfulness * 1.0; // 3-4Hz
+      tailTargetAmp = 0.3 + dna.playfulness * 0.2;  // 0.3-0.5
+    } else if (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely" || moodLower === "nostalgic") {
+      // Sad/lonely: slow drooping
+      tailTargetFreq = 0.5;
+      tailTargetAmp = 0.1;
+    } else if (moodLower === "scared" || moodLower === "anxious" || moodLower === "terrified" || moodLower === "nervous") {
+      // Scared: tucked tight
+      tailTargetFreq = 0.3;
+      tailTargetAmp = 0.02; // near zero
+    } else if (moodLower === "angry" || moodLower === "frustrated") {
+      tailTargetFreq = 2.5;
+      tailTargetAmp = 0.25;
+    }
+    // Smooth lerp toward mood targets
+    const tailLerpRate = 0.03;
+    tailAnimFreqRef.current += (tailTargetFreq - tailAnimFreqRef.current) * tailLerpRate;
+    tailAnimAmpRef.current += (tailTargetAmp - tailAnimAmpRef.current) * tailLerpRate;
+    // Accumulate phase using current frequency for smooth transitions
+    tailAnimPhaseRef.current += dt * tailAnimFreqRef.current * Math.PI * 2;
+    const tailPhase = tailAnimPhaseRef.current;
+    const tailAmp = tailAnimAmpRef.current * activityMult * idleAppSpeed;
+
+    // Apply mood-driven animation to tail
     if (tailRef.current) {
-      const wagSpeed = (1.5 + dna.playfulness * 1.5) * idleAppSpeed;
-      const wagAmp = 0.2 + dna.playfulness * 0.3;
-      tailRef.current.rotation.x = Math.sin(t * wagSpeed) * wagAmp * activityMult;
-      tailRef.current.rotation.y = Math.cos(t * wagSpeed * 0.7) * wagAmp * 0.5 * activityMult;
+      tailRef.current.rotation.x = Math.sin(tailPhase) * tailAmp;
+      tailRef.current.rotation.y = Math.cos(tailPhase * 0.7) * tailAmp * 0.5;
+      // Sad moods droop the tail downward
+      const droopTarget = (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely") ? -0.3 : 0;
+      tailRef.current.rotation.z = THREE.MathUtils.lerp(tailRef.current.rotation.z, droopTarget, 0.04);
       tailRef.current.scale.y = 1 + breathSin * 0.03;
+    }
+    // Apply mood-driven speed to side appendages (wings/fins)
+    if (sideLeftRef.current) {
+      const flapPhase = tailPhase * 0.5;
+      sideLeftRef.current.rotation.z = 0.4 + Math.sin(flapPhase) * tailAmp * 0.5 + breathSin * 0.08;
+      sideLeftRef.current.position.y = Math.sin(flapPhase * 1.3) * tailAmp * 0.1;
+    }
+    if (sideRightRef.current) {
+      const flapPhase = tailPhase * 0.5 + Math.PI * 0.3;
+      sideRightRef.current.rotation.z = -0.4 - Math.sin(flapPhase) * tailAmp * 0.5 - breathSin * 0.08;
+      sideRightRef.current.position.y = Math.sin(flapPhase * 1.3) * tailAmp * 0.1;
     }
     // Horn pulse
     if (hornLRef.current) hornLRef.current.scale.setScalar(1 + breathSin * 0.03);
@@ -842,15 +914,107 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       (dp.material as THREE.MeshBasicMaterial).opacity = dreamOpacity * (0.3 + Math.sin(t * 1.5 + di * 1.2) * 0.2);
       dp.scale.setScalar(0.02 + Math.sin(t * 2 + di) * 0.008);
     }
+
+    // ── Tear Particles ──────────────────────────────────────────────────
+    // Spawn tear drops when mood is sad, lonely, heartbroken, or crying
+    const sadMoods = ["sad", "lonely", "heartbroken", "crying", "melancholy"];
+    const isSadMood = sadMoods.includes(moodLower);
+    const tearTarget = isSadMood ? 1 : 0;
+    tearActiveRef.current += (tearTarget - tearActiveRef.current) * 0.04;
+    const tearVisibility = tearActiveRef.current;
+
+    const eyeHeight = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
+    const eyeDepth = 0.34 * (1 + morphWeights.bodyBulge * 0.15);
+
+    for (let ti = 0; ti < 4; ti++) {
+      const tp = tearParticleRefs.current[ti];
+      if (!tp) continue;
+      const tearData = tearOffsetsRef.current[ti];
+
+      if (tearVisibility > 0.05) {
+        // Fall speed: gravity-like acceleration
+        tearData.y -= dt * (0.3 + ti * 0.05);
+        // Respawn when fallen below creature body
+        if (tearData.y < -0.6) {
+          tearData.y = 0;
+          tearData.phase = t + ti * 0.3;
+        }
+        // Position: near eye area with slight sideways drift
+        const driftX = tearData.drift * Math.sin(t * 0.8 + ti);
+        tp.position.x = tearData.x + driftX;
+        tp.position.y = eyeHeight + tearData.y;
+        tp.position.z = eyeDepth + 0.05;
+        // Teardrop scale: slightly elongated vertically while falling
+        const fallSpeed = Math.abs(tearData.y) * 0.5;
+        tp.scale.set(0.012, 0.012 + fallSpeed * 0.02, 0.012);
+        // Opacity: fade in/out at spawn/despawn, modulated by tearVisibility
+        const spawnFade = Math.min(1, Math.abs(tearData.y) * 5); // fade in near eye
+        const despawnFade = Math.max(0, 1 - Math.abs(tearData.y) / 0.6); // fade out at bottom
+        (tp.material as THREE.MeshBasicMaterial).opacity = tearVisibility * spawnFade * despawnFade * 0.6;
+      } else {
+        // Hidden — move offscreen
+        (tp.material as THREE.MeshBasicMaterial).opacity = 0;
+        tearData.y = 0;
+      }
+    }
+
+    // ── Eating Animation (Chomp) ────────────────────────────────────────
+    // Trigger: isEating prop starts a 2-second chomp sequence
+    if (isEating && !eatingActiveRef.current) {
+      eatingActiveRef.current = true;
+      eatingTimerRef.current = 2.0; // 2 second chomp duration
+      // Reset food particles
+      for (let fi = 0; fi < 3; fi++) {
+        const fv = foodParticleVelocities.current[fi];
+        fv.x = (Math.sin(t + fi * 2.1) - 0.5) * 0.4;
+        fv.y = 0.3 + Math.sin(t + fi * 1.7) * 0.2;
+        fv.z = (Math.cos(t + fi * 3.2) - 0.5) * 0.3;
+        fv.life = 1.0;
+      }
+    }
+    if (!isEating) {
+      eatingActiveRef.current = false;
+    }
+
+    if (eatingTimerRef.current > 0) {
+      eatingTimerRef.current -= dt;
+      // Chomping motion: oscillate mouth scale Y at ~4Hz for mouth open/close
+      if (mouthRef.current) {
+        const chompPhase = Math.sin(eatingTimerRef.current * Math.PI * 2 * 4);
+        const chompOpen = 0.5 + Math.abs(chompPhase) * 0.5; // 0.5-1.0 range
+        mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, chompOpen, 0.15);
+        // Widen mouth slightly during eating
+        mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.3, 0.08);
+      }
+
+      // Food particles: small bits flying out from mouth
+      for (let fi = 0; fi < 3; fi++) {
+        const fp = foodParticleRefs.current[fi];
+        if (!fp) continue;
+        const fv = foodParticleVelocities.current[fi];
+        if (fv.life > 0) {
+          fv.life -= dt * 1.2;
+          // Physics: simple ballistic trajectory
+          fv.y -= dt * 0.8; // gravity
+          fp.position.x = mouthPos[0] + fv.x * (1 - fv.life);
+          fp.position.y = mouthPos[1] + fv.y * (1 - fv.life);
+          fp.position.z = mouthPos[2] + 0.1 + fv.z * (1 - fv.life);
+          fp.scale.setScalar(Math.max(0.005, 0.015 * fv.life));
+          (fp.material as THREE.MeshBasicMaterial).opacity = Math.max(0, fv.life * 0.8);
+        } else {
+          (fp.material as THREE.MeshBasicMaterial).opacity = 0;
+        }
+      }
+    } else {
+      // Hide food particles when not eating
+      for (let fi = 0; fi < 3; fi++) {
+        const fp = foodParticleRefs.current[fi];
+        if (fp) (fp.material as THREE.MeshBasicMaterial).opacity = 0;
+      }
+    }
   });
 
   const dynEyeSize = eyeSize;
-
-  const mouthPos = useMemo((): [number, number, number] => {
-    const height = 0.06 * (1 + morphWeights.bodyStretch * 0.3);
-    const depth = 0.38 * (1 + morphWeights.bodyBulge * 0.12);
-    return [0, height, depth];
-  }, [morphWeights]);
 
   const cyclopsEyeSize = dynEyeSize * 1.5;
   const thirdEyeSize = dynEyeSize * 0.7;
@@ -1215,6 +1379,39 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         >
           <sphereGeometry args={[0.02, 6, 6]} />
           <meshBasicMaterial color={secondaryColor} transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
+
+      {/* Tear particles — 4 blue-tinted semi-transparent drops falling from eye area */}
+      {Array.from({ length: 4 }, (_, i) => (
+        <mesh
+          key={`tear-${i}`}
+          ref={(el) => { tearParticleRefs.current[i] = el; }}
+        >
+          <sphereGeometry args={[0.012, 6, 6]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0x4488dd)}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+
+      {/* Food particles — 3 small bits that fly from mouth during eating */}
+      {Array.from({ length: 3 }, (_, i) => (
+        <mesh
+          key={`food-${i}`}
+          ref={(el) => { foodParticleRefs.current[i] = el; }}
+        >
+          <sphereGeometry args={[0.015, 4, 4]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0xddaa44)}
+            transparent
+            opacity={0}
+            depthWrite={false}
+          />
         </mesh>
       ))}
     </group>

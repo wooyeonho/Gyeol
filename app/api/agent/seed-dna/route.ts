@@ -1,10 +1,12 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { deriveSpecies } from "@/lib/genome/species";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { seedDnaBodySchema, parseBody } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/agent/seed-dna" });
@@ -15,10 +17,16 @@ const log = logger.child({ route: "api/agent/seed-dna" });
  * Only works once per agent — subsequent calls are ignored.
  */
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
+    const allowed = await checkRateLimit(`seed-dna:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const parsed = await parseBody(req, seedDnaBodySchema);
     if (!parsed.success) {

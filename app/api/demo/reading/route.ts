@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateTextOnce } from "@/lib/ai/router";
 import { DNA_AXES, getDominantTraits, getRecessiveTraits, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/demo/reading
@@ -76,7 +77,7 @@ Write the reading now. 2-3 sentences only.`;
 
     return NextResponse.json({ reading: reading.trim(), species: species.name });
   } catch (e) {
-    console.error("[DemoReading]", e);
+    logger.error("[DemoReading]", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Failed to generate reading" }, { status: 500 });
   }
 }

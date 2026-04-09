@@ -5,6 +5,7 @@ import { getPrimaryAgent } from "@/lib/agents/primary";
 import { parseBody, adoptBodySchema } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -49,7 +50,7 @@ export async function GET() {
     });
     return NextResponse.json({ list });
   } catch (e) {
-    console.error("GET /api/adopt error", e);
+    logger.error("GET /api/adopt error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       // Fallback: two-step with manual rollback (legacy path)
-      console.warn("[Adopt] atomic RPC unavailable, using legacy path:", rpcError.message);
+      logger.warn("[Adopt] atomic RPC unavailable, using legacy path", { error: rpcError.message });
       const { data: claimed, error: claimError } = await service
         .from("adoption_board")
         .update({ status: "adopted" })
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: true });
   } catch (e) {
-    console.error("POST /api/adopt error", e);
+    logger.error("POST /api/adopt error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -2,11 +2,13 @@
 
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { IdentityPresence } from "@/components/identity-presence";
+import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 
 type PresenceColumnProps = {
   appearance: ResolvedIdentityAppearance;
   currentPresenceLabel: string;
   greeting: string;
+  intimacyScore: number;
   isStreaming: boolean;
   quickPrompts: readonly string[];
   selfName: string;
@@ -22,6 +24,7 @@ export function WorldClassHubPresenceColumn({
   appearance,
   currentPresenceLabel,
   greeting,
+  intimacyScore,
   isStreaming,
   quickPrompts,
   selfName,
@@ -82,6 +85,8 @@ export function WorldClassHubPresenceColumn({
           />
         </div>
       </div>
+
+      <AffinityHeartGauge score={intimacyScore} compact />
 
       <div className="flex flex-wrap gap-2">
         {quickPrompts.map((prompt) => (
