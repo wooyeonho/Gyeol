@@ -303,6 +303,14 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             voiceError={voiceInput.error}
             onVoiceToggle={voiceInput.toggle}
             onStopStreaming={stopStreaming}
+            creatureDna={(agentState?.genome as { dna?: Record<string, number> } | undefined)?.dna as import("@/lib/genome/dna").CreatureDNA | undefined}
+            creatureName={appearance.name}
+            locale={locale}
+            onStickerSelect={(sticker) => {
+              if (!isStreaming) {
+                void sendMessage(`[${sticker.emoji} ${sticker.label.ko}]`, { source: "input", locale, totalMessages });
+              }
+            }}
             t={t}
           />
 

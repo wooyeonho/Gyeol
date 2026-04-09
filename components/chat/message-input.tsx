@@ -1,8 +1,10 @@
-import React, { useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useRef, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import type { VoiceInputState } from "@/hooks/use-voice-input";
+import type { CreatureDNA } from "@/lib/genome/dna";
+import type { Sticker } from "@/lib/creature/sticker-system";
 
 function MicIcon({ className }: { className?: string }) {
   return (
@@ -43,6 +45,10 @@ export function MessageInput({
   voiceError,
   onVoiceToggle,
   onStopStreaming,
+  onStickerSelect,
+  creatureDna,
+  creatureName,
+  locale,
   t,
 }: {
   input: string;
@@ -55,9 +61,14 @@ export function MessageInput({
   voiceError: string | null;
   onVoiceToggle: () => void;
   onStopStreaming: () => void;
+  onStickerSelect?: (sticker: Sticker) => void;
+  creatureDna?: CreatureDNA | null;
+  creatureName?: string;
+  locale?: string;
   t: (key: string) => string;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [showStickers, setShowStickers] = useState(false);
 
   useEffect(() => {
     if (!isStreaming && inputRef.current) {
@@ -110,6 +121,26 @@ export function MessageInput({
           <span className="text-xs text-white/50">{t("voice.transcribing")}</span>
         </div>
       )}
+      {/* Sticker picker panel */}
+      {creatureDna && onStickerSelect && (
+        <AnimatePresence>
+          {showStickers && (
+            <div className="mb-2">
+              <StickerPickerLazy
+                dna={creatureDna}
+                creatureName={creatureName || "Creature"}
+                locale={locale || "ko"}
+                onSelect={(sticker) => {
+                  onStickerSelect(sticker);
+                  setShowStickers(false);
+                }}
+                onClose={() => setShowStickers(false)}
+              />
+            </div>
+          )}
+        </AnimatePresence>
+      )}
+
       <form onSubmit={handleSubmitWithFeedback} className="flex items-end gap-2">
         <label htmlFor="chat-input" className="sr-only">
           {t("chat.inputLabel")}
@@ -140,6 +171,28 @@ export function MessageInput({
             <MicIcon className="mx-auto h-5 w-5 text-white/70" />
           )}
         </motion.button>
+
+        {/* Sticker button */}
+        {creatureDna && onStickerSelect && (
+          <motion.button
+            type="button"
+            onClick={() => {
+              haptic("tap");
+              setShowStickers((prev) => !prev);
+            }}
+            className="min-h-12 min-w-12 flex-shrink-0 rounded-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            style={{
+              background: showStickers ? `${appearance.palette.primary}25` : `${appearance.palette.primary}10`,
+              border: `1px solid ${showStickers ? `${appearance.palette.primary}40` : `${appearance.palette.primary}20`}`,
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            aria-label={t("chat.stickers") || "Stickers"}
+            aria-expanded={showStickers}
+          >
+            <span className="text-lg">😊</span>
+          </motion.button>
+        )}
 
         <textarea
           id="chat-input"
@@ -184,3 +237,11 @@ export function MessageInput({
     </div>
   );
 }
+
+/* Lazy-load StickerPicker to avoid bundling sticker-system in main chat chunk */
+import dynamic from "next/dynamic";
+
+const StickerPickerLazy = dynamic(
+  () => import("@/components/sticker-picker").then((m) => ({ default: m.StickerPicker })),
+  { ssr: false, loading: () => <div className="h-48 rounded-2xl bg-white/5 animate-pulse" /> },
+);

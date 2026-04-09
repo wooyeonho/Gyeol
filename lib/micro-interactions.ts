@@ -6,7 +6,10 @@
 
 /* ── Haptic feedback ── */
 
-type HapticPattern = "tap" | "success" | "warning" | "send" | "receive" | "jackpot";
+type HapticPattern =
+  | "tap" | "success" | "warning" | "send" | "receive" | "jackpot"
+  | "scroll_end" | "toggle" | "slider" | "delete" | "evolve"
+  | "level_up" | "care" | "swipe" | "error";
 
 const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   tap: 10,
@@ -15,6 +18,16 @@ const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   send: [8, 15, 8],
   receive: [5, 10, 15],
   jackpot: [20, 40, 30, 40, 50, 30, 70],
+  // New patterns — Apple Taptic Engine inspired
+  scroll_end: 5,
+  toggle: [8, 20, 12],
+  slider: 3,
+  delete: [15, 10, 15, 10, 30],
+  evolve: [10, 20, 10, 30, 15, 50, 20, 80],
+  level_up: [15, 25, 20, 35, 25, 50],
+  care: [5, 15, 10],
+  swipe: [6, 12],
+  error: [40, 20, 40],
 };
 
 export function haptic(pattern: HapticPattern = "tap") {

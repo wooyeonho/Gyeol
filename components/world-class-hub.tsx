@@ -418,6 +418,39 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                   )}
                 </div>
 
+                {/* Tamagotchi-style care quick-actions */}
+                {!isFirstSession && (
+                  <div className="flex gap-2">
+                    {[
+                      { action: "feed", icon: "🍖", label: t("care.feed") || "먹이기", cost: 5, color: "border-orange-500/20 bg-orange-500/8 hover:bg-orange-500/15" },
+                      { action: "rest", icon: "🛏", label: t("care.rest") || "재우기", cost: 3, color: "border-blue-500/20 bg-blue-500/8 hover:bg-blue-500/15" },
+                      { action: "play", icon: "🎮", label: t("care.play") || "놀기", cost: 4, color: "border-pink-500/20 bg-pink-500/8 hover:bg-pink-500/15" },
+                    ].map((item) => (
+                      <button
+                        key={item.action}
+                        type="button"
+                        onClick={async () => {
+                          haptic("care");
+                          try {
+                            const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | undefined;
+                            if (!agentId) return;
+                            const res = await fetch("/api/care", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ agentId, action: item.action }),
+                            });
+                            if (res.ok) haptic("success");
+                          } catch { /* silent */ }
+                        }}
+                        className={`flex flex-1 flex-col items-center gap-1 rounded-xl border p-2.5 transition-all active:scale-95 ${item.color}`}
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-[10px] text-white/70">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Streak + rewards */}
                 <div className="grid gap-3 lg:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
