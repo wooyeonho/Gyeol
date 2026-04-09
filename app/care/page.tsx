@@ -58,7 +58,7 @@ export default function CarePage() {
 
   useEffect(() => { fetchCare(); }, [fetchCare]);
 
-  const doAction = async (action: "feed" | "rest") => {
+  const doAction = async (action: "feed" | "rest" | "play") => {
     if (!agentId || acting) return;
     setActing(true);
     haptic("tap");
@@ -137,12 +137,12 @@ export default function CarePage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 disabled={acting || coins < 5}
                 onClick={() => doAction("feed")}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 p-5 transition-all hover:bg-orange-500/15 disabled:opacity-40"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 p-4 transition-all hover:bg-orange-500/15 disabled:opacity-40"
               >
                 <span className="text-3xl">🍖</span>
                 <span className="text-sm font-medium text-white">{t("care.feed") || "먹이주기"}</span>
@@ -152,11 +152,21 @@ export default function CarePage() {
                 type="button"
                 disabled={acting || coins < 3}
                 onClick={() => doAction("rest")}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/8 p-5 transition-all hover:bg-blue-500/15 disabled:opacity-40"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4 transition-all hover:bg-blue-500/15 disabled:opacity-40"
               >
                 <span className="text-3xl">🛏</span>
                 <span className="text-sm font-medium text-white">{t("care.rest") || "재우기"}</span>
                 <span className="text-xs text-white/50">🪙 3</span>
+              </button>
+              <button
+                type="button"
+                disabled={acting || coins < 4}
+                onClick={() => doAction("play")}
+                className="flex flex-col items-center gap-2 rounded-2xl border border-pink-500/20 bg-pink-500/8 p-4 transition-all hover:bg-pink-500/15 disabled:opacity-40"
+              >
+                <span className="text-3xl">🎮</span>
+                <span className="text-sm font-medium text-white">{t("care.play") || "놀아주기"}</span>
+                <span className="text-xs text-white/50">🪙 4</span>
               </button>
             </div>
 

@@ -131,11 +131,18 @@ export function MessageList({
               whileTap={{ scale: 0.98 }}
             >
               {m.content}
-              {/* KakaoTalk-style sent indicator */}
-              <div className="mt-1 flex justify-end">
+              {/* KakaoTalk-style sent/read indicator */}
+              <div className="mt-1 flex items-center justify-end gap-1">
                 {isStreaming && i === messages.length - 2 ? (
                   <span className="text-[10px] text-white/30">...</span>
+                ) : i < messages.length - 1 ? (
+                  /* Double-check: message was read (AI responded) */
+                  <svg className="h-3 w-3 text-cyan-400/60" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 8 5 12 11 4" />
+                    <polyline points="7 8 11 12 17 4" />
+                  </svg>
                 ) : (
+                  /* Single-check: sent but not yet read */
                   <svg className="h-3 w-3 text-white/30" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="2 8 6 12 14 4" />
                   </svg>
