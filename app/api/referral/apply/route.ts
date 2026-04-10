@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { referralApplyBodySchema, parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/referral/apply" });
@@ -16,8 +19,11 @@ const REFERRAL_REWARD_COINS = 100;
  * Awards coins to both the referrer and the referred user.
  * Each user can only redeem one referral code.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+    }
     const supabase = await createClient();
     const {
       data: { user },
@@ -26,11 +32,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => null);
-    const code = typeof body?.code === "string" ? body.code.trim().toLowerCase() : "";
-    if (!code) {
-      return NextResponse.json({ error: "Missing code" }, { status: 400 });
+    const rl = await checkRateLimit(`referral:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
+    const parsed = await parseBody(req, referralApplyBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const code = parsed.data.code;
 
     const service = createServiceClient();
 

@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isClientEventName } from "@/lib/analytics/catalog";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { analyticsTrackBodySchema } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
@@ -11,8 +13,17 @@ function sanitizeString(value: unknown, maxLength: number) {
     : null;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(request)) {
+      return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+    }
+
+    const rl = await checkRateLimit("analytics-track:global");
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();

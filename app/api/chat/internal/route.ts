@@ -6,10 +6,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { isMissingEnvError } from "@/lib/env/required";
 import { logRouteError } from "@/lib/ops/logger";
 import { runSynchronousChatTurn } from "@/lib/chat/sync-turn";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { z } from "zod";
+
+const internalChatBodySchema = z.object({
+  agent_id: z.string().uuid("Invalid agent_id format"),
+  message: z.string().min(1, "message required").max(8000),
+});
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   if (!CRON_SECRET) {
     return NextResponse.json(
       { error: "Service unavailable: missing CRON_SECRET", code: "MISSING_ENV" },
@@ -20,12 +30,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const body = await req.json().catch(() => ({}));
-    const agentId = body.agent_id as string | undefined;
-    const rawMessage = typeof body.message === "string" ? body.message : "";
-    if (!agentId || !rawMessage.trim()) {
-      return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
+    const parsed = internalChatBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    const agentId = parsed.data.agent_id;
+    const rawMessage = parsed.data.message;
     const allowed = await checkRateLimit(`internal-chat:${agentId}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 

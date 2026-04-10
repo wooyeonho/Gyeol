@@ -2,11 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { memoriesToObjects, mergeRoomObjects } from "@/lib/room/generator";
 import type { RoomState } from "@/lib/room/types";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDemoAgentState, getDemoRoomObjects } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { logRouteError } from "@/lib/ops/logger";
 import { parseBody, roomPatchBodySchema } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -74,11 +76,17 @@ export async function GET() {
   }
 }
 
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`room-patch:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const service = createServiceClient();
     const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);

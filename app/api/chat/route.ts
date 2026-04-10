@@ -4,6 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { isMissingEnvError } from "@/lib/env/required";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
@@ -82,6 +83,9 @@ function computeInlineResonance(
 
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return new Response(JSON.stringify({ error: "CSRF origin check failed" }), { status: 403 });
+    }
     const requestStartedAt = Date.now();
     const payload = await req.json();
     const parsed = chatBodySchema.safeParse(payload);

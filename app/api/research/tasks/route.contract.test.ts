@@ -12,6 +12,14 @@ vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn(),
 }));
 
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+}));
+
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
@@ -70,14 +78,33 @@ describe("/api/research/tasks contract", () => {
       },
     });
 
+    const taskUuid = "00000000-0000-0000-0000-000000000001";
+    (createServiceClient as Mock).mockReturnValue({
+      from: (table: string) => {
+        expect(table).toBe("research_tasks");
+        return ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: { id: taskUuid, priority: 1 } }),
+            }),
+          }),
+        }),
+        update: () => ({
+          eq,
+        }),
+      });
+      },
+    });
+
     const res = await PATCH(
       new Request("http://localhost/api/research/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: "task-1", action: "cancel" }),
+        body: JSON.stringify({ task_id: taskUuid, action: "cancel" }),
       })
     );
     expect(res.status).toBe(200);
-    expect(eq).toHaveBeenCalledWith("id", "task-1");
+    expect(eq).toHaveBeenCalledWith("id", taskUuid);
   });
 });

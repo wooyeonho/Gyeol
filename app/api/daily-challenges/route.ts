@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody } from "@/lib/validation/schemas";
+import { z } from "zod";
 import {
   generateDailyChallenges,
   getTodayDateString,
@@ -7,6 +11,11 @@ import {
   getPerfectDayBonus,
 } from "@/lib/engagement/daily-challenge";
 import { logRouteError } from "@/lib/ops/logger";
+
+const dailyChallengeProgressSchema = z.object({
+  challenge_id: z.string().min(1).max(100),
+  increment: z.number().int().min(0).max(100).optional().default(1),
+});
 
 /**
  * GET /api/daily-challenges — get today's challenges
@@ -44,17 +53,23 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+    }
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json().catch(() => ({}));
-    const challengeId = typeof body?.challenge_id === "string" ? body.challenge_id : "";
-    const increment = typeof body?.increment === "number" ? Math.max(0, body.increment) : 1;
-
-    if (!challengeId) {
-      return NextResponse.json({ error: "challenge_id required" }, { status: 400 });
+    const rl = await checkRateLimit(`daily-challenge:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
+    const parsed = await parseBody(req, dailyChallengeProgressSchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { challenge_id: challengeId, increment } = parsed.data;
 
     // Validate the challenge exists for today
     const today = getTodayDateString();

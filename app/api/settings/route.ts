@@ -8,6 +8,7 @@ import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { checkElectricFence } from "@/lib/security/electric-fence";
 import { parseBody, settingsPatchBodySchema } from "@/lib/validation/schemas";
 
@@ -47,6 +48,11 @@ export async function PATCH(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rl = await checkRateLimit(`settings:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const parsed = await parseBody(request, settingsPatchBodySchema);
     if (!parsed.success) {

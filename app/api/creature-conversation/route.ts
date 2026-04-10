@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { spendCoinsAtomic } from "@/lib/economy/coins";
 import { creatureConversationBodySchema, parseBody } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   buildConversationPrompt,
   calculateConversationDNAEffects,
@@ -17,11 +19,19 @@ import { generateJSON } from "@/lib/ai/router";
  * POST /api/creature-conversation — Initiate a conversation between two creatures.
  * Body: { agentIdA, agentIdB, locale? }
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+    }
     const authClient = await createServerSupabase();
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rl = await checkRateLimit(`creature-conv:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const parsed = await parseBody(req, creatureConversationBodySchema);
     if (!parsed.success) {

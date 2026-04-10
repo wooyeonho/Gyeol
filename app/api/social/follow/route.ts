@@ -3,11 +3,15 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseBody, socialFollowBodySchema } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -51,6 +55,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },

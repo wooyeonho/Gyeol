@@ -2,7 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateTextOnce } from "@/lib/ai/router";
 import { DNA_AXES, getDominantTraits, getRecessiveTraits, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { logger } from "@/lib/logger";
+
+// ── Rate limiting: per-minute to prevent AI cost abuse ──
+const READING_RATE_WINDOW_MS = 60_000;
+const READING_MAX_PER_MINUTE = 5;
+
+type ReadingRateBucket = { count: number; resetAt: number };
+const readingRateBuckets = new Map<string, ReadingRateBucket>();
+
+function checkReadingRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = readingRateBuckets.get(ip);
+  if (!bucket) {
+    readingRateBuckets.set(ip, { count: 1, resetAt: now + READING_RATE_WINDOW_MS });
+    return true;
+  }
+  if (now >= bucket.resetAt) {
+    bucket.count = 1;
+    bucket.resetAt = now + READING_RATE_WINDOW_MS;
+    return true;
+  }
+  if (bucket.count >= READING_MAX_PER_MINUTE) return false;
+  bucket.count++;
+  return true;
+}
+
+// Periodic cleanup to prevent memory leak
+const _readingCleanup = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of readingRateBuckets) {
+    if (now >= bucket.resetAt) readingRateBuckets.delete(key);
+  }
+}, 5 * 60_000);
+if (typeof _readingCleanup === "object" && "unref" in _readingCleanup) {
+  (_readingCleanup as { unref: () => void }).unref();
+}
 
 /**
  * POST /api/demo/reading
@@ -11,7 +47,16 @@ import { logger } from "@/lib/logger";
  * This is the emotional core of the demo — the thing people screenshot and share.
  */
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
+    // Rate limit by IP to prevent AI cost abuse
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkReadingRateLimit(ip)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const payload = (await req.json()) as {
       dna?: CreatureDNA;
       history?: { role: string; content: string }[];
