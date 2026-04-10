@@ -3,9 +3,16 @@ import { checkElectricFence } from "@/lib/security/electric-fence";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
+import { parseBody } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
 import { runSynchronousChatTurn } from "@/lib/chat/sync-turn";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const v1AgentChatBodySchema = z.object({
+  agent_id: z.string().uuid("Invalid agent_id"),
+  message: z.string().min(1, "message required").max(8000),
+});
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:chat");
@@ -16,12 +23,12 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimit(`v1-chat:${getApiKeyIdentifier(request)}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await request.json().catch(() => ({}));
-    const agentId = typeof body?.agent_id === "string" ? body.agent_id : "";
-    const rawMessage = typeof body?.message === "string" ? body.message : "";
-    if (!agentId || !rawMessage.trim()) {
-      return NextResponse.json({ error: "agent_id and message required" }, { status: 400 });
+    const parsed = await parseBody(request, v1AgentChatBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const agentId = parsed.data.agent_id;
+    const rawMessage = parsed.data.message;
     const fence = checkElectricFence(rawMessage);
     if (fence.blocked) return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
     const message = sanitizeUserInput(rawMessage);

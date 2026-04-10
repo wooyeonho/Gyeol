@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 vi.mock("@/lib/security/electric-fence", () => ({ checkElectricFence: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/sanitize", () => ({ sanitizeUserInput: vi.fn((x: string) => x) }));
 vi.mock("@/lib/api/v1-auth", () => ({
   authorizeV1ApiKey: vi.fn(),
@@ -38,7 +39,7 @@ describe("POST /api/v1/agent/chat", () => {
   it("returns 401 when API key is missing", async () => {
     (authorizeV1ApiKey as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     const { POST } = await import("./route");
-    const res = await POST(makeRequest({ agent_id: "a1", message: "hi" }) as never);
+    const res = await POST(makeRequest({ agent_id: "00000000-0000-4000-8000-000000000001", message: "hi" }) as never);
     expect(res.status).toBe(401);
   });
 
@@ -52,7 +53,7 @@ describe("POST /api/v1/agent/chat", () => {
   it("returns 400 when message is empty string", async () => {
     (authorizeV1ApiKey as ReturnType<typeof vi.fn>).mockResolvedValue({ id: "key-1", ownerUserId: "u1" });
     const { POST } = await import("./route");
-    const res = await POST(makeRequest({ agent_id: "a1", message: "" }) as never);
+    const res = await POST(makeRequest({ agent_id: "00000000-0000-4000-8000-000000000001", message: "" }) as never);
     expect(res.status).toBe(400);
   });
 
@@ -60,7 +61,7 @@ describe("POST /api/v1/agent/chat", () => {
     (authorizeV1ApiKey as ReturnType<typeof vi.fn>).mockResolvedValue({ id: "key-1", ownerUserId: "u1" });
     (checkElectricFence as ReturnType<typeof vi.fn>).mockReturnValue({ blocked: true, reason: "Blocked" });
     const { POST } = await import("./route");
-    const res = await POST(makeRequest({ agent_id: "a1", message: "DROP TABLE users" }) as never);
+    const res = await POST(makeRequest({ agent_id: "00000000-0000-4000-8000-000000000001", message: "DROP TABLE users" }) as never);
     expect(res.status).toBe(400);
   });
 
@@ -72,7 +73,7 @@ describe("POST /api/v1/agent/chat", () => {
       }),
     });
     const { POST } = await import("./route");
-    const res = await POST(makeRequest({ agent_id: "a1", message: "hello" }) as never);
+    const res = await POST(makeRequest({ agent_id: "00000000-0000-4000-8000-000000000001", message: "hello" }) as never);
     expect(res.status).toBe(404);
   });
 
@@ -86,7 +87,7 @@ describe("POST /api/v1/agent/chat", () => {
     });
     (runSynchronousChatTurn as ReturnType<typeof vi.fn>).mockResolvedValue({ reply: "Hello!" });
     const { POST } = await import("./route");
-    const res = await POST(makeRequest({ agent_id: "a1", message: "hello" }) as never);
+    const res = await POST(makeRequest({ agent_id: "00000000-0000-4000-8000-000000000001", message: "hello" }) as never);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.reply).toBe("Hello!");

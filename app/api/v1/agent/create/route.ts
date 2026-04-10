@@ -1,8 +1,14 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { authorizeV1ApiKey, getApiKeyIdentifier, resolveAuthorizedUserId } from "@/lib/api/v1-auth";
+import { parseBody } from "@/lib/validation/schemas";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const v1AgentCreateBodySchema = z.object({
+  user_id: z.string().uuid("Invalid user_id").optional(),
+});
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:create");
@@ -13,8 +19,11 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimit(`v1-create:${getApiKeyIdentifier(request)}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await request.json().catch(() => ({}));
-    const userId = typeof body?.user_id === "string" ? body.user_id.trim() : null;
+    const parsed = await parseBody(request, v1AgentCreateBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const userId = parsed.data.user_id?.trim() ?? null;
     const userResolution = resolveAuthorizedUserId(auth, userId);
     if (userResolution.error === "FORBIDDEN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

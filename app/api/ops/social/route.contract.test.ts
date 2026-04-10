@@ -94,6 +94,7 @@ describe("/api/ops/social contract", () => {
   });
 
   it("updates moderation decision", async () => {
+    const postUuid = "00000000-0000-4000-8000-000000000001";
     const finalEq = vi.fn().mockResolvedValue({ error: null });
     (createClient as Mock).mockResolvedValue(createAuthedClient("user-1"));
     (createServiceClient as Mock).mockReturnValue({
@@ -121,7 +122,7 @@ describe("/api/ops/social contract", () => {
     const request = new Request("http://localhost/api/ops/social", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: "post-1", action: "block" }),
+      body: JSON.stringify({ post_id: "00000000-0000-4000-8000-000000000001", action: "block" }),
     });
 
     const response = await PATCH(request as never);

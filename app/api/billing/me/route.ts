@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { type PlanTier } from "@/lib/billing/catalog";
 import { getLatestSubscription, getResolvedBillingState } from "@/lib/billing/service";
 import { isMockBillingEnabled } from "@/lib/billing/mock-billing";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody } from "@/lib/validation/schemas";
 import { resolveLocale, type Locale } from "@/lib/i18n/config";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 
-function isPlanTier(value: unknown): value is PlanTier {
-  return value === "free" || value === "pro" || value === "premium";
-}
+const billingMePostBodySchema = z.object({
+  plan_tier: z.enum(["pro", "premium"]),
+});
 
 function getRequestLocale(request?: Request): Locale {
   return resolveLocale({
@@ -54,11 +55,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const planTier = body?.plan_tier;
-    if (!isPlanTier(planTier) || planTier === "free") {
-      return NextResponse.json({ error: "plan_tier must be pro or premium" }, { status: 400 });
+    const parsed = await parseBody(request, billingMePostBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const planTier = parsed.data.plan_tier;
 
     const service = createServiceClient();
     const current = await getLatestSubscription(service, user.id);

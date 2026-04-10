@@ -13,6 +13,14 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
+  /* Visual regression snapshot settings */
+  snapshotPathTemplate: "{testDir}/__snapshots__/{projectName}/{testFilePath}/{arg}{ext}",
+  expect: {
+    toMatchSnapshot: {
+      /* Allow small pixel differences from anti-aliasing / font rendering */
+      maxDiffPixelRatio: 0.01,
+    },
+  },
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",

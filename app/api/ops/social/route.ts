@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
+import { parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const opsSocialPatchBodySchema = z.object({
+  post_id: z.string().uuid("Invalid post_id"),
+  action: z.enum(["approve", "dismiss", "block"]),
+});
 
 type ReportRow = {
   id: string;
@@ -114,12 +121,11 @@ export async function PATCH(request: NextRequest) {
   if (!(await isOpsAdminUserAsync(user))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const postId = typeof body?.post_id === "string" ? body.post_id : "";
-    const action = typeof body?.action === "string" ? body.action : "";
-    if (!postId || !["approve", "dismiss", "block"].includes(action)) {
-      return NextResponse.json({ error: "Invalid moderation action" }, { status: 400 });
+    const parsed = await parseBody(request, opsSocialPatchBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { post_id: postId, action } = parsed.data;
 
     const service = createServiceClient();
     const moderationStatus = action === "block" ? "blocked" : "approved";

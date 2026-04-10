@@ -3,7 +3,18 @@ import { generateTextOnce } from "@/lib/ai/router";
 import { DNA_AXES, getDominantTraits, getRecessiveTraits, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const demoReadingBodySchema = z.object({
+  dna: z.record(z.string(), z.number().min(0).max(1)),
+  history: z.array(z.object({
+    role: z.string().max(20),
+    content: z.string().max(2000),
+  })).max(20).optional().default([]),
+});
 
 // ── Rate limiting: per-minute to prevent AI cost abuse ──
 const READING_RATE_WINDOW_MS = 60_000;
@@ -57,17 +68,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const payload = (await req.json()) as {
-      dna?: CreatureDNA;
-      history?: { role: string; content: string }[];
-    };
-
-    if (!payload.dna) {
-      return NextResponse.json({ error: "No DNA" }, { status: 400 });
+    const parsed = await parseBody(req, demoReadingBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const dna = payload.dna;
-    const history = payload.history || [];
+    const dna = parsed.data.dna as CreatureDNA;
+    const history = parsed.data.history ?? [];
+
+    // Electric fence on user-provided conversation history
+    const userTexts = history.filter((m) => m.role === "user").map((m) => m.content).join(" ");
+    if (userTexts) {
+      const fence = checkElectricFence(userTexts);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+      }
+    }
     const species = deriveSpecies(dna);
     const dominant = getDominantTraits(dna, 3);
     const recessive = getRecessiveTraits(dna, 2);

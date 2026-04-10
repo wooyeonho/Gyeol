@@ -3,7 +3,14 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const artifactPatchBodySchema = z.object({
+  is_preserved: z.boolean().optional(),
+  is_public: z.boolean().optional(),
+}).strict();
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!verifyCsrfOrigin(request)) {
@@ -31,10 +38,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .single();
     if (!artifact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const body = await request.json().catch(() => ({}));
+    const parsed = await parseBody(request, artifactPatchBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const updates: { is_preserved?: boolean; is_public?: boolean } = {};
-    if (typeof body.is_preserved === "boolean") updates.is_preserved = body.is_preserved;
-    if (typeof body.is_public === "boolean") updates.is_public = body.is_public;
+    if (typeof parsed.data.is_preserved === "boolean") updates.is_preserved = parsed.data.is_preserved;
+    if (typeof parsed.data.is_public === "boolean") updates.is_public = parsed.data.is_public;
     if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
     await service.from("artifacts").update(updates).eq("id", id).eq("agent_id", agentId);

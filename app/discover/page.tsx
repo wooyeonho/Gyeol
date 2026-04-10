@@ -134,12 +134,12 @@ export default function DiscoverPage() {
     return [
       {
         creatureId: "active-creature",
-        name: (agentState?.name as string) ?? "결",
+        name: agentState?.self_name ?? "결",
         dominantType: "analytical",
         level: genLevel,
         stats: { hp: 45, atk: 38, def: 32, spd: 40, wis: 50, cha: 35 },
         isActive: true,
-        affinity: (agentState?.affinity as number) ?? 0.5,
+        affinity: agentState?.intimacy_score ?? 0.5,
       },
     ];
   }, [dna, agentState, genLevel]);
