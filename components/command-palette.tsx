@@ -29,24 +29,58 @@ export function CommandPalette({ locale = "ko", onThemeToggle }: CommandPaletteP
   const router = useRouter();
   const isKo = locale === "ko";
 
+  const navGroup = isKo ? "이동" : "Navigate";
+  const playGroup = isKo ? "플레이" : "Play";
+  const memoryGroup = isKo ? "기억" : "Memory";
+  const socialGroup = isKo ? "소셜" : "Social";
+  const actionGroup = isKo ? "액션" : "Actions";
+
   const COMMANDS: Command[] = [
-    // Navigation
-    { id: "nav-home",         icon: "🏠", label: isKo ? "홈으로"       : "Home",           action: () => router.push("/home"),            group: isKo ? "이동" : "Navigate" },
-    { id: "nav-chat",         icon: "💬", label: isKo ? "대화하기"     : "Chat",            action: () => router.push("/home"),            group: isKo ? "이동" : "Navigate" },
-    { id: "nav-room",         icon: "🏡", label: isKo ? "크리처 룸"    : "Creature Room",   action: () => router.push("/room"),            group: isKo ? "이동" : "Navigate" },
-    { id: "nav-memories",     icon: "⭐", label: isKo ? "메모리 타임라인" : "Memories",    action: () => router.push("/memories"),        group: isKo ? "이동" : "Navigate" },
-    { id: "nav-constellation",icon: "🌌", label: isKo ? "별자리"        : "Constellation",  action: () => router.push("/constellation"),   group: isKo ? "이동" : "Navigate" },
-    { id: "nav-market",       icon: "🛒", label: isKo ? "마켓"          : "Market",         action: () => router.push("/market"),          group: isKo ? "이동" : "Navigate" },
-    { id: "nav-leaderboard",  icon: "🏆", label: isKo ? "리더보드"      : "Leaderboard",    action: () => router.push("/leaderboard"),     group: isKo ? "이동" : "Navigate" },
-    { id: "nav-wrapped",      icon: "🎁", label: isKo ? "연간 요약"     : "Wrapped",        action: () => router.push("/wrapped"),         group: isKo ? "이동" : "Navigate" },
-    { id: "nav-wellness",     icon: "💚", label: isKo ? "웰니스"        : "Wellness",       action: () => router.push("/wellness"),        group: isKo ? "이동" : "Navigate" },
-    { id: "nav-feed",         icon: "📰", label: isKo ? "피드"          : "Feed",           action: () => router.push("/feed"),            group: isKo ? "이동" : "Navigate" },
-    { id: "nav-ar",           icon: "📱", label: isKo ? "AR 모드"       : "AR Mode",        action: () => router.push("/ar"),              group: isKo ? "이동" : "Navigate" },
-    { id: "nav-gacha",        icon: "🎰", label: isKo ? "가챠"          : "Gacha",          action: () => router.push("/gacha"),           group: isKo ? "이동" : "Navigate" },
-    { id: "nav-profile",      icon: "👤", label: isKo ? "프로필"        : "Profile",        action: () => router.push("/profile"),         group: isKo ? "이동" : "Navigate" },
-    { id: "nav-settings",     icon: "⚙️", label: isKo ? "설정"          : "Settings",       action: () => router.push("/settings"),        group: isKo ? "이동" : "Navigate" },
+    // Core navigation (chat lives at "/")
+    { id: "nav-chat",         icon: "💬", label: isKo ? "대화(홈)"     : "Chat (home)",     action: () => router.push("/"),                group: navGroup },
+    { id: "nav-discover",     icon: "🧭", label: isKo ? "디스커버"     : "Discover",        action: () => router.push("/discover"),        group: navGroup },
+    { id: "nav-dashboard",    icon: "📊", label: isKo ? "대시보드"     : "Dashboard",       action: () => router.push("/dashboard"),       group: navGroup },
+    { id: "nav-settings",     icon: "⚙️", label: isKo ? "설정"         : "Settings",        action: () => router.push("/settings"),        group: navGroup },
+    { id: "nav-profile",      icon: "👤", label: isKo ? "프로필 꾸미기": "Profile Customize", action: () => router.push("/profile/customize"), group: navGroup },
+    // Creature
+    { id: "nav-care",         icon: "🍖", label: isKo ? "돌보기"       : "Care",            action: () => router.push("/care"),            group: navGroup },
+    { id: "nav-room",         icon: "🏡", label: isKo ? "크리처 룸"    : "Creature Room",   action: () => router.push("/room"),            group: navGroup },
+    { id: "nav-dna",          icon: "🧬", label: isKo ? "DNA 뷰어"     : "DNA Viewer",      action: () => router.push("/dna"),             group: navGroup },
+    { id: "nav-dna-edit",     icon: "✂️", label: isKo ? "DNA 편집"     : "DNA Edit",        action: () => router.push("/dna-edit"),        group: navGroup },
+    { id: "nav-breeding",     icon: "💞", label: isKo ? "브리딩"       : "Breeding",        action: () => router.push("/breeding"),        group: navGroup },
+    { id: "nav-adopt",        icon: "🤝", label: isKo ? "분양"         : "Adopt",           action: () => router.push("/adopt"),           group: navGroup },
+    // Play
+    { id: "nav-challenges",   icon: "⚡", label: isKo ? "챌린지"       : "Challenges",      action: () => router.push("/challenges"),      group: playGroup },
+    { id: "nav-gacha",        icon: "🎰", label: isKo ? "가챠"         : "Gacha",           action: () => router.push("/gacha"),           group: playGroup },
+    { id: "nav-quiz",         icon: "❓", label: isKo ? "퀴즈"         : "Quiz",            action: () => router.push("/quiz"),            group: playGroup },
+    { id: "nav-compare",      icon: "⚔️", label: isKo ? "배틀 비교"    : "Compare",         action: () => router.push("/compare"),         group: playGroup },
+    { id: "nav-events",       icon: "🎪", label: isKo ? "이벤트"       : "Events",          action: () => router.push("/events"),          group: playGroup },
+    { id: "nav-world-events", icon: "🌍", label: isKo ? "월드 이벤트"  : "World Events",    action: () => router.push("/world-events"),    group: playGroup },
+    // Memory
+    { id: "nav-memories",     icon: "⭐", label: isKo ? "메모리 타임라인": "Memories",      action: () => router.push("/memories"),        group: memoryGroup },
+    { id: "nav-constellation",icon: "🌌", label: isKo ? "별자리"       : "Constellation",   action: () => router.push("/constellation"),   group: memoryGroup },
+    { id: "nav-diary",        icon: "📓", label: isKo ? "다이어리"     : "Diary",           action: () => router.push("/diary"),           group: memoryGroup },
+    { id: "nav-album",        icon: "🖼", label: isKo ? "앨범"         : "Album",           action: () => router.push("/album"),           group: memoryGroup },
+    { id: "nav-journey",      icon: "🛤", label: isKo ? "여정"         : "Journey",         action: () => router.push("/journey"),         group: memoryGroup },
+    { id: "nav-time-travel",  icon: "⏳", label: isKo ? "타임 트래블"  : "Time Travel",     action: () => router.push("/time-travel"),     group: memoryGroup },
+    { id: "nav-wrapped",      icon: "🎁", label: isKo ? "연간 요약"    : "Wrapped",         action: () => router.push("/wrapped"),         group: memoryGroup },
+    { id: "nav-wellness",     icon: "💚", label: isKo ? "웰니스"       : "Wellness",        action: () => router.push("/wellness"),        group: memoryGroup },
+    // Social
+    { id: "nav-feed",         icon: "📰", label: isKo ? "피드"         : "Feed",            action: () => router.push("/feed"),            group: socialGroup },
+    { id: "nav-social",       icon: "🫂", label: isKo ? "소셜"         : "Social",          action: () => router.push("/social"),          group: socialGroup },
+    { id: "nav-community",    icon: "🏛", label: isKo ? "커뮤니티"     : "Community",       action: () => router.push("/community"),       group: socialGroup },
+    { id: "nav-spaces",       icon: "🌐", label: isKo ? "스페이스"     : "Spaces",          action: () => router.push("/community/spaces"),group: socialGroup },
+    { id: "nav-leaderboard",  icon: "🏆", label: isKo ? "리더보드"     : "Leaderboard",     action: () => router.push("/leaderboard"),     group: socialGroup },
+    { id: "nav-explore",      icon: "🔭", label: isKo ? "탐색"         : "Explore",         action: () => router.push("/explore"),         group: socialGroup },
+    // Extras
+    { id: "nav-market",       icon: "🛒", label: isKo ? "마켓"         : "Market",          action: () => router.push("/market"),          group: navGroup },
+    { id: "nav-plans",        icon: "💎", label: isKo ? "플랜"         : "Plans",           action: () => router.push("/plans"),           group: navGroup },
+    { id: "nav-ar",           icon: "📱", label: isKo ? "AR 모드"      : "AR Mode",         action: () => router.push("/ar"),              group: navGroup },
+    { id: "nav-generate",     icon: "🎨", label: isKo ? "이미지 생성"  : "Generate",        action: () => router.push("/generate"),        group: navGroup },
+    { id: "nav-achievements", icon: "🎖", label: isKo ? "업적"         : "Achievements",    action: () => router.push("/achievements"),    group: navGroup },
+    { id: "nav-data",         icon: "🗂", label: isKo ? "데이터 대시보드": "Data Dashboard", action: () => router.push("/privacy/data-dashboard"), group: navGroup },
     // Actions
-    { id: "toggle-theme",     icon: "🎨", label: isKo ? "테마 전환"     : "Toggle Theme",   action: () => { onThemeToggle?.(); setOpen(false); }, group: isKo ? "액션" : "Actions", shortcut: "T" },
+    { id: "toggle-theme",     icon: "🎨", label: isKo ? "테마 전환"    : "Toggle Theme",    action: () => { onThemeToggle?.(); setOpen(false); }, group: actionGroup, shortcut: "T" },
   ];
 
   const filtered = query.trim()

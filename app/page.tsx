@@ -759,6 +759,44 @@ export default function Home() {
         <LivingFeed onGreetingReady={handleGreetingReady} />
       </div>
 
+      {/* ===== QUICK FEATURE DOCK — horizontal scrollable row of the
+           most-used world-class features. Gives every user a one-tap
+           path to Wrapped / Memories / Wellness / Feed / Gacha / AR / etc.
+           (Previously these pages existed but had no entry point.) ===== */}
+      <nav
+        aria-label={locale === "ko" ? "빠른 기능 바로가기" : "Quick feature shortcuts"}
+        className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-2"
+      >
+        <div className="flex gap-2 overflow-x-auto scrollbar-none snap-x snap-mandatory px-1 pb-1">
+          {[
+            { href: "/memories",   icon: "⭐", label: locale === "ko" ? "메모리"   : "Memories" },
+            { href: "/wrapped",    icon: "🎁", label: locale === "ko" ? "연간 요약" : "Wrapped" },
+            { href: "/wellness",   icon: "💚", label: locale === "ko" ? "웰니스"   : "Wellness" },
+            { href: "/feed",       icon: "📰", label: locale === "ko" ? "피드"     : "Feed" },
+            { href: "/gacha",      icon: "🎰", label: locale === "ko" ? "가챠"     : "Gacha" },
+            { href: "/challenges", icon: "⚡", label: locale === "ko" ? "챌린지"   : "Challenges" },
+            { href: "/care",       icon: "🍖", label: locale === "ko" ? "돌보기"   : "Care" },
+            { href: "/room",       icon: "🏡", label: locale === "ko" ? "룸"       : "Room" },
+            { href: "/leaderboard",icon: "🏆", label: locale === "ko" ? "랭킹"     : "Rank" },
+            { href: "/ar",         icon: "📱", label: locale === "ko" ? "AR"       : "AR" },
+            { href: "/community/spaces", icon: "🌐", label: locale === "ko" ? "스페이스" : "Spaces" },
+            { href: "/discover",   icon: "🧭", label: locale === "ko" ? "전체"     : "More" },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => haptic("tap")}
+              className="flex flex-col items-center justify-center gap-1 snap-start flex-shrink-0 min-w-[68px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-2 py-2 text-center transition-all hover:bg-white/[0.10] hover:border-white/20 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span>
+              <span className="text-[10px] font-medium text-white/75 leading-tight whitespace-nowrap">
+                {item.label}
+              </span>
+            </a>
+          ))}
+        </div>
+      </nav>
+
       {/* World weather indicator */}
       <WorldWeather />
 

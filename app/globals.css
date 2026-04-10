@@ -320,6 +320,17 @@ body {
   animation: auroraShift 14s ease-in-out infinite;
 }
 
+/* ── Horizontal scroll row without visible scrollbar ── */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* ── Shimmer loading skeleton ── */
 @keyframes skeletonShimmer {
   0% { background-position: -200% 0; }

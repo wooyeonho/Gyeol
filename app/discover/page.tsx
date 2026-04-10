@@ -452,6 +452,111 @@ export default function DiscoverPage() {
             </Link>
           ))}
         </section>
+
+        {/* ====================================================
+            FULL FEATURE DIRECTORY — every page, categorized.
+            Before this, dozens of built features were invisible.
+            Now users can reach everything from a single scroll.
+            ==================================================== */}
+        <div className="flex items-center gap-2 px-1 pt-4">
+          <div className="h-px flex-1 bg-white/[0.12]" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/30">
+            {locale === "ko" ? "전체 기능" : "Every feature"}
+          </span>
+          <div className="h-px flex-1 bg-white/[0.12]" />
+        </div>
+
+        {[
+          {
+            title: locale === "ko" ? "🧬 크리처" : "🧬 Creature",
+            items: [
+              { href: "/care",       icon: "🍖", label: locale === "ko" ? "돌보기"      : "Care" },
+              { href: "/room",       icon: "🏡", label: locale === "ko" ? "크리처 룸"   : "Room" },
+              { href: "/dna",        icon: "🧬", label: locale === "ko" ? "DNA 뷰어"    : "DNA" },
+              { href: "/dna-edit",   icon: "✂️", label: locale === "ko" ? "DNA 편집"    : "DNA Edit" },
+              { href: "/breeding",   icon: "💞", label: locale === "ko" ? "브리딩"      : "Breeding" },
+              { href: "/adopt",      icon: "🤝", label: locale === "ko" ? "분양"        : "Adopt" },
+              { href: "/crisis",     icon: "🆘", label: locale === "ko" ? "위기"        : "Crisis" },
+              { href: "/creature-conversation", icon: "🗣", label: locale === "ko" ? "크리처 대화" : "Talk" },
+            ],
+          },
+          {
+            title: locale === "ko" ? "🎮 플레이 · 챌린지" : "🎮 Play & challenges",
+            items: [
+              { href: "/challenges", icon: "⚡", label: locale === "ko" ? "챌린지"      : "Challenges" },
+              { href: "/gacha",      icon: "🎰", label: locale === "ko" ? "가챠"        : "Gacha" },
+              { href: "/quiz",       icon: "❓", label: locale === "ko" ? "퀴즈"        : "Quiz" },
+              { href: "/events",     icon: "🎪", label: locale === "ko" ? "이벤트"      : "Events" },
+              { href: "/events/war", icon: "⚔️", label: locale === "ko" ? "워"          : "War" },
+              { href: "/world-events", icon: "🌍", label: locale === "ko" ? "월드"      : "World" },
+              { href: "/journey",    icon: "🛤", label: locale === "ko" ? "여정"        : "Journey" },
+              { href: "/achievements", icon: "🎖", label: locale === "ko" ? "업적"      : "Badges" },
+            ],
+          },
+          {
+            title: locale === "ko" ? "⭐ 기억 · 웰빙" : "⭐ Memory & wellness",
+            items: [
+              { href: "/memories",   icon: "⭐", label: locale === "ko" ? "메모리"      : "Memories" },
+              { href: "/diary",      icon: "📓", label: locale === "ko" ? "다이어리"    : "Diary" },
+              { href: "/wrapped",    icon: "🎁", label: locale === "ko" ? "연간 요약"   : "Wrapped" },
+              { href: "/wellness",   icon: "💚", label: locale === "ko" ? "웰니스"      : "Wellness" },
+              { href: "/activity",   icon: "📈", label: locale === "ko" ? "활동"        : "Activity" },
+              { href: "/dashboard",  icon: "📊", label: locale === "ko" ? "대시보드"    : "Dashboard" },
+            ],
+          },
+          {
+            title: locale === "ko" ? "🫂 소셜 · 피드" : "🫂 Social & feed",
+            items: [
+              { href: "/feed",       icon: "📰", label: locale === "ko" ? "피드"        : "Feed" },
+              { href: "/social",     icon: "🫂", label: locale === "ko" ? "소셜"        : "Social" },
+              { href: "/community",  icon: "🏛", label: locale === "ko" ? "커뮤니티"    : "Community" },
+              { href: "/community/spaces", icon: "🌐", label: locale === "ko" ? "스페이스" : "Spaces" },
+              { href: "/explore",    icon: "🔭", label: locale === "ko" ? "탐색"        : "Explore" },
+              { href: "/invite",     icon: "💌", label: locale === "ko" ? "초대"        : "Invite" },
+            ],
+          },
+          {
+            title: locale === "ko" ? "💎 경제 · 상점" : "💎 Economy & shop",
+            items: [
+              { href: "/market",     icon: "🛒", label: locale === "ko" ? "마켓"        : "Market" },
+              { href: "/plans",      icon: "💎", label: locale === "ko" ? "플랜"        : "Plans" },
+              { href: "/moltbook",   icon: "📗", label: locale === "ko" ? "몰트북"      : "Moltbook" },
+              { href: "/molthub",    icon: "🌐", label: locale === "ko" ? "몰트허브"    : "Molthub" },
+            ],
+          },
+          {
+            title: locale === "ko" ? "✨ 몰입 · 생성형" : "✨ Immersive & generative",
+            items: [
+              { href: "/ar",              icon: "📱", label: locale === "ko" ? "AR 모드"  : "AR" },
+              { href: "/generate",        icon: "🎨", label: locale === "ko" ? "생성"     : "Generate" },
+              { href: "/share/evolution", icon: "📣", label: locale === "ko" ? "진화 공유": "Share Evo" },
+              { href: "/features",        icon: "✨", label: locale === "ko" ? "피처"     : "Features" },
+              { href: "/profile/customize", icon: "👤", label: locale === "ko" ? "프로필" : "Profile" },
+              { href: "/privacy/data-dashboard", icon: "🗂", label: locale === "ko" ? "데이터" : "Data" },
+            ],
+          },
+        ].map((section) => (
+          <section key={section.title} className="space-y-2">
+            <p className="text-xs font-semibold tracking-tight text-white/60 px-1">
+              {section.title}
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {section.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => haptic("tap")}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 py-3 text-center transition-all hover:bg-white/[0.10] hover:border-white/15 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                >
+                  <span className="text-xl leading-none">{item.icon}</span>
+                  <span className="text-[10px] font-medium text-white/70 leading-tight line-clamp-2">
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ))}
     </PageShell>
   );
 }
