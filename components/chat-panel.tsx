@@ -13,7 +13,6 @@ import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
-import { TypingIndicator } from "@/components/typing-indicator";
 import { getSimpleModeFromAge } from "@/lib/i18n/jargon-map";
 
 function getFirstSessionConfig(t: (key: string) => string) {
@@ -223,18 +222,20 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             onStop={stop}
             onCopy={(index, content) => void handleCopy(index, content)}
             onRetry={retryLastMessage}
+            onRetryMessage={(msgId) => {
+              if (!isStreaming) {
+                const msg = messages.find((m) => m.id === msgId && m.role === "user");
+                if (msg) {
+                  void sendMessage(msg.content, { source: "input", locale, totalMessages });
+                }
+              }
+            }}
             t={t}
             simpleModeLevel={simpleModeLevel}
             locale={locale}
+            accentColor={appearance.palette.primary}
+            creatureName={agentState?.self_name ?? "결"}
           />
-          {isStreaming && (
-            <div className="px-2 pb-2">
-              <TypingIndicator
-                accentColor={appearance.palette.primary}
-                creatureName={appearance.name}
-              />
-            </div>
-          )}
         </div>
 
         {/* Silent mode — verbal < 0.15: touch interaction instead of text */}
@@ -304,7 +305,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             onVoiceToggle={voiceInput.toggle}
             onStopStreaming={stopStreaming}
             creatureDna={(agentState?.genome as { dna?: Record<string, number> } | undefined)?.dna as import("@/lib/genome/dna").CreatureDNA | undefined}
-            creatureName={appearance.name}
+            creatureName={agentState?.self_name ?? "결"}
             locale={locale}
             onStickerSelect={(sticker) => {
               if (!isStreaming) {

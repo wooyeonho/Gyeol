@@ -141,7 +141,7 @@ export function MessageInput({
         </AnimatePresence>
       )}
 
-      <form onSubmit={handleSubmitWithFeedback} className="flex items-end gap-2">
+      <form data-tutorial="chat-input" onSubmit={handleSubmitWithFeedback} className="flex items-end gap-2">
         <label htmlFor="chat-input" className="sr-only">
           {t("chat.inputLabel")}
         </label>

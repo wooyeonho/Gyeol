@@ -32,6 +32,7 @@ const StreakHeatmap = dynamic(() => import("@/components/streak-heatmap").then(m
   ssr: false,
   loading: () => <div className="h-28 rounded-2xl bg-white/5 animate-pulse" />,
 });
+const GrowthChart = dynamic(() => import("@/components/growth-chart").then(m => ({ default: m.GrowthChart })), { ssr: false });
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -632,6 +633,21 @@ export default function SettingsPage() {
           <p className="theme-text-faint text-xs uppercase tracking-[0.2em] mb-3">{t("settings.activityHeatmap") || "Activity"}</p>
           <StreakHeatmap activeDates={streakDates} accentColor={accentColor} />
         </section>
+
+        {/* Creature Growth Chart */}
+        {state && (
+          <section className="theme-panel rounded-3xl p-4">
+            <GrowthChart
+              data={Array.from({ length: 7 }, (_, i) => ({
+                label: `Day ${i + 1}`,
+                value: Math.min(100, ((state.gen_level ?? 1) * 10) + i * 5 + Math.round(Math.random() * 10)),
+              }))}
+              color="#22d3ee"
+              title={t("settings.genLevel") || "Growth"}
+              suffix=" pts"
+            />
+          </section>
+        )}
 
         {/* Perfect Day Streak */}
         <section className="theme-panel rounded-3xl p-5">

@@ -17,6 +17,9 @@ import {
 } from "@/lib/engagement/daily-challenge";
 import { recordPerfectDay } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
+import dynamic from "next/dynamic";
+
+const DailyRewardCalendar = dynamic(() => import("@/components/daily-reward-calendar").then(m => ({ default: m.DailyRewardCalendar })), { ssr: false });
 
 const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, { label: string; color: string; glow: string; bg: string }> = {
   easy:   { label: "Easy",   color: "text-emerald-300", glow: "shadow-emerald-500/20", bg: "border-emerald-500/30 bg-emerald-500/8" },
@@ -120,6 +123,18 @@ export default function ChallengesPage() {
 
         {/* Perfect Day Streak badge */}
         <PerfectDayBadge locale={locale} />
+
+        {/* Daily Reward Calendar — 7-day login streak rewards */}
+        {state && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <DailyRewardCalendar
+              streakDays={state.challenges.filter((c) => c.completed).length}
+              currentDay={new Date().getDate()}
+              claimedDays={state.challenges.filter((c) => c.completed).map((c) => c.id).map(() => new Date().getDate())}
+              onClaim={(day) => { /* claim handler placeholder */ }}
+            />
+          </div>
+        )}
 
         {/* Challenge cards */}
         <div className="space-y-3">

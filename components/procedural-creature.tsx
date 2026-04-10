@@ -206,14 +206,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const tailAnimAmpRef = useRef(0.2); // current tail wag amplitude
   const tailAnimPhaseRef = useRef(0); // accumulated phase for smooth frequency changes
 
-  // Tear particle refs (4 tear drops)
-  const tearParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null]);
+  // Tear particle refs (6 tear drops — max active at once)
+  const tearParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null, null, null]);
   const tearOffsetsRef = useRef(
-    Array.from({ length: 4 }, (_, i) => ({
+    Array.from({ length: 6 }, (_, i) => ({
       x: (i % 2 === 0 ? -1 : 1) * (0.12 + Math.sin(i * 2.7) * 0.04),
       drift: (Math.sin(i * 1.3 + 0.5) - 0.5) * 0.02,
-      phase: i * 0.7, // staggered spawn timing
+      phase: i * 0.5, // staggered spawn timing
       y: 0, // current fall position (reset when respawned)
+      age: 0, // seconds since spawn — used for 1.5s fade-out
     })),
   );
   const tearActiveRef = useRef(0); // 0..1 lerp target for tear visibility
@@ -849,18 +850,22 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     // ── Tail/Appendage mood-driven animation ──────────────────────────
-    // Derive target frequency and amplitude from current mood
-    let tailTargetFreq = 1.0; // default calm sway: 1Hz
-    let tailTargetAmp = 0.2;  // default calm amplitude
+    // Derive target frequency and amplitude from current mood.
+    // DNA playfulness influences the base wag speed — playful creatures
+    // always have a bit more tail motion even in neutral states.
+    const playfulnessBaseFreq = 0.8 + dna.playfulness * 0.6; // 0.8-1.4Hz base from DNA
+    const playfulnessBaseAmp = 0.15 + dna.playfulness * 0.1; // 0.15-0.25 base from DNA
+    let tailTargetFreq = playfulnessBaseFreq;
+    let tailTargetAmp = playfulnessBaseAmp;
     const moodLower = mood ?? "";
     if (moodLower === "joyful" || moodLower === "excited" || moodLower === "thrilled" || moodLower === "playful" || moodLower === "energetic") {
-      // Happy/excited: fast wagging 3-4Hz, large amplitude
+      // Happy/excited: fast wagging 3-4Hz, large amplitude — playfulness amplifies further
       tailTargetFreq = 3.0 + dna.playfulness * 1.0; // 3-4Hz
       tailTargetAmp = 0.3 + dna.playfulness * 0.2;  // 0.3-0.5
-    } else if (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely" || moodLower === "nostalgic") {
-      // Sad/lonely: slow drooping
-      tailTargetFreq = 0.5;
-      tailTargetAmp = 0.1;
+    } else if (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely" || moodLower === "nostalgic" || moodLower === "crying") {
+      // Sad/lonely/crying: slow drooping — playfulness has minimal effect
+      tailTargetFreq = 0.3 + dna.playfulness * 0.2;
+      tailTargetAmp = 0.06 + dna.playfulness * 0.04;
     } else if (moodLower === "scared" || moodLower === "anxious" || moodLower === "terrified" || moodLower === "nervous") {
       // Scared: tucked tight
       tailTargetFreq = 0.3;
@@ -941,27 +946,32 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     // ── Tear Particles ──────────────────────────────────────────────────
-    // Spawn tear drops when mood is sad, lonely, heartbroken, or crying
-    const sadMoods = ["sad", "lonely", "heartbroken", "crying", "melancholy"];
-    const isSadMood = sadMoods.includes(moodLower);
-    const tearTarget = isSadMood ? 1 : 0;
+    // Spawn tear drops when mood is sad, crying, or lonely AND emotion
+    // intensity exceeds 0.6. Max 6 particles, each fades out over 1.5s.
+    const tearMoods = ["sad", "crying", "lonely"];
+    const isTearMood = tearMoods.includes(moodLower);
+    const emotionIntensity = expr.intensity;
+    const tearTarget = (isTearMood && emotionIntensity > 0.6) ? 1 : 0;
     tearActiveRef.current += (tearTarget - tearActiveRef.current) * 0.04;
     const tearVisibility = tearActiveRef.current;
 
     const eyeHeight = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
     const eyeDepth = 0.34 * (1 + morphWeights.bodyBulge * 0.15);
 
-    for (let ti = 0; ti < 4; ti++) {
+    for (let ti = 0; ti < 6; ti++) {
       const tp = tearParticleRefs.current[ti];
       if (!tp) continue;
       const tearData = tearOffsetsRef.current[ti];
 
       if (tearVisibility > 0.05) {
-        // Fall speed: gravity-like acceleration
+        // Fall speed: gravity-like y -= delta * speed
         tearData.y -= dt * (0.3 + ti * 0.05);
-        // Respawn when fallen below creature body
-        if (tearData.y < -0.6) {
+        // Track age for 1.5 second fade-out
+        tearData.age += dt;
+        // Respawn when fallen below creature body or faded out (age > 1.5s)
+        if (tearData.y < -0.6 || tearData.age > 1.5) {
           tearData.y = 0;
+          tearData.age = 0;
           tearData.phase = t + ti * 0.3;
         }
         // Position: near eye area with slight sideways drift
@@ -972,14 +982,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         // Teardrop scale: slightly elongated vertically while falling
         const fallSpeed = Math.abs(tearData.y) * 0.5;
         tp.scale.set(0.012, 0.012 + fallSpeed * 0.02, 0.012);
-        // Opacity: fade in/out at spawn/despawn, modulated by tearVisibility
+        // Opacity: fade out over 1.5 seconds, modulated by tearVisibility
         const spawnFade = Math.min(1, Math.abs(tearData.y) * 5); // fade in near eye
-        const despawnFade = Math.max(0, 1 - Math.abs(tearData.y) / 0.6); // fade out at bottom
-        (tp.material as THREE.MeshBasicMaterial).opacity = tearVisibility * spawnFade * despawnFade * 0.6;
+        const ageFade = Math.max(0, 1 - tearData.age / 1.5); // fade out over 1.5s
+        (tp.material as THREE.MeshBasicMaterial).opacity = tearVisibility * spawnFade * ageFade * 0.6;
       } else {
         // Hidden — move offscreen
         (tp.material as THREE.MeshBasicMaterial).opacity = 0;
         tearData.y = 0;
+        tearData.age = 0;
       }
     }
 
@@ -1407,8 +1418,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       ))}
 
-      {/* Tear particles — 4 blue-tinted semi-transparent drops falling from eye area */}
-      {Array.from({ length: 4 }, (_, i) => (
+      {/* Tear particles — 6 small blue translucent spheres falling from eye area */}
+      {Array.from({ length: 6 }, (_, i) => (
         <mesh
           key={`tear-${i}`}
           ref={(el) => { tearParticleRefs.current[i] = el; }}

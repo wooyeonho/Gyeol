@@ -37,6 +37,7 @@ import {
 
 import { loadConfig, EngineConfig } from "./config";
 import { runCrawlCycle } from "./crawler";
+import { logger } from "../../lib/logger";
 
 // ── Lifeline (HTTP watchdog) ─────────────────────────────
 function buildAuthHeaders(cronSecret: string, useHmac: boolean): Record<string, string> {
@@ -99,18 +100,18 @@ async function runOnce(jobName?: string): Promise<void> {
   const targets = jobName ? { [jobName]: JOBS[jobName] } : JOBS;
 
   if (jobName && !JOBS[jobName]) {
-    console.error(`Unknown job: ${jobName}. Available: ${Object.keys(JOBS).join(", ")}`);
+    logger.error(`Unknown job: ${jobName}. Available: ${Object.keys(JOBS).join(", ")}`);
     return;
   }
 
   for (const [name, execute] of Object.entries(targets)) {
-    console.log(`[${ts()}] Running ${name} once...`);
+    logger.info(`[${ts()}] Running ${name} once...`);
     try {
       const result = await execute();
-      console.log(`[${ts()}] OK ${name}: ${JSON.stringify(result).slice(0, 200)}`);
+      logger.info(`[${ts()}] OK ${name}: ${JSON.stringify(result).slice(0, 200)}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[${ts()}] FAIL ${name}: ${msg}`);
+      logger.error(`[${ts()}] FAIL ${name}: ${msg}`);
     }
   }
 }
@@ -123,7 +124,7 @@ if (mode === "run-once") {
   runOnce(jobName)
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error(err);
+      logger.error("run-once failed", err instanceof Error ? err : { error: String(err) });
       process.exit(1);
     });
 } else if (mode === "crawl") {
@@ -140,7 +141,7 @@ if (mode === "run-once") {
   runCrawlCycle(config)
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error(err);
+      logger.error("crawl failed", err instanceof Error ? err : { error: String(err) });
       process.exit(1);
     });
 } else {
@@ -178,7 +179,7 @@ if (mode === "run-once") {
         res.end(JSON.stringify({ error: "Unauthorized" }));
         return;
       }
-      runCrawlCycle(config).catch((err) => console.error("[Manual crawl]", err));
+      runCrawlCycle(config).catch((err) => logger.error("[Manual crawl]", err instanceof Error ? err : { error: String(err) }));
       res.writeHead(202, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "crawl_started" }));
       return;
@@ -189,9 +190,9 @@ if (mode === "run-once") {
   });
 
   server.listen(config.port, () => {
-    console.log(`[${ts()}] Health server on :${config.port}`);
-    console.log(`[${ts()}] Target: ${config.appUrl}`);
-    console.log(`[${ts()}] Auth mode: ${config.useHmacAuth ? "HMAC-SHA256" : "Bearer token"}`);
+    logger.info(`[${ts()}] Health server on :${config.port}`);
+    logger.info(`[${ts()}] Target: ${config.appUrl}`);
+    logger.info(`[${ts()}] Auth mode: ${config.useHmacAuth ? "HMAC-SHA256" : "Bearer token"}`);
   });
 
   // ── Try starting OpenClaw gateway ──
@@ -206,7 +207,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 // ── OpenClaw Gateway launcher ──
 function tryStartGateway(config: EngineConfig): void {
-  console.log(`[${ts()}] Attempting to start OpenClaw gateway...`);
+  logger.info(`[${ts()}] Attempting to start OpenClaw gateway...`);
 
   try {
     const { spawn } = require("child_process");
@@ -225,15 +226,15 @@ function tryStartGateway(config: EngineConfig): void {
     );
 
     gatewayProcess.on("error", (err: Error) => {
-      console.warn(`[${ts()}] OpenClaw gateway not available: ${err.message}`);
-      console.log(`[${ts()}] Falling back to standalone scheduler...`);
+      logger.warn(`[${ts()}] OpenClaw gateway not available: ${err.message}`);
+      logger.info(`[${ts()}] Falling back to standalone scheduler...`);
       startFallbackScheduler(config);
     });
 
     gatewayProcess.on("exit", (code: number | null) => {
       if (code !== 0) {
-        console.warn(`[${ts()}] OpenClaw gateway exited with code ${code}`);
-        console.log(`[${ts()}] Falling back to standalone scheduler...`);
+        logger.warn(`[${ts()}] OpenClaw gateway exited with code ${code}`);
+        logger.info(`[${ts()}] Falling back to standalone scheduler...`);
         startFallbackScheduler(config);
       }
     });
@@ -241,19 +242,19 @@ function tryStartGateway(config: EngineConfig): void {
     // Graceful shutdown
     for (const signal of ["SIGTERM", "SIGINT"] as const) {
       process.on(signal, () => {
-        console.log(`[${ts()}] Received ${signal}, shutting down...`);
+        logger.info(`[${ts()}] Received ${signal}, shutting down...`);
         gatewayProcess.kill(signal);
       });
     }
   } catch {
-    console.warn(`[${ts()}] OpenClaw not installed, using standalone scheduler`);
+    logger.warn(`[${ts()}] OpenClaw not installed, using standalone scheduler`);
     startFallbackScheduler(config);
   }
 }
 
 // ── Fallback scheduler (when OpenClaw gateway is not available) ──
 function startFallbackScheduler(_config: EngineConfig): void {
-  console.log(`[${ts()}] Starting fallback scheduler (no OpenClaw gateway)`);
+  logger.info(`[${ts()}] Starting fallback scheduler (no OpenClaw gateway)`);
 
   const { startScheduler } = require("./scheduler");
   startScheduler(_config);

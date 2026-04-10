@@ -133,15 +133,15 @@ const BEHAVIOR_PARAMS: Record<IdleBehavior, IdleBehaviorParams> = {
   },
   grooming: {
     scaleOscillation: 0.025,
-    rotationSpeed: 0.4,
-    bobAmplitude: 0.015,
-    bobFrequency: 1.6,  // rhythmic scratching motion
+    rotationSpeed: 1.2,   // rhythmic side-to-side rotation (scratching/preening)
+    bobAmplitude: 0.02,
+    bobFrequency: 2.0,   // rhythmic scratching motion — slightly faster for grooming cadence
     eyeOpenness: 0.7,
     emissiveMult: 0.85,
     particleSpeed: 0.3,
-    bodyTilt: -0.08,    // tilted into grooming position
+    bodyTilt: -0.1,       // tilted into grooming position
     showDreamParticles: false,
-    appendageSpeed: 2.0, // active limbs
+    appendageSpeed: 2.2,  // active limbs during grooming
   },
   nodding: {
     scaleOscillation: 0.01,
@@ -206,6 +206,16 @@ const BEHAVIOR_PARAMS: Record<IdleBehavior, IdleBehaviorParams> = {
 };
 
 /**
+ * Internal grooming state tracker.
+ * Grooming is a time-bounded behavior (3-8 seconds) that triggers after
+ * 15+ seconds of idle when the creature is content/calm.
+ * Once grooming ends, we record the timestamp to prevent immediate re-entry.
+ */
+let groomingStartTime = -Infinity;
+let groomingDuration = 0;
+let groomingCooldownUntil = -Infinity;
+
+/**
  * Determine the idle behavior based on context.
  * Transitions are influenced by DNA personality, mood, idle time, and affinity.
  */
@@ -219,7 +229,10 @@ export function resolveIdleBehavior(params: {
 }): IdleBehavior {
   const { idleSeconds, mood, dna, affinityMood, recentTouchCount, isStreaming } = params;
 
-  // Active states
+  // Active states — reset grooming if user interacts
+  if (isStreaming || (recentTouchCount > 0 && idleSeconds < 5)) {
+    groomingStartTime = -Infinity;
+  }
   if (isStreaming) return "alert";
   if (recentTouchCount > 5 && idleSeconds < 10) return "playing";
 
@@ -244,14 +257,49 @@ export function resolveIdleBehavior(params: {
     if (mood === "melancholy" || mood === "sad") return "nesting";
     if (mood === "joyful" && dna && dna.playfulness > 0.6) return "playing";
 
+    // ── Self-grooming: content/calm creatures groom after 15+ seconds idle ──
+    // Grooming is a bounded episode (3-8 seconds), not a permanent state.
+    const contentMoods = ["peaceful", "serene", "calm", "content", "neutral", "tender"];
+    const isContentCalm = mood ? contentMoods.includes(mood) : false;
+    const now = Date.now() / 1000; // seconds since epoch for duration tracking
+
+    // Check if currently in a grooming episode
+    if (groomingStartTime > 0) {
+      const elapsed = now - groomingStartTime;
+      if (elapsed < groomingDuration) {
+        return "grooming"; // Still grooming
+      }
+      // Grooming just ended — set cooldown (15s before next grooming)
+      groomingStartTime = -Infinity;
+      groomingCooldownUntil = now + 15;
+    }
+
+    // Trigger new grooming: 15+ seconds idle, content/calm mood, past cooldown
+    if (
+      idleSeconds > 15
+      && isContentCalm
+      && now > groomingCooldownUntil
+    ) {
+      groomingStartTime = now;
+      // Duration: 3-8 seconds, DNA-influenced (stable creatures groom longer)
+      const baseDuration = 3 + (dna ? dna.stability * 3 + dna.independence * 2 : 2);
+      groomingDuration = Math.min(8, baseDuration);
+      return "grooming";
+    }
+
     // DNA personality-driven idle
     if (dna) {
       if (dna.stability > 0.7 && dna.warmth > 0.5) return "meditating";
       if (dna.curiosity > 0.7) return "curious";
       if (dna.playfulness > 0.7) return "playing";
       if (dna.independence > 0.7) return "daydreaming";
-      // Grooming: bored creatures with moderate independence groom themselves
-      if (idleSeconds > 25 && dna.independence > 0.4 && dna.playfulness < 0.5) return "grooming";
+      // Fallback grooming: bored creatures with moderate independence groom themselves
+      if (idleSeconds > 25 && dna.independence > 0.4 && dna.playfulness < 0.5 && now > groomingCooldownUntil) {
+        groomingStartTime = now;
+        groomingDuration = 3 + dna.stability * 3 + dna.independence * 2;
+        groomingDuration = Math.min(8, groomingDuration);
+        return "grooming";
+      }
     }
 
     return "daydreaming";

@@ -65,6 +65,8 @@ export interface ForceEnvironment {
   time: number;
   /** Delta time for this frame */
   dt: number;
+  /** 0..1 current emotion intensity (expression system) */
+  emotionIntensity?: number;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────
@@ -407,7 +409,7 @@ export function stepForceSimulation(
   const scalePulse = computeScalePulse(dna, env, prev);
 
   // Fear trembling — micro-vibration when scared/anxious
-  const tremble = computeTremble(env.mood, dna, env.time);
+  const tremble = computeTremble(env.mood, dna, env.time, env.emotionIntensity ?? 0.5);
   px += tremble.x;
   py += tremble.y;
 
@@ -573,13 +575,19 @@ function getMoodForce(
 
 /**
  * Micro-vibration when the creature is scared or anxious.
- * Uses high-frequency noise to create a shivering effect.
- * Amplitude scales with instability (1 - stability) and fear intensity.
+ * Combines deterministic sine layers with per-frame random displacement
+ * for an organic, jittery feel. Amplitude scales with instability
+ * (1 - stability), fear intensity, and emotion intensity.
+ *
+ * The random layer uses Math.random() per frame (not sine) so the
+ * trembling never looks periodic — it reads as genuine nervousness.
+ * Total displacement range: 0.3–1.5 pixels (mapped to normalized space).
  */
 function computeTremble(
   mood: string | null,
   dna: CreatureDNA,
   time: number,
+  emotionIntensity: number = 0.5,
 ): Vec2 {
   const fearMoods = ["scared", "anxious", "terrified", "nervous"];
   if (!mood || !fearMoods.includes(mood)) return { x: 0, y: 0 };
@@ -589,7 +597,7 @@ function computeTremble(
   const fearLevel = mood === "terrified" ? 1.0 : mood === "scared" ? 0.7 : 0.4;
   const amplitude = 0.003 * instability * fearLevel;
 
-  // Base tremble: mid-frequency shiver
+  // Base tremble: mid-frequency shiver (deterministic backbone)
   const baseX = Math.sin(time * 47.3) * amplitude + Math.sin(time * 31.7) * amplitude * 0.5;
   const baseY = Math.cos(time * 53.1) * amplitude + Math.cos(time * 37.9) * amplitude * 0.5;
 
@@ -605,9 +613,18 @@ function computeTremble(
     Math.cos(time * 87.96) * microAmp * 0.3 +  // ~14Hz
     Math.cos(time * 75.40) * microAmp * 0.1;   // ~12Hz
 
+  // Random displacement layer — Math.random() per frame for organic jitter.
+  // Intensity scales the random range from 0.3 to 1.5 pixels.
+  // Convert pixel range to normalized space (~1/300 of viewport per pixel).
+  const clampedIntensity = Math.max(0, Math.min(1, emotionIntensity));
+  const pixelRange = 0.3 + clampedIntensity * 1.2; // 0.3px at low intensity, 1.5px at max
+  const randAmp = (pixelRange / 300) * instability * fearLevel;
+  const randX = (Math.random() - 0.5) * 2 * randAmp;
+  const randY = (Math.random() - 0.5) * 2 * randAmp;
+
   return {
-    x: baseX + microX,
-    y: baseY + microY,
+    x: baseX + microX + randX,
+    y: baseY + microY + randY,
   };
 }
 

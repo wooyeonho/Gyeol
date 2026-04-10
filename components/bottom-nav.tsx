@@ -44,9 +44,9 @@ function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.chat", icon: "chat" as const },
-  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
+  { path: "/", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
+  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
+  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const, tutorialId: "nav-settings" },
 ];
 
 const DISCOVER_PATHS = new Set([
@@ -131,6 +131,7 @@ export function BottomNav() {
               <Link
                 key={tab.path}
                 href={tab.path}
+                data-tutorial={tab.tutorialId}
                 onClick={() => haptic("tap")}
                 aria-label={t(tab.labelKey)}
                 className="relative z-10 flex min-h-14 min-w-[80px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"

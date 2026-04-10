@@ -6,6 +6,11 @@ import {
   seedDnaBodySchema,
   inviteApplyBodySchema,
   socialReactionBodySchema,
+  careBodySchema,
+  dnaEditBodySchema,
+  timeTravelBodySchema,
+  socialGiftBodySchema,
+  parseBody,
 } from "./schemas";
 
 describe("Zod Validation Schemas", () => {
@@ -106,6 +111,111 @@ describe("Zod Validation Schemas", () => {
 
     it("rejects too-long emoji string", () => {
       expect(socialReactionBodySchema.safeParse({ emoji: "x".repeat(20) }).success).toBe(false);
+    });
+  });
+
+  /* ═══════════════════════════════════════════
+   * Security-focused validation tests
+   * ═══════════════════════════════════════════ */
+
+  describe("careBodySchema — security", () => {
+    it("rejects SQL injection in agentId", () => {
+      expect(careBodySchema.safeParse({ agentId: "'; DROP TABLE agents; --", action: "feed" }).success).toBe(false);
+    });
+
+    it("rejects XSS in agentId", () => {
+      expect(careBodySchema.safeParse({ agentId: '<script>alert(1)</script>', action: "feed" }).success).toBe(false);
+    });
+
+    it("rejects non-enum action values", () => {
+      expect(careBodySchema.safeParse({ agentId: "00000000-0000-4000-8000-000000000001", action: "delete" }).success).toBe(false);
+    });
+  });
+
+  describe("dnaEditBodySchema — security", () => {
+    it("rejects out-of-range DNA values (>1)", () => {
+      expect(dnaEditBodySchema.safeParse({
+        agentId: "00000000-0000-4000-8000-000000000001",
+        edits: { analytical: 999 },
+      }).success).toBe(false);
+    });
+
+    it("rejects negative DNA values", () => {
+      expect(dnaEditBodySchema.safeParse({
+        agentId: "00000000-0000-4000-8000-000000000001",
+        edits: { warmth: -1 },
+      }).success).toBe(false);
+    });
+  });
+
+  describe("timeTravelBodySchema — security", () => {
+    it("rejects empty message", () => {
+      expect(timeTravelBodySchema.safeParse({ target_date: "2025-01-15", message: "" }).success).toBe(false);
+    });
+
+    it("rejects message over 2000 chars", () => {
+      expect(timeTravelBodySchema.safeParse({ target_date: "2025-01-15", message: "x".repeat(2001) }).success).toBe(false);
+    });
+
+    it("rejects invalid date string", () => {
+      expect(timeTravelBodySchema.safeParse({ target_date: "not-a-date", message: "test" }).success).toBe(false);
+    });
+  });
+
+  describe("socialGiftBodySchema — security", () => {
+    it("rejects negative coins (theft attempt)", () => {
+      expect(socialGiftBodySchema.safeParse({
+        target_agent_id: "00000000-0000-4000-8000-000000000001", coins: -100,
+      }).success).toBe(false);
+    });
+
+    it("rejects zero coins", () => {
+      expect(socialGiftBodySchema.safeParse({
+        target_agent_id: "00000000-0000-4000-8000-000000000001", coins: 0,
+      }).success).toBe(false);
+    });
+
+    it("rejects coins over limit", () => {
+      expect(socialGiftBodySchema.safeParse({
+        target_agent_id: "00000000-0000-4000-8000-000000000001", coins: 99999,
+      }).success).toBe(false);
+    });
+
+    it("rejects non-integer coins", () => {
+      expect(socialGiftBodySchema.safeParse({
+        target_agent_id: "00000000-0000-4000-8000-000000000001", coins: 10.5,
+      }).success).toBe(false);
+    });
+  });
+
+  describe("parseBody — security", () => {
+    it("parses valid JSON body", async () => {
+      const req = new Request("http://localhost/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "00000000-0000-4000-8000-000000000001", action: "feed" }),
+      });
+      const result = await parseBody(req, careBodySchema);
+      expect(result.success).toBe(true);
+    });
+
+    it("returns error for invalid JSON", async () => {
+      const req = new Request("http://localhost/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not json{{{",
+      });
+      const result = await parseBody(req, careBodySchema);
+      expect(result.success).toBe(false);
+    });
+
+    it("returns error for empty body", async () => {
+      const req = new Request("http://localhost/test", {
+        method: "POST",
+        body: "",
+      });
+      const result = await parseBody(req, careBodySchema);
+      expect(result.success).toBe(false);
     });
   });
 });

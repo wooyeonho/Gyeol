@@ -13,6 +13,8 @@ import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 import dynamic from "next/dynamic";
 
 const CreatureStatsCard = dynamic(() => import("@/components/creature-stats-card").then(m => m.CreatureStatsCard), { ssr: false });
+const StatCard = dynamic(() => import("@/components/stat-card").then(m => ({ default: m.StatCard })), { ssr: false });
+const AccessoryEquipPanel = dynamic(() => import("@/components/accessory-equip-panel").then(m => ({ default: m.AccessoryEquipPanel })), { ssr: false });
 const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(m => m.SkillTreeView), { ssr: false });
 const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
 const TeamManager = dynamic(() => import("@/components/team-manager").then(m => m.TeamManager), { ssr: false });
@@ -286,6 +288,24 @@ export default function DNAPage() {
           <CreatureStatsCard
             dna={activeDNA}
             genLevel={agentState?.gen_level as number ?? 1}
+          />
+        )}
+
+        {/* Battle Stats — stat system derived from DNA */}
+        {dna && (
+          <StatCard
+            dna={activeDNA}
+            genLevel={agentState?.gen_level as number ?? 1}
+            vitality={agentState?.vitality as number ?? 1}
+            locale={locale}
+          />
+        )}
+
+        {/* Accessory Equip Panel — Neopets-style cosmetic slots */}
+        {dna && (
+          <AccessoryEquipPanel
+            dna={activeDNA}
+            locale={locale}
           />
         )}
 

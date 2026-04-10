@@ -33,6 +33,7 @@ import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
+import { mainTutorialSteps } from "@/components/tutorial-steps";
 import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
 import { QuickCareButtons } from "@/components/quick-care-buttons";
 
@@ -520,6 +521,7 @@ export default function Home() {
 
       {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
       <div
+        data-tutorial="creature"
         className="relative flex-shrink-0 overflow-hidden"
         style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
@@ -701,7 +703,7 @@ export default function Home() {
       </div>
 
       {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
+      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
         <QuickCareButtons
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}
@@ -789,7 +791,13 @@ export default function Home() {
         />
       )}
       <BottomNav />
-      {showTutorial && <TutorialOverlay />}
+      {showTutorial && (
+        <TutorialOverlay
+          steps={mainTutorialSteps}
+          onComplete={() => {}}
+          storageKey="gyeol_tutorial_done"
+        />
+      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface MemoryMomentData { memory: string; age_days: number; similarity: number }
 interface ResonanceData { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] }
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData; resonance?: ResonanceData }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData; resonance?: ResonanceData }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -239,9 +239,13 @@ async function handleStreamResponse(
       aborted = true;
       set((s) => {
         const msgs = [...s.messages];
+        // Confirm any pending user messages even on abort (the message was sent)
+        for (let i = 0; i < msgs.length; i++) {
+          if (msgs[i].pending) msgs[i] = { ...msgs[i], pending: false };
+        }
         const last = msgs[msgs.length - 1];
         if (!last || last.role !== "assistant") {
-          return { isStreaming: false, pendingUsageMode: null, abortController: null };
+          return { messages: msgs, isStreaming: false, pendingUsageMode: null, abortController: null };
         }
         if (!last.content.trim()) {
           msgs.pop();
@@ -259,6 +263,10 @@ async function handleStreamResponse(
     set((s) => {
       const msgs = [...s.messages];
       msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: copy.streamError, error: true };
+      // Mark pending user messages as failed (error) so retry UI shows
+      for (let i = 0; i < msgs.length; i++) {
+        if (msgs[i].pending) msgs[i] = { ...msgs[i], pending: false, error: true };
+      }
       return { messages: msgs };
     });
   } finally {
@@ -270,6 +278,16 @@ async function handleStreamResponse(
     // Roll variable reward on successful completion (delegated to reward-middleware)
     const lastMsg = get().messages[get().messages.length - 1];
     if (!aborted && lastMsg && lastMsg.role === "assistant" && !lastMsg.error && lastMsg.content.length > 0) {
+      // Confirm all pending user messages — server acknowledged
+      set((s) => {
+        let changed = false;
+        const msgs = s.messages.map((m) => {
+          if (m.pending) { changed = true; return { ...m, pending: false }; }
+          return m;
+        });
+        return changed ? { messages: msgs } : {};
+      });
+
       const msgReward = processMessageReward(get().rewardProgress);
       set({
         lastReward: msgReward.lastReward ?? get().lastReward,
@@ -285,6 +303,16 @@ async function handleStreamResponse(
           pendingWeeklyEventCompletion: false,
         });
       }
+    } else if (!aborted) {
+      // Stream failed — still confirm pending flags so they show error state
+      set((s) => {
+        let changed = false;
+        const msgs = s.messages.map((m) => {
+          if (m.pending) { changed = true; return { ...m, pending: false, error: true }; }
+          return m;
+        });
+        return changed ? { messages: msgs } : {};
+      });
     }
     set({ isStreaming: false, pendingUsageMode: null, abortController: null });
   }
@@ -384,6 +412,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
     haptic("send");
     playSound("send");
+    const optimisticId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     set((s) => {
       // Cap message history at 200 to prevent unbounded memory growth
       const MAX_MESSAGES = 200;
@@ -392,7 +421,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         : s.messages;
       const controller = new AbortController();
       return {
-        messages: [...trimmed, createMessage("user", message)],
+        messages: [...trimmed, { id: optimisticId, role: "user" as const, content: message, pending: true }],
         isStreaming: true,
         abortController: controller,
         pendingUsageMode: detectPrimaryUsageModeFromText(message),
