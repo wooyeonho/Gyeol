@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rl = await checkRateLimit(`reward:${user.id}`);
-    if (!rl.allowed) {
+    if (!rl) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 

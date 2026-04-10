@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rl = await checkRateLimit("email-send:internal");
-  if (!rl.allowed) {
+  if (!rl) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

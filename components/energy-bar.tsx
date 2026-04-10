@@ -3,10 +3,23 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  getEnergyState,
-  getTimeToNextRegen,
+  getEnergy,
+  REGEN_INTERVAL_MS,
   type EnergyState,
 } from "@/lib/game/energy-system";
+
+function getEnergyState(): EnergyState { return getEnergy(); }
+
+function getTimeToNextRegen(): { minutes: number; seconds: number } | null {
+  const state = getEnergy();
+  if (state.current >= state.max) return null;
+  const lastRegen = new Date(state.lastRegenAt).getTime();
+  const nextRegen = lastRegen + REGEN_INTERVAL_MS;
+  const remaining = Math.max(0, nextRegen - Date.now());
+  const minutes = Math.floor(remaining / 60_000);
+  const seconds = Math.floor((remaining % 60_000) / 1000);
+  return { minutes, seconds };
+}
 
 interface EnergyBarProps {
   compact?: boolean;
@@ -34,7 +47,7 @@ export function EnergyBar({ compact = false, locale = "ko" }: EnergyBarProps) {
 
   const pct = (energy.current / energy.max) * 100;
   const isLow = energy.current <= 3;
-  const totalAvailable = energy.current + energy.bonusEnergy;
+  const totalAvailable = energy.current + ((energy as EnergyState & { bonusEnergy?: number }).bonusEnergy ?? 0);
 
   if (compact) {
     return (
@@ -60,9 +73,9 @@ export function EnergyBar({ compact = false, locale = "ko" }: EnergyBarProps) {
           <span className={`text-xs font-bold ${isLow ? "text-red-400" : "text-white"}`}>
             {energy.current}/{energy.max}
           </span>
-          {energy.bonusEnergy > 0 && (
+          {((energy as EnergyState & { bonusEnergy?: number }).bonusEnergy ?? 0) > 0 && (
             <span className="text-[10px] text-amber-400/70">
-              +{energy.bonusEnergy}
+              +{(energy as EnergyState & { bonusEnergy?: number }).bonusEnergy}
             </span>
           )}
         </div>

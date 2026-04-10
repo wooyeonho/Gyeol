@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       // Non-fatal: image was generated, just didn't persist metadata
-      log.warn("[Generate] persist error:", e instanceof Error ? e.message : String(e));
+      log.warn("[Generate] persist error:", { error: e instanceof Error ? e.message : String(e) });
     }
 
     return NextResponse.json({ url: imageUrl, prompt, type, status: "completed" });

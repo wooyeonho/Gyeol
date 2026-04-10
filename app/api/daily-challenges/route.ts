@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const rl = await checkRateLimit(`daily-challenge:${user.id}`);
-    if (!rl.allowed) {
+    if (!rl) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 

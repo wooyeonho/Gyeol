@@ -38,7 +38,7 @@ export function deriveStats(dna: CreatureDNA, genLevel = 1): CreatureStats {
 
   const hp = Math.round(
     clamp(
-      (dna.stability * 0.5 + dna.resilience * 0.3 + dna.warmth * 0.2) * 100 * levelMult,
+      (dna.stability * 0.5 + dna.persistence * 0.3 + dna.warmth * 0.2) * 100 * levelMult,
       1,
       999,
     ),
@@ -54,7 +54,7 @@ export function deriveStats(dna: CreatureDNA, genLevel = 1): CreatureStats {
 
   const def = Math.round(
     clamp(
-      (dna.stability * 0.4 + dna.resilience * 0.4 + dna.independence * 0.2) * 100 * levelMult,
+      (dna.stability * 0.4 + dna.persistence * 0.4 + dna.independence * 0.2) * 100 * levelMult,
       1,
       999,
     ),

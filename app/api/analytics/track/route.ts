@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const rl = await checkRateLimit("analytics-track:global");
-    if (!rl.allowed) {
+    if (!rl) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 

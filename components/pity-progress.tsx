@@ -19,14 +19,14 @@ export function PityProgress() {
       <PityBar
         label="Epic"
         color="#a855f7"
-        current={progress.sinceLastEpic}
+        current={progress.sinceEpic}
         threshold={progress.epicThreshold}
       />
       {/* Legendary pity */}
       <PityBar
         label="Legendary"
         color="#f59e0b"
-        current={progress.sinceLastLegendary}
+        current={progress.sinceLegendary}
         threshold={progress.legendaryThreshold}
       />
     </div>

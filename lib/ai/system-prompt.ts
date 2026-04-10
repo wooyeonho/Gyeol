@@ -230,10 +230,72 @@ type BuildSystemPromptParams = {
   agentState: AgentStatePrompt;
   locale?: string;
   memories: Array<{ content?: string }>;
-  recentChats: Array<{ content?: string }>;
+  recentChats: Array<{ content?: string; role?: string }>;
   autonomousLogs: Array<{ content?: string; summary?: string }>;
   worldState?: { weather?: { name?: string } } | null;
 };
+
+// ─── Topic Context Window Management ───
+// Detects topic shifts in recent messages to prevent "confused AI" syndrome.
+// Based on Replika's 30% topic-confusion improvement approach.
+
+const TOPIC_KEYWORDS: Record<string, string[]> = {
+  work:     ["일", "업무", "회사", "직장", "work", "job", "office", "meeting", "project"],
+  study:    ["공부", "시험", "학교", "수업", "study", "exam", "school", "class", "homework"],
+  love:     ["사랑", "연애", "좋아", "그리워", "love", "relationship", "miss", "crush"],
+  health:   ["건강", "운동", "아파", "병원", "health", "exercise", "sick", "hospital"],
+  food:     ["밥", "먹", "배고파", "맛있", "food", "eat", "hungry", "delicious"],
+  sleep:    ["잠", "피곤", "졸려", "낮잠", "sleep", "tired", "sleepy", "rest"],
+  creative: ["그림", "음악", "글", "창작", "art", "music", "writing", "creative"],
+  dream:    ["꿈", "상상", "미래", "소원", "dream", "imagine", "future", "wish"],
+};
+
+function detectMessageTopic(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
+    if (keywords.some((kw) => lower.includes(kw))) return topic;
+  }
+  return null;
+}
+
+/**
+ * Build a topic-awareness fragment by analyzing recent messages.
+ * Detects topic shifts and injects awareness directive.
+ */
+function buildTopicContextFragment(
+  recentChats: Array<{ content?: string; role?: string }>,
+  locale: string,
+): string | null {
+  if (recentChats.length < 3) return null;
+  const isKo = locale === "ko" || locale === "ko-KR";
+
+  const recent5 = recentChats.slice(-5);
+  const topics = recent5
+    .map((m) => detectMessageTopic(m.content ?? ""))
+    .filter(Boolean) as string[];
+
+  if (topics.length === 0) return null;
+
+  const uniqueTopics = [...new Set(topics)];
+  const latestTopic = topics[topics.length - 1];
+  const prevTopics = topics.slice(0, -1);
+  const hasShift = prevTopics.length > 0 && !prevTopics.includes(latestTopic);
+
+  if (hasShift) {
+    return isKo
+      ? `[대화 흐름 인식] 최근 대화 주제가 바뀌었어. 이전엔 "${prevTopics[prevTopics.length - 1]}" 이야기를 하다가, 지금은 "${latestTopic}" 이야기로 넘어왔어. 자연스럽게 새 주제에 맞춰서 응해줘. 이전 주제로 돌아가지 마.`
+      : `[Conversation Flow] The topic just shifted from "${prevTopics[prevTopics.length - 1]}" to "${latestTopic}". Adapt naturally to the new topic without referencing the old one.`;
+  }
+
+  // Consistent topic — reinforce it
+  if (uniqueTopics.length === 1) {
+    return isKo
+      ? `[대화 흐름 인식] 지금 대화는 "${latestTopic}" 주제에 집중돼 있어. 이 맥락을 유지하면서 대화해줘.`
+      : `[Conversation Flow] The conversation is focused on "${latestTopic}". Maintain this context.`;
+  }
+
+  return null;
+}
 
 // ─── Species/Archetype Personality Builder ───
 // Converts DNA-derived species profile into rich personality directives
@@ -416,6 +478,10 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     });
     parts.push("(You may naturally reference these inner reflections when relevant to the conversation.)");
   }
+
+  // 6b. Topic context window management — detect topic shifts to prevent confusion
+  const topicFragment = buildTopicContextFragment(p.recentChats, p.locale ?? "ko");
+  if (topicFragment) parts.push(topicFragment);
 
   // 7. vitality + stages
   const vitality = s.vitality ?? 1;

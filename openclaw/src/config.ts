@@ -8,16 +8,19 @@ export interface EngineConfig {
   useHmacAuth: boolean;
 }
 
-function requireEnv(key: string): string {
+function warnEnv(key: string): string {
   const val = process.env[key];
-  if (!val) throw new Error(`Missing required env: ${key}`);
+  if (!val) {
+    console.warn(`[openclaw] WARNING: Missing env var ${key} — some features will be disabled`);
+    return "";
+  }
   return val;
 }
 
 export function loadConfig(): EngineConfig {
   return {
-    appUrl: requireEnv("GYEOL_APP_URL").replace(/\/$/, ""),
-    cronSecret: requireEnv("CRON_SECRET"),
+    appUrl: warnEnv("GYEOL_APP_URL").replace(/\/$/, ""),
+    cronSecret: warnEnv("CRON_SECRET"),
     port: parseInt(process.env.PORT || "8000", 10),
     crawlUrls: (process.env.CRAWL_URLS || "").split(",").map((u) => u.trim()).filter(Boolean),
     crawlMaxPages: parseInt(process.env.CRAWL_MAX_PAGES || "10", 10),

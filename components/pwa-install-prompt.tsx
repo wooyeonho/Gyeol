@@ -32,7 +32,7 @@ export function PwaInstallPrompt() {
     // Only show in browser, not in standalone PWA
     if (typeof window === "undefined") return;
     if (window.matchMedia("(display-mode: standalone)").matches) return;
-    if (window.navigator.standalone) return; // iOS Safari standalone
+    if ((window.navigator as Navigator & { standalone?: boolean }).standalone) return; // iOS Safari standalone
 
     // Check dismissal TTL
     try {

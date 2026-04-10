@@ -35,6 +35,7 @@ const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => 
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
+import { StreakFlame } from "@/components/streak-flame";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -42,6 +43,8 @@ import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-ov
 import { mainTutorialSteps } from "@/components/tutorial-steps";
 import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
 import { QuickCareButtons } from "@/components/quick-care-buttons";
+import { DailyLoginBonus } from "@/components/daily-login-bonus";
+import { ConversationStarter } from "@/components/conversation-starter";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -87,11 +90,27 @@ export default function Home() {
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [activeMysteryBox, setActiveMysteryBox] = useState<MysteryBoxType | null>(null);
   const sessionMsgCountRef = useRef(0);
+  const [showDailyBonus, setShowDailyBonus] = useState(false);
+  const [bonusDayIndex, setBonusDayIndex] = useState(1);
+  const [bonusAlreadyClaimed, setBonusAlreadyClaimed] = useState(false);
 
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
   }, [fetchAgentState, fetchWorldState]);
+
+  // Fetch daily bonus status — show modal if not yet claimed today
+  useEffect(() => {
+    fetch("/api/home/daily-bonus")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (!d) return;
+        setBonusDayIndex(d.currentDayIndex ?? 1);
+        setBonusAlreadyClaimed(!!d.alreadyClaimed);
+        if (!d.alreadyClaimed) setShowDailyBonus(true);
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch latest portrait — runs once when agent first loads.
   // If none exists yet, auto-generate one in the background so the
@@ -265,6 +284,7 @@ export default function Home() {
     };
   }, [creatureDna]);
 
+  const sendMessage = useChatStore((s) => s.sendMessage);
   const lastReward = useChatStore((s) => s.lastReward);
   const clearReward = useChatStore((s) => s.clearReward);
   const handleDismissReward = useCallback(() => clearReward(), [clearReward]);
@@ -686,14 +706,13 @@ export default function Home() {
                 <span className="text-purple-300/70">{agentState.mood}</span>
               </>
             )}
-            {(agentState?.streak_days ?? 0) > 0 && (
+            {(agentState?.streak_days ?? 0) >= 0 && (
               <>
                 <span className="h-1 w-1 rounded-full bg-white/30" />
-                <StreakDisplay
+                <StreakFlame
                   days={agentState?.streak_days ?? 0}
-                  todayActive={true}
-                  locale={locale}
-                  compact
+                  size="sm"
+                  showCount
                 />
               </>
             )}
@@ -770,6 +789,15 @@ export default function Home() {
           </motion.div>
         )}
 
+        {/* Conversation starter chips — visible until first message sent */}
+        {!conversationStarted && (
+          <ConversationStarter
+            creatureName={agentState?.self_name ?? undefined}
+            locale={locale}
+            onSelect={(text) => sendMessage(text)}
+          />
+        )}
+
         <ChatPanel navVisible={conversationStarted} />
       </div>
 
@@ -799,6 +827,40 @@ export default function Home() {
             setActiveMysteryBox(null);
           }}
         />
+      )}
+      {/* Daily login bonus modal */}
+      {showDailyBonus && (
+        <motion.div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setShowDailyBonus(false)}
+        >
+          <motion.div
+            className="w-full max-w-sm pb-2 relative"
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute -top-8 right-0 text-white/40 hover:text-white/70 text-sm"
+              onClick={() => setShowDailyBonus(false)}
+            >
+              닫기
+            </button>
+            <DailyLoginBonus
+              currentDayIndex={bonusDayIndex}
+              alreadyClaimed={bonusAlreadyClaimed}
+              locale={locale}
+              onClaim={async () => {
+                await fetch("/api/home/daily-bonus", { method: "POST" });
+                setBonusAlreadyClaimed(true);
+                setTimeout(() => setShowDailyBonus(false), 2000);
+              }}
+            />
+          </motion.div>
+        </motion.div>
       )}
       <BottomNav />
       {showTutorial && (

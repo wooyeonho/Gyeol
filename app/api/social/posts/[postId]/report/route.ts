@@ -41,8 +41,8 @@ export async function POST(
     if (fenceCheck.blocked) {
       return NextResponse.json({ error: "Blocked content detected" }, { status: 400 });
     }
-    const reason = sanitizeUserInput(parsed.data.reason);
-    const detail = sanitizeUserInput(parsed.data.detail);
+    const reason = sanitizeUserInput(parsed.data.reason ?? "");
+    const detail = sanitizeUserInput(parsed.data.detail ?? "");
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

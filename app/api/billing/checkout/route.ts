@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rl = await checkRateLimit(`checkout:${user.id}`);
-  if (!rl.allowed) {
+  if (!rl) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

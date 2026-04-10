@@ -111,7 +111,7 @@ export const ITEM_CATALOG: Item[] = [
     slot: "accessory",
     icon: "🛡️",
     modifiers: [{ stat: "def", value: 10, percent: false }],
-    dnaAffinity: "resilience",
+    dnaAffinity: "stability",
     sellValue: 20,
   },
   {
@@ -125,7 +125,7 @@ export const ITEM_CATALOG: Item[] = [
       { stat: "cha", value: 12, percent: false },
       { stat: "luk", value: 5, percent: false },
     ],
-    dnaAffinity: "expressiveness",
+    dnaAffinity: "verbal",
     sellValue: 50,
   },
   // Charms
