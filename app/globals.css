@@ -483,6 +483,128 @@ select {
 [dir="rtl"] .text-left { text-align: right; }
 [dir="rtl"] .text-right { text-align: left; }
 
+/* ── 2026 Design System: Glassmorphism 2.0 (C1) ─────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-card-strong {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* ── 2026 Design System: Exaggerated Minimalism Typography (G4) ─────────── */
+.text-display {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.text-hero {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.text-section {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── 2026 Design System: Bento Grid Layout (C2) ─────────────────────────── */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  grid-auto-rows: min-content;
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.bento-2x2 { grid-column: span 2; grid-row: span 2; }
+.bento-2x1 { grid-column: span 2; }
+.bento-1x2 { grid-row: span 2; }
+
+/* ── 2026 Design System: Aurora Gradient Background (C3) ─────────────────── */
+.aurora-bg {
+  background: linear-gradient(
+    -45deg,
+    #0a0a0f,
+    #0f0a1a,
+    #0a0f1a,
+    #0a1a0f,
+    #1a0a0f
+  );
+  background-size: 400% 400%;
+  animation: aurora-shift 12s ease infinite;
+}
+
+.aurora-accent {
+  background: linear-gradient(
+    135deg,
+    rgba(129, 140, 248, 0.15),
+    rgba(167, 139, 250, 0.1),
+    rgba(96, 165, 250, 0.12),
+    rgba(74, 222, 128, 0.08)
+  );
+  background-size: 300% 300%;
+  animation: aurora-shift 8s ease infinite;
+}
+
+@keyframes aurora-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── 2026 Design System: 3D Micro-interactions (C4) ─────────────────────── */
+.btn-3d {
+  transform: translateZ(0);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.btn-3d:active {
+  transform: translateY(0) translateZ(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.card-tilt {
+  transform-style: preserve-3d;
+  transition: transform 200ms ease;
+  will-change: transform;
+}
+
+/* ── Adaptive UI: highlighted action (G5) ─────────────────────────────────── */
+.adaptive-primary {
+  order: -1;
+  flex-shrink: 0;
+}
+
+/* ── Gacha / Scratch card (G6) ───────────────────────────────────────────── */
+.scratch-canvas {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='12' fill='rgba(255,255,255,0.3)' stroke='white' stroke-width='2'/%3E%3C/svg%3E") 16 16, crosshair;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -493,7 +615,9 @@ select {
     transition-duration: 0.01ms !important;
   }
 
-  .aurora-flow {
+  .aurora-flow,
+  .aurora-bg,
+  .aurora-accent {
     animation: none;
   }
 }
