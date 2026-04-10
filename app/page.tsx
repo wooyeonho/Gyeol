@@ -59,6 +59,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
 const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
+const EnergyBar = dynamic(() => import("@/components/energy-bar").then((m) => ({ default: m.EnergyBar })), { ssr: false, loading: () => null });
 
 export default function Home() {
   const { locale, t } = useTranslations();
@@ -705,6 +706,10 @@ export default function Home() {
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}
         />
+        {/* Energy Bar — shows action energy with regen timer */}
+        <div className="mt-2">
+          <EnergyBar locale={locale} />
+        </div>
       </div>
 
       {/* ===== DYNAMIC ISLAND — always-visible creature mini status ===== */}

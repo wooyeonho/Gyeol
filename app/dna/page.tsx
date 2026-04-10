@@ -16,6 +16,7 @@ const CreatureStatsCard = dynamic(() => import("@/components/creature-stats-card
 const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(m => m.SkillTreeView), { ssr: false });
 const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
 const TeamManager = dynamic(() => import("@/components/team-manager").then(m => m.TeamManager), { ssr: false });
+const ItemCompareCard = dynamic(() => import("@/components/item-compare-card").then(m => ({ default: m.ItemCompareCard })), { ssr: false });
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -303,6 +304,20 @@ export default function DNAPage() {
               {t("dna.equipment") || "장비 & 아이템"}
             </p>
             <ItemsInventory />
+            {/* Item Comparison — Diablo-style stat comparison overlay */}
+            <div className="mt-3">
+              <ItemCompareCard
+                currentName="기본 장비"
+                candidateName="새 장비"
+                currentRarity="common"
+                candidateRarity="uncommon"
+                deltas={[
+                  { name: "공격력", icon: "⚔️", current: 10, proposed: 14, color: "#4ade80" },
+                  { name: "방어력", icon: "🛡️", current: 8, proposed: 7, color: "#f87171" },
+                  { name: "속도", icon: "💨", current: 5, proposed: 5, color: "#94a3b8" },
+                ]}
+              />
+            </div>
           </div>
         )}
 

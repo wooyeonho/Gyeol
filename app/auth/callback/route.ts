@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { applyInviteCodeForUser } from "@/lib/invite/apply";
+import { logger } from "@/lib/logger";
 
 function sanitizeNextPath(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
         await applyInviteCodeForUser(createServiceClient(), user.id, ref);
       }
     } catch (inviteError) {
-      console.error("GET /auth/callback invite apply error", inviteError);
+      logger.error("GET /auth/callback invite apply error", inviteError instanceof Error ? inviteError : { detail: String(inviteError) });
     }
   }
 

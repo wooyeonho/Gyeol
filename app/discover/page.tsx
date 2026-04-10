@@ -14,11 +14,18 @@ import { DiscoverGridSkeleton } from "@/components/discover/skeleton";
 import { useAgentStore } from "@/store/agent-store";
 import dynamic from "next/dynamic";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { getAvailableEvents, makeChoice, type StoryEvent } from "@/lib/game/narrative-system";
+import type { PartyMember, SynergyBonus } from "@/lib/game/party-system";
+import { calculatePartySynergy } from "@/lib/game/party-system";
 
 const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
 const DungeonExplorer = dynamic(() => import("@/components/dungeon-explorer").then(m => m.DungeonExplorer), { ssr: false });
 const PvPRankCard = dynamic(() => import("@/components/pvp-rank-card").then(m => m.PvPRankCard), { ssr: false });
 const SpeciesCodex = dynamic(() => import("@/components/species-codex").then(m => ({ default: m.SpeciesCodex })), { ssr: false });
+const NarrativeEventCard = dynamic(() => import("@/components/narrative-event-card").then(m => ({ default: m.NarrativeEventCard })), { ssr: false });
+const BattlePass = dynamic(() => import("@/components/battle-pass"), { ssr: false });
+const LeagueBadge = dynamic(() => import("@/components/league-badge"), { ssr: false });
+const PartyPanel = dynamic(() => import("@/components/party-panel").then(m => ({ default: m.PartyPanel })), { ssr: false });
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -120,6 +127,55 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [challengeCompleted, setChallengeCompleted] = useState(0);
   const challengeTotal = 3;
+
+  // Party system — placeholder data (will be replaced with real data from store)
+  const placeholderParty = useMemo<PartyMember[]>(() => {
+    if (!dna) return [];
+    return [
+      {
+        creatureId: "active-creature",
+        name: (agentState?.name as string) ?? "결",
+        dominantType: "analytical",
+        level: genLevel,
+        stats: { hp: 45, atk: 38, def: 32, spd: 40, wis: 50, cha: 35 },
+        isActive: true,
+        affinity: (agentState?.affinity as number) ?? 0.5,
+      },
+    ];
+  }, [dna, agentState, genLevel]);
+  const partySynergies = useMemo(() => calculatePartySynergy(placeholderParty), [placeholderParty]);
+
+  // Narrative branching events
+  const [narrativeEvent, setNarrativeEvent] = useState<StoryEvent | null>(null);
+  const [narrativeOutcome, setNarrativeOutcome] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timeOfDay = (() => {
+      const h = new Date().getHours();
+      if (h < 6) return "night";
+      if (h < 12) return "morning";
+      if (h < 18) return "afternoon";
+      return "evening";
+    })();
+    const available = getAvailableEvents({
+      totalMessages: (agentState?.total_messages as number) ?? 0,
+      affinity: agentState?.intimacy_score ?? 0,
+      genLevel,
+      timeOfDay,
+    });
+    if (available.length > 0) {
+      setNarrativeEvent(available[0]);
+    }
+  }, [agentState, genLevel]);
+
+  const handleNarrativeChoice = (choiceId: string) => {
+    if (!narrativeEvent) return;
+    const isKo = locale === "ko";
+    const result = makeChoice(narrativeEvent.id, choiceId);
+    if (result) {
+      setNarrativeOutcome(isKo ? result.outcome.ko : result.outcome.en);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -276,6 +332,39 @@ export default function DiscoverPage() {
           </Link>
         )}
 
+        {/* Party panel — creature team management */}
+        {placeholderParty.length > 0 && (
+          <PartyPanel
+            party={placeholderParty}
+            synergies={partySynergies}
+            onSwitchActive={(id) => { haptic("tap"); }}
+            onAddCreature={() => { haptic("tap"); }}
+            compact={false}
+          />
+        )}
+
+        {/* Battle Pass — season rewards track */}
+        <BattlePass />
+
+        {/* Narrative branching story event */}
+        {narrativeEvent && (
+          <NarrativeEventCard
+            event={{
+              id: narrativeEvent.id,
+              title: locale === "ko" ? narrativeEvent.title.ko : narrativeEvent.title.en,
+              description: locale === "ko" ? narrativeEvent.description.ko : narrativeEvent.description.en,
+              choices: narrativeEvent.choices.map((c) => ({
+                id: c.id,
+                text: locale === "ko" ? c.label.ko : c.label.en,
+                hint: c.dnaEffects.slice(0, 2).map((e) => `${e.axis} ${e.delta > 0 ? "+" : ""}${(e.delta * 100).toFixed(0)}%`).join(", "),
+              })),
+            }}
+            onChoose={handleNarrativeChoice}
+            outcome={narrativeOutcome}
+            compact
+          />
+        )}
+
         {/* Section label */}
         <div className="flex items-center gap-2 px-1">
           <div className="h-px flex-1 bg-white/[0.12]" />
@@ -330,6 +419,9 @@ export default function DiscoverPage() {
 
         {/* PvP Ranking */}
         {dna && <PvPRankCard locale={locale} />}
+
+        {/* League Badge — ladder ranking */}
+        <LeagueBadge mode="full" locale={locale === "ko" ? "ko" : "en"} />
 
         {/* Species Codex — Pokedex-style collection */}
         <SpeciesCodex locale={locale} />

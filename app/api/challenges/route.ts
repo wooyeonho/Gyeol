@@ -4,8 +4,24 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 import type { DailyChallengeState } from "@/lib/engagement/daily-challenge";
+
+const challengeStateBodySchema = z.object({
+  state: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+    challenges: z.array(z.object({
+      id: z.string().max(50),
+      difficulty: z.enum(["easy", "medium", "hard"]),
+      progress: z.number().min(0).max(100),
+      target: z.number().min(1).max(100),
+      completed: z.boolean(),
+    })).max(3),
+    perfectDayClaimed: z.boolean(),
+  }),
+});
 
 const log = logger.child({ route: "api/challenges" });
 
@@ -55,29 +71,12 @@ export async function POST(req: NextRequest) {
     const allowed = await checkRateLimit(`challenges:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await req.json().catch(() => ({}));
-    const state = body?.state as DailyChallengeState | undefined;
-    if (!state || !state.date || !Array.isArray(state.challenges)) {
-      return NextResponse.json({ error: "Invalid challenge state" }, { status: 400 });
+    const parsed = await parseBody(req, challengeStateBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    // Validate date format
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) {
-      return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
-    }
-
-    // Sanitize: only persist expected fields
-    const sanitized: DailyChallengeState = {
-      date: state.date,
-      challenges: state.challenges.slice(0, 3).map((c) => ({
-        id: typeof c.id === "string" ? c.id.slice(0, 50) : "",
-        difficulty: (["easy", "medium", "hard"] as const).includes(c.difficulty) ? c.difficulty : "easy",
-        progress: Math.max(0, Math.min(100, Number(c.progress) || 0)),
-        target: Math.max(1, Math.min(100, Number(c.target) || 1)),
-        completed: Boolean(c.completed),
-      })),
-      perfectDayClaimed: Boolean(state.perfectDayClaimed),
-    };
+    const sanitized: DailyChallengeState = parsed.data.state;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);

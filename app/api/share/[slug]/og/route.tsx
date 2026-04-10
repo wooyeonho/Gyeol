@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { resolveLocale } from "@/lib/i18n/config";
 import { loadShareCardData } from "@/lib/share/card";
 import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -186,7 +187,7 @@ export async function GET(
       { width: 1200, height: 630 }
     );
   } catch (e) {
-    console.error("OG image error", e);
+    logger.error("OG image error", e instanceof Error ? e : { detail: String(e) });
     return new Response("Error generating image", { status: 500 });
   }
 }
