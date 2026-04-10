@@ -9,11 +9,8 @@ import { getCircadianTint } from "@/lib/circadian";
 
 export type CreatureActivity = "awake" | "drowsy" | "sleeping";
 
-/** Extended idle behavior for rich creature states */
-export type IdleActivity =
-  | "alert" | "curious" | "daydreaming" | "playing"
-  | "restless" | "meditating" | "nesting" | "drowsy"
-  | "sleeping" | "dreaming";
+/** Extended idle behavior for rich creature states — must stay in sync with IdleBehavior */
+export type IdleActivity = IdleBehavior;
 
 export type CreatureState = {
   /** Current activity level */
