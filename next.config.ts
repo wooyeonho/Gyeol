@@ -8,6 +8,22 @@ const withBundleAnalyzer = withBundleAnalyzerPkg({
 });
 
 const nextConfig: NextConfig = {
+  images: {
+    // Allow next/image to optimize AI-generated portraits from Supabase Storage.
+    // Without this, all Image components fall back to `unoptimized` mode.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.in",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   async headers() {
     // CSP is now set dynamically in middleware.ts with per-request nonces.
     // Only static security headers remain here.

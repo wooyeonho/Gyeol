@@ -628,7 +628,7 @@ export default function Home() {
                 alt="Creature portrait"
                 fill
                 className="object-cover"
-                unoptimized
+                sizes="(max-width: 640px) 280px, 320px"
                 priority
               />
               {/* Soft inner ring for polish */}
