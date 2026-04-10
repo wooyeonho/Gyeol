@@ -8,6 +8,7 @@ import { DEFAULT_LOCALE, getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/moderation";
+import { logger } from "@/lib/logger";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { distillMemoriesToMoltBook, shareMoltBookEntry, absorbSharedKnowledge } from "@/lib/moltbook";
 
@@ -226,7 +227,7 @@ export async function executeSocial(): Promise<CronResult> {
           }
         }
       } catch (e) {
-        console.error("[Social] MoltBook sharing error:", e);
+        logger.error("[Social] MoltBook sharing error", e instanceof Error ? e : { error: e });
       }
     }
 
@@ -353,6 +354,13 @@ export async function executeSocial(): Promise<CronResult> {
           });
         }
       }
+    }
+
+    // Cleanup expired creature stories (fire-and-forget)
+    try {
+      await db.rpc("cleanup_expired_stories");
+    } catch {
+      // RPC may not exist yet — ignore silently
     }
 
     return {

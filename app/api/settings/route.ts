@@ -8,6 +8,9 @@ import { isFontSize, isThemeMode } from "@/lib/theme/preferences";
 import { isAgeGroup, isMinorAgeGroup } from "@/lib/safety/age-gate";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody, settingsPatchBodySchema } from "@/lib/validation/schemas";
 
 export async function GET() {
   try {
@@ -46,7 +49,16 @@ export async function PATCH(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
+    const rl = await checkRateLimit(`settings:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    const parsed = await parseBody(request, settingsPatchBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ error: "No agent" }, { status: 400 });
@@ -73,6 +85,10 @@ export async function PATCH(request: NextRequest) {
     if (isFontSize(body.font_size)) config.font_size = body.font_size;
     if (typeof body.reduce_motion === "boolean") config.reduce_motion = body.reduce_motion;
     if (typeof body.personality_mode === "string" && body.personality_mode.trim()) {
+      const fence = checkElectricFence(body.personality_mode);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
       config.personality_mode = body.personality_mode.trim();
     }
     if (typeof body.preferred_locale === "string") {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
@@ -174,11 +175,13 @@ export default function GeneratePage() {
                 <div key={record.id} className="rounded-2xl border border-white/10 bg-black/25 p-3">
                   {record.imageUrl ? (
                     <div className="relative aspect-square overflow-hidden rounded-xl bg-white/5">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={record.imageUrl}
                         alt={record.prompt}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                        sizes="(max-width: 640px) 100vw, 50vw"
                       />
                     </div>
                   ) : (

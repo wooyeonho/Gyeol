@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 /**
  * Share a MoltBook entry publicly on MoltHub.
@@ -18,12 +19,12 @@ export async function shareMoltBookEntry(
     .single();
 
   if (fetchErr || !entry) {
-    console.error("[MoltBook] Share: entry not found", fetchErr?.message);
+    logger.error("[MoltBook] Share: entry not found", { error: fetchErr?.message });
     return false;
   }
 
   if (Number(entry.confidence ?? 0) < 0.6) {
-    console.warn("[MoltBook] Share: confidence too low", entry.confidence);
+    logger.warn("[MoltBook] Share: confidence too low", { confidence: entry.confidence });
     return false;
   }
 
@@ -36,7 +37,7 @@ export async function shareMoltBookEntry(
     .eq("id", entryId);
 
   if (updateErr) {
-    console.error("[MoltBook] Share update error:", updateErr.message);
+    logger.error("[MoltBook] Share update error", { error: updateErr.message });
     return false;
   }
 

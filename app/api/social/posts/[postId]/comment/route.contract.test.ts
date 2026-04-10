@@ -11,6 +11,12 @@ vi.mock("@/lib/supabase/service", () => ({
 vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn(),
 }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
 
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";

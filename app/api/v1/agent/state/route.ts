@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { authorizeV1ApiKey, canAccessAgent, getApiKeyIdentifier } from "@/lib/api/v1-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const auth = await authorizeV1ApiKey(request, "v1:agent:state");
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (!state) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     return NextResponse.json({ agentState: state });
   } catch (e) {
-    console.error("v1/agent/state GET", e);
+    logger.error("v1/agent/state GET", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

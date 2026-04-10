@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Menu, X, MessageCircle, Compass, Settings, Trophy, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 
 export function NavigationHub() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +46,7 @@ export function NavigationHub() {
       </nav>
 
       {isOpen && (
+        <FocusTrap active onEscape={() => setIsOpen(false)}>
         <div className="fixed inset-0 z-50 flex flex-col items-center pt-[10vh] px-4">
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -77,6 +79,7 @@ export function NavigationHub() {
             </nav>
           </div>
         </div>
+        </FocusTrap>
       )}
     </>
   );

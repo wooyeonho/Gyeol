@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 export type CompareResult = {
   mine: CompareAgent;
@@ -125,7 +126,7 @@ export async function GET() {
     const result: CompareResult = { mine, opponent: opp, axes, verdict };
     return NextResponse.json(result);
   } catch (e) {
-    console.error("GET /api/compare error", e);
+    logger.error("GET /api/compare error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 type AlertLevel = "info" | "warning" | "critical";
 
@@ -26,7 +27,7 @@ async function sendSlackAlert(args: WriteAlertArgs): Promise<void> {
       body: JSON.stringify({ text }),
     });
   } catch (e) {
-    console.error("[SystemAlert] slack notify failed", e);
+    logger.error("[SystemAlert] slack notify failed", e instanceof Error ? e : { error: e });
   }
 }
 
@@ -55,7 +56,7 @@ async function sendEmailAlert(args: WriteAlertArgs): Promise<void> {
       }),
     });
   } catch (e) {
-    console.error("[SystemAlert] email notify failed", e);
+    logger.error("[SystemAlert] email notify failed", e instanceof Error ? e : { error: e });
   }
 }
 
@@ -70,7 +71,7 @@ export async function writeSystemAlert(args: WriteAlertArgs): Promise<void> {
       details: args.details ?? {},
     });
   } catch (e) {
-    console.error("[SystemAlert] failed", e);
+    logger.error("[SystemAlert] failed", e instanceof Error ? e : { error: e });
   }
 }
 

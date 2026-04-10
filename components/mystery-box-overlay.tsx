@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import { type MysteryBox, type BoxRarity } from "@/lib/engagement/mystery-box";
+import {
+  getPityCount,
+  processPityAfterOpen,
+  LEGENDARY_PITY_THRESHOLD,
+  ENCOURAGEMENT_THRESHOLD,
+} from "@/lib/engagement/pity-system";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
+import { useCelebrationStore } from "@/store/celebration-store";
 
 interface MysteryBoxOverlayProps {
   box: MysteryBox;
@@ -21,8 +29,11 @@ const RARITY_STYLE: Record<BoxRarity, { glow: string; color: string; label: stri
 export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
   const { t } = useTranslations();
   const [phase, setPhase] = useState<"shake" | "crack" | "reveal">("shake");
+  const [pityCount, setPityCount] = useState(() => getPityCount());
+  const celebrate = useCelebrationStore((s) => s.celebrate);
   const style = RARITY_STYLE[box.rarity];
 
+  // Process pity when the box is revealed
   useEffect(() => {
     haptic("tap");
     const t1 = setTimeout(() => { setPhase("crack"); haptic("tap"); }, 900);
@@ -30,15 +41,38 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
       setPhase("reveal");
       haptic("success");
       try { playSound("levelUp"); } catch { /* blocked */ }
+
+      // Update pity counter based on box rarity result
+      const newCount = processPityAfterOpen(box.rarity);
+      setPityCount(newCount);
+
+      // Trigger global celebration for epic+ draws
+      if (box.rarity === "legendary") {
+        celebrate({
+          title: "LEGENDARY!",
+          subtitle: box.reward.label,
+          reward: { type: box.reward.type, amount: box.reward.amount, icon: "✨" },
+          variant: "firework",
+          autoDismissMs: 4000,
+        });
+      } else if (box.rarity === "epic") {
+        celebrate({
+          title: "EPIC!",
+          subtitle: box.reward.label,
+          reward: { type: box.reward.type, amount: box.reward.amount, icon: "💎" },
+          variant: "sparkle",
+        });
+      }
     }, 1700);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const showEncouragement = pityCount > ENCOURAGEMENT_THRESHOLD;
 
   return (
+    <FocusTrap active onEscape={onClose}>
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm px-6"
-      role="dialog"
-      aria-modal="true"
       aria-label={t("mysteryBox.title")}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -140,6 +174,25 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
               >
                 {t("mysteryBox.claim")}
               </motion.button>
+
+              {/* Pity counter — subtle display */}
+              <div className="mt-4 flex flex-col items-center gap-1">
+                <p className="text-[10px] text-white/25 tabular-nums tracking-wide">
+                  {pityCount}/{LEGENDARY_PITY_THRESHOLD}
+                </p>
+
+                {/* Encouragement near pity threshold */}
+                {showEncouragement && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-xs font-medium text-amber-400/80"
+                  >
+                    {t("mysteryBox.pityEncouragement")}
+                  </motion.p>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -151,5 +204,6 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
         )}
       </div>
     </motion.div>
+    </FocusTrap>
   );
 }

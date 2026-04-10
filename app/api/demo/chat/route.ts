@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/router";
 import { checkElectricFence } from "@/lib/security/electric-fence";
@@ -6,6 +6,10 @@ import { sanitizeUserInput } from "@/lib/sanitize";
 import { createAssistantTapStream } from "@/lib/chat/stream";
 import { applySoftMutation, type CreatureDNA } from "@/lib/genome/dna";
 import { demoChatBodySchema, parseBody } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/demo/chat" });
 
 const DEMO_MAX_TURNS = 3;
 
@@ -86,6 +90,9 @@ How to talk:
 You only have 3 messages with this person. Make each one count. Make them want more.`;
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
     // Validate request body with Zod (message max 500 chars enforced by schema)
     const parsed = await parseBody(req, demoChatBodySchema);
@@ -184,7 +191,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
-    console.error("[DemoChat]", e);
+    log.error("[DemoChat]", e instanceof Error ? e : { detail: String(e) });
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

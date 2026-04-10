@@ -1,17 +1,31 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * GDPR Article 17 — Right to Erasure ("Right to be Forgotten")
  * Permanently deletes all user data across all tables.
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  // CSRF protection — irreversible action must originate from our domain
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const supabase = await createServerSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limiting — prevent abuse of destructive endpoint (3/min)
+  const allowed = await checkRateLimit(`gdpr-delete:${user.id}`);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   try {
     const service = createServiceClient();
@@ -69,7 +83,7 @@ export async function DELETE() {
 
     return NextResponse.json({ ok: true, deleted_at: new Date().toISOString() });
   } catch (error) {
-    console.error("GDPR delete error:", error);
+    logger.error("GDPR delete error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Deletion failed" }, { status: 500 });
   }
 }

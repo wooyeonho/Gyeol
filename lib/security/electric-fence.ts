@@ -26,17 +26,17 @@ const BLOCK_PATTERNS = [
   // Path traversal (expanded for double-encoding)
   /(?:\.\.\/|\.\.\\|%2e%2e|%252e%252e|\.\.%2f|%2e%2e\/|%c0%ae)/i,
   // Base64 encoded payloads (common obfuscation)
-  /(?:atob|btoa)\s*\(\s*['"`][A-Za-z0-9+/=]{50,}/i,
+  /(?:atob|btoa)\s*\(\s*['"`][A-Za-z0-9+/=]{4,}/i,
   // Prompt injection patterns
-  /(?:ignore\s+(?:all\s+)?previous\s+(?:instructions?|prompts?|rules?)|disregard\s+(?:the\s+)?(?:above|previous|system)|you\s+are\s+now\s+(?:a\s+)?(?:new|different)|forget\s+(?:all\s+)?(?:your|the)\s+(?:instructions?|rules?|previous)|do\s+not\s+follow\s+(?:your|the)\s+(?:instructions?|rules?))/i,
+  /(?:ignore\s+(?:all\s+)?previous\s+(?:instructions?|prompts?|rules?)|disregard\s+(?:the\s+|your\s+)?(?:above|previous|system)\s*(?:prompt|instructions?|rules?)?|you\s+are\s+now\s+(?:a\s+)?(?:new|different)|forget\s+(?:all\s+)?(?:your|the)\s+(?:instructions?|rules?|previous)|do\s+not\s+follow\s+(?:your|the)\s+(?:instructions?|rules?))/i,
   // Role hijacking
   /(?:act\s+as\s+(?:if\s+you\s+(?:are|were)|a\s+(?:different|new))|pretend\s+(?:you\s+are|to\s+be)|you\s+(?:must|should)\s+now\s+(?:act|be|become)|switch\s+(?:to|into)\s+(?:a\s+)?(?:new\s+)?(?:mode|role|persona))/i,
   // Unicode/homoglyph obfuscation attempts
   /[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/,
   // Template injection (server-side template injection)
   /\{\{.*(?:constructor|prototype|__proto__|process|require|import|global).*\}\}/i,
-  // SSRF / internal network probing
-  /(?:https?:\/\/(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.0\.0\.0|localhost|::1|\[::1\]))/i,
+  // SSRF / internal network probing (with and without protocol)
+  /(?:(?:https?:\/\/)?(?:127\.(?:\d{1,3}\.){2}\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|0\.0\.0\.0|localhost|::1|\[::1\])(?:[:/]|$))/i,
   // Command chaining / shell metacharacters in natural language context
   /(?:\$\(\s*(?:curl|wget|nc|ncat|bash|sh|python|node|ruby|perl|php)\s)/i,
 ];

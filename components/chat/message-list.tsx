@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StarterPrompts } from "./starter-prompts";
+import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
 
@@ -29,12 +30,15 @@ export function MessageList({
   onStop,
   onCopy,
   onRetry,
+  onRetryMessage,
   t,
   verbal,
   simpleModeLevel,
   locale,
+  accentColor,
+  creatureName,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -50,12 +54,17 @@ export function MessageList({
   onStop: () => void;
   onCopy: (index: number, content: string) => void;
   onRetry: () => void;
+  onRetryMessage?: (messageId: string) => void;
   t: (key: string) => string;
   verbal?: number;
   /** Simple mode jargon masking level */
   simpleModeLevel?: SimpleModeLevel;
   /** Locale for jargon substitution */
   locale?: string;
+  /** Accent color for typing indicator */
+  accentColor?: string;
+  /** Creature name for typing indicator */
+  creatureName?: string;
 }) {
   // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
   const visibleMessages = useMemo(
@@ -127,10 +136,72 @@ export function MessageList({
         >
           {m.role === "user" ? (
             <motion.div
-              className="max-w-[80%] break-words rounded-2xl bg-white/12 px-4 py-3 text-base leading-7 text-white"
+              className={`max-w-[80%] break-words rounded-2xl px-4 py-3 text-base leading-7 text-white ${m.error ? "bg-red-400/10 border border-red-400/20" : "bg-white/12"}`}
               whileTap={{ scale: 0.98 }}
             >
               {m.content}
+              {/* KakaoTalk-style optimistic sent/read indicator */}
+              <div className="mt-1 flex items-center justify-end gap-1">
+                {m.pending ? (
+                  /* Pending: clock icon — message sent optimistically, waiting for server */
+                  <motion.svg
+                    className="h-3 w-3 text-white/30"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <circle cx="8" cy="8" r="6.5" />
+                    <polyline points="8 4.5 8 8 10.5 9.5" />
+                  </motion.svg>
+                ) : m.error ? (
+                  /* Error: red warning icon with retry */
+                  <button
+                    type="button"
+                    onClick={() => m.id && onRetryMessage?.(m.id)}
+                    className="flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[10px] text-red-300/80 transition-colors hover:bg-red-400/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-300/50"
+                    title={t("chat.retry")}
+                  >
+                    <svg className="h-3 w-3 text-red-400/70" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="8" cy="8" r="6.5" />
+                      <line x1="8" y1="5" x2="8" y2="8.5" />
+                      <circle cx="8" cy="10.5" r="0.5" fill="currentColor" />
+                    </svg>
+                    {t("chat.retry")}
+                  </button>
+                ) : isStreaming && i === messages.length - 2 ? (
+                  /* Streaming: single check — sent, AI is responding */
+                  <svg className="h-3 w-3 text-white/30" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="2 8 6 12 14 4" />
+                  </svg>
+                ) : i < messages.length - 1 ? (
+                  /* Double-check: message was read (AI responded) */
+                  <motion.svg
+                    className="h-3 w-3 text-cyan-400/60"
+                    viewBox="0 0 20 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <polyline points="1 8 5 12 11 4" />
+                    <polyline points="7 8 11 12 17 4" />
+                  </motion.svg>
+                ) : (
+                  /* Single-check: sent and confirmed */
+                  <svg className="h-3 w-3 text-white/30" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="2 8 6 12 14 4" />
+                  </svg>
+                )}
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -288,6 +359,22 @@ export function MessageList({
         </motion.div>
         );
       })}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isStreaming && (
+          <motion.div
+            className="px-2 pb-2"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3 }}
+          >
+            <TypingIndicator
+              accentColor={accentColor}
+              creatureName={creatureName}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
       <div ref={bottomRef} />
     </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -33,7 +34,7 @@ export async function GET() {
 
     return NextResponse.json({ messages });
   } catch (error) {
-    console.error("GET /api/chat/history error", error);
+    logger.error("GET /api/chat/history error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

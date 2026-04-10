@@ -9,6 +9,7 @@ import {
 } from "@/lib/billing/stripe";
 import { upsertSubscriptionFromStripe } from "@/lib/billing/service";
 import type Stripe from "stripe";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     event = stripe.webhooks.constructEvent(body, signature, getStripeWebhookSecret());
   } catch (err) {
-    console.error("Stripe webhook signature verification failed:", err);
+    logger.error("Stripe webhook signature verification failed", err instanceof Error ? err : { error: err });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
         break;
     }
   } catch (err) {
-    console.error("Stripe webhook processing error:", err);
+    logger.error("Stripe webhook processing error", err instanceof Error ? err : { error: err });
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 

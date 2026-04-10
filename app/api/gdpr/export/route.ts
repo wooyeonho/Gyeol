@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 /**
  * GDPR Article 20 — Right to Data Portability
@@ -74,7 +75,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("GDPR export error:", error);
+    logger.error("GDPR export error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Export failed" }, { status: 500 });
   }
 }

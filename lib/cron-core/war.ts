@@ -3,6 +3,7 @@
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { logger } from "@/lib/logger";
 
 export async function executeWar(): Promise<CronResult> {
   const lockKey = "cron:war";
@@ -28,12 +29,12 @@ export async function executeWar(): Promise<CronResult> {
         .update({ status: "resolved" })
         .eq("id", ev.id);
       if (!error) resolved++;
-      else console.error("war resolve", ev.id, error);
+      else logger.error("war resolve", { eventId: ev.id, error: error.message });
     }
 
     return { processed: resolved, resolved, timestamp: new Date().toISOString() };
   } catch (e) {
-    console.error("war cron", e);
+    logger.error("war cron", e instanceof Error ? e : { error: e });
     return { processed: 0, error: "War processing failed", timestamp: new Date().toISOString() };
   } finally {
     await releaseCronLock(lockKey);

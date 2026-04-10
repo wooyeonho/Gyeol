@@ -36,6 +36,13 @@ vi.mock("@/lib/supabase/service", () => ({
   })),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
 vi.mock("@/lib/billing/stripe", () => ({
   isStripeConfigured: vi.fn(() => true),
   getStripeAppUrl: vi.fn(() => "https://example.com"),
@@ -51,7 +58,11 @@ vi.mock("@/lib/billing/stripe", () => ({
 describe("/api/billing/portal contract", () => {
   it("returns portal url when stripe customer exists", async () => {
     const { POST } = await import("./route");
-    const res = await POST();
+    const req = new Request("http://localhost/api/billing/portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as never);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.portal_url).toBe("https://billing.test/session");

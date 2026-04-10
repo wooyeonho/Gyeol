@@ -11,6 +11,7 @@ import { planNextResearchStep } from "@/lib/goals/next-step-planner";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
+import { logger } from "@/lib/logger";
 
 type PendingResearchTask = {
   id: string;
@@ -166,7 +167,7 @@ async function fetchRssItems(url: string): Promise<{ title: string; link?: strin
     }
     return items.slice(0, 5);
   } catch (e) {
-    console.error("RSS fetch error", url, e);
+    logger.error("RSS fetch error", { url, error: e instanceof Error ? e.message : String(e) });
     return [];
   }
 }
@@ -179,7 +180,7 @@ async function summarizeLearnerItems(rawText: string, language: string): Promise
       { max_tokens: 300, temperature: 0.5 }
     );
   } catch (e) {
-    console.error("learner summary", e);
+    logger.error("learner summary", e instanceof Error ? e : { error: e });
     return rawText.slice(0, 500);
   }
 }
@@ -251,7 +252,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
         try {
           embedding = await generateEmbedding(content);
         } catch (e) {
-          console.error("learner embedding", e);
+          logger.error("learner embedding", e instanceof Error ? e : { error: e });
         }
         cachedContent = { content, embedding };
         contentCache.set(cacheKey, cachedContent);
@@ -372,7 +373,7 @@ async function runLearner(feedUrls: string[]): Promise<{ processed: number; item
       }
       stored++;
     } catch (e) {
-      console.error("learner memory insert", agentId, e);
+      logger.error("learner memory insert", { agentId, error: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -393,7 +394,7 @@ export async function executeLearner(body?: unknown): Promise<CronResult> {
     const result = await runLearner(feedUrls);
     return { ...result, timestamp: new Date().toISOString() };
   } catch (e) {
-    console.error("learner execute", e);
+    logger.error("learner execute", e instanceof Error ? e : { error: e });
     return { processed: 0, timestamp: new Date().toISOString(), error: "Learner failed" };
   } finally {
     await releaseCronLock(lockKey);

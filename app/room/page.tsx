@@ -11,6 +11,7 @@ import { PageSkeleton } from "@/components/discover/skeleton";
 import { BottomNav } from "@/components/bottom-nav";
 
 const RoomScene = dynamic(() => import("@/components/room-scene"), { ssr: false });
+const RoomEditor = dynamic(() => import("@/components/room-editor").then(m => ({ default: m.RoomEditor })), { ssr: false });
 
 export default function RoomPage() {
   const { locale, t } = useTranslations();
@@ -73,6 +74,10 @@ export default function RoomPage() {
           />
         )}
       </div>
+      <section className="p-4 border-t border-white/10">
+        <h2 className="text-sm font-medium text-white/70 mb-3">{t("roomPage.customize") || "방 꾸미기"}</h2>
+        <RoomEditor locale={locale} />
+      </section>
       <section className="p-4 border-t border-white/10">
         <h2 className="text-sm font-medium text-white/70 mb-2">{t("roomPage.viewInAr")}</h2>
         <ARViewer color={arColor} onPositionSave={saveARPosition} />

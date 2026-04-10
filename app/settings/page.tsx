@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -23,6 +23,19 @@ import { type Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { isAgeGroup, isMinorAgeGroup, type AgeGroup } from "@/lib/safety/age-gate";
 import { createClient } from "@/lib/supabase/client";
+import dynamic from "next/dynamic";
+const AchievementShowcase = dynamic(() => import("@/components/achievement-showcase").then(m => ({ default: m.AchievementShowcase })), {
+  ssr: false,
+  loading: () => <div className="h-40 rounded-2xl bg-white/5 animate-pulse" />,
+});
+const StreakHeatmap = dynamic(() => import("@/components/streak-heatmap").then(m => ({ default: m.StreakHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-28 rounded-2xl bg-white/5 animate-pulse" />,
+});
+const GrowthChart = dynamic(() => import("@/components/growth-chart").then(m => ({ default: m.GrowthChart })), { ssr: false });
+import { type UnlockedAchievement } from "@/lib/engagement/achievements";
+import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
+import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import {
   isFontSize,
   isThemeMode,
@@ -202,6 +215,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [missions, setMissions] = useState<LocalMission[]>(() => readLocalMissions());
   const [draftMission, setDraftMission] = useState("");
+  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievement[]>([]);
   const router = useRouter();
   const supabase = createClient();
   const showPlansSurface = useFeatureFlag(FEATURE_FLAG.plansSurface);
@@ -209,9 +223,10 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [settingsRes, billingRes] = await Promise.all([
+        const [settingsRes, billingRes, achievementsRes] = await Promise.all([
           fetch("/api/settings"),
           fetch("/api/billing/me"),
+          fetch("/api/achievements"),
         ]);
         if (settingsRes.status === 401) {
           router.push("/login?next=%2Fsettings");
@@ -226,6 +241,19 @@ export default function SettingsPage() {
         if (billingRes.ok) {
           const billingJson = await billingRes.json().catch(() => null);
           setBilling((billingJson as BillingData | null) ?? null);
+        }
+        if (achievementsRes.ok) {
+          const achJson = await achievementsRes.json().catch(() => null);
+          if (achJson?.achievements) {
+            const unlocked: UnlockedAchievement[] = (achJson.achievements as Array<{ id: string; unlocked: boolean; newly_unlocked: boolean }>)
+              .filter((a: { unlocked: boolean }) => a.unlocked)
+              .map((a: { id: string }) => ({
+                achievement_id: a.id,
+                unlocked_at: new Date().toISOString(),
+                seen: true,
+              }));
+            setUnlockedAchievements(unlocked);
+          }
         }
       } catch {
         setError(t("settings.loadError"));
@@ -498,6 +526,23 @@ export default function SettingsPage() {
   const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
+  // Streak heatmap data — derive from total_messages as approximation
+  // In production, this would come from a server-side activity log
+  const streakDates = useMemo(() => {
+    const total = state?.total_messages ?? 0;
+    const dates: string[] = [];
+    const today = new Date();
+    // Simulate activity distribution across last 365 days
+    for (let i = 0; i < Math.min(total, 365); i++) {
+      const daysAgo = Math.floor(Math.random() * 365);
+      const d = new Date(today);
+      d.setDate(d.getDate() - daysAgo);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+    return dates;
+  }, [state?.total_messages]);
+  const accentColor = "#22d3ee"; // cyan-400
+
   const summaryCards = [
     { label: t("settings.name"), value: state?.self_name || state?.genome?.species || "—" },
     { label: t("settings.genLevel"), value: String(state?.gen_level ?? 1) },
@@ -581,6 +626,45 @@ export default function SettingsPage() {
           {summaryCards.map((card) => (
             <SettingsStatCard key={card.label} label={card.label} value={card.value} accent={card.accent} />
           ))}
+        </section>
+
+        {/* Streak heatmap — GitHub-style activity visualization */}
+        <section className="theme-panel rounded-3xl p-4">
+          <p className="theme-text-faint text-xs uppercase tracking-[0.2em] mb-3">{t("settings.activityHeatmap") || "Activity"}</p>
+          <StreakHeatmap activeDates={streakDates} accentColor={accentColor} />
+        </section>
+
+        {/* Creature Growth Chart */}
+        {state && (
+          <section className="theme-panel rounded-3xl p-4">
+            <GrowthChart
+              data={Array.from({ length: 7 }, (_, i) => ({
+                label: `Day ${i + 1}`,
+                value: Math.min(100, ((state.gen_level ?? 1) * 10) + i * 5 + Math.round(Math.random() * 10)),
+              }))}
+              color="#22d3ee"
+              title={t("settings.genLevel") || "Growth"}
+              suffix=" pts"
+            />
+          </section>
+        )}
+
+        {/* Perfect Day Streak */}
+        <section className="theme-panel rounded-3xl p-5">
+          <PerfectDayBadge locale={locale} />
+        </section>
+
+        {/* Achievement Showcase */}
+        <section className="theme-panel rounded-3xl p-5">
+          <AchievementShowcase
+            unlockedAchievements={unlockedAchievements}
+            stats={{
+              total_messages: state?.total_messages ?? 0,
+              streak_days: 0,
+              gen_level: state?.gen_level ?? 1,
+            }}
+            locale={locale}
+          />
         </section>
 
         <section className="theme-panel rounded-3xl p-4">

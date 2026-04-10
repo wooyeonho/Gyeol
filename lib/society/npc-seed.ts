@@ -3,6 +3,7 @@
 // and make the world feel alive for users with only 1 agent.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 const NPC_SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -86,7 +87,7 @@ export async function ensureNpcAgents(): Promise<{ created: number; existing: nu
       .single();
 
     if (agentError || !agent) {
-      console.error(`[NPC] Failed to create agent for ${template.self_name}:`, agentError?.message);
+      logger.error(`[NPC] Failed to create agent for ${template.self_name}`, { error: agentError?.message });
       continue;
     }
 

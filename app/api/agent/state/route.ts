@@ -7,6 +7,9 @@ import { getDemoAgentState } from "@/lib/demo/runtime";
 import { generateInitialDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getLatestSubscription } from "@/lib/billing/service";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/agent/state" });
 
 export async function GET() {
   try {
@@ -30,7 +33,7 @@ export async function GET() {
       const genome = { dna: initialDNA, species: initialSpecies.name, archetype: initialSpecies.archetype, element: initialSpecies.element };
       await service.from("agent_state").update({ genome }).eq("agent_id", agentId);
       stateRow.genome = genome;
-      console.warn(`[AgentState] Backfilled genome for agent ${agentId}`);
+      log.warn(`[AgentState] Backfilled genome for agent ${agentId}`);
     }
 
     // Include billing plan tier so the reward system can apply plan multipliers
@@ -46,7 +49,7 @@ export async function GET() {
 
     return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple, planTier });
   } catch (e) {
-    console.error("GET /api/agent/state error", e);
+    log.error("GET /api/agent/state error", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return NextResponse.json(
         {

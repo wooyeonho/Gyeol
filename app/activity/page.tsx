@@ -8,7 +8,12 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
-import { GrowthTimeline } from "@/components/growth-timeline";
+import dynamic from "next/dynamic";
+
+const GrowthTimeline = dynamic(() => import("@/components/growth-timeline").then((m) => ({ default: m.GrowthTimeline })), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-40 rounded-lg bg-white/5" />,
+});
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { ErrorBanner } from "@/components/discover/error-banner";
 import { PageShell, itemVariants } from "@/components/discover/page-shell";

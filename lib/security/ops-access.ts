@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 type UserLike = {
   id?: string | null;
@@ -72,6 +73,6 @@ export async function logOpsAudit(opts: {
       ip_address: opts.ipAddress ?? null,
     });
   } catch (e) {
-    console.error("[OpsAudit] Failed to write audit log:", e);
+    logger.error("[OpsAudit] Failed to write audit log", e instanceof Error ? e : { error: e });
   }
 }

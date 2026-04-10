@@ -7,8 +7,15 @@ import { getPrimaryAgent } from "@/lib/agents/primary";
 import { breedCreatures } from "@/lib/genome/dna";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { logger } from "@/lib/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+
+const log = logger.child({ route: "api/breeding" });
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -136,7 +143,7 @@ export async function POST(req: NextRequest) {
       mutated_axes: mutatedAxes,
     });
   } catch (e) {
-    console.error("breeding POST", e);
+    log.error("breeding POST", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

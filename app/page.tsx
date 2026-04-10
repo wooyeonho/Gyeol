@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
 import { useTranslations } from "@/components/i18n-provider";
-import Soundscape from "@/components/soundscape";
+const Soundscape = dynamic(() => import("@/components/soundscape"), { ssr: false, loading: () => null });
 import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
@@ -19,15 +20,28 @@ import { haptic } from "@/lib/micro-interactions";
 import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
-import { Onboarding } from "@/components/onboarding";
-import { DeathScreen } from "@/components/death-screen";
+const Onboarding = dynamic(() => import("@/components/onboarding").then((m) => ({ default: m.Onboarding })), {
+  ssr: false,
+  loading: () => <div className="h-full" />,
+});
+const DeathScreen = dynamic(() => import("@/components/death-screen").then((m) => ({ default: m.DeathScreen })), {
+  ssr: false,
+  loading: () => null,
+});
 const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), {
   ssr: false,
   loading: () => null,
 });
 import { CreatureStatusIndicator } from "@/components/creature-status";
+import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
+import { PerfectDayBadge } from "@/components/perfect-day-badge";
+import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
+import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
+import { mainTutorialSteps } from "@/components/tutorial-steps";
+import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
+import { QuickCareButtons } from "@/components/quick-care-buttons";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -42,19 +56,24 @@ const EvolutionCeremony = dynamic(() => import("@/components/evolution-ceremony"
   ssr: false,
   loading: () => null,
 });
-import { WorldClassHub } from "@/components/world-class-hub";
+const WorldClassHub = dynamic(() => import("@/components/world-class-hub").then((m) => ({ default: m.WorldClassHub })), {
+  ssr: false,
+  loading: () => null,
+});
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
-import Celebration from "@/components/celebration";
+const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
-import { MysteryBoxOverlay } from "@/components/mystery-box-overlay";
+const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
+const EnergyBar = dynamic(() => import("@/components/energy-bar").then((m) => ({ default: m.EnergyBar })), { ssr: false, loading: () => null });
 
 export default function Home() {
   const { locale, t } = useTranslations();
+  const showTutorial = useShouldShowTutorial();
   const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
@@ -511,6 +530,7 @@ export default function Home() {
 
       {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
       <div
+        data-tutorial="creature"
         className="relative flex-shrink-0 overflow-hidden"
         style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
@@ -602,11 +622,13 @@ export default function Home() {
                 boxShadow: `0 0 48px color-mix(in srgb, ${appearance.palette.primary} 40%, transparent), 0 20px 60px rgba(0,0,0,0.5)`,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={portraitUrl}
                 alt="Creature portrait"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
+                priority
               />
               {/* Soft inner ring for polish */}
               <div className="absolute inset-0 rounded-[28%] ring-1 ring-inset ring-white/10 pointer-events-none" />
@@ -647,7 +669,7 @@ export default function Home() {
               {agentState.genome.species}
             </p>
           )}
-          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50">
+          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50" aria-live="polite">
             <span>Gen {agentState?.gen_level ?? 1}</span>
             {agentState?.genome?.species && (
               <>
@@ -674,9 +696,41 @@ export default function Home() {
                 />
               </>
             )}
+            <PerfectDayBadge locale={locale} compact />
           </div>
+          {/* BG3-style heart gauge — shows creature-user bond level */}
+          <div className="flex justify-center mt-1">
+            <AffinityHeartGauge score={agentState?.intimacy_score ?? 0} compact />
+          </div>
+          {/* Pokemon-style type badge */}
+          {creatureDna && (
+            <div className="flex justify-center mt-1">
+              <TypeAdvantageBadge dna={creatureDna} locale={locale} compact />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
+      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
+        <QuickCareButtons
+          vitality={vitality}
+          onCareComplete={() => fetchAgentState({ silent: true })}
+        />
+        {/* Energy Bar — shows action energy with regen timer */}
+        <div className="mt-2">
+          <EnergyBar locale={locale} />
+        </div>
+      </div>
+
+      {/* ===== DYNAMIC ISLAND — always-visible creature mini status ===== */}
+      <CreatureMiniStatus
+        selfName={agentState?.self_name ?? "GYEOL"}
+        mood={agentState?.mood ?? null}
+        vitality={vitality}
+        activity={creature.state.activity}
+        primaryColor={appearance.palette.primary}
+      />
 
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">
@@ -746,6 +800,13 @@ export default function Home() {
         />
       )}
       <BottomNav />
+      {showTutorial && (
+        <TutorialOverlay
+          steps={mainTutorialSteps}
+          onComplete={() => {}}
+          storageKey="gyeol_tutorial_done"
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,13 @@ vi.mock("@/lib/supabase/service", () => ({
 vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn(),
 }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
 
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -40,7 +47,7 @@ describe("/api/social/follow contract", () => {
     const request = new Request("http://localhost/api/social/follow", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target_agent_id: "agent-other" }),
+      body: JSON.stringify({ target_agent_id: "00000000-0000-4000-8000-000000000002" }),
     });
     const response = await POST(request as never);
     expect(response.status).toBe(200);
@@ -68,7 +75,7 @@ describe("/api/social/follow contract", () => {
     const request = new Request("http://localhost/api/social/follow", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target_agent_id: "agent-other" }),
+      body: JSON.stringify({ target_agent_id: "00000000-0000-4000-8000-000000000002" }),
     });
     const response = await DELETE(request as never);
     expect(response.status).toBe(200);

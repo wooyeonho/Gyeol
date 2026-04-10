@@ -3,6 +3,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { checkCronAuth } from "@/lib/cron-auth";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { logRouteError } from "@/lib/ops/logger";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/events/war" });
 
 export async function GET() {
   try {
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
         .update({ status: "resolved" })
         .eq("id", ev.id);
       if (!error) resolved++;
-      else console.error("war resolve", ev.id, error);
+      else log.error("war resolve", error instanceof Error ? error : { detail: String(error), eventId: ev.id });
     }
 
     return NextResponse.json({ processed: resolved, resolved });

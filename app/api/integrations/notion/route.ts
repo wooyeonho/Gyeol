@@ -2,11 +2,19 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { parseBody, integrationTokenBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
+const log = logger.child({ route: "api/integrations/notion" });
+
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -19,10 +27,11 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimit(`integration-notion-post:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await request.json().catch(() => ({}));
-    const accessToken = typeof body?.access_token === "string" ? body.access_token : null;
-    if (!accessToken) return NextResponse.json({ error: "access_token required" }, { status: 400 });
-    const encrypted = encryptSecret(accessToken);
+    const parsed = await parseBody(request, integrationTokenBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const encrypted = encryptSecret(parsed.data.access_token);
     if (!encrypted) {
       return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
     }
@@ -38,7 +47,7 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("integrations/notion POST", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -117,7 +126,7 @@ export async function GET() {
 
     return NextResponse.json({ synced });
   } catch (e) {
-    console.error("integrations/notion GET", e);
+    log.error("GET failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

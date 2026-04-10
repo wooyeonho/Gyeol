@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 
 type Portrait = {
   id: string;
@@ -202,12 +204,13 @@ export function PortraitGallery() {
                 onClick={() => setSelectedId(p.id)}
                 className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/40 transition-all hover:border-white/20 hover:ring-2 hover:ring-white/10"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={p.imageUrl}
                   alt={p.title}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  loading="lazy"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                  unoptimized
+                  sizes="(max-width: 640px) 50vw, 33vw"
                 />
                 {/* Overlay info */}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2.5">
@@ -233,6 +236,7 @@ export function PortraitGallery() {
       {/* Full-screen portrait viewer */}
       <AnimatePresence>
         {selected && (
+          <FocusTrap active onEscape={() => setSelectedId(null)}>
           <motion.div
             key="viewer"
             initial={{ opacity: 0 }}
@@ -249,11 +253,13 @@ export function PortraitGallery() {
               className="relative max-h-[85vh] max-w-lg overflow-hidden rounded-3xl border border-white/15 bg-black/70"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={selected.imageUrl}
                 alt={selected.title}
+                width={512}
+                height={512}
                 className="w-full"
+                unoptimized
               />
               <div className="p-4 space-y-2">
                 <div className="flex items-center gap-2">
@@ -282,6 +288,7 @@ export function PortraitGallery() {
               </button>
             </motion.div>
           </motion.div>
+          </FocusTrap>
         )}
       </AnimatePresence>
     </div>

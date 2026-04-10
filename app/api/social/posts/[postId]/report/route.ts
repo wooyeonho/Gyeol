@@ -4,6 +4,11 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialReportBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 const REPORT_THRESHOLD_FOR_PENDING = 3;
 
@@ -11,20 +16,33 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ postId: string }> },
 ) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const allowed = await checkRateLimit(`social-report:${user.id}`);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const reason = typeof body?.reason === "string" ? sanitizeUserInput(body.reason).slice(0, 80) : "";
-    const detail = typeof body?.detail === "string" ? sanitizeUserInput(body.detail).slice(0, 280) : "";
-    if (!postId || !reason) {
-      return NextResponse.json({ error: "Report reason required" }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
     }
+    const parsed = await parseBody(req, socialReportBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const fenceCheck = checkElectricFence(`${parsed.data.reason} ${parsed.data.detail}`);
+    if (fenceCheck.blocked) {
+      return NextResponse.json({ error: "Blocked content detected" }, { status: 400 });
+    }
+    const reason = sanitizeUserInput(parsed.data.reason);
+    const detail = sanitizeUserInput(parsed.data.detail);
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -68,7 +86,7 @@ export async function POST(
       moderation_status: reportCount >= REPORT_THRESHOLD_FOR_PENDING ? "pending" : "approved",
     });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/report error", error);
+    logger.error("POST /api/social/posts/[postId]/report error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

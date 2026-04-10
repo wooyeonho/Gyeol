@@ -8,6 +8,7 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { readSseAssistantText } from "@/lib/ai/sse-parser";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { getCircadianProfile } from "@/lib/autonomy/circadian";
+import { logger } from "@/lib/logger";
 import {
   buildAutonomyCue,
   capText,
@@ -76,9 +77,9 @@ async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "cr
       const { executeCrawl } = await import("@/lib/cron-core/crawl");
       await executeCrawl();
     }
-    console.warn(`[Heartbeat] immediate ${action} trigger succeeded (direct)`);
+    logger.warn(`[Heartbeat] immediate ${action} trigger succeeded (direct)`);
   } catch (error) {
-    console.error(`[Heartbeat] immediate ${action} trigger failed`, error);
+    logger.error(`[Heartbeat] immediate ${action} trigger failed`, error instanceof Error ? error : { error });
   }
 }
 
@@ -137,7 +138,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
     for (const agent of agents) {
       if (Date.now() - startedAt > HEARTBEAT_DEADLINE_MS) {
         skippedDeadline = agents.length - agents.indexOf(agent);
-        console.warn(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
+        logger.warn(`[Heartbeat] deadline reached after ${processed} agents, skipping ${skippedDeadline} remaining`);
         break;
       }
       try {
@@ -495,7 +496,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
         }
 
         processed++;
-      } catch (e) { console.error(`[Heartbeat] ${agent.id}:`, e); }
+      } catch (e) { logger.error(`[Heartbeat] ${agent.id}`, e instanceof Error ? e : { error: e }); }
     }
 
     return {

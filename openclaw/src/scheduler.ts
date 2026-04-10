@@ -11,6 +11,7 @@
  */
 
 import { EngineConfig } from "./config";
+import { logger } from "../../lib/logger";
 
 import {
   executeHeartbeat,
@@ -53,8 +54,8 @@ function ts(): string {
  * environments where OpenClaw gateway is not available.
  */
 export function startScheduler(_config: EngineConfig): void {
-  console.log(`[${ts()}] [DEPRECATED] Legacy scheduler called — use OpenClaw gateway instead`);
-  console.log(`[${ts()}] Starting fallback scheduler with setInterval...`);
+  logger.info(`[${ts()}] [DEPRECATED] Legacy scheduler called — use OpenClaw gateway instead`);
+  logger.info(`[${ts()}] Starting fallback scheduler with setInterval...`);
 
   // Fallback: use simple setInterval scheduling
   const schedules: Array<{ name: string; intervalMs: number; execute: () => Promise<unknown> }> = [
@@ -69,30 +70,30 @@ export function startScheduler(_config: EngineConfig): void {
 
   for (const sched of schedules) {
     setInterval(async () => {
-      console.log(`[${ts()}] -> Running ${sched.name} (fallback)`);
+      logger.info(`[${ts()}] -> Running ${sched.name} (fallback)`);
       try {
         const result = await sched.execute();
-        console.log(`[${ts()}] OK ${sched.name}: ${JSON.stringify(result).slice(0, 200)}`);
+        logger.info(`[${ts()}] OK ${sched.name}: ${JSON.stringify(result).slice(0, 200)}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[${ts()}] FAIL ${sched.name}: ${msg}`);
+        logger.error(`[${ts()}] FAIL ${sched.name}: ${msg}`);
       }
     }, sched.intervalMs);
-    console.log(`  ${sched.name.padEnd(16)} every ${sched.intervalMs / 60000}m (fallback)`);
+    logger.info(`  ${sched.name.padEnd(16)} every ${sched.intervalMs / 60000}m (fallback)`);
   }
 
   // Startup catch-up
   setTimeout(async () => {
-    console.log(`[${ts()}] Running startup catch-up`);
+    logger.info(`[${ts()}] Running startup catch-up`);
     for (const name of ["health", "heartbeat"]) {
       const job = JOBS[name];
       if (job) {
         try {
           const result = await job();
-          console.log(`[${ts()}] OK startup ${name}: ${JSON.stringify(result).slice(0, 200)}`);
+          logger.info(`[${ts()}] OK startup ${name}: ${JSON.stringify(result).slice(0, 200)}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          console.error(`[${ts()}] FAIL startup ${name}: ${msg}`);
+          logger.error(`[${ts()}] FAIL startup ${name}: ${msg}`);
         }
       }
     }
@@ -106,18 +107,18 @@ export async function runOnce(_config: EngineConfig, jobName?: string): Promise<
   const targets = jobName ? { [jobName]: JOBS[jobName] } : JOBS;
 
   if (jobName && !JOBS[jobName]) {
-    console.error(`Unknown job: ${jobName}. Available: ${Object.keys(JOBS).join(", ")}`);
+    logger.error(`Unknown job: ${jobName}. Available: ${Object.keys(JOBS).join(", ")}`);
     return;
   }
 
   for (const [name, execute] of Object.entries(targets)) {
-    console.log(`[${ts()}] Running ${name} once...`);
+    logger.info(`[${ts()}] Running ${name} once...`);
     try {
       const result = await execute();
-      console.log(`[${ts()}] OK ${name}: ${JSON.stringify(result).slice(0, 200)}`);
+      logger.info(`[${ts()}] OK ${name}: ${JSON.stringify(result).slice(0, 200)}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[${ts()}] FAIL ${name}: ${msg}`);
+      logger.error(`[${ts()}] FAIL ${name}: ${msg}`);
     }
   }
 }

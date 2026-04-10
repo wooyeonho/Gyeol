@@ -3,6 +3,7 @@
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { logger } from "@/lib/logger";
 
 const DEFAULT_RETENTION_DAYS = 90;
 
@@ -40,7 +41,7 @@ export async function executeRetention(): Promise<CronResult> {
 
     const { error: deleteError } = await service.from("product_events").delete().in("id", ids);
     if (deleteError) {
-      console.error("[Retention] delete failed", deleteError.message);
+      logger.error("[Retention] delete failed", { error: deleteError.message });
       return {
         processed: 0,
         error: "Delete failed",

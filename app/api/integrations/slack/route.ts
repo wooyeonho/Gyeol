@@ -1,11 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
 import { decodeStoredSecret, encryptSecret } from "@/lib/security/secret-crypto";
 import { getResolvedBillingState } from "@/lib/billing/service";
+import { slackMessageBodySchema, integrationTokenBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const slackPostBodySchema = z.union([
+  slackMessageBodySchema,
+  integrationTokenBodySchema,
+]);
+
+const log = logger.child({ route: "api/integrations/slack" });
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -18,10 +33,25 @@ export async function POST(request: NextRequest) {
     const allowed = await checkRateLimit(`integration-slack-post:${user.id}`);
     if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-    const body = await request.json().catch(() => ({}));
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const parsed = slackPostBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    const body = parsed.data;
 
     // If message is provided, send to Slack channel
-    if (typeof body?.message === "string" && body.message.trim()) {
+    if ("message" in body) {
+      const fence = checkElectricFence(body.message);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
+      }
       const { data: conn } = await service
         .from("user_connections")
         .select("id, token_encrypted, metadata")
@@ -57,9 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Otherwise, save token
-    const accessToken = typeof body?.access_token === "string" ? body.access_token : null;
-    if (!accessToken) return NextResponse.json({ error: "access_token required" }, { status: 400 });
-    const encrypted = encryptSecret(accessToken);
+    const encrypted = encryptSecret(body.access_token);
     if (!encrypted) {
       return NextResponse.json({ error: "Service not configured: CONNECTION_TOKEN_KEY" }, { status: 503 });
     }
@@ -68,13 +96,13 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         service: "slack",
         token_encrypted: encrypted,
-        metadata: body?.channel_id ? { channel_id: body.channel_id } : {},
+        metadata: body.channel_id ? { channel_id: body.channel_id } : {},
       },
       { onConflict: "user_id,service" }
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("integrations/slack POST", e);
+    log.error("POST failed", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

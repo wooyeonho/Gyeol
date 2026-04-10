@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
+import { FocusTrap } from "@/components/focus-trap";
 
 interface DeathScreenProps {
   selfName?: string | null;
@@ -34,6 +35,7 @@ export function DeathScreen({ selfName, will, diedAt, onRebirth }: DeathScreenPr
   }, [showWill, will]);
 
   return (
+    <FocusTrap active onEscape={onRebirth}>
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black px-6 text-center overflow-hidden">
       {/* Ambient particles — dim and sparse */}
       {Array.from({ length: 8 }).map((_, i) => (
@@ -137,5 +139,6 @@ export function DeathScreen({ selfName, will, diedAt, onRebirth }: DeathScreenPr
         )}
       </motion.div>
     </div>
+    </FocusTrap>
   );
 }

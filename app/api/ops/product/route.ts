@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isOpsAdminUserAsync, logOpsAudit } from "@/lib/security/ops-access";
+import { logger } from "@/lib/logger";
 
 type ProductEventRow = {
   created_at?: string | null;
@@ -130,7 +131,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("GET /api/ops/product error", error);
+    logger.error("GET /api/ops/product error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

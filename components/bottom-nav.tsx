@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -8,6 +8,12 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { haptic } from "@/lib/micro-interactions";
+import dynamic from "next/dynamic";
+import { NotificationBellButton } from "@/components/notification-center";
+const NotificationCenter = dynamic(() => import("@/components/notification-center").then(m => ({ default: m.NotificationCenter })), {
+  ssr: false,
+  loading: () => null,
+});
 
 function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
   const common = "h-4 w-4";
@@ -38,9 +44,9 @@ function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.chat", icon: "chat" as const },
-  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const },
+  { path: "/", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
+  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
+  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const, tutorialId: "nav-settings" },
 ];
 
 const DISCOVER_PATHS = new Set([
@@ -89,53 +95,65 @@ export function BottomNav() {
     locale
   );
 
+  const [notifOpen, setNotifOpen] = useState(false);
+
   const activeIndex = useMemo(() => {
     return TABS.findIndex((tab) => isTabActive(pathname, tab.path));
   }, [pathname]);
 
   return (
-    <nav
-      className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
-      style={{ borderColor: `${appearance.palette.primary}25` }}
-      aria-label="Bottom navigation"
-    >
-      <div className="relative mx-auto flex max-w-md justify-around px-3 py-2">
-        {/* Animated active pill indicator */}
-        {activeIndex >= 0 && (
-          <motion.div
-            className="absolute top-2 h-[calc(100%-1rem)] rounded-2xl"
-            style={{
-              background: `${appearance.palette.primary}15`,
-              boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset, 0 0 20px ${appearance.palette.primary}08`,
-              width: `${100 / TABS.length}%`,
-            }}
-            animate={{ left: `${(activeIndex / TABS.length) * 100}%` }}
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          />
-        )}
-        {TABS.map((tab) => {
-          const isActive = isTabActive(pathname, tab.path);
-          return (
-            <Link
-              key={tab.path}
-              href={tab.path}
-              onClick={() => haptic("tap")}
-              aria-label={t(tab.labelKey)}
-              className="relative z-10 flex min-h-14 min-w-[96px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              style={{ color: isActive ? "var(--foreground)" : "var(--theme-text-subtle)" }}
-            >
-              <motion.span
-                aria-hidden="true"
-                animate={{ scale: isActive ? 1.1 : 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+    <>
+      <nav
+        className="theme-nav fixed bottom-0 left-0 right-0 z-20 border-t backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
+        style={{ borderColor: `${appearance.palette.primary}25` }}
+        aria-label="Bottom navigation"
+      >
+        <div className="relative mx-auto flex max-w-md items-center justify-around px-3 py-2">
+          {/* Animated active pill indicator */}
+          {activeIndex >= 0 && (
+            <motion.div
+              className="absolute top-2 h-[calc(100%-1rem)] rounded-2xl"
+              style={{
+                background: `${appearance.palette.primary}15`,
+                boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset, 0 0 20px ${appearance.palette.primary}08`,
+                /* Account for bell icon: tabs take proportional space */
+                width: `calc((100% - 56px) / ${TABS.length})`,
+              }}
+              animate={{
+                left: `calc(${(activeIndex / TABS.length) * 100}% * (1 - 56px / 100%))`,
+              }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+          {TABS.map((tab) => {
+            const isActive = isTabActive(pathname, tab.path);
+            return (
+              <Link
+                key={tab.path}
+                href={tab.path}
+                data-tutorial={tab.tutorialId}
+                onClick={() => haptic("tap")}
+                aria-label={t(tab.labelKey)}
+                className="relative z-10 flex min-h-14 min-w-[80px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                style={{ color: isActive ? "var(--foreground)" : "var(--theme-text-subtle)" }}
               >
-                <NavIcon name={tab.icon} />
-              </motion.span>
-              <span className={`text-xs font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-60"}`}>{t(tab.labelKey)}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+                <motion.span
+                  aria-hidden="true"
+                  animate={{ scale: isActive ? 1.1 : 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                >
+                  <NavIcon name={tab.icon} />
+                </motion.span>
+                <span className={`text-xs font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-60"}`}>{t(tab.labelKey)}</span>
+              </Link>
+            );
+          })}
+          {/* Notification bell */}
+          <NotificationBellButton onClick={() => setNotifOpen(true)} />
+        </div>
+      </nav>
+      {/* Notification center panel */}
+      <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
+    </>
   );
 }

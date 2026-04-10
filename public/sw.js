@@ -51,12 +51,56 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+/* ── IndexedDB helpers for offline action queue ── */
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("gyeol-offline", 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("pending-actions")) {
+        db.createObjectStore("pending-actions", { keyPath: "id", autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getPendingActions() {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pending-actions", "readonly");
+    const store = tx.objectStore("pending-actions");
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function clearPendingAction(id) {
+  const db = await openOfflineDB();
+  const tx = db.transaction("pending-actions", "readwrite");
+  tx.objectStore("pending-actions").delete(id);
+}
+
 /* ── Background sync for offline actions ── */
 self.addEventListener("sync", (event) => {
   if (event.tag === "sync-pending-actions") {
     event.waitUntil(
-      // Replay queued actions from IndexedDB when back online
-      Promise.resolve()
+      getPendingActions().then(async (actions) => {
+        for (const action of actions) {
+          try {
+            const res = await fetch(action.url, {
+              method: action.method || "POST",
+              headers: { "Content-Type": "application/json" },
+              body: action.body ? JSON.stringify(action.body) : undefined,
+            });
+            if (res.ok) await clearPendingAction(action.id);
+          } catch {
+            // Will retry on next sync
+          }
+        }
+      })
     );
   }
 });

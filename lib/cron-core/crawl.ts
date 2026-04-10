@@ -17,6 +17,7 @@ import { getSeedUrlsForTask } from "@/lib/goals/source-routing";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { logWarn } from "@/lib/ops/logger";
+import { logger } from "@/lib/logger";
 
 type PendingResearchTask = {
   id: string;
@@ -271,7 +272,7 @@ async function processPages(pages: CrawledPage[], fallbackUrls: string[]): Promi
       }
       stored++;
     } catch (err) {
-      console.error("[Crawl] memory insert", agentId, err);
+      logger.error("[Crawl] memory insert", { agentId, error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -301,7 +302,7 @@ export async function executeCrawl(): Promise<CronResult> {
         const pages = await crawlSite(seedUrl, maxPages, depth);
         allPages.push(...pages);
       } catch (err) {
-        console.error("[Crawl] site error", seedUrl, err);
+        logger.error("[Crawl] site error", { seedUrl, error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -315,7 +316,7 @@ export async function executeCrawl(): Promise<CronResult> {
       timestamp: new Date().toISOString(),
     };
   } catch (err) {
-    console.error("[Crawl] execute error", err);
+    logger.error("[Crawl] execute error", err instanceof Error ? err : { error: err });
     return { processed: 0, timestamp: new Date().toISOString(), error: "Crawl failed" };
   } finally {
     await releaseCronLock(lockKey);
@@ -375,7 +376,7 @@ export async function executeCrawlWithBody(body: {
       timestamp: new Date().toISOString(),
     };
   } catch (err) {
-    console.error("[Crawl] POST execute error", err);
+    logger.error("[Crawl] POST execute error", err instanceof Error ? err : { error: err });
     return { processed: 0, timestamp: new Date().toISOString(), error: "Crawl processing failed" };
   } finally {
     await releaseCronLock(lockKey);

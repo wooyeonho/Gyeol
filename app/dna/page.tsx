@@ -8,8 +8,21 @@ import { useTranslations } from "@/components/i18n-provider";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
-import { PortraitGallery } from "@/components/portrait-gallery";
 import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
+import dynamic from "next/dynamic";
+
+const PortraitGallery = dynamic(() => import("@/components/portrait-gallery").then((m) => ({ default: m.PortraitGallery })), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-48 rounded-lg bg-white/5" />,
+});
+
+const CreatureStatsCard = dynamic(() => import("@/components/creature-stats-card").then(m => m.CreatureStatsCard), { ssr: false });
+const StatCard = dynamic(() => import("@/components/stat-card").then(m => ({ default: m.StatCard })), { ssr: false });
+const AccessoryEquipPanel = dynamic(() => import("@/components/accessory-equip-panel").then(m => ({ default: m.AccessoryEquipPanel })), { ssr: false });
+const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(m => m.SkillTreeView), { ssr: false });
+const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
+const TeamManager = dynamic(() => import("@/components/team-manager").then(m => m.TeamManager), { ssr: false });
+const ItemCompareCard = dynamic(() => import("@/components/item-compare-card").then(m => ({ default: m.ItemCompareCard })), { ssr: false });
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -151,7 +164,7 @@ function MutationHistory({ config, locale }: { config: Record<string, unknown>; 
 
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
         Recent Mutations
       </p>
       <div className="space-y-1.5">
@@ -217,7 +230,7 @@ export default function DNAPage() {
           {speciesInfo && (
             <p className="mt-1 text-sm text-cyan-300/60">{speciesInfo.name}</p>
           )}
-          <div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/40">
+          <div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/50">
             <span>Gen {agentState?.gen_level ?? 1}</span>
             {speciesInfo?.archetype && (
               <>
@@ -263,7 +276,7 @@ export default function DNAPage() {
                           transition={{ duration: 0.6, ease: "easeOut" }}
                         />
                       </div>
-                      <span className="w-8 shrink-0 text-right text-xs text-white/40">
+                      <span className="w-8 shrink-0 text-right text-xs text-white/50">
                         {Math.round(val * 100)}
                       </span>
                     </div>
@@ -274,10 +287,78 @@ export default function DNAPage() {
           ))}
         </div>
 
+        {/* Creature Stats — derived from DNA */}
+        {dna && (
+          <CreatureStatsCard
+            dna={activeDNA}
+            genLevel={agentState?.gen_level as number ?? 1}
+          />
+        )}
+
+        {/* Battle Stats — stat system derived from DNA */}
+        {dna && (
+          <StatCard
+            dna={activeDNA}
+            genLevel={agentState?.gen_level as number ?? 1}
+            vitality={agentState?.vitality as number ?? 1}
+            locale={locale}
+          />
+        )}
+
+        {/* Accessory Equip Panel — Neopets-style cosmetic slots */}
+        {dna && (
+          <AccessoryEquipPanel
+            dna={activeDNA}
+            locale={locale}
+          />
+        )}
+
+        {/* Skill Tree — DNA-based ability progression */}
+        {dna && (
+          <SkillTreeView
+            dna={activeDNA}
+            genLevel={agentState?.gen_level as number ?? 1}
+          />
+        )}
+
+        {/* Items & Equipment */}
+        {dna && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
+              {t("dna.equipment") || "장비 & 아이템"}
+            </p>
+            <ItemsInventory />
+            {/* Item Comparison — Diablo-style stat comparison overlay */}
+            <div className="mt-3">
+              <ItemCompareCard
+                currentName="기본 장비"
+                candidateName="새 장비"
+                currentRarity="common"
+                candidateRarity="uncommon"
+                deltas={[
+                  { name: "공격력", icon: "⚔️", current: 10, proposed: 14, color: "#4ade80" },
+                  { name: "방어력", icon: "🛡️", current: 8, proposed: 7, color: "#f87171" },
+                  { name: "속도", icon: "💨", current: 5, proposed: 5, color: "#94a3b8" },
+                ]}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Team Management */}
+        {dna && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
+              {t("dna.team") || "팀 관리"}
+            </p>
+            <TeamManager locale={locale} />
+          </div>
+        )}
+
         {/* Expressed traits */}
         {traits.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/50">
               {t("dna.expressedTraits") || "발현 특성"}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -305,7 +386,7 @@ export default function DNAPage() {
         {dna && <PortraitGallery />}
 
         {!dna && (
-          <p className="text-center text-sm text-white/30 py-4">
+          <p className="text-center text-sm text-white/40 py-4">
             {t("dna.noData") || "DNA forms as you converse more."}
           </p>
         )}

@@ -41,7 +41,14 @@
     "settings": "Settings",
     "chat": "Chat",
     "discover": "Descubrir",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "notifications": "Alertas"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo leído",
+    "clearAll": "Borrar todo",
+    "empty": "No hay nuevas notificaciones"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -1120,7 +1127,8 @@
     "opening": "Abriendo...",
     "opened": "¡Abierto!",
     "title": "Caja Misteriosa",
-    "claim": "Reclamar"
+    "claim": "Reclamar",
+    "pityEncouragement": "¡Ya casi!"
   },
   "death": {
     "echo": "ECHO",

@@ -2,6 +2,54 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateTextOnce } from "@/lib/ai/router";
 import { DNA_AXES, getDominantTraits, getRecessiveTraits, type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+const demoReadingBodySchema = z.object({
+  dna: z.record(z.string(), z.number().min(0).max(1)),
+  history: z.array(z.object({
+    role: z.string().max(20),
+    content: z.string().max(2000),
+  })).max(20).optional().default([]),
+});
+
+// ── Rate limiting: per-minute to prevent AI cost abuse ──
+const READING_RATE_WINDOW_MS = 60_000;
+const READING_MAX_PER_MINUTE = 5;
+
+type ReadingRateBucket = { count: number; resetAt: number };
+const readingRateBuckets = new Map<string, ReadingRateBucket>();
+
+function checkReadingRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = readingRateBuckets.get(ip);
+  if (!bucket) {
+    readingRateBuckets.set(ip, { count: 1, resetAt: now + READING_RATE_WINDOW_MS });
+    return true;
+  }
+  if (now >= bucket.resetAt) {
+    bucket.count = 1;
+    bucket.resetAt = now + READING_RATE_WINDOW_MS;
+    return true;
+  }
+  if (bucket.count >= READING_MAX_PER_MINUTE) return false;
+  bucket.count++;
+  return true;
+}
+
+// Periodic cleanup to prevent memory leak
+const _readingCleanup = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of readingRateBuckets) {
+    if (now >= bucket.resetAt) readingRateBuckets.delete(key);
+  }
+}, 5 * 60_000);
+if (typeof _readingCleanup === "object" && "unref" in _readingCleanup) {
+  (_readingCleanup as { unref: () => void }).unref();
+}
 
 /**
  * POST /api/demo/reading
@@ -10,18 +58,32 @@ import { deriveSpecies } from "@/lib/genome/species";
  * This is the emotional core of the demo — the thing people screenshot and share.
  */
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
-    const payload = (await req.json()) as {
-      dna?: CreatureDNA;
-      history?: { role: string; content: string }[];
-    };
-
-    if (!payload.dna) {
-      return NextResponse.json({ error: "No DNA" }, { status: 400 });
+    // Rate limit by IP to prevent AI cost abuse
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkReadingRateLimit(ip)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const dna = payload.dna;
-    const history = payload.history || [];
+    const parsed = await parseBody(req, demoReadingBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const dna = parsed.data.dna as CreatureDNA;
+    const history = parsed.data.history ?? [];
+
+    // Electric fence on user-provided conversation history
+    const userTexts = history.filter((m) => m.role === "user").map((m) => m.content).join(" ");
+    if (userTexts) {
+      const fence = checkElectricFence(userTexts);
+      if (fence.blocked) {
+        return NextResponse.json({ error: fence.reason || "Blocked" }, { status: 400 });
+      }
+    }
     const species = deriveSpecies(dna);
     const dominant = getDominantTraits(dna, 3);
     const recessive = getRecessiveTraits(dna, 2);
@@ -76,7 +138,7 @@ Write the reading now. 2-3 sentences only.`;
 
     return NextResponse.json({ reading: reading.trim(), species: species.name });
   } catch (e) {
-    console.error("[DemoReading]", e);
+    logger.error("[DemoReading]", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Failed to generate reading" }, { status: 500 });
   }
 }

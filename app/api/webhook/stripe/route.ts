@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanTierFromStripePriceId, getStripe, getStripeWebhookSecret, isStripeConfigured, mapStripeStatus } from "@/lib/billing/stripe";
 import { upsertSubscriptionFromStripe } from "@/lib/billing/service";
+import { logger } from "@/lib/logger";
 
 function extractPlanTier(subscription: Stripe.Subscription) {
   const metadataPlanTier = subscription.metadata?.plan_tier;
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("POST /api/webhook/stripe error", error);
+    logger.error("POST /api/webhook/stripe error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Invalid webhook" }, { status: 400 });
   }
 }

@@ -5,6 +5,11 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logRouteError } from "@/lib/ops/logger";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { parseBody, generateBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/generate" });
 
 /**
  * Cloudflare Workers AI image generation via Stable Diffusion XL.
@@ -31,7 +36,7 @@ async function generateImageCF(prompt: string): Promise<string | null> {
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      console.error(`[Generate] CF image ${res.status}`, await res.text().catch(() => ""));
+      log.error(`[Generate] CF image ${res.status}`, { detail: await res.text().catch(() => "") });
       return null;
     }
     // CF returns raw PNG bytes — keep timeout active during body download
@@ -83,12 +88,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-    const type = body?.type === "image" ? "image" : "avatar";
+    const parsed = await parseBody(request, generateBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const prompt = parsed.data.prompt.trim();
+    const type = parsed.data.type;
 
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+    const fence = checkElectricFence(prompt);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
     }
 
     if (!isGenerationAvailable()) {
@@ -132,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       // Non-fatal: image was generated, just didn't persist metadata
-      console.warn("[Generate] persist error:", e);
+      log.warn("[Generate] persist error:", e instanceof Error ? e.message : String(e));
     }
 
     return NextResponse.json({ url: imageUrl, prompt, type, status: "completed" });

@@ -2,6 +2,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { NextResponse } from "next/server";
 import { getDemoWorldState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/dashboard" });
 
 export async function GET() {
   try {
@@ -26,7 +29,7 @@ export async function GET() {
       weather_name: world?.weather?.name ?? null,
     });
   } catch (e) {
-    console.error("dashboard GET", e);
+    log.error("dashboard GET", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       const world = getDemoWorldState();
       return NextResponse.json({

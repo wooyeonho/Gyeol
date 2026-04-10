@@ -10,6 +10,12 @@ vi.mock("@/lib/economy/coins", () => ({
   getBalance: vi.fn(),
   spendCoinsAtomic: vi.fn(),
 }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";

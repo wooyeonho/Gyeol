@@ -18,6 +18,8 @@ import { ComebackBanner } from "@/components/comeback-banner";
 import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
 import { getStreakFreezeDates } from "@/lib/economy/shop";
+import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
+import { shouldCreaturePing, getCreaturePingPrompt, markPingDelivered } from "@/lib/engagement/creature-ping";
 
 export type HomeSummaryItem = {
   id: string;
@@ -146,6 +148,16 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
     };
   }, []);
 
+  // BeReal-style creature ping — once per day at a random hour
+  const [creaturePing, setCreaturePing] = useState<string | null>(null);
+  useEffect(() => {
+    if (shouldCreaturePing() && !isStreaming) {
+      const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
+      setCreaturePing(getCreaturePingPrompt(mood));
+      markPingDelivered();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const userMessages = useMemo(
     () => messages.filter((message) => message.role === "user").length,
     [messages],
@@ -154,6 +166,7 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
   const selfName = typeof agentState?.self_name === "string" ? agentState.self_name : "GYEOL";
   const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
   const genLevel = typeof agentState?.gen_level === "number" ? agentState.gen_level : 1;
+  const intimacyScore = typeof agentState?.intimacy_score === "number" ? agentState.intimacy_score : 0;
   const vitalityRaw = typeof agentState?.vitality === "number" ? agentState.vitality : 0;
   const vitality = Math.min(1, Math.max(0, vitalityRaw));
   const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
@@ -227,6 +240,40 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
     <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
       <ComebackBanner onComebackDetected={onComebackDetected} />
       <DuoStreakAlertBanner />
+      {/* BeReal-style creature ping */}
+      <AnimatePresence>
+        {creaturePing && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="mb-2 rounded-2xl border border-purple-400/20 bg-purple-500/10 px-4 py-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💬</span>
+                <div>
+                  <p className="text-xs font-medium text-purple-200">{selfName}의 메시지</p>
+                  <p className="text-sm text-white/80">{creaturePing}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isStreaming) {
+                    void sendMessage(creaturePing, { source: "prompt", locale, totalMessages });
+                  }
+                  setCreaturePing(null);
+                  haptic("tap");
+                }}
+                className="rounded-full bg-purple-500/20 px-3 py-1.5 text-xs font-medium text-purple-200 hover:bg-purple-500/30"
+              >
+                답장하기
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <motion.section
         className="overflow-hidden rounded-[2rem] border border-white/15 bg-black/55 shadow-[0_0_80px_rgba(80,128,255,0.16)] backdrop-blur-xl"
         layout
@@ -337,6 +384,9 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                   </span>
                 </div>
 
+                {/* Affinity gauge */}
+                {intimacyScore > 0 && <AffinityHeartGauge score={intimacyScore} />}
+
                 {/* Growth + prompts */}
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <p className="text-sm font-medium text-white">{t("home.currentPresence")}</p>
@@ -367,6 +417,39 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
                     </div>
                   )}
                 </div>
+
+                {/* Tamagotchi-style care quick-actions */}
+                {!isFirstSession && (
+                  <div className="flex gap-2">
+                    {[
+                      { action: "feed", icon: "🍖", label: t("care.feed") || "먹이기", cost: 5, color: "border-orange-500/20 bg-orange-500/8 hover:bg-orange-500/15" },
+                      { action: "rest", icon: "🛏", label: t("care.rest") || "재우기", cost: 3, color: "border-blue-500/20 bg-blue-500/8 hover:bg-blue-500/15" },
+                      { action: "play", icon: "🎮", label: t("care.play") || "놀기", cost: 4, color: "border-pink-500/20 bg-pink-500/8 hover:bg-pink-500/15" },
+                    ].map((item) => (
+                      <button
+                        key={item.action}
+                        type="button"
+                        onClick={async () => {
+                          haptic("care");
+                          try {
+                            const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | undefined;
+                            if (!agentId) return;
+                            const res = await fetch("/api/care", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ agentId, action: item.action }),
+                            });
+                            if (res.ok) haptic("success");
+                          } catch { /* silent */ }
+                        }}
+                        className={`flex flex-1 flex-col items-center gap-1 rounded-xl border p-2.5 transition-all active:scale-95 ${item.color}`}
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-[10px] text-white/70">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Streak + rewards */}
                 <div className="grid gap-3 lg:grid-cols-2">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -18,7 +19,7 @@ export async function GET(
 
     return NextResponse.json({ valid: Boolean(data) });
   } catch (e) {
-    console.error("GET /api/invite/[code] error", e);
+    logger.error("GET /api/invite/[code] error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ valid: false }, { status: 500 });
   }
 }

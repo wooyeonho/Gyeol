@@ -26,6 +26,14 @@ vi.mock("@/lib/agents/primary", () => ({
   ensurePrimaryAgent: vi.fn(() => Promise.resolve({ agentId: "a1" })),
 }));
 
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+}));
+
 describe("/api/share contract", () => {
   it("returns url and slug on POST", async () => {
     const { POST } = await import("./route");

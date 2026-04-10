@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -8,6 +9,19 @@ import { getRequestLocale } from "@/lib/i18n/server";
 import { type Locale } from "@/lib/i18n/config";
 import { NavigationHub } from "@/components/layout/navigation-hub";
 import { WebPushManager } from "@/components/push-manager";
+import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
+import { CookieConsent } from "@/components/cookie-consent";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { SwipeNavigation } from "@/components/swipe-navigation";
+import { GlobalCelebration } from "@/components/global-celebration";
+import { GlobalKeyboardProvider } from "@/components/global-keyboard-provider";
+
+const pretendard = localFont({
+  src: "../public/fonts/PretendardVariable.woff2",
+  display: "swap",
+  variable: "--font-pretendard",
+  weight: "100 900",
+});
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
   ko: {
@@ -111,8 +125,9 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
 
   return (
-    <html lang={locale}>
-      <body className="bg-background text-foreground min-h-screen antialiased">
+    <html lang={locale} className={pretendard.variable}>
+      <body className={`${pretendard.className} bg-background text-foreground min-h-screen antialiased`}>
+        <ReducedMotionProvider>
         <I18nProvider initialLocale={locale}>
           <a
             href="#main-content"
@@ -123,11 +138,18 @@ export default async function RootLayout({
           <DocumentLocaleSync />
           <ThemePreferenceSync />
           <WebPushManager />
+          <CookieConsent />
+          <OfflineIndicator />
+          <GlobalCelebration />
+          <GlobalKeyboardProvider />
           <NavigationHub />
           <AnalyticsProvider>
-            <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+            <SwipeNavigation>
+              <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+            </SwipeNavigation>
           </AnalyticsProvider>
         </I18nProvider>
+        </ReducedMotionProvider>
       </body>
     </html>
   );

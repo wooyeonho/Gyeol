@@ -3,9 +3,15 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialFollowBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -18,11 +24,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetAgentId = typeof body?.target_agent_id === "string" ? body.target_agent_id : "";
-    if (!targetAgentId) {
-      return NextResponse.json({ error: "target_agent_id required" }, { status: 400 });
+    const parsed = await parseBody(req, socialFollowBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const targetAgentId = parsed.data.target_agent_id;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -43,12 +49,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, following: true, target_agent_id: targetAgentId });
   } catch (error) {
-    console.error("POST /api/social/follow error", error);
+    logger.error("POST /api/social/follow error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -61,11 +70,11 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const targetAgentId = typeof body?.target_agent_id === "string" ? body.target_agent_id : "";
-    if (!targetAgentId) {
-      return NextResponse.json({ error: "target_agent_id required" }, { status: 400 });
+    const parsed = await parseBody(req, socialFollowBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const targetAgentId = parsed.data.target_agent_id;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -81,7 +90,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ ok: true, following: false, target_agent_id: targetAgentId });
   } catch (error) {
-    console.error("DELETE /api/social/follow error", error);
+    logger.error("DELETE /api/social/follow error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

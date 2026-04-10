@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 type LogLevel = "info" | "warn" | "error";
 
 type LogContext = Record<string, unknown>;
@@ -46,23 +48,17 @@ function writeLog(level: LogLevel, message: string, context?: LogContext) {
   const safeMessage = redactSensitive(message);
   const safeContext = context ? sanitizeContext(context) : undefined;
 
-  const payload = {
-    ts: new Date().toISOString(),
-    level,
-    message: safeMessage,
-    ...(safeContext ? { context: safeContext } : {}),
-  };
+  const meta = safeContext ? { context: safeContext } : undefined;
 
-  const line = JSON.stringify(payload);
   if (level === "error") {
-    console.error(line);
+    logger.error(safeMessage, meta);
     return;
   }
   if (level === "warn") {
-    console.warn(line);
+    logger.warn(safeMessage, meta);
     return;
   }
-  console.info(line);
+  logger.info(safeMessage, meta);
 }
 
 export function logInfo(message: string, context?: LogContext) {

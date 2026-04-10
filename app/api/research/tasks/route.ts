@@ -1,8 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody } from "@/lib/validation/schemas";
+import { z } from "zod";
 import { computeEffectivePriority, sortResearchTasks } from "@/lib/goals/task-utils";
+import { logger } from "@/lib/logger";
+
+const researchTaskPatchSchema = z.object({
+  task_id: z.string().uuid("Invalid task ID"),
+  action: z.enum(["cancel", "prioritize"]),
+});
 
 export async function GET() {
   const supabase = await createClient();
@@ -29,25 +39,32 @@ export async function GET() {
 
     return NextResponse.json({ tasks });
   } catch (error) {
-    console.error("GET /api/research/tasks error", error);
+    logger.error("GET /api/research/tasks error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const rl = await checkRateLimit(`research:${user.id}`);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const body = await request.json().catch(() => ({}));
-    const taskId = typeof body?.task_id === "string" ? body.task_id : "";
-    const action = typeof body?.action === "string" ? body.action : "";
-    if (!taskId || !["cancel", "prioritize"].includes(action)) {
-      return NextResponse.json({ error: "task_id and valid action required" }, { status: 400 });
+    const parsed = await parseBody(request, researchTaskPatchSchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { task_id: taskId, action } = parsed.data;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -80,7 +97,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("PATCH /api/research/tasks error", error);
+    logger.error("PATCH /api/research/tasks error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

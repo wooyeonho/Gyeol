@@ -13,6 +13,14 @@ vi.mock("@/lib/supabase/server", () => ({
   ),
 }));
 
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+}));
+
 vi.mock("@/lib/billing/stripe", () => ({
   isStripeConfigured: vi.fn(() => false),
   getStripe: vi.fn(() => null),

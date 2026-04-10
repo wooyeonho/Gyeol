@@ -9,6 +9,7 @@
  */
 
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { logger } from "@/lib/logger";
 import type { createServiceClient } from "@/lib/supabase/service";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
@@ -132,7 +133,7 @@ export async function trySemanticCache(params: {
       similarity: match.similarity ?? 0,
     };
   } catch (e) {
-    console.error("[SemanticCache] Error:", e);
+    logger.error("[SemanticCache] Error", e instanceof Error ? e : { error: e });
     return null;
   }
 }

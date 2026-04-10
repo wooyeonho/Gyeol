@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "verify:stripe": "node scripts/verify-stripe-setup.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
-    "pre-deploy": "node scripts/pre-deploy-check.mjs"
+    "pre-deploy": "node scripts/pre-deploy-check.mjs",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -26,15 +27,20 @@
     "framer-motion": "^12.35.1",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "pretendard": "^1.3.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stripe": "^20.4.1",
     "three": "^0.183.2",
     "tone": "^15.1.22",
     "web-push": "^3.6.7",
+    "zod": "^3.24.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@next/bundle-analyzer": "^16.2.3",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",

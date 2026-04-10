@@ -4,6 +4,7 @@ vi.mock("@/lib/supabase/server", () => ({ createServerSupabase: vi.fn() }));
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 vi.mock("@/lib/ai/router", () => ({ generateText: vi.fn() }));
 vi.mock("@/lib/security/electric-fence", () => ({ checkElectricFence: vi.fn() }));
+vi.mock("@/lib/security/csrf", () => ({ verifyCsrfOrigin: vi.fn().mockReturnValue(true) }));
 vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));
 vi.mock("@/lib/sanitize", () => ({ sanitizeUserInput: vi.fn((x: string) => x) }));
 vi.mock("@/lib/agents/primary", () => ({ ensurePrimaryAgent: vi.fn() }));

@@ -236,6 +236,7 @@ export async function middleware(request: NextRequest) {
   // ── Security response headers ──
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=(), interest-cohort=()");
   response.headers.set("X-DNS-Prefetch-Control", "on");
@@ -251,6 +252,37 @@ export async function middleware(request: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
+  }
+
+  // ── CORS: allow external callers for v1 API ──
+  if (pathname.startsWith("/api/v1")) {
+    const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "*")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    const requestOrigin = request.headers.get("origin");
+
+    // Determine the value for Access-Control-Allow-Origin
+    let corsOrigin: string;
+    if (allowedOrigins.includes("*")) {
+      corsOrigin = "*";
+    } else if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+      corsOrigin = requestOrigin;
+    } else {
+      corsOrigin = allowedOrigins[0] ?? "*";
+    }
+
+    response.headers.set("Access-Control-Allow-Origin", corsOrigin);
+    response.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-API-Key");
+    response.headers.set("Access-Control-Max-Age", "86400");
+
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 204,
+        headers: response.headers,
+      });
+    }
   }
 
   // ── CSRF: validate Origin for state-changing API requests ──

@@ -5,13 +5,19 @@ import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { parseBody, socialReactionToggleBodySchema } from "@/lib/validation/schemas";
 
-const ALLOWED_REACTIONS = new Set(["like", "curious", "support"]);
+const log = logger.child({ route: "api/social/posts/[postId]/reaction" });
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ postId: string }> },
 ) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -25,11 +31,14 @@ export async function POST(
 
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const reactionType = typeof body?.reaction_type === "string" ? body.reaction_type : "";
-    if (!postId || !ALLOWED_REACTIONS.has(reactionType)) {
-      return NextResponse.json({ error: "Invalid reaction" }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
     }
+    const parsed = await parseBody(req, socialReactionToggleBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const reactionType = parsed.data.reaction_type;
 
     const service = createServiceClient();
     const { agentId } = await ensurePrimaryAgent(service, user.id);
@@ -85,7 +94,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, active: true, reaction_type: reactionType });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/reaction error", error);
+    log.error("POST /api/social/posts/[postId]/reaction error", error instanceof Error ? error : { detail: String(error) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

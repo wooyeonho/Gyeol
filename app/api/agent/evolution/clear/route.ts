@@ -1,12 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`evolution-clear:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const service = createServiceClient();
     const { data: agents } = await service.from("agents").select("id").eq("user_id", user.id).limit(1);
@@ -16,7 +25,7 @@ export async function POST() {
     await service.from("agent_state").update({ pending_evolution: null }).eq("agent_id", agentId);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("POST /api/agent/evolution/clear error", e);
+    logger.error("POST /api/agent/evolution/clear error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

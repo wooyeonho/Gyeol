@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { EngineConfig } from "./config";
 import { buildAuthHeaders } from "./auth";
+import { logger } from "../../lib/logger";
 
 export interface CrawlResult {
   url: string;
@@ -107,7 +108,7 @@ export async function crawlPage(url: string): Promise<CrawlResult | null> {
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[Crawler] Failed ${url}: ${msg}`);
+    logger.error(`[Crawler] Failed ${url}: ${msg}`);
     return null;
   }
 }
@@ -151,7 +152,7 @@ export async function crawlSite(
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          console.warn(`[Crawler] Skip invalid discovered link ${link}: ${msg}`);
+          logger.warn(`[Crawler] Skip invalid discovered link ${link}: ${msg}`);
         }
       }
     }
@@ -176,20 +177,20 @@ export async function submitCrawlResults(
       body: JSON.stringify({ pages: results }),
     });
     const body = await res.text();
-    console.log(`[Crawler] Submit ${results.length} pages → ${res.status}: ${body.slice(0, 200)}`);
+    logger.info(`[Crawler] Submit ${results.length} pages → ${res.status}: ${body.slice(0, 200)}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[Crawler] Submit failed: ${msg}`);
+    logger.error(`[Crawler] Submit failed: ${msg}`);
   }
 }
 
 export async function runCrawlCycle(config: EngineConfig): Promise<void> {
   if (config.crawlUrls.length === 0) {
-    console.log("[Crawler] No CRAWL_URLS configured, skipping");
+    logger.info("[Crawler] No CRAWL_URLS configured, skipping");
     return;
   }
 
-  console.log(`[Crawler] Starting cycle — ${config.crawlUrls.length} seed URLs, max ${config.crawlMaxPages} pages, depth ${config.crawlDepth}`);
+  logger.info(`[Crawler] Starting cycle — ${config.crawlUrls.length} seed URLs, max ${config.crawlMaxPages} pages, depth ${config.crawlDepth}`);
 
   const allResults: CrawlResult[] = [];
   for (const seedUrl of config.crawlUrls) {
@@ -197,7 +198,7 @@ export async function runCrawlCycle(config: EngineConfig): Promise<void> {
     allResults.push(...results);
   }
 
-  console.log(`[Crawler] Crawled ${allResults.length} pages total`);
+  logger.info(`[Crawler] Crawled ${allResults.length} pages total`);
 
   if (allResults.length > 0) {
     await submitCrawlResults(config, allResults);

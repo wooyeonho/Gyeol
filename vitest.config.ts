@@ -15,11 +15,16 @@ export default defineConfig({
     include: ["**/*.test.ts"],
     exclude: ["node_modules", ".next"],
     coverage: {
-      enabled: false,
       provider: "v8",
       reporter: ["text", "json-summary"],
       include: ["lib/**/*.ts", "store/**/*.ts", "hooks/**/*.ts", "app/api/**/*.ts"],
-      exclude: ["**/*.test.ts", "**/*.contract.test.ts", "node_modules/**"],
+      exclude: ["node_modules/", ".next/", "e2e/", "**/*.test.ts", "**/*.spec.ts"],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 60,
+        statements: 60,
+      },
     },
   },
 });

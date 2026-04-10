@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineConfig } from "./config";
 
+const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+vi.mock("../../lib/logger", () => ({ logger: mockLogger }));
+
 // Mock all direct execution functions from cron-core
 vi.mock("../../lib/cron-core", () => ({
   executeHealth: vi.fn().mockResolvedValue({ ok: true }),
@@ -54,12 +57,12 @@ describe("runOnce", () => {
   });
 
   it("does not call anything for unknown jobs", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogger.error.mockClear();
     const { runOnce } = await import("./scheduler");
     await runOnce(config, "unknown-job");
 
     expect(fetch).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalled();
   });
 
   it("calls recap direct execution when runOnce recap", async () => {
@@ -75,25 +78,17 @@ describe("runOnce", () => {
     const { runOnce } = await import("./scheduler");
     await runOnce(config);
 
-    // 13 direct jobs + 1 HTTP job (lifeline) = 14 total
-    // fetch is called only for lifeline (HTTP job)
-    expect(fetch).toHaveBeenCalledTimes(1);
+    // All 13 jobs are direct execution — no fetch calls
+    expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("calls lifeline via HTTP", async () => {
+  it("logs error for unknown lifeline job", async () => {
+    mockLogger.error.mockClear();
     const { runOnce } = await import("./scheduler");
     await runOnce(config, "lifeline");
 
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith(
-      "https://example.com/api/cron/lifeline",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          Authorization: "Bearer cron-secret",
-          "Content-Type": "application/json",
-        }),
-      })
-    );
+    // lifeline is no longer a registered job in the legacy scheduler
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalled();
   });
 });

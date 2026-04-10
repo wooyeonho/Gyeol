@@ -22,11 +22,15 @@ export type ExpressionState = {
   browAngle: number;
   /** Overall expression intensity: 0 = subtle, 1 = exaggerated */
   intensity: number;
+  /** Head nod: -1 = shake (no), 0 = still, 1 = nod (yes) */
+  headGesture: number;
+  /** Head tilt: -1 = left, 0 = straight, 1 = right */
+  headTilt: number;
 };
 
 const EXPRESSIONS: Record<string, Partial<ExpressionState>> = {
   // Positive
-  joyful: { eyeOpenness: 0.7, mouthCurve: 1, mouthOpen: 0.3, pupilScale: 1.2, blush: 0.3, intensity: 0.9 },
+  joyful: { eyeOpenness: 0.7, mouthCurve: 1, mouthOpen: 0.3, pupilScale: 1.2, blush: 0.3, headGesture: 0.4, intensity: 0.9 },
   playful: { eyeOpenness: 1.1, mouthCurve: 0.8, mouthOpen: 0.2, pupilScale: 1.3, intensity: 0.8 },
   excited: { eyeOpenness: 1.4, mouthCurve: 0.9, mouthOpen: 0.5, pupilScale: 1.5, intensity: 1.0 },
   proud: { eyeOpenness: 0.9, mouthCurve: 0.5, eyelidDroop: 0.2, browAngle: 0.3, intensity: 0.7 },
@@ -36,8 +40,8 @@ const EXPRESSIONS: Record<string, Partial<ExpressionState>> = {
   mischievous: { eyeOpenness: 1.1, mouthCurve: 0.4, browAngle: 0.5, pupilScale: 0.8, intensity: 0.8 },
 
   // Calm
-  curious: { eyeOpenness: 1.3, pupilScale: 1.4, mouthOpen: 0.1, browAngle: -0.2, intensity: 0.7 },
-  thoughtful: { eyeOpenness: 0.8, eyelidDroop: 0.3, mouthCurve: 0, pupilScale: 0.9, intensity: 0.5 },
+  curious: { eyeOpenness: 1.3, pupilScale: 1.4, mouthOpen: 0.1, browAngle: -0.2, headTilt: 0.4, intensity: 0.7 },
+  thoughtful: { eyeOpenness: 0.8, eyelidDroop: 0.3, mouthCurve: 0, pupilScale: 0.9, headTilt: -0.2, intensity: 0.5 },
   dreamy: { eyeOpenness: 0.6, eyelidDroop: 0.5, mouthCurve: 0.2, pupilScale: 1.1, intensity: 0.4 },
   focused: { eyeOpenness: 1.1, pupilScale: 0.7, browAngle: 0.2, intensity: 0.6 },
   peaceful: { eyeOpenness: 0.7, mouthCurve: 0.3, eyelidDroop: 0.2, intensity: 0.3 },
@@ -47,7 +51,7 @@ const EXPRESSIONS: Record<string, Partial<ExpressionState>> = {
   melancholy: { eyeOpenness: 0.6, mouthCurve: -0.5, eyelidDroop: 0.6, pupilScale: 0.8, intensity: 0.7 },
   sad: { eyeOpenness: 0.5, mouthCurve: -0.7, eyelidDroop: 0.7, browAngle: -0.5, intensity: 0.8 },
   lonely: { eyeOpenness: 0.7, mouthCurve: -0.3, eyelidDroop: 0.4, pupilScale: 1.1, intensity: 0.6 },
-  angry: { eyeOpenness: 1.2, mouthCurve: -0.4, browAngle: 0.8, pupilScale: 0.6, intensity: 1.0 },
+  angry: { eyeOpenness: 1.2, mouthCurve: -0.4, browAngle: 0.8, pupilScale: 0.6, headGesture: -0.5, intensity: 1.0 },
   frustrated: { eyeOpenness: 1.0, mouthCurve: -0.3, browAngle: 0.6, intensity: 0.8 },
   scared: { eyeOpenness: 1.5, mouthOpen: 0.4, pupilScale: 1.5, browAngle: -0.7, intensity: 1.0 },
   shy: { eyeOpenness: 0.6, blush: 0.7, eyelidDroop: 0.4, mouthCurve: 0.1, intensity: 0.6 },
@@ -55,7 +59,7 @@ const EXPRESSIONS: Record<string, Partial<ExpressionState>> = {
 
   // Reactive
   surprised: { eyeOpenness: 1.5, mouthOpen: 0.6, pupilScale: 1.5, intensity: 1.0 },
-  confused: { eyeOpenness: 1.1, mouthOpen: 0.15, browAngle: -0.5, pupilScale: 1.0, intensity: 0.6 },
+  confused: { eyeOpenness: 1.1, mouthOpen: 0.15, browAngle: -0.5, pupilScale: 1.0, headTilt: 0.6, headGesture: -0.3, intensity: 0.6 },
   bored: { eyeOpenness: 0.5, eyelidDroop: 0.7, mouthCurve: -0.1, intensity: 0.3 },
   energetic: { eyeOpenness: 1.3, mouthCurve: 0.6, mouthOpen: 0.2, pupilScale: 1.2, intensity: 0.9 },
   sleepy: { eyeOpenness: 0.3, eyelidDroop: 0.9, mouthOpen: 0.1, intensity: 0.2 },
@@ -70,6 +74,8 @@ const DEFAULT_EXPRESSION: ExpressionState = {
   blush: 0,
   browAngle: 0,
   intensity: 0.5,
+  headGesture: 0,
+  headTilt: 0,
 };
 
 /**
@@ -102,5 +108,7 @@ export function lerpExpression(
     blush: lerp(from.blush, to.blush),
     browAngle: lerp(from.browAngle, to.browAngle),
     intensity: lerp(from.intensity, to.intensity),
+    headGesture: lerp(from.headGesture, to.headGesture),
+    headTilt: lerp(from.headTilt, to.headTilt),
   };
 }

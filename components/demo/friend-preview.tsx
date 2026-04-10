@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { FocusTrap } from "@/components/focus-trap";
 import { type CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
@@ -23,6 +24,7 @@ export function FriendPreview({ dna, reading, onTryOwn }: FriendPreviewProps) {
     : "#a855f7";
 
   return (
+    <FocusTrap active onEscape={onTryOwn}>
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center px-6">
       <div
         className="absolute inset-0 opacity-15"
@@ -92,5 +94,6 @@ export function FriendPreview({ dna, reading, onTryOwn }: FriendPreviewProps) {
         </motion.div>
       </motion.div>
     </div>
+    </FocusTrap>
   );
 }

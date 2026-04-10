@@ -15,6 +15,14 @@ import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { PageSkeleton } from "@/components/discover/skeleton";
 import BreedingCard from "@/components/breeding-card";
 import type { Visual } from "@/components/breeding-card";
+import dynamic from "next/dynamic";
+import { DEFAULT_CHANNELS } from "@/lib/social/channel-system";
+
+const PullToRefresh = dynamic(() => import("@/components/pull-to-refresh").then(m => ({ default: m.PullToRefresh })), { ssr: false });
+const ChannelList = dynamic(() => import("@/components/channel-list").then(m => ({ default: m.ChannelList })), { ssr: false });
+const VerticalCardFeed = dynamic(() => import("@/components/vertical-card-feed").then(m => ({ default: m.VerticalCardFeed })), { ssr: false });
+const CreatureStoryFeed = dynamic(() => import("@/components/creature-story-feed").then(m => ({ default: m.CreatureStoryFeed })), { ssr: false });
+const VoteSortTabs = dynamic(() => import("@/components/vote-sort-tabs").then(m => ({ default: m.VoteSortTabs })), { ssr: false });
 
 type SocialLog = {
   id: string;
@@ -111,6 +119,9 @@ export default function SocialPage() {
   const [postTopic, setPostTopic] = useState("");
   const [postBusy, setPostBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [feedView, setFeedView] = useState<"list" | "card">("list");
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<"hot" | "new" | "top">("hot");
 
   useEffect(() => {
     try {
@@ -198,7 +209,33 @@ export default function SocialPage() {
   }, [locale, otherAgents]);
   const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
-  const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
+  const visiblePostsUnfiltered = posts.filter((post) => !hiddenPostIds.includes(post.id));
+
+  // Apply vote-based sort (Hot/New/Top) to the visible posts
+  const visiblePosts = useMemo(() => {
+    if (visiblePostsUnfiltered.length === 0) return visiblePostsUnfiltered;
+    const now = new Date();
+    const scored = visiblePostsUnfiltered.map((post) => ({
+      ...post,
+      upvotes: post.reactionCount,
+      createdAt: new Date(post.created_at),
+    }));
+    switch (sortMode) {
+      case "hot": {
+        return scored.sort((a, b) => {
+          const scoreA = a.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - a.createdAt.getTime()) / 3_600_000);
+          const scoreB = b.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - b.createdAt.getTime()) / 3_600_000);
+          return scoreB - scoreA;
+        });
+      }
+      case "new":
+        return scored.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      case "top":
+        return scored.sort((a, b) => b.upvotes - a.upvotes);
+      default:
+        return scored;
+    }
+  }, [visiblePostsUnfiltered, sortMode]);
   const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
   const recentConversationLogs = logs.slice(0, 6);
   const socialStats = [
@@ -456,10 +493,33 @@ export default function SocialPage() {
     }
   }
 
+  const verticalCardData = useMemo(() => {
+    return visiblePosts.slice(0, 10).map((post) => ({
+      id: post.id,
+      creatureName: post.author.self_name || "Unknown",
+      ownerName: undefined,
+      content: post.content,
+      mood: post.author.mood ?? undefined,
+      species: post.author.genome?.species ?? undefined,
+      primaryColor: undefined,
+      timestamp: post.created_at,
+      reactions: post.reactionCount,
+    }));
+  }, [visiblePosts]);
+
   if (loading) return <PageSkeleton rows={4} />;
 
   return (
     <PageShell>
+      <PullToRefresh onRefresh={async () => {
+        const res = await fetch(`/api/social?scope=${feedScope}`);
+        if (res.ok) {
+          const json = await res.json().catch(() => ({ socialLogs: [] }));
+          setLogs(Array.isArray(json.socialLogs) ? json.socialLogs : []);
+          setPosts(Array.isArray(json.socialPosts) ? json.socialPosts : []);
+          setOtherAgents(Array.isArray(json.otherAgents) ? json.otherAgents : []);
+        }
+      }}>
       <motion.div variants={itemVariants}>
       <DiscoverPageHeader
         eyebrow={t("socialPage.eyebrow")}
@@ -504,6 +564,53 @@ export default function SocialPage() {
         onChange={setActiveTab}
         sticky
       />
+
+      {/* Creature Stories — 24hr ephemeral content */}
+      {activeTab === "feed" && (
+        <CreatureStoryFeed locale={locale} />
+      )}
+
+      {/* Channel List — Discord-style channels */}
+      {activeTab === "feed" && (
+        <ChannelList
+          channels={DEFAULT_CHANNELS}
+          activeChannelId={activeChannelId}
+          locale={locale}
+          onSelect={(ch) => setActiveChannelId(ch.id === activeChannelId ? null : ch.id)}
+        />
+      )}
+
+      {/* Vote Sort Tabs — Hot/New/Top */}
+      {activeTab === "feed" && (
+        <VoteSortTabs
+          activeSort={sortMode}
+          onSortChange={(mode) => setSortMode(mode)}
+          locale={locale}
+        />
+      )}
+
+      {/* Feed view toggle */}
+      {activeTab === "feed" && visiblePosts.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setFeedView(feedView === "list" ? "card" : "list")}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+          >
+            {feedView === "list" ? "🃏 Card View" : "📋 List View"}
+          </button>
+        </div>
+      )}
+
+      {/* Vertical Card Feed — TikTok-style alternate view */}
+      {activeTab === "feed" && feedView === "card" && verticalCardData.length > 0 && (
+        <div className="h-[60vh] rounded-2xl border border-white/10 overflow-hidden">
+          <VerticalCardFeed
+            cards={verticalCardData}
+            onReaction={(cardId) => void handleReact(cardId, "like")}
+          />
+        </div>
+      )}
 
       {/* Friends tab */}
       {activeTab === "friends" && (
@@ -1067,6 +1174,7 @@ export default function SocialPage() {
         )}
       </div>
       </>)}
+      </PullToRefresh>
     </PageShell>
   );
 }

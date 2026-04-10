@@ -40,7 +40,14 @@
     "settings": "Settings",
     "chat": "Chat",
     "discover": "Discover",
-    "profile": "Profile"
+    "profile": "Profile",
+    "notifications": "Alerts"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear all",
+    "empty": "No new notifications"
   },
   "auth": {
     "login": "Login",
@@ -1126,7 +1133,8 @@
     "opening": "Opening...",
     "opened": "Opened!",
     "title": "Mystery Box",
-    "claim": "Claim"
+    "claim": "Claim",
+    "pityEncouragement": "Almost there!"
   },
   "death": {
     "echo": "ECHO",

@@ -6,11 +6,18 @@ import { moderateSocialContent, toDbModerationStatus } from "@/lib/social/modera
 import { canUsePublicSocial } from "@/lib/safety/age-gate";
 import { clearTtlCacheByPrefix } from "@/lib/cache/ttl";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, socialCommentBodySchema } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkElectricFence } from "@/lib/security/electric-fence";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ postId: string }> },
 ) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -19,10 +26,18 @@ export async function POST(
 
   try {
     const { postId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const content = typeof body?.content === "string" ? body.content : "";
-    if (!postId || !content.trim()) {
-      return NextResponse.json({ error: "Comment content required" }, { status: 400 });
+    const parsed = await parseBody(req, socialCommentBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const content = parsed.data.content;
+    if (!postId) {
+      return NextResponse.json({ error: "Post ID required" }, { status: 400 });
+    }
+
+    const fence = checkElectricFence(content);
+    if (fence.blocked) {
+      return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
     }
 
     // Rate limit: 10 comments per minute per user to prevent spam
@@ -81,7 +96,7 @@ export async function POST(
       comment: createdComment,
     });
   } catch (error) {
-    console.error("POST /api/social/posts/[postId]/comment error", error);
+    logger.error("POST /api/social/posts/[postId]/comment error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

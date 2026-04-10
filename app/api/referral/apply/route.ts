@@ -1,7 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { referralApplyBodySchema, parseBody } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/referral/apply" });
 
 const REFERRAL_REWARD_COINS = 100;
 
@@ -13,8 +19,11 @@ const REFERRAL_REWARD_COINS = 100;
  * Awards coins to both the referrer and the referred user.
  * Each user can only redeem one referral code.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+    }
     const supabase = await createClient();
     const {
       data: { user },
@@ -23,11 +32,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => null);
-    const code = typeof body?.code === "string" ? body.code.trim().toLowerCase() : "";
-    if (!code) {
-      return NextResponse.json({ error: "Missing code" }, { status: 400 });
+    const rl = await checkRateLimit(`referral:${user.id}`);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
+    const parsed = await parseBody(req, referralApplyBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const code = parsed.data.code;
 
     const service = createServiceClient();
 
@@ -73,7 +87,7 @@ export async function POST(req: Request) {
       if (insertError.code === "23505") {
         return NextResponse.json({ error: "Already redeemed" }, { status: 409 });
       }
-      console.error("referral insert error", insertError);
+      log.error("referral insert error", insertError instanceof Error ? insertError : { detail: String(insertError) });
       return NextResponse.json({ error: "Internal error" }, { status: 500 });
     }
 
@@ -93,11 +107,11 @@ export async function POST(req: Request) {
         p_reason: "referral_reward",
       });
       if (referrerErr || referrerData === false) {
-        console.error("referral: failed to award coins to referrer", referrerErr ?? "RPC returned false");
+        log.error("referral: failed to award coins to referrer", referrerErr instanceof Error ? referrerErr : { detail: String(referrerErr ?? "RPC returned false") });
         coinsAwarded = false;
       }
     } else {
-      console.error("referral: could not resolve agent for referrer", invite.user_id);
+      log.error("referral: could not resolve agent for referrer", { detail: String(invite.user_id) });
       coinsAwarded = false;
     }
     if (referredResult.agentId) {
@@ -107,11 +121,11 @@ export async function POST(req: Request) {
         p_reason: "referral_reward",
       });
       if (referredErr || referredData === false) {
-        console.error("referral: failed to award coins to referred user", referredErr ?? "RPC returned false");
+        log.error("referral: failed to award coins to referred user", referredErr instanceof Error ? referredErr : { detail: String(referredErr ?? "RPC returned false") });
         coinsAwarded = false;
       }
     } else {
-      console.error("referral: could not resolve agent for referred user", user.id);
+      log.error("referral: could not resolve agent for referred user", { detail: String(user.id) });
       coinsAwarded = false;
     }
 
@@ -124,7 +138,7 @@ export async function POST(req: Request) {
         : "Referral recorded. Coins will be credited once your profile is ready.",
     });
   } catch (e) {
-    console.error("POST /api/referral/apply error", e);
+    log.error("POST /api/referral/apply error", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

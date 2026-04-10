@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { emitSystemAlert } from "@/lib/ops/alerts";
+import { logger } from "@/lib/logger";
 
 /**
  * Critical environment variables that MUST be present in production.
@@ -26,7 +27,7 @@ function validateEnvironment() {
   const missingRecommended = RECOMMENDED_ENV_KEYS.filter((key) => !process.env[key]);
 
   if (missingRecommended.length > 0) {
-    console.warn(
+    logger.warn(
       `[Gyeol] WARNING: Recommended env vars missing: ${missingRecommended.join(", ")}. Some features may not work.`
     );
   }
@@ -38,7 +39,7 @@ function validateEnvironment() {
       // This ensures webhooks, cron jobs, and auth don't silently run unprotected.
       throw new Error(message);
     }
-    console.error(message);
+    logger.error(message);
   }
 }
 
@@ -58,7 +59,7 @@ export async function onRequestError(err: Error, request: { url?: string }, cont
     const errorMessage = err.message || String(err);
     const path = request?.url || context?.routerKind || "unknown-path";
 
-    console.error("[Next.js Error]", err);
+    logger.error("[Next.js Error]", err);
 
     Sentry.captureException(err, {
       extra: { path, routerKind: context?.routerKind, isAction: context?.isAction },
@@ -80,6 +81,6 @@ export async function onRequestError(err: Error, request: { url?: string }, cont
       { notifySlack: true, notifyEmail: true }
     );
   } catch (e) {
-    console.error("Failed to report unhandled error to system_alerts", e);
+    logger.error("Failed to report unhandled error to system_alerts", e instanceof Error ? e : { error: e });
   }
 }

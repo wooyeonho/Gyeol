@@ -7,6 +7,12 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import type { CareState } from "@/lib/creature/care-loop";
+import dynamic from "next/dynamic";
+import { logCareActivity } from "@/components/care-heatmap";
+const CareHeatmap = dynamic(() => import("@/components/care-heatmap").then(m => ({ default: m.CareHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-32 rounded-2xl bg-white/5 animate-pulse" />,
+});
 
 function GaugeBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   const pct = Math.max(0, Math.min(100, value));
@@ -57,7 +63,7 @@ export default function CarePage() {
 
   useEffect(() => { fetchCare(); }, [fetchCare]);
 
-  const doAction = async (action: "feed" | "rest") => {
+  const doAction = async (action: "feed" | "rest" | "play") => {
     if (!agentId || acting) return;
     setActing(true);
     haptic("tap");
@@ -71,6 +77,7 @@ export default function CarePage() {
         const data = await res.json();
         setCare(data.careState);
         haptic("success");
+        logCareActivity();
         useAgentStore.getState().fetchAgentState();
       }
     } finally {
@@ -135,35 +142,53 @@ export default function CarePage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 disabled={acting || coins < 5}
                 onClick={() => doAction("feed")}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 p-5 transition-all hover:bg-orange-500/15 disabled:opacity-40"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 p-4 transition-all hover:bg-orange-500/15 disabled:opacity-40"
               >
                 <span className="text-3xl">🍖</span>
                 <span className="text-sm font-medium text-white">{t("care.feed") || "먹이주기"}</span>
-                <span className="text-xs text-white/40">🪙 5</span>
+                <span className="text-xs text-white/50">🪙 5</span>
               </button>
               <button
                 type="button"
                 disabled={acting || coins < 3}
                 onClick={() => doAction("rest")}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/8 p-5 transition-all hover:bg-blue-500/15 disabled:opacity-40"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4 transition-all hover:bg-blue-500/15 disabled:opacity-40"
               >
                 <span className="text-3xl">🛏</span>
                 <span className="text-sm font-medium text-white">{t("care.rest") || "재우기"}</span>
-                <span className="text-xs text-white/40">🪙 3</span>
+                <span className="text-xs text-white/50">🪙 3</span>
+              </button>
+              <button
+                type="button"
+                disabled={acting || coins < 4}
+                onClick={() => doAction("play")}
+                className="flex flex-col items-center gap-2 rounded-2xl border border-pink-500/20 bg-pink-500/8 p-4 transition-all hover:bg-pink-500/15 disabled:opacity-40"
+              >
+                <span className="text-3xl">🎮</span>
+                <span className="text-sm font-medium text-white">{t("care.play") || "놀아주기"}</span>
+                <span className="text-xs text-white/50">🪙 4</span>
               </button>
             </div>
 
-            <p className="text-center text-xs text-white/30">
+            <p className="text-center text-xs text-white/40">
               {t("care.touchHint") || "홈에서 생명체를 쓰다듬으면 기분이 올라가요"}
             </p>
+
+            {/* Care activity heatmap */}
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
+                {t("care.activityLog") || "돌봄 기록"}
+              </p>
+              <CareHeatmap />
+            </div>
           </>
         ) : (
-          <p className="text-center text-sm text-white/40 py-16">
+          <p className="text-center text-sm text-white/50 py-16">
             {t("care.noAgent") || "에이전트를 먼저 생성해주세요"}
           </p>
         )}

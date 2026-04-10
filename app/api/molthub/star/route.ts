@@ -4,10 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { absorbSharedKnowledge } from "@/lib/moltbook";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { logger } from "@/lib/logger";
+import { z } from "zod";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const molthubStarBodySchema = z.object({
+  entryId: z.string().uuid("Invalid entryId format"),
+});
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfOrigin(request)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -21,20 +29,23 @@ export async function POST(request: NextRequest) {
     const { agentId } = await ensurePrimaryAgent(service, user.id);
     if (!agentId) return NextResponse.json({ absorbed: false });
 
-    const body = await request.json() as { entryId?: string };
-    if (!body.entryId) {
-      return NextResponse.json({ error: "entryId required" }, { status: 400 });
+    // Validate body with Zod
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const parsed = molthubStarBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
 
-    // Validate entryId is a proper UUID to prevent injection
-    if (!UUID_RE.test(body.entryId)) {
-      return NextResponse.json({ error: "Invalid entryId format" }, { status: 400 });
-    }
-
-    const absorbed = await absorbSharedKnowledge(agentId, body.entryId);
+    const absorbed = await absorbSharedKnowledge(agentId, parsed.data.entryId);
     return NextResponse.json({ absorbed });
   } catch (e) {
-    console.error("POST /api/molthub/star error", e);
+    logger.error("POST /api/molthub/star error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -3,14 +3,21 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateText } from "@/lib/ai/router";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeUserInput } from "@/lib/sanitize";
 import { timeTravelBodySchema, parseBody } from "@/lib/validation/schemas";
 import { isMissingEnvError } from "@/lib/env/required";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/time-travel" });
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfOrigin(req)) {
+    return NextResponse.json({ error: "CSRF origin check failed" }, { status: 403 });
+  }
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -84,7 +91,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e) {
-    console.error("time-travel POST", e);
+    log.error("time-travel POST", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {
       return NextResponse.json(
         { error: "Service unavailable: missing server configuration", code: "MISSING_ENV" },

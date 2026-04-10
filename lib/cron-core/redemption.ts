@@ -3,6 +3,7 @@
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { logger } from "@/lib/logger";
 
 export async function executeRedemption(): Promise<CronResult> {
   const lockKey = "cron:redemption";
@@ -42,13 +43,13 @@ export async function executeRedemption(): Promise<CronResult> {
           .eq("id", req.id);
         fulfilled++;
       } catch (e) {
-        console.error("redemption fulfill", req.id, e);
+        logger.error("redemption fulfill", { requestId: req.id, error: e instanceof Error ? e.message : String(e) });
       }
     }
 
     return { processed: fulfilled, timestamp: new Date().toISOString() };
   } catch (e) {
-    console.error("redemption cron", e);
+    logger.error("redemption cron", e instanceof Error ? e : { error: e });
     return { processed: 0, error: "Redemption processing failed", timestamp: new Date().toISOString() };
   } finally {
     await releaseCronLock(lockKey);

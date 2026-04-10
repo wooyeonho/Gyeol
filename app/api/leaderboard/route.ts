@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "api/leaderboard" });
 
 export type LeaderboardEntry = {
   rank: number;
@@ -167,7 +170,7 @@ export async function GET() {
     setTtlCache(cacheKey, response, 20_000);
     return NextResponse.json(response);
   } catch (e) {
-    console.error("GET /api/leaderboard error", e);
+    log.error("GET /api/leaderboard error", e instanceof Error ? e : { detail: String(e) });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

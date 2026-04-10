@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { spendCoinsAtomic } from "@/lib/economy/coins";
 import { careBodySchema, parseBody } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   applyCareDecay,
   createDefaultCareState,
@@ -65,11 +67,17 @@ export async function GET(req: Request) {
  * POST /api/care — Feed or rest the creature.
  * Body: { agentId, action: "feed" | "rest" }
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    if (!verifyCsrfOrigin(req)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const authClient = await createServerSupabase();
     const { data: { user } } = await authClient.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`care:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const parsed = await parseBody(req, careBodySchema);
     if (!parsed.success) {

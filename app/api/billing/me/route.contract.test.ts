@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -6,6 +7,14 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(),
+}));
+
+vi.mock("@/lib/security/csrf", () => ({
+  verifyCsrfOrigin: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
 }));
 
 import { createClient } from "@/lib/supabase/server";
@@ -117,7 +126,7 @@ describe("/api/billing/me contract", () => {
     });
 
     const response = await POST(
-      new Request("http://localhost/api/billing/me", {
+      new NextRequest("http://localhost/api/billing/me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_tier: "premium" }),
@@ -141,7 +150,7 @@ describe("/api/billing/me contract", () => {
     });
 
     const response = await POST(
-      new Request("http://localhost/api/billing/me", {
+      new NextRequest("http://localhost/api/billing/me", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_tier: "premium" }),
@@ -206,7 +215,11 @@ describe("/api/billing/me contract", () => {
       },
     });
 
-    const response = await DELETE();
+    const response = await DELETE(
+      new NextRequest("http://localhost/api/billing/me", {
+        method: "DELETE",
+      })
+    );
     expect(response.status).toBe(200);
     expect(insert).toHaveBeenCalled();
   });

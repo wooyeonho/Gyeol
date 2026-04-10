@@ -41,7 +41,14 @@
     "settings": "Settings",
     "chat": "聊天",
     "discover": "发现",
-    "profile": "个人"
+    "profile": "个人",
+    "notifications": "通知"
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllRead": "全部已读",
+    "clearAll": "全部清除",
+    "empty": "没有新通知"
   },
   "auth": {
     "login": "登录",
@@ -1120,7 +1127,8 @@
     "opening": "正在打开...",
     "opened": "打开了！",
     "title": "神秘盒子",
-    "claim": "领取"
+    "claim": "领取",
+    "pityEncouragement": "快到了！"
   },
   "death": {
     "echo": "ECHO",

@@ -222,9 +222,19 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             onStop={stop}
             onCopy={(index, content) => void handleCopy(index, content)}
             onRetry={retryLastMessage}
+            onRetryMessage={(msgId) => {
+              if (!isStreaming) {
+                const msg = messages.find((m) => m.id === msgId && m.role === "user");
+                if (msg) {
+                  void sendMessage(msg.content, { source: "input", locale, totalMessages });
+                }
+              }
+            }}
             t={t}
             simpleModeLevel={simpleModeLevel}
             locale={locale}
+            accentColor={appearance.palette.primary}
+            creatureName={agentState?.self_name ?? "결"}
           />
         </div>
 
@@ -294,6 +304,14 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             voiceError={voiceInput.error}
             onVoiceToggle={voiceInput.toggle}
             onStopStreaming={stopStreaming}
+            creatureDna={(agentState?.genome as { dna?: Record<string, number> } | undefined)?.dna as import("@/lib/genome/dna").CreatureDNA | undefined}
+            creatureName={agentState?.self_name ?? "결"}
+            locale={locale}
+            onStickerSelect={(sticker) => {
+              if (!isStreaming) {
+                void sendMessage(`[${sticker.emoji} ${sticker.label.ko}]`, { source: "input", locale, totalMessages });
+              }
+            }}
             t={t}
           />
 

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { type PlanTier } from "@/lib/billing/catalog";
 import { getStripe, getStripeAppUrl, getStripePriceId, isStripeConfigured } from "@/lib/billing/stripe";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
-
-function isPaidPlanTier(value: unknown): value is Exclude<PlanTier, "free"> {
-  return value === "pro" || value === "premium";
-}
+import { checkRateLimit } from "@/lib/rate-limit";
+import { parseBody, billingCheckoutBodySchema } from "@/lib/validation/schemas";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   if (!verifyCsrfOrigin(request)) {
@@ -18,16 +16,21 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const rl = await checkRateLimit(`checkout:${user.id}`);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
   }
 
   try {
-    const body = await request.json().catch(() => ({}));
-    const planTier = body?.plan_tier;
-    if (!isPaidPlanTier(planTier)) {
-      return NextResponse.json({ error: "plan_tier must be pro or premium" }, { status: 400 });
+    const parsed = await parseBody(request, billingCheckoutBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const planTier = parsed.data.plan_tier;
 
     const stripe = getStripe();
     const appUrl = getStripeAppUrl();
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
       session_id: session.id,
     });
   } catch (error) {
-    console.error("POST /api/billing/checkout error", error);
+    logger.error("POST /api/billing/checkout error", error instanceof Error ? error : { error });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

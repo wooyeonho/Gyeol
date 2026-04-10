@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { applyDnaShift } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
@@ -97,7 +98,7 @@ export async function checkEvolution(agentId: string): Promise<{ evolved: boolea
 
     // Auto-trigger portrait generation on evolution (fire-and-forget)
     triggerEvolutionPortrait(db, agentId, newLevel).catch((err) =>
-      console.error("[GenLevel] portrait auto-trigger failed:", err),
+      logger.error("[GenLevel] portrait auto-trigger failed", err instanceof Error ? err : { error: err }),
     );
 
     return { evolved: true, newLevel, mutation };
@@ -159,7 +160,7 @@ async function triggerEvolutionPortrait(
     });
 
     if (!res.ok) {
-      console.error(`[GenLevel] portrait CF ${res.status}`);
+      logger.error(`[GenLevel] portrait CF ${res.status}`);
       return;
     }
 
@@ -192,7 +193,7 @@ async function triggerEvolutionPortrait(
       summary: `Evolution portrait auto-generated: ${species.name} (Gen ${newLevel})`,
     });
   } catch (err) {
-    console.error("[GenLevel] portrait generation error:", err);
+    logger.error("[GenLevel] portrait generation error", err instanceof Error ? err : { error: err });
   } finally {
     clearTimeout(timer);
   }

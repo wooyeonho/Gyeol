@@ -7,7 +7,22 @@
  */
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 import { logRouteError } from "@/lib/ops/logger";
+
+const emailDeliverySchema = z.object({
+  to: z.string().email().max(320),
+  subject: z.string().min(1).max(500),
+  body: z.string().min(1).max(50000),
+});
+
+const emailSendBodySchema = z.union([
+  z.object({
+    deliveries: z.array(emailDeliverySchema).min(1).max(50),
+  }),
+  emailDeliverySchema,
+]);
 
 function timingSafeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -56,28 +71,29 @@ export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rl = await checkRateLimit("email-send:internal");
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const body = await request.json().catch(() => ({}));
-
-    const deliveries: Array<{ to: string; subject: string; body: string }> = [];
-    if (Array.isArray(body.deliveries)) {
-      for (const d of body.deliveries) {
-        if (typeof d?.to === "string" && typeof d?.subject === "string" && typeof d?.body === "string") {
-          deliveries.push({ to: d.to, subject: d.subject, body: d.body });
-        }
-      }
-    }
-    if (deliveries.length === 0 && body.to && body.subject && body.body) {
-      deliveries.push({
-        to: String(body.to),
-        subject: String(body.subject),
-        body: String(body.body),
-      });
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    if (deliveries.length === 0) {
-      return NextResponse.json({ error: "Invalid payload: need to, subject, body or deliveries" }, { status: 400 });
+    const result = emailSendBodySchema.safeParse(raw);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues.map((i) => i.message).join("; ") }, { status: 400 });
     }
+
+    const parsed = result.data;
+    const deliveries: Array<{ to: string; subject: string; body: string }> = "deliveries" in parsed
+      ? parsed.deliveries
+      : [parsed];
 
     const results = await Promise.all(
       deliveries.map((d) => sendViaResend(d.to, d.subject, d.body))

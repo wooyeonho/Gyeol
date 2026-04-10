@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { NextRequest, NextResponse } from "next/server";
 import { getPrimaryAgent } from "@/lib/agents/primary";
+import { parseBody, adoptBodySchema } from "@/lib/validation/schemas";
+import { verifyCsrfOrigin } from "@/lib/security/csrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -46,19 +50,28 @@ export async function GET() {
     });
     return NextResponse.json({ list });
   } catch (e) {
-    console.error("GET /api/adopt error", e);
+    logger.error("GET /api/adopt error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const agentId = body?.agent_id;
-    if (!agentId) return NextResponse.json({ error: "agent_id required" }, { status: 400 });
+    if (!verifyCsrfOrigin(request)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const allowed = await checkRateLimit(`adopt:${user.id}`);
+    if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
+    const parsed = await parseBody(request, adoptBodySchema);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const agentId = parsed.data.agent_id;
     const service = createServiceClient();
     const { agentId: currentPrimaryAgentId } = await getPrimaryAgent(service, user.id);
     if (currentPrimaryAgentId) {
@@ -76,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       // Fallback: two-step with manual rollback (legacy path)
-      console.warn("[Adopt] atomic RPC unavailable, using legacy path:", rpcError.message);
+      logger.warn("[Adopt] atomic RPC unavailable, using legacy path", { error: rpcError.message });
       const { data: claimed, error: claimError } = await service
         .from("adoption_board")
         .update({ status: "adopted" })
@@ -96,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: true });
   } catch (e) {
-    console.error("POST /api/adopt error", e);
+    logger.error("POST /api/adopt error", e instanceof Error ? e : { error: e });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

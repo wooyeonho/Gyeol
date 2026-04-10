@@ -4,6 +4,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -442,13 +443,13 @@ const cases: GoldenCase[] = [
 
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    logger.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
     process.exit(1);
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  console.log(`Seeding ${cases.length} golden cases...`);
+  logger.info(`Seeding ${cases.length} golden cases...`);
 
   // Insert in chunks of 50 to avoid timeout on large batches
   const CHUNK_SIZE = 50;
@@ -457,14 +458,14 @@ async function main() {
     const chunk = cases.slice(i, i + CHUNK_SIZE);
     const { error } = await supabase.from("eval_golden_cases").insert(chunk);
     if (error) {
-      console.error(`Insert error at chunk ${Math.floor(i / CHUNK_SIZE)}:`, error.message);
+      logger.error(`Insert error at chunk ${Math.floor(i / CHUNK_SIZE)}: ${error.message}`);
       process.exit(1);
     }
     inserted += chunk.length;
-    console.log(`  Inserted ${inserted}/${cases.length}...`);
+    logger.info(`  Inserted ${inserted}/${cases.length}...`);
   }
 
-  console.log(`Seeded ${cases.length} golden cases successfully.`);
+  logger.info(`Seeded ${cases.length} golden cases successfully.`);
 
   // Print summary
   const categories = new Map<string, number>();
@@ -472,7 +473,7 @@ async function main() {
     categories.set(c.category, (categories.get(c.category) ?? 0) + 1);
   }
   for (const [cat, count] of categories) {
-    console.log(`  ${cat}: ${count} cases`);
+    logger.info(`  ${cat}: ${count} cases`);
   }
 }
 
