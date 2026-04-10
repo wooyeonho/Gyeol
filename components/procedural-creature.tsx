@@ -222,6 +222,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Eating animation state
   const eatingTimerRef = useRef(0); // counts down from 2s when eating starts
   const eatingActiveRef = useRef(false);
+  const eatingSatisfiedRef = useRef(0); // 0..1 post-eating satisfaction pulse (decays over ~0.6s)
   const foodParticleRefs = useRef<(THREE.Mesh | null)[]>([null, null, null]);
   const foodParticleVelocities = useRef(
     Array.from({ length: 3 }, (_, i) => ({
@@ -995,16 +996,20 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     // ── Eating Animation (Chomp) ────────────────────────────────────────
-    // Trigger: isEating prop starts a 2-second chomp sequence
+    // 3-phase animation over 2 seconds:
+    //   Phase 1 (0.0-0.4s): Food particles appear at distance, move toward mouth; mouth opens wide
+    //   Phase 2 (0.4-1.6s): 3-4 chewing motions (rhythmic jaw oscillation)
+    //   Phase 3 (1.6-2.0s): Satisfied expression (eyes squint, slight growth pulse)
     if (isEating && !eatingActiveRef.current) {
       eatingActiveRef.current = true;
       eatingTimerRef.current = 2.0; // 2 second chomp duration
-      // Reset food particles
+      // Reset food particles — start offset from mouth for approach trajectory
       for (let fi = 0; fi < 3; fi++) {
         const fv = foodParticleVelocities.current[fi];
+        // Spawn positions: scattered in front of the creature
         fv.x = (Math.sin(t + fi * 2.1) - 0.5) * 0.4;
         fv.y = 0.3 + Math.sin(t + fi * 1.7) * 0.2;
-        fv.z = (Math.cos(t + fi * 3.2) - 0.5) * 0.3;
+        fv.z = 0.3 + Math.cos(t + fi * 3.2) * 0.15;
         fv.life = 1.0;
       }
     }
@@ -1014,31 +1019,54 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     if (eatingTimerRef.current > 0) {
       eatingTimerRef.current -= dt;
-      // Chomping motion: oscillate mouth scale Y at ~4Hz for mouth open/close
-      if (mouthRef.current) {
-        const chompPhase = Math.sin(eatingTimerRef.current * Math.PI * 2 * 4);
-        const chompOpen = 0.5 + Math.abs(chompPhase) * 0.5; // 0.5-1.0 range
-        mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, chompOpen, 0.15);
-        // Widen mouth slightly during eating
-        mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.3, 0.08);
-      }
+      const eatElapsed = 2.0 - eatingTimerRef.current; // 0..2 seconds elapsed
 
-      // Food particles: small bits flying out from mouth
-      for (let fi = 0; fi < 3; fi++) {
-        const fp = foodParticleRefs.current[fi];
-        if (!fp) continue;
-        const fv = foodParticleVelocities.current[fi];
-        if (fv.life > 0) {
-          fv.life -= dt * 1.2;
-          // Physics: simple ballistic trajectory
-          fv.y -= dt * 0.8; // gravity
-          fp.position.x = mouthPos[0] + fv.x * (1 - fv.life);
-          fp.position.y = mouthPos[1] + fv.y * (1 - fv.life);
-          fp.position.z = mouthPos[2] + 0.1 + fv.z * (1 - fv.life);
-          fp.scale.setScalar(Math.max(0.005, 0.015 * fv.life));
-          (fp.material as THREE.MeshBasicMaterial).opacity = Math.max(0, fv.life * 0.8);
-        } else {
-          (fp.material as THREE.MeshBasicMaterial).opacity = 0;
+      if (eatElapsed < 0.4) {
+        // Phase 1: Mouth opens wide, food approaches
+        if (mouthRef.current) {
+          const openTarget = 0.8 + eatElapsed * 0.5; // ramp to wide open
+          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, openTarget, 0.15);
+          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.4, 0.08);
+        }
+        // Food particles approach mouth from spawn positions
+        const approachT = eatElapsed / 0.4; // 0..1 over the approach phase
+        for (let fi = 0; fi < 3; fi++) {
+          const fp = foodParticleRefs.current[fi];
+          if (!fp) continue;
+          const fv = foodParticleVelocities.current[fi];
+          // Lerp from spawn offset toward mouth center
+          fp.position.x = mouthPos[0] + fv.x * (1 - approachT);
+          fp.position.y = mouthPos[1] + fv.y * (1 - approachT);
+          fp.position.z = mouthPos[2] + 0.1 + fv.z * (1 - approachT);
+          fp.scale.setScalar(0.015);
+          (fp.material as THREE.MeshBasicMaterial).opacity = Math.min(1, approachT * 2) * 0.8;
+        }
+      } else if (eatElapsed < 1.6) {
+        // Phase 2: Chewing — 3-4 rhythmic jaw oscillations
+        if (mouthRef.current) {
+          const chewTime = eatElapsed - 0.4; // 0..1.2 seconds of chewing
+          const chompPhase = Math.sin(chewTime * Math.PI * 2 * 3); // ~3 chew cycles
+          const chompOpen = 0.4 + Math.abs(chompPhase) * 0.5; // 0.4-0.9 range
+          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, chompOpen, 0.15);
+          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.3, 0.08);
+        }
+        // Food particles hidden during chewing (already in mouth)
+        for (let fi = 0; fi < 3; fi++) {
+          const fp = foodParticleRefs.current[fi];
+          if (fp) (fp.material as THREE.MeshBasicMaterial).opacity = 0;
+        }
+      } else {
+        // Phase 3: Satisfied expression — mouth closes into smile, eyes squint, growth pulse
+        if (mouthRef.current) {
+          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, 0.15, 0.08);
+          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.0, 0.06);
+        }
+        // Trigger satisfied pulse — decays in the block below
+        eatingSatisfiedRef.current = Math.max(eatingSatisfiedRef.current, 1.0);
+        // Hide food particles
+        for (let fi = 0; fi < 3; fi++) {
+          const fp = foodParticleRefs.current[fi];
+          if (fp) (fp.material as THREE.MeshBasicMaterial).opacity = 0;
         }
       }
     } else {
@@ -1046,6 +1074,20 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       for (let fi = 0; fi < 3; fi++) {
         const fp = foodParticleRefs.current[fi];
         if (fp) (fp.material as THREE.MeshBasicMaterial).opacity = 0;
+      }
+    }
+
+    // Post-eating satisfied expression: eyes squint + slight body growth pulse
+    if (eatingSatisfiedRef.current > 0.01) {
+      eatingSatisfiedRef.current *= 0.97; // decay ~0.6s to near zero
+      const sat = eatingSatisfiedRef.current;
+      // Eye squint: reduce eye openness for content look
+      if (eyeGroupLRef.current) eyeGroupLRef.current.scale.y *= (1 - sat * 0.4);
+      if (eyeGroupRRef.current) eyeGroupRRef.current.scale.y *= (1 - sat * 0.4);
+      // Growth pulse: slight body scale bump
+      if (groupRef.current) {
+        const pulseSc = 1 + sat * 0.06;
+        groupRef.current.scale.multiplyScalar(pulseSc);
       }
     }
   });
