@@ -41,6 +41,8 @@
     "../lib/safety/**/*.ts",
     "../lib/sanitize.ts",
     "../lib/social/**/*.ts",
+    "../lib/game/type-advantage.ts",
+    "../lib/genome/dna.ts",
     "../lib/micro-interactions.ts",
     "../lib/security/**/*.ts",
     "../lib/dl/**/*.ts",
