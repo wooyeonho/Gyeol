@@ -23,6 +23,7 @@ export default function Soundscape({
   voiceHint,
   mood,
   dnaModifier,
+  creatureDna,
 }: {
   enabled: boolean;
   soundProfile?: SoundProfile | null;
@@ -33,6 +34,8 @@ export default function Soundscape({
   mood?: string | null;
   /** DNA pitch modifier 0..1 for emotion sounds */
   dnaModifier?: number;
+  /** Full creature DNA record for voice synthesis */
+  creatureDna?: Record<string, number> | null;
 }) {
   const [playing, setPlaying] = useState(false);
   const disposeRef = useRef<(() => void) | null>(null);
@@ -107,6 +110,25 @@ export default function Soundscape({
       }
     }).catch(() => {});
   }, [enabled, mood, dnaModifier]);
+
+  // ── Creature voice synthesis — vocalization on emotion change ──
+  const lastVoiceMoodRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!enabled || !mood || mood === lastVoiceMoodRef.current) return;
+    lastVoiceMoodRef.current = mood;
+
+    const dna = creatureDna ?? { playfulness: 0.5, intensity: 0.5 };
+
+    // Lazy-load the creature voice module to keep initial bundle small
+    import("@/lib/soundscape/creature-voice").then(({ getCreatureVoice, playCreatureVoice }) => {
+      const profile = getCreatureVoice(mood, dna);
+      // Delay the vocalization slightly so it layers after the emotion sound
+      const delayMs = 120;
+      setTimeout(() => {
+        playCreatureVoice(profile);
+      }, delayMs);
+    }).catch(() => {});
+  }, [enabled, mood, creatureDna]);
 
   if (!enabled) return null;
   return (
