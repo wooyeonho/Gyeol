@@ -45,6 +45,7 @@ import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
 import { QuickCareButtons } from "@/components/quick-care-buttons";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
 import { ConversationStarter } from "@/components/conversation-starter";
+import { AuroraBackground } from "@/components/aurora-background";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -534,7 +535,43 @@ export default function Home() {
   const creatureSize = Math.min(200, Math.max(56, (visual.size ?? 24) * 4));
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
+      {/* ===== AURORA BACKGROUND — 2026 Discord/Notion style living gradient ===== */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <AuroraBackground className="h-full w-full" intensity={0.75} />
+      </div>
+
+      {/* ===== TOP-RIGHT HERO HUD — prominent streak + vitality glass card ===== */}
+      <motion.div
+        initial={{ opacity: 0, y: -20, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", damping: 18, delay: 0.3 }}
+        className="pointer-events-none absolute top-3 right-3 z-30 flex items-center gap-2 rounded-2xl glass-card-strong px-3 py-2"
+        aria-label={`Streak ${agentState?.streak_days ?? 0} days, vitality ${Math.round(vitality * 100)} percent`}
+      >
+        <StreakFlame
+          days={agentState?.streak_days ?? 0}
+          size="lg"
+          showCount
+        />
+        <span className="h-6 w-px bg-white/20" aria-hidden="true" />
+        <div className="flex flex-col items-start leading-tight">
+          <span className="text-[10px] uppercase tracking-widest text-white/50 font-semibold">vitality</span>
+          <span
+            className="text-base font-black tabular-nums"
+            style={{
+              color: vitality < 0.2
+                ? "#f87171"
+                : vitality < 0.5
+                ? "#fbbf24"
+                : "#86efac",
+            }}
+          >
+            {Math.round(vitality * 100)}%
+          </span>
+        </div>
+      </motion.div>
+
       {showCeremony && (
         <EvolutionCeremony
           level={evolutionEvent.level!}
@@ -551,7 +588,7 @@ export default function Home() {
       {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
       <div
         data-tutorial="creature"
-        className="relative flex-shrink-0 overflow-hidden"
+        className="relative z-10 flex-shrink-0 overflow-hidden"
         style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
         {/* Circadian time-of-day tint overlay */}
@@ -679,12 +716,23 @@ export default function Home() {
         {/* Bottom gradient fade into chat area */}
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
 
-        {/* Creature identity bar */}
-        <div className="absolute bottom-3 inset-x-0 z-10 text-center pointer-events-none">
+        {/* Creature identity bar — Exaggerated Minimalism hero typography */}
+        <div className="absolute bottom-3 inset-x-0 z-10 text-center pointer-events-none px-4">
           <CreatureStatusIndicator activity={creature.state.activity} />
-          <p className="mt-1 text-base font-semibold text-white drop-shadow-lg tracking-wide">
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="mt-1 text-3xl font-black text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tight leading-none"
+            style={{
+              backgroundImage: `linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, ${appearance.palette.primary} 70%, white) 100%)`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
             {agentState?.self_name ?? "GYEOL"}
-          </p>
+          </motion.p>
           {agentState?.genome?.species && (
             <p className="mt-0.5 text-xs text-white/40 italic tracking-wide">
               {agentState.genome.species}
@@ -706,16 +754,7 @@ export default function Home() {
                 <span className="text-purple-300/70">{agentState.mood}</span>
               </>
             )}
-            {(agentState?.streak_days ?? 0) >= 0 && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-white/30" />
-                <StreakFlame
-                  days={agentState?.streak_days ?? 0}
-                  size="sm"
-                  showCount
-                />
-              </>
-            )}
+            {/* Streak + vitality now displayed prominently in top-right HUD */}
             <PerfectDayBadge locale={locale} compact />
           </div>
           {/* BG3-style heart gauge — shows creature-user bond level */}
@@ -772,8 +811,8 @@ export default function Home() {
             transition={{ delay: 1.5, duration: 0.8 }}
             className="flex flex-col items-center gap-3 px-6 py-4"
           >
-            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md px-5 py-4 max-w-sm text-center">
-              <p className="text-sm text-white/80 leading-relaxed">
+            <div className="rounded-2xl glass-card px-5 py-4 max-w-sm text-center">
+              <p className="text-sm text-white/85 leading-relaxed">
                 {t("home.firstTimeGuide")}
               </p>
               <motion.div
