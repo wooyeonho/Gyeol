@@ -55,7 +55,7 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rl = await checkRateLimit(`research:${user.id}`);
-  if (!rl.allowed) {
+  if (!rl) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

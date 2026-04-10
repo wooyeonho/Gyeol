@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   }
 
   const rl = await checkRateLimit("push-send:internal");
-  if (!rl.allowed) {
+  if (!rl) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

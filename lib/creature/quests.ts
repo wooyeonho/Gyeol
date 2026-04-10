@@ -78,7 +78,7 @@ const QUEST_TEMPLATES: Omit<Quest, "id">[] = [
     type: "emotional", difficulty: "hard",
     title: { ko: "갈등 해결", en: "Resolve Conflict" },
     description: { ko: "크리처와 의견이 다를 때 대화로 해결하세요", en: "Resolve a disagreement through dialogue" },
-    targetAxis: "resilience", rewardCoins: 45, rewardEvo: 15, timeLimitHours: 48,
+    targetAxis: "stability", rewardCoins: 45, rewardEvo: 15, timeLimitHours: 48,
     hint: { ko: "서로 다른 관점을 인정하는 것이 핵심입니다", en: "Acknowledging different perspectives is key" },
   },
 

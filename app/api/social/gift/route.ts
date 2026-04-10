@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: fence.reason || "Blocked content" }, { status: 400 });
       }
     }
-    const message = sanitizeUserInput(parsed.data.message);
+    const message = sanitizeUserInput(parsed.data.message ?? "");
 
     const service = createServiceClient();
     const { data: myAgent } = await service.from("agents").select("id").eq("user_id", user.id).single();

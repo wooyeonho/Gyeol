@@ -99,16 +99,16 @@ export function MysteryBoxOverlay({ box, onClose, expiresAt }: MysteryBoxOverlay
       if (box.rarity === "legendary") {
         celebrate({
           title: "LEGENDARY!",
-          subtitle: box.reward.label,
-          reward: { type: box.reward.type, amount: box.reward.amount, icon: "✨" },
+          subtitle: box.drops[0].label.ko,
+          reward: { type: box.drops[0].type, amount: box.drops[0].amount, icon: "✨" },
           variant: "firework",
           autoDismissMs: 4000,
         });
       } else if (box.rarity === "epic") {
         celebrate({
           title: "EPIC!",
-          subtitle: box.reward.label,
-          reward: { type: box.reward.type, amount: box.reward.amount, icon: "💎" },
+          subtitle: box.drops[0].label.ko,
+          reward: { type: box.drops[0].type, amount: box.drops[0].amount, icon: "💎" },
           variant: "sparkle",
         });
       }

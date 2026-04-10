@@ -12,6 +12,7 @@ interface VitalMetric {
   delta: number;
   id: string;
   navigationType?: string;
+  pathname?: string;
 }
 
 const BUFFER_SIZE = 5;

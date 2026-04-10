@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     // Demo works even without auth — we don't persist anything
 
     // Count turns from history
-    const history = payload.history;
+    const history = payload.history ?? [];
     const userTurns = history.filter((m) => m.role === "user").length;
     if (userTurns >= DEMO_MAX_TURNS) {
       return new Response(JSON.stringify({ error: "Demo limit reached", code: "DEMO_LIMIT" }), { status: 403 });

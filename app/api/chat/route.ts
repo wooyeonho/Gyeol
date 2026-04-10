@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       billingTier = (sub as { plan_tier?: string } | null)?.plan_tier ?? null;
     } catch (e) {
-      log.warn("[Chat] billing tier lookup failed, defaulting to free:", e instanceof Error ? e.message : e);
+      log.warn("[Chat] billing tier lookup failed, defaulting to free:", { error: e instanceof Error ? e.message : String(e) });
     }
     const allowed = await checkRateLimit(`chat:${user.id}`, billingTier);
     if (!allowed) return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });

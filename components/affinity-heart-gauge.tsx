@@ -23,8 +23,8 @@ const RELATIONSHIP_LEVELS = [
   { threshold: 90, label: "최고의 인연", color: "#f87171" },
 ] as const;
 
-function getRelationshipLevel(normalized: number) {
-  let level = RELATIONSHIP_LEVELS[0];
+function getRelationshipLevel(normalized: number): typeof RELATIONSHIP_LEVELS[number] {
+  let level: typeof RELATIONSHIP_LEVELS[number] = RELATIONSHIP_LEVELS[0];
   for (const l of RELATIONSHIP_LEVELS) {
     if (normalized >= l.threshold) level = l;
   }
