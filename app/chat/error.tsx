@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function ChatError({
   error,
@@ -10,7 +11,7 @@ export default function ChatError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[chat] error:", error);
+    logger.error("[chat] error:", error);
   }, [error]);
 
   return (

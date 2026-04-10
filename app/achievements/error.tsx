@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 /**
  * Reusable error boundary for Next.js route segments.
@@ -14,7 +15,7 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[ErrorBoundary]", error);
+    logger.error("[ErrorBoundary]", error);
   }, [error]);
 
   return (

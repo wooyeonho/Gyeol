@@ -449,22 +449,25 @@ export function getEmotionSound(mood: string | null | undefined): EmotionSoundPa
  * @param dnaModifier - 0..1 from DNA that shifts pitch (higher = brighter)
  * @param volume - Optional volume override (0-1). Falls back to stored preference.
  */
+/**
+ * Returns: duration of the sound in milliseconds (for mouth-sync), or 0 if not played.
+ */
 export function playEmotionSound(
   mood: string | null | undefined,
   dnaModifier = 0.5,
   volume?: number,
-): void {
-  if (!mood) return;
-  if (typeof window === "undefined" || !window.AudioContext) return;
+): number {
+  if (!mood) return 0;
+  if (typeof window === "undefined" || !window.AudioContext) return 0;
 
   // DNA modifier shifts pitch range: 0 = -100 cents, 0.5 = 0, 1 = +100 cents
   const dnaShift = (dnaModifier - 0.5) * 200;
   const recipes = makeRecipes(dnaShift);
   const recipe = recipes[mood];
-  if (!recipe) return;
+  if (!recipe) return 0;
 
   const masterVolume = volume ?? getCreatureVoiceVolume();
-  if (masterVolume <= 0) return;
+  if (masterVolume <= 0) return 0;
 
   try {
     const ctx = new AudioContext();
@@ -478,6 +481,8 @@ export function playEmotionSound(
       scheduleLayer(ctx, masterGain, recipe.layers[i], masterVolume, i);
     }
 
+    const durationMs = Math.round(recipe.totalDuration * 1000);
+
     // Cleanup AudioContext after all sounds finish
     setTimeout(
       () => {
@@ -485,8 +490,11 @@ export function playEmotionSound(
       },
       (recipe.totalDuration + 0.3) * 1000,
     );
+
+    return durationMs;
   } catch {
     // Audio not available — silently ignore
+    return 0;
   }
 }
 

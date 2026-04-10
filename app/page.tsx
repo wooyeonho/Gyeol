@@ -601,6 +601,7 @@ export default function Home() {
             genLevel={agentState?.gen_level ?? 1}
             forceState={creature.state.forceState}
             idleBehaviorParams={idleBehaviorParams}
+            idleBehavior={creature.state.idleActivity}
           />
         </ThreeErrorBoundary>
         </div>

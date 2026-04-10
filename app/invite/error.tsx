@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function InviteError({
   error,
@@ -10,7 +11,7 @@ export default function InviteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[invite] error:", error);
+    logger.error("[invite] error:", error);
   }, [error]);
 
   return (

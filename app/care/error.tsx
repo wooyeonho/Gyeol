@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function CareError({
   error,
@@ -10,7 +11,7 @@ export default function CareError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[care] error:", error);
+    logger.error("[care] error:", error);
   }, [error]);
 
   return (

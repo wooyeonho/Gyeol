@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function MarketingError({
   error,
@@ -10,7 +11,7 @@ export default function MarketingError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[marketing] error:", error);
+    logger.error("[marketing] error:", error);
   }, [error]);
 
   return (

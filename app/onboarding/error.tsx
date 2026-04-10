@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function OnboardingError({
   error,
@@ -10,7 +11,7 @@ export default function OnboardingError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[onboarding] error:", error);
+    logger.error("[onboarding] error:", error);
   }, [error]);
 
   return (

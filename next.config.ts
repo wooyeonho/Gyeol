@@ -1,10 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import withBundleAnalyzerPkg from "@next/bundle-analyzer";
 
 // Bundle analyzer — run with ANALYZE=true npm run build
-const withBundleAnalyzer = process.env.ANALYZE === "true"
-  ? (await import("@next/bundle-analyzer")).default({ enabled: true })
-  : (config: NextConfig) => config;
+const withBundleAnalyzer = withBundleAnalyzerPkg({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   async headers() {

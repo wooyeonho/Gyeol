@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function AuthError({
   error,
@@ -10,7 +11,7 @@ export default function AuthError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[auth] error:", error);
+    logger.error("[auth] error:", error);
   }, [error]);
 
   return (
