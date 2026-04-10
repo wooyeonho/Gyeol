@@ -209,7 +209,33 @@ export default function SocialPage() {
   }, [locale, otherAgents]);
   const socialPublicEnabled = selfAgent?.config?.social_public_enabled === true;
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
-  const visiblePosts = posts.filter((post) => !hiddenPostIds.includes(post.id));
+  const visiblePostsUnfiltered = posts.filter((post) => !hiddenPostIds.includes(post.id));
+
+  // Apply vote-based sort (Hot/New/Top) to the visible posts
+  const visiblePosts = useMemo(() => {
+    if (visiblePostsUnfiltered.length === 0) return visiblePostsUnfiltered;
+    const now = new Date();
+    const scored = visiblePostsUnfiltered.map((post) => ({
+      ...post,
+      upvotes: post.reactionCount,
+      createdAt: new Date(post.created_at),
+    }));
+    switch (sortMode) {
+      case "hot": {
+        return scored.sort((a, b) => {
+          const scoreA = a.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - a.createdAt.getTime()) / 3_600_000);
+          const scoreB = b.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - b.createdAt.getTime()) / 3_600_000);
+          return scoreB - scoreA;
+        });
+      }
+      case "new":
+        return scored.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      case "top":
+        return scored.sort((a, b) => b.upvotes - a.upvotes);
+      default:
+        return scored;
+    }
+  }, [visiblePostsUnfiltered, sortMode]);
   const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
   const recentConversationLogs = logs.slice(0, 6);
   const socialStats = [
