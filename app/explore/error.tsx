@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function ExploreError({
   error,
@@ -10,7 +11,7 @@ export default function ExploreError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[explore] error:", error);
+    logger.error("[explore] error:", error);
   }, [error]);
 
   return (

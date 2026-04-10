@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function DiscoverError({
   error,
@@ -10,7 +11,7 @@ export default function DiscoverError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[discover] error:", error);
+    logger.error("[discover] error:", error);
   }, [error]);
 
   return (

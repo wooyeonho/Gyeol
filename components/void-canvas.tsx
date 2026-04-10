@@ -6,7 +6,7 @@ import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import type { ForceState } from "@/lib/creature/force-system";
-import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
+import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -47,6 +47,8 @@ interface VoidCanvasProps {
   forceState?: ForceState | null;
   /** Idle behavior visual parameters for creature animation */
   idleBehaviorParams?: IdleBehaviorParams;
+  /** Current idle behavior identifier — drives behavior-specific animations */
+  idleBehavior?: IdleBehavior;
 }
 
 const VoidCanvasInner = dynamic(
@@ -232,6 +234,7 @@ export function VoidCanvas({
   genLevel,
   forceState,
   idleBehaviorParams,
+  idleBehavior,
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
@@ -273,6 +276,7 @@ export function VoidCanvas({
           genLevel={genLevel}
           forceState={forceState}
           idleBehaviorParams={idleBehaviorParams}
+          idleBehavior={idleBehavior}
         />
       ) : (
         <CssVoidFallback

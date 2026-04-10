@@ -13,7 +13,7 @@ import { createLivingMaterial, deriveLivingMaterialParams } from "@/lib/shaders/
 import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { ForceState } from "@/lib/creature/force-system";
-import type { IdleBehaviorParams } from "@/lib/creature/idle-behaviors";
+import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { getExpression, lerpExpression, type ExpressionState } from "@/lib/creature/expression-system";
 import { playEmotionSound, getCreatureVoiceVolume } from "@/lib/creature/emotion-sounds";
 
@@ -36,6 +36,8 @@ interface ProceduralCreatureProps {
   genLevel?: number;
   /** Idle behavior visual parameters — computed from resolveIdleBehavior */
   idleBehaviorParams?: IdleBehaviorParams;
+  /** Current idle behavior identifier — drives behavior-specific animations (e.g. grooming) */
+  idleBehavior?: IdleBehavior;
   /** Whether the creature is currently eating (triggers chomp animation) */
   isEating?: boolean;
 }
@@ -114,6 +116,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   forceState,
   genLevel = 1,
   idleBehaviorParams,
+  idleBehavior,
   isEating = false,
 }: ProceduralCreatureProps) {
   const energy = conversationEnergy ?? 0;
@@ -186,7 +189,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     lastEmotionSoundTimeRef.current = now;
     // DNA warmth as pitch modifier (creature-unique voice)
     const dnaModifier = dna?.warmth ?? 0.5;
-    playEmotionSound(mood, dnaModifier);
+    const durationMs = playEmotionSound(mood, dnaModifier);
+    if (durationMs > 0) {
+      vocalizingUntilRef.current = performance.now() + durationMs;
+    }
   }, [mood, dna?.warmth]);
 
   // Idle behavior lerp refs — smooth transitions between idle states (rate 0.03/frame)
@@ -232,6 +238,14 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       life: 0,
     })),
   );
+
+  // Grooming animation — 2Hz head-scratch when idleBehavior === "grooming"
+  const groomingPhaseRef = useRef(0);     // accumulated phase for sinusoidal scratch
+  const groomingIntensityRef = useRef(0); // 0..1 smooth lerp into/out of grooming
+
+  // Vocalization mouth sync — track active sound duration
+  const vocalizingUntilRef = useRef(0);  // performance.now() timestamp until vocalizing
+  const vocalMouthRef = useRef(0);       // 0..1 extra mouth-open contribution
 
   const baseAppearance = useMemo(
     () => deriveDNAAppearance(dna, species, genLevel),
@@ -664,6 +678,17 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       idleDreamParticlesRef.current += ((idleBehaviorParams.showDreamParticles ? 1 : 0) - idleDreamParticlesRef.current) * rate;
     }
 
+    // Grooming animation — 2Hz head-scratch when behavior = "grooming"
+    const groomingTarget = idleBehavior === "grooming" ? 1 : 0;
+    groomingIntensityRef.current += (groomingTarget - groomingIntensityRef.current) * 0.03;
+    if (groomingIntensityRef.current > 0.01) {
+      groomingPhaseRef.current += dt * 2.0 * Math.PI * 2; // 2 Hz
+    }
+
+    // Vocal mouth sync — lerp toward open when vocalizing
+    const isVocalizing = performance.now() < vocalizingUntilRef.current;
+    vocalMouthRef.current += ((isVocalizing ? 1 : 0) - vocalMouthRef.current) * 0.12;
+
     // Wire: expression-system → smooth facial expression lerp each frame
     expressionRef.current = lerpExpression(expressionRef.current, expressionTargetRef.current, 0.04);
     const expr = expressionRef.current;
@@ -761,8 +786,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       lookTargetYawRef.current + forceRotation * 0.5,
       yawLerpRate,
     );
-    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias + idleBodyTiltRef.current;
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, listeningLeanRef.current + forceRotation * 0.3, 0.06);
+    const groomingScratch = Math.sin(groomingPhaseRef.current) * groomingIntensityRef.current * 0.12;
+    groupRef.current.rotation.x = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias + idleBodyTiltRef.current + groomingScratch;
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(
+      groupRef.current.rotation.z,
+      listeningLeanRef.current + forceRotation * 0.3 + Math.cos(groomingPhaseRef.current * 0.5) * groomingIntensityRef.current * 0.05,
+      0.06,
+    );
 
     if (meshRef.current) {
       const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? 1 - excitePulse * 0.15 : 1);
@@ -918,9 +948,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
     // Mouth animation — blends mood config with expression system
     if (mouthRef.current) {
-      // Expression mouthOpen scales Y (open mouth)
+      // Expression mouthOpen scales Y (open mouth); vocalization adds extra opening
       const exprMouthOpen = expr.mouthOpen;
-      const mouthOpenTarget = 0.3 + (mouthConfig.open + exprMouthOpen) * 0.5 * 0.7;
+      const mouthOpenTarget = 0.3 + (mouthConfig.open + exprMouthOpen) * 0.5 * 0.7 + vocalMouthRef.current * 0.4;
       mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, mouthConfig.width, 0.08);
       mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, mouthOpenTarget, 0.08);
       // Expression mouthCurve: positive = smile (rotate up), negative = frown (rotate down)
