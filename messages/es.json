@@ -42,7 +42,10 @@
     "chat": "Chat",
     "discover": "Descubrir",
     "profile": "Perfil",
-    "notifications": "Alertas"
+    "notifications": "Alertas",
+    "room": "Cuarto",
+    "gacha": "Gacha",
+    "feed": "Feed"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -856,7 +859,15 @@
     "dangerTimer": "Streak danger! {countdown} until midnight.",
     "countdownH": "h",
     "countdownM": "m",
-    "weekdaysSingle": ["D", "L", "M", "X", "J", "V", "S"]
+    "weekdaysSingle": [
+      "D",
+      "L",
+      "M",
+      "X",
+      "J",
+      "V",
+      "S"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",

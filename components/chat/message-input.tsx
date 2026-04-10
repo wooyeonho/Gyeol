@@ -68,6 +68,7 @@ export function MessageInput({
   t: (key: string) => string;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isComposingRef = useRef(false);
   const [showStickers, setShowStickers] = useState(false);
 
   useEffect(() => {
@@ -77,7 +78,7 @@ export function MessageInput({
   }, [isStreaming]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isComposingRef.current) {
       e.preventDefault();
       handleSubmitWithFeedback(e);
     }
@@ -199,6 +200,8 @@ export function MessageInput({
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { isComposingRef.current = false; }}
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? t("voice.listeningPlaceholder") : placeholder}
           disabled={isRecording}

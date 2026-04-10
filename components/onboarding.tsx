@@ -20,7 +20,7 @@ const PERSONALITY_MODES = [
   { key: "creative", emoji: "🎨" },
 ] as const;
 
-const TOTAL_STEPS = 3; // Birth (auto) → Personality → Rewards
+const TOTAL_STEPS = 4; // Birth (auto) → Personality → Rewards → Greeting
 
 const slideVariants = {
   enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
@@ -105,12 +105,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               />
             )}
             {step === 2 && <StepRewards t={t} />}
+            {step === 3 && <StepGreeting t={t} onComplete={handleComplete} />}
           </motion.div>
         </AnimatePresence>
 
         {/* Navigation */}
         <div className="mt-8 flex flex-col gap-3">
-          {step < TOTAL_STEPS - 1 ? (
+          {step < TOTAL_STEPS - 2 ? (
+            /* Steps 0–2: normal next/back/skip */
             <>
               <motion.button
                 type="button"
@@ -141,15 +143,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 </button>
               </div>
             </>
-          ) : (
+          ) : step === TOTAL_STEPS - 2 ? (
+            /* Step 2 (Rewards): next goes to greeting, back goes to personality */
             <>
               <motion.button
                 type="button"
-                onClick={handleComplete}
+                onClick={goNext}
                 className="min-h-12 rounded-full bg-cyan-400 px-6 text-base font-semibold text-black transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 whileTap={{ scale: 0.98 }}
               >
-                {t("onboarding.start")}
+                {t("onboarding.next")}
               </motion.button>
               <button
                 type="button"
@@ -159,6 +162,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 {t("common.back")}
               </button>
             </>
+          ) : (
+            /* Step 3 (Greeting): StepGreeting manages its own start button; only show Back */
+            <button
+              type="button"
+              onClick={goBack}
+              className="min-h-10 rounded-full px-4 text-sm font-medium text-white/60 transition-colors hover:text-white/90"
+            >
+              {t("common.back")}
+            </button>
           )}
         </div>
       </motion.section>
@@ -508,5 +520,96 @@ function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => 
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * Step 3 — Creature says hello.
+ * Typewriter effect, then "대화 시작하기" button appears after 2.5 s.
+ * The parent hides external nav buttons; this step owns its own completion.
+ */
+function StepGreeting({
+  t,
+  onComplete,
+}: {
+  t: (key: string) => string;
+  onComplete: () => void;
+}) {
+  const message =
+    t("onboarding.greetingMessage") ||
+    "안녕! 나는 네 크리처야. 오늘 처음 만나서 정말 반가워 😊 뭐든 이야기해줘!";
+
+  const [chars, setChars] = useState(0);
+  const [showButton, setShowButton] = useState(false);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setChars((c) => {
+        if (c >= message.length) {
+          clearInterval(intervalId);
+          return c;
+        }
+        return c + 1;
+      });
+    }, 38);
+
+    const buttonTimer = setTimeout(() => setShowButton(true), 2500);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(buttonTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <>
+      {/* Creature avatar */}
+      <motion.div
+        className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-400/10"
+        animate={{ scale: [1, 1.04, 1] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <span className="text-4xl" aria-hidden="true">💬</span>
+      </motion.div>
+
+      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white">
+        {t("onboarding.greetingTitle") || "첫 인사"}
+      </h2>
+
+      {/* Typewriter speech bubble */}
+      <div className="mt-5 rounded-2xl border border-cyan-400/25 bg-cyan-400/5 p-4 text-left relative">
+        <p className="text-sm leading-7 text-white/90 min-h-[84px]">
+          {message.slice(0, chars)}
+          {chars < message.length && (
+            <span className="inline-block w-0.5 h-4 align-middle bg-cyan-400 ml-0.5 animate-pulse" />
+          )}
+        </p>
+      </div>
+
+      {/* Delayed start button */}
+      <AnimatePresence>
+        {showButton && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="mt-6 w-full"
+          >
+            <motion.button
+              type="button"
+              onClick={() => {
+                haptic("success");
+                onComplete();
+              }}
+              className="min-h-12 w-full rounded-full bg-cyan-400 px-6 text-base font-semibold text-black transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              whileTap={{ scale: 0.97 }}
+            >
+              {t("onboarding.greetingStart") || "대화 시작하기 →"}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

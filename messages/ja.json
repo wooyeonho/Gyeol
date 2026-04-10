@@ -42,7 +42,10 @@
     "chat": "チャット",
     "discover": "発見",
     "profile": "プロフィール",
-    "notifications": "通知"
+    "notifications": "通知",
+    "room": "ルーム",
+    "gacha": "ガチャ",
+    "feed": "フィード"
   },
   "notifications": {
     "title": "通知",
@@ -856,7 +859,15 @@
     "dangerTimer": "Streak danger! {countdown} until midnight.",
     "countdownH": "時間",
     "countdownM": "分",
-    "weekdaysSingle": ["日", "月", "火", "水", "木", "金", "土"]
+    "weekdaysSingle": [
+      "日",
+      "月",
+      "火",
+      "水",
+      "木",
+      "金",
+      "土"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",

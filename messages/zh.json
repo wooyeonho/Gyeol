@@ -42,7 +42,10 @@
     "chat": "聊天",
     "discover": "发现",
     "profile": "个人",
-    "notifications": "通知"
+    "notifications": "通知",
+    "room": "房间",
+    "gacha": "扭蛋",
+    "feed": "动态"
   },
   "notifications": {
     "title": "通知",
@@ -856,7 +859,15 @@
     "dangerTimer": "Streak danger! {countdown} until midnight.",
     "countdownH": "时",
     "countdownM": "分",
-    "weekdaysSingle": ["日", "一", "二", "三", "四", "五", "六"]
+    "weekdaysSingle": [
+      "日",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",

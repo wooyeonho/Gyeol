@@ -41,7 +41,10 @@
     "chat": "채팅",
     "discover": "탐색",
     "profile": "프로필",
-    "notifications": "알림"
+    "notifications": "알림",
+    "room": "방",
+    "gacha": "가챠",
+    "feed": "피드"
   },
   "notifications": {
     "title": "알림",
@@ -862,7 +865,15 @@
     "dangerTimer": "스트릭 위험! 자정까지 {countdown} 남았습니다.",
     "countdownH": "시간",
     "countdownM": "분",
-    "weekdaysSingle": ["일", "월", "화", "수", "목", "금", "토"]
+    "weekdaysSingle": [
+      "일",
+      "월",
+      "화",
+      "수",
+      "목",
+      "금",
+      "토"
+    ]
   },
   "manifestation": {
     "originForm": "형태의 기원",

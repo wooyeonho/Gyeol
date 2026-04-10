@@ -15,27 +15,46 @@ const NotificationCenter = dynamic(() => import("@/components/notification-cente
   loading: () => null,
 });
 
-function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
-  const common = "h-4 w-4";
+type NavIconName = "chat" | "room" | "gacha" | "feed" | "settings";
+
+function NavIcon({ name }: { name: NavIconName }) {
+  const cls = "h-5 w-5";
   switch (name) {
     case "chat":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M6 7h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-6l-4 3v-3H6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3Z" />
         </svg>
       );
-    case "discover":
+    case "room":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="4" y="5" width="7" height="7" rx="1.5" />
-          <rect x="13" y="5" width="7" height="7" rx="1.5" />
-          <rect x="4" y="14" width="7" height="7" rx="1.5" />
-          <rect x="13" y="14" width="7" height="7" rx="1.5" />
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10.5Z" />
+          <path d="M9 21V12h6v9" />
+        </svg>
+      );
+    case "gacha":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74Z" />
+          <circle cx="5" cy="4" r="1.2" />
+          <circle cx="19" cy="4" r="1.2" />
+          <circle cx="5" cy="20" r="1.2" />
+          <circle cx="19" cy="20" r="1.2" />
+        </svg>
+      );
+    case "feed":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
     case "settings":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
           <circle cx="12" cy="12" r="3.5" />
           <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.6a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0l-1.2-1.2a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1 1 0 0 1-1-1v-1.6a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.6a1 1 0 0 1 1 1v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.6Z" opacity=".35" />
         </svg>
@@ -44,32 +63,15 @@ function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
-  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const, tutorialId: "nav-settings" },
+  { path: "/",        labelKey: "nav.chat",     icon: "chat"     as const, tutorialId: "nav-chat" },
+  { path: "/room",    labelKey: "nav.room",     icon: "room"     as const, tutorialId: "nav-room" },
+  { path: "/gacha",   labelKey: "nav.gacha",    icon: "gacha"    as const, tutorialId: "nav-gacha" },
+  { path: "/feed",    labelKey: "nav.feed",     icon: "feed"     as const, tutorialId: "nav-feed" },
+  { path: "/settings",labelKey: "nav.settings", icon: "settings" as const, tutorialId: "nav-settings" },
 ];
 
-const DISCOVER_PATHS = new Set([
-  "/discover",
-  "/activity",
-  "/album",
-  "/social",
-  "/explore",
-  "/leaderboard",
-  "/compare",
-  "/adopt",
-  "/market",
-  "/room",
-  "/constellation",
-]);
-
 function isTabActive(pathname: string, tabPath: string) {
-  if (tabPath === "/") {
-    return pathname === "/";
-  }
-  if (tabPath === "/discover") {
-    return DISCOVER_PATHS.has(pathname);
-  }
+  if (tabPath === "/") return pathname === "/";
   return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
 }
 
@@ -101,6 +103,8 @@ export function BottomNav() {
     return TABS.findIndex((tab) => isTabActive(pathname, tab.path));
   }, [pathname]);
 
+  const tabWidth = `calc((100% - 52px) / ${TABS.length})`;
+
   return (
     <>
       <nav
@@ -108,51 +112,64 @@ export function BottomNav() {
         style={{ borderColor: `${appearance.palette.primary}25` }}
         aria-label="Bottom navigation"
       >
-        <div className="relative mx-auto flex max-w-md items-center justify-around px-3 py-2">
-          {/* Animated active pill indicator */}
+        <div className="relative mx-auto flex max-w-lg items-center justify-around px-2 py-1">
+          {/* Animated active pill */}
           {activeIndex >= 0 && (
             <motion.div
-              className="absolute top-2 h-[calc(100%-1rem)] rounded-2xl"
+              className="absolute top-1 h-[calc(100%-0.5rem)] rounded-2xl"
               style={{
                 background: `${appearance.palette.primary}15`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset, 0 0 20px ${appearance.palette.primary}08`,
-                /* Account for bell icon: tabs take proportional space */
-                width: `calc((100% - 56px) / ${TABS.length})`,
+                width: tabWidth,
               }}
               animate={{
-                left: `calc(${(activeIndex / TABS.length) * 100}% * (1 - 56px / 100%))`,
+                left: `calc(${activeIndex} * ${tabWidth})`,
               }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
             />
           )}
+
           {TABS.map((tab) => {
             const isActive = isTabActive(pathname, tab.path);
+            const label = t(tab.labelKey) || tab.path.replace("/", "") || "chat";
             return (
               <Link
                 key={tab.path}
                 href={tab.path}
                 data-tutorial={tab.tutorialId}
                 onClick={() => haptic("tap")}
-                aria-label={t(tab.labelKey)}
-                className="relative z-10 flex min-h-14 min-w-[80px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
+                className="relative z-10 flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 style={{ color: isActive ? "var(--foreground)" : "var(--theme-text-subtle)" }}
               >
                 <motion.span
                   aria-hidden="true"
-                  animate={{ scale: isActive ? 1.1 : 1 }}
+                  animate={{ scale: isActive ? 1.12 : 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 >
                   <NavIcon name={tab.icon} />
                 </motion.span>
-                <span className={`text-xs font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-60"}`}>{t(tab.labelKey)}</span>
+                <span className={`text-[10px] font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-55"}`}>
+                  {label}
+                </span>
+                {/* Gacha sparkle dot — always visible to draw attention */}
+                {tab.path === "/gacha" && !isActive && (
+                  <motion.span
+                    className="absolute top-2 right-3 h-1.5 w-1.5 rounded-full bg-yellow-400"
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.6, repeat: Infinity }}
+                  />
+                )}
               </Link>
             );
           })}
+
           {/* Notification bell */}
           <NotificationBellButton onClick={() => setNotifOpen(true)} />
         </div>
       </nav>
-      {/* Notification center panel */}
+
       <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
     </>
   );

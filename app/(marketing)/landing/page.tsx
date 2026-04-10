@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 
@@ -24,6 +25,20 @@ const FEATURE_ICONS: Record<string, string> = {
 
 export default function LandingPage() {
   const { t } = useTranslations();
+  const [agentCount, setAgentCount] = useState<number | null>(null);
+  const [messageCount, setMessageCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/stats/public")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) {
+          setAgentCount(d.agentCount);
+          setMessageCount(d.messageCount);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="relative overflow-hidden">
@@ -322,6 +337,31 @@ export default function LandingPage() {
                 <p className="text-3xl font-bold text-accent">3D</p>
                 <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_creature")}</p>
               </div>
+            </div>
+            {/* Real-time user stats */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <motion.div
+                className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: agentCount !== null ? 1 : 0.4 }}
+                transition={{ duration: 0.6 }}
+              >
+                <p className="text-2xl font-bold text-accent tabular-nums">
+                  {agentCount !== null ? agentCount.toLocaleString() : "···"}
+                </p>
+                <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_creatures") || "탄생한 크리처"}</p>
+              </motion.div>
+              <motion.div
+                className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: messageCount !== null ? 1 : 0.4 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                <p className="text-2xl font-bold text-accent tabular-nums">
+                  {messageCount !== null ? messageCount.toLocaleString() : "···"}
+                </p>
+                <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_messages") || "나눈 대화"}</p>
+              </motion.div>
             </div>
           </motion.div>
         </div>
