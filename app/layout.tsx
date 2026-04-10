@@ -14,6 +14,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { SwipeNavigation } from "@/components/swipe-navigation";
 import { GlobalCelebration } from "@/components/global-celebration";
+import { GlobalKeyboardProvider } from "@/components/global-keyboard-provider";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -140,6 +141,7 @@ export default async function RootLayout({
           <CookieConsent />
           <OfflineIndicator />
           <GlobalCelebration />
+          <GlobalKeyboardProvider />
           <NavigationHub />
           <AnalyticsProvider>
             <SwipeNavigation>

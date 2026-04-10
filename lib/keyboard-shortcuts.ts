@@ -81,6 +81,12 @@ export const SHORTCUTS: ShortcutDef[] = [
     descriptionEn: "Switch to tab 5",
   },
   {
+    action: "toggleReaction",
+    key: "Space",
+    descriptionKo: "현재 항목에 반응 토글",
+    descriptionEn: "Toggle reaction on current item",
+  },
+  {
     action: "showHelp",
     key: "?",
     descriptionKo: "키보드 단축키 도움말",
@@ -178,6 +184,13 @@ export function useKeyboardShortcuts(
       if (tabAction && handlers[tabAction]) {
         e.preventDefault();
         handlers[tabAction]();
+        return;
+      }
+
+      // Space for toggling reaction on current item
+      if (key === " " && handlers.toggleReaction) {
+        e.preventDefault();
+        handlers.toggleReaction();
         return;
       }
 

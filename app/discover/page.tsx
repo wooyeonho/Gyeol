@@ -18,6 +18,7 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
 const DungeonExplorer = dynamic(() => import("@/components/dungeon-explorer").then(m => m.DungeonExplorer), { ssr: false });
 const PvPRankCard = dynamic(() => import("@/components/pvp-rank-card").then(m => m.PvPRankCard), { ssr: false });
+const SpeciesCodex = dynamic(() => import("@/components/species-codex").then(m => ({ default: m.SpeciesCodex })), { ssr: false });
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -329,6 +330,9 @@ export default function DiscoverPage() {
 
         {/* PvP Ranking */}
         {dna && <PvPRankCard locale={locale} />}
+
+        {/* Species Codex — Pokedex-style collection */}
+        <SpeciesCodex locale={locale} />
 
         {/* More Ways divider */}
         <div className="flex items-center gap-2 px-1 pt-2">
