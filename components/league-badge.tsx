@@ -9,12 +9,20 @@ import {
   type LadderState,
   type League,
 } from "@/lib/game/ladder-system";
+import {
+  getLeagueProgress as getLeagueTierProgress,
+  getLeagueState,
+  getTierInfo,
+  TIERS_ORDERED,
+  type Tier,
+  type LeagueProgress,
+} from "@/lib/game/league-system";
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
 interface LeagueBadgeProps {
-  /** "compact" = icon + name, "full" = icon + name + points bar */
-  mode?: "compact" | "full";
+  /** "compact" = icon + name, "full" = icon + name + points bar, "tier" = league-system tier badge */
+  mode?: "compact" | "full" | "tier";
   /** Optional locale override */
   locale?: "ko" | "en";
   /** External ladder state (if not provided, reads from localStorage) */
@@ -109,6 +117,7 @@ export default function LeagueBadge({
   state: externalState,
 }: LeagueBadgeProps) {
   const [ladderState, setLadderState] = useState<LadderState | null>(null);
+  const [tierProgress, setTierProgress] = useState<LeagueProgress | null>(null);
   const [transition, setTransition] = useState<{
     type: "promoted" | "demoted";
     league: League;
@@ -116,10 +125,14 @@ export default function LeagueBadge({
   const [prevLeague, setPrevLeague] = useState<League | null>(null);
 
   useEffect(() => {
-    const state = externalState ?? getLadderState();
-    setLadderState(state);
-    setPrevLeague(state.league);
-  }, [externalState]);
+    if (mode === "tier") {
+      setTierProgress(getLeagueTierProgress());
+    } else {
+      const state = externalState ?? getLadderState();
+      setLadderState(state);
+      setPrevLeague(state.league);
+    }
+  }, [externalState, mode]);
 
   // Detect league changes for animation
   useEffect(() => {
@@ -140,6 +153,91 @@ export default function LeagueBadge({
     const timeout = setTimeout(() => setTransition(null), 2500);
     return () => clearTimeout(timeout);
   }, [ladderState?.league, prevLeague]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Tier mode (league-system) ──────────────────────────────────────────
+  if (mode === "tier") {
+    if (!tierProgress) {
+      return <div className="h-8 w-20 animate-pulse rounded-lg bg-gray-800" />;
+    }
+
+    const info = getTierInfo(tierProgress.currentTier);
+    const nextInfo = tierProgress.nextTier ? getTierInfo(tierProgress.nextTier) : null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-xs rounded-xl border border-gray-800 bg-gray-950 p-3"
+      >
+        {/* Tier icon + name */}
+        <div className="mb-2 flex items-center gap-2">
+          <motion.span
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="text-2xl"
+          >
+            {info.icon}
+          </motion.span>
+          <div>
+            <div className="text-sm font-bold" style={{ color: info.color }}>
+              {info.label[locale]}
+            </div>
+            <div className="text-[10px] text-gray-500">
+              {tierProgress.currentPoints.toLocaleString()} pts
+            </div>
+          </div>
+
+          {/* Zone indicators */}
+          {tierProgress.promotionZone && (
+            <motion.span
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="ml-auto rounded-full bg-green-600/20 px-2 py-0.5 text-[10px] font-bold text-green-400"
+            >
+              {locale === "ko" ? "승급 임박" : "Promotion"}
+            </motion.span>
+          )}
+          {tierProgress.demotionZone && (
+            <motion.span
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="ml-auto rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-bold text-red-400"
+            >
+              {locale === "ko" ? "강등 위험" : "Demotion"}
+            </motion.span>
+          )}
+        </div>
+
+        {/* Progress bar to next tier */}
+        <div className="mb-1">
+          <div className="mb-0.5 flex justify-between text-[10px] text-gray-500">
+            <span>{info.label[locale]}</span>
+            <span>{nextInfo ? nextInfo.label[locale] : "MAX"}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-800">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${tierProgress.progressPercent}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="h-full rounded-full"
+              style={{
+                background: `linear-gradient(90deg, ${info.color}88, ${nextInfo ? nextInfo.color : info.color})`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Points to next tier */}
+        {nextInfo && (
+          <div className="text-[10px] text-gray-500">
+            {locale === "ko"
+              ? `다음 티어까지 ${(tierProgress.pointsForNextTier - tierProgress.currentPoints).toLocaleString()} pts`
+              : `${(tierProgress.pointsForNextTier - tierProgress.currentPoints).toLocaleString()} pts to ${nextInfo.label[locale]}`}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
 
   if (!ladderState) {
     return <div className="h-8 w-20 animate-pulse rounded-lg bg-gray-800" />;

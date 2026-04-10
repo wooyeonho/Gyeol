@@ -15,6 +15,8 @@ import {
   type DailyChallengeState,
   type ChallengeDifficulty,
 } from "@/lib/engagement/daily-challenge";
+import { recordPerfectDay } from "@/lib/engagement/perfect-day";
+import { PerfectDayBadge } from "@/components/perfect-day-badge";
 
 const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, { label: string; color: string; glow: string; bg: string }> = {
   easy:   { label: "Easy",   color: "text-emerald-300", glow: "shadow-emerald-500/20", bg: "border-emerald-500/30 bg-emerald-500/8" },
@@ -115,6 +117,9 @@ export default function ChallengesPage() {
             )}
           </div>
         )}
+
+        {/* Perfect Day Streak badge */}
+        <PerfectDayBadge locale={locale} />
 
         {/* Challenge cards */}
         <div className="space-y-3">
@@ -234,6 +239,7 @@ export default function ChallengesPage() {
                   onClick={() => {
                     haptic("success");
                     setShowPerfect(false);
+                    recordPerfectDay();
                     if (state) {
                       const updated = { ...state, perfectDayClaimed: true };
                       setState(updated);

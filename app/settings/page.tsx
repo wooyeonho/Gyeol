@@ -34,6 +34,7 @@ const StreakHeatmap = dynamic(() => import("@/components/streak-heatmap").then(m
 });
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
+import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import {
   isFontSize,
   isThemeMode,
@@ -630,6 +631,11 @@ export default function SettingsPage() {
         <section className="theme-panel rounded-3xl p-4">
           <p className="theme-text-faint text-xs uppercase tracking-[0.2em] mb-3">{t("settings.activityHeatmap") || "Activity"}</p>
           <StreakHeatmap activeDates={streakDates} accentColor={accentColor} />
+        </section>
+
+        {/* Perfect Day Streak */}
+        <section className="theme-panel rounded-3xl p-5">
+          <PerfectDayBadge locale={locale} />
         </section>
 
         {/* Achievement Showcase */}

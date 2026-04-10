@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { haptic, playSound } from "@/lib/micro-interactions";
@@ -278,8 +278,40 @@ function StepRewards({ t }: { t: (key: string) => string }) {
   );
 }
 
-/** Social proof banner — shows community size + active users like TikTok/Instagram onboarding */
+/** Smooth count-up hook for social proof numbers */
+function useCountUp(target: number, duration = 1200): number {
+  const [display, setDisplay] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
+    const startTime = performance.now();
+    function tick(now: number) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic for a satisfying deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(target * eased));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, duration]);
+
+  return display;
+}
+
+/** Social proof banner — shows community size + count-up animation (Instagram/Duolingo style) */
 function SocialProofBanner({ t }: { t: (key: string) => string }) {
+  const userCount = useCountUp(12847, 1400);
+
   const stats = [
     { label: t("onboarding.socialProofCreatures") || "고유 크리처 탄생", value: "344M+", icon: "🧬" },
     { label: t("onboarding.socialProofConversations") || "대화 나눔", value: "1.2M+", icon: "💬" },
@@ -293,6 +325,17 @@ function SocialProofBanner({ t }: { t: (key: string) => string }) {
       transition={{ delay: 0.3, duration: 0.4 }}
       className="mt-4 rounded-2xl border border-white/8 bg-gradient-to-r from-white/[0.03] to-white/[0.06] p-3"
     >
+      {/* Headline social proof with count-up */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+        className="mb-3 text-center text-sm font-semibold text-cyan-300/90"
+      >
+        <span className="tabular-nums">{userCount.toLocaleString()}</span>
+        {t("onboarding.socialProofHeadline") || "명이 이미 결과 함께하고 있어요"}
+      </motion.p>
+
       <div className="flex items-center justify-around">
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col items-center gap-0.5">

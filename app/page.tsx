@@ -27,9 +27,14 @@ const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => 
   loading: () => null,
 });
 import { CreatureStatusIndicator } from "@/components/creature-status";
+import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
+import { PerfectDayBadge } from "@/components/perfect-day-badge";
+import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
+import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
+import { QuickCareButtons } from "@/components/quick-care-buttons";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -679,9 +684,37 @@ export default function Home() {
                 />
               </>
             )}
+            <PerfectDayBadge locale={locale} compact />
           </div>
+          {/* BG3-style heart gauge — shows creature-user bond level */}
+          <div className="flex justify-center mt-1">
+            <AffinityHeartGauge score={agentState?.intimacy_score ?? 0} compact />
+          </div>
+          {/* Pokemon-style type badge */}
+          {creatureDna && (
+            <div className="flex justify-center mt-1">
+              <TypeAdvantageBadge dna={creatureDna} locale={locale} compact />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
+        <QuickCareButtons
+          vitality={vitality}
+          onCareComplete={() => fetchAgentState({ silent: true })}
+        />
+      </div>
+
+      {/* ===== DYNAMIC ISLAND — always-visible creature mini status ===== */}
+      <CreatureMiniStatus
+        selfName={agentState?.self_name ?? "GYEOL"}
+        mood={agentState?.mood ?? null}
+        vitality={vitality}
+        activity={creature.state.activity}
+        primaryColor={appearance.palette.primary}
+      />
 
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">
