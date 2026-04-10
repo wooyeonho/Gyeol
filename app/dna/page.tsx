@@ -8,9 +8,13 @@ import { useTranslations } from "@/components/i18n-provider";
 import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
-import { PortraitGallery } from "@/components/portrait-gallery";
 import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 import dynamic from "next/dynamic";
+
+const PortraitGallery = dynamic(() => import("@/components/portrait-gallery").then((m) => ({ default: m.PortraitGallery })), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-48 rounded-lg bg-white/5" />,
+});
 
 const CreatureStatsCard = dynamic(() => import("@/components/creature-stats-card").then(m => m.CreatureStatsCard), { ssr: false });
 const StatCard = dynamic(() => import("@/components/stat-card").then(m => ({ default: m.StatCard })), { ssr: false });

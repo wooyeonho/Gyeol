@@ -1,9 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useKeyboardShortcuts, SHORTCUTS } from "@/lib/keyboard-shortcuts";
-import { SearchModal, useSearchModal } from "@/components/search-modal";
-import { KeyboardShortcutHelp } from "@/components/keyboard-shortcut-help";
+import { useSearchModal } from "@/components/search-modal";
+
+const SearchModal = dynamic(() => import("@/components/search-modal").then((m) => ({ default: m.SearchModal })), {
+  ssr: false,
+  loading: () => null,
+});
+const KeyboardShortcutHelp = dynamic(() => import("@/components/keyboard-shortcut-help").then((m) => ({ default: m.KeyboardShortcutHelp })), {
+  ssr: false,
+  loading: () => null,
+});
 
 /**
  * Global keyboard shortcut provider.

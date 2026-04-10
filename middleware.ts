@@ -236,6 +236,7 @@ export async function middleware(request: NextRequest) {
   // ── Security response headers ──
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=(), interest-cohort=()");
   response.headers.set("X-DNS-Prefetch-Control", "on");

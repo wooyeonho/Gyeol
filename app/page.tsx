@@ -20,8 +20,14 @@ import { haptic } from "@/lib/micro-interactions";
 import { getIdleBehaviorParams } from "@/lib/creature/idle-behaviors";
 import { motion } from "framer-motion";
 import { AgeGate } from "@/components/age-gate";
-import { Onboarding } from "@/components/onboarding";
-import { DeathScreen } from "@/components/death-screen";
+const Onboarding = dynamic(() => import("@/components/onboarding").then((m) => ({ default: m.Onboarding })), {
+  ssr: false,
+  loading: () => <div className="h-full" />,
+});
+const DeathScreen = dynamic(() => import("@/components/death-screen").then((m) => ({ default: m.DeathScreen })), {
+  ssr: false,
+  loading: () => null,
+});
 const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), {
   ssr: false,
   loading: () => null,
@@ -50,7 +56,10 @@ const EvolutionCeremony = dynamic(() => import("@/components/evolution-ceremony"
   ssr: false,
   loading: () => null,
 });
-import { WorldClassHub } from "@/components/world-class-hub";
+const WorldClassHub = dynamic(() => import("@/components/world-class-hub").then((m) => ({ default: m.WorldClassHub })), {
+  ssr: false,
+  loading: () => null,
+});
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
 import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";

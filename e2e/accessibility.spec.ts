@@ -58,6 +58,12 @@ test("chat interface should have proper ARIA roles", async ({ page }) => {
   expect(await skipLink.count()).toBeGreaterThanOrEqual(1);
 });
 
+test("homepage has no accessibility violations", async ({ page }) => {
+  await page.goto("/");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test("forms should have associated labels", async ({ page }) => {
   await page.goto("/login", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
