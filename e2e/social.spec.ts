@@ -56,3 +56,21 @@ test.describe("Social feed", () => {
     expect(criticalErrors).toHaveLength(0);
   });
 });
+
+test.describe("Stories API", () => {
+  test("GET /api/social/stories returns stories array", async ({ request }) => {
+    const res = await request.get("/api/social/stories");
+    // Should return 200 with stories (possibly demo stories)
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.stories)).toBe(true);
+  });
+
+  test("POST /api/social/stories without auth returns 401 or 403", async ({ request }) => {
+    const res = await request.post("/api/social/stories", {
+      data: { creature_name: "Test", content: "Hello", mood: "happy" },
+    });
+    // Without auth, should get 401 (no user) or 403 (CSRF)
+    expect([401, 403]).toContain(res.status());
+  });
+});

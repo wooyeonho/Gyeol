@@ -356,6 +356,13 @@ export async function executeSocial(): Promise<CronResult> {
       }
     }
 
+    // Cleanup expired creature stories (fire-and-forget)
+    try {
+      await db.rpc("cleanup_expired_stories");
+    } catch {
+      // RPC may not exist yet — ignore silently
+    }
+
     return {
       processed: 1,
       pair: [a.agent_id, b.agent_id],
