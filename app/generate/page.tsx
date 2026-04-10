@@ -180,7 +180,6 @@ export default function GeneratePage() {
                         alt={record.prompt}
                         fill
                         className="object-cover"
-                        unoptimized
                         sizes="(max-width: 640px) 100vw, 50vw"
                       />
                     </div>

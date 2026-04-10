@@ -15,6 +15,8 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { SwipeNavigation } from "@/components/swipe-navigation";
 import { GlobalCelebration } from "@/components/global-celebration";
 import { GlobalKeyboardProvider } from "@/components/global-keyboard-provider";
+import { VitalsReporter } from "@/components/vitals-reporter";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -142,6 +144,8 @@ export default async function RootLayout({
           <OfflineIndicator />
           <GlobalCelebration />
           <GlobalKeyboardProvider />
+          <VitalsReporter />
+          <PwaInstallPrompt />
           <NavigationHub />
           <AnalyticsProvider>
             <SwipeNavigation>

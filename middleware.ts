@@ -197,6 +197,7 @@ function buildCsp(nonce: string): string {
     "media-src 'self' data: blob:",
     "form-action 'self'",
     "upgrade-insecure-requests",
+    "report-to csp-endpoint",
   ].join("; ");
 }
 
@@ -240,6 +241,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=(), interest-cohort=()");
   response.headers.set("X-DNS-Prefetch-Control", "on");
+  // ── CSP Reporting API (captures real violations for security monitoring) ──
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  response.headers.set(
+    "Reporting-Endpoints",
+    `csp-endpoint="${appUrl}/api/csp-report"`
+  );
 
   // Set locale cookie if missing or mismatched
   if (

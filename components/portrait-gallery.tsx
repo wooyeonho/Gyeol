@@ -209,7 +209,6 @@ export function PortraitGallery() {
                   alt={p.title}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
-                  unoptimized
                   sizes="(max-width: 640px) 50vw, 33vw"
                 />
                 {/* Overlay info */}
@@ -259,7 +258,7 @@ export function PortraitGallery() {
                 width={512}
                 height={512}
                 className="w-full"
-                unoptimized
+                sizes="(max-width: 640px) 100vw, 512px"
               />
               <div className="p-4 space-y-2">
                 <div className="flex items-center gap-2">

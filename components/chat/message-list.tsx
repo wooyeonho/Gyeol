@@ -5,13 +5,67 @@ import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
 
+/**
+ * Convert a subset of Markdown to safe HTML for AI assistant messages.
+ *
+ * Supported: **bold**, *italic*, `inline code`, ```fenced code blocks```,
+ * - unordered list items, 1. ordered list items, paragraph breaks.
+ *
+ * Never allows raw HTML passthrough — only the generated tags below can
+ * appear in the output, preventing XSS even if the AI model returns HTML.
+ */
+function markdownToSafeHtml(md: string): string {
+  let html = md
+    // Escape any HTML entities first so we never render raw HTML from AI output
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Fenced code blocks (``` ... ```)
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_m, _lang, code) =>
+    `<pre class="my-2 overflow-x-auto rounded-lg bg-white/8 px-3 py-2 text-xs font-mono text-white/85"><code>${code.trim()}</code></pre>`
+  );
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="rounded bg-white/12 px-1 py-0.5 text-xs font-mono text-white/90">$1</code>');
+
+  // Bold (**text**)
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+
+  // Italic (*text*)
+  html = html.replace(/\*(.+?)\*/g, '<em class="italic">$1</em>');
+
+  // Unordered list (lines starting with "- " or "* ")
+  html = html.replace(/^[*-] (.+)/gm, '<li class="ml-4 list-disc">$1</li>');
+
+  // Ordered list (lines starting with "1. " etc.)
+  html = html.replace(/^\d+\. (.+)/gm, '<li class="ml-4 list-decimal">$1</li>');
+
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li[\s\S]*?<\/li>)(\n<li[\s\S]*?<\/li>)*/g, (match) =>
+    `<ul class="my-1 space-y-0.5">${match}</ul>`
+  );
+
+  // Paragraph breaks (double newline)
+  html = html.replace(/\n{2,}/g, '</p><p class="mt-2">');
+
+  // Single newlines → <br>
+  html = html.replace(/\n/g, "<br/>");
+
+  return `<p>${html}</p>`;
+}
+
 const messageVariants = {
   hidden: { opacity: 0, y: 12, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
 
-/** Only render the last N messages in the DOM to avoid excessive DOM nodes. */
-const VISIBLE_MESSAGE_CAP = 100;
+/**
+ * Render the last N messages in the DOM.
+ * Prevents excessive DOM nodes for power users with long conversation histories.
+ * TODO: Replace with @tanstack/virtual for true infinite history navigation.
+ */
+const VISIBLE_MESSAGE_CAP = 300;
 
 export function MessageList({
   messages,
@@ -214,9 +268,10 @@ export function MessageList({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35 }}
             >
-              <p className="whitespace-pre-wrap break-words">
-                {maskJargon(m.content)}
-                {isStreaming && i === messages.length - 1 && (
+              {/* Render streaming messages as plain text; completed messages as markdown */}
+              {isStreaming && i === messages.length - 1 ? (
+                <p className="whitespace-pre-wrap break-words">
+                  {maskJargon(m.content)}
                   <motion.span
                     className="ml-1 inline-block"
                     style={{ color: appearance.palette.primary }}
@@ -225,8 +280,15 @@ export function MessageList({
                   >
                     |
                   </motion.span>
-                )}
-              </p>
+                </p>
+              ) : (
+                <div
+                  className="prose-gyeol break-words leading-relaxed"
+                  // Safe: markdownToSafeHtml escapes all input HTML before converting markdown
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{ __html: markdownToSafeHtml(maskJargon(m.content)) }}
+                />
+              )}
               {!isStreaming && i === messages.length - 1 && !m.error && (
                 <p className="mt-2 text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                   {appearance.voice.toneHint}

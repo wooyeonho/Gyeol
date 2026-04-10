@@ -17,6 +17,55 @@ import { useCelebrationStore } from "@/store/celebration-store";
 interface MysteryBoxOverlayProps {
   box: MysteryBox;
   onClose: () => void;
+  /**
+   * Optional FOMO: Unix timestamp (ms) when this box offer expires.
+   * Shows a countdown like "오늘만 한정 ⏰ 23:47:12".
+   */
+  expiresAt?: number;
+}
+
+/** Format milliseconds as HH:MM:SS */
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "00:00:00";
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+}
+
+function FomoCountdown({ expiresAt }: { expiresAt: number }) {
+  const [remaining, setRemaining] = useState(() => expiresAt - Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const r = expiresAt - Date.now();
+      setRemaining(r);
+      if (r <= 0) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  if (remaining <= 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-3 flex items-center justify-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1"
+      role="timer"
+      aria-label={`한정 제공 마감까지 ${formatCountdown(remaining)}`}
+      aria-live="off"
+    >
+      <span aria-hidden="true" className="text-sm">⏰</span>
+      <span className="text-xs font-semibold text-amber-400">
+        오늘만 한정
+      </span>
+      <span className="font-mono text-xs font-bold text-amber-300 tabular-nums">
+        {formatCountdown(remaining)}
+      </span>
+    </motion.div>
+  );
 }
 
 const RARITY_STYLE: Record<BoxRarity, { glow: string; color: string; label: string; particle: string }> = {
@@ -26,7 +75,7 @@ const RARITY_STYLE: Record<BoxRarity, { glow: string; color: string; label: stri
   legendary: { glow: "rgba(245,158,11,0.7)",   color: "#f59e0b", label: "Legendary", particle: "bg-amber-400" },
 };
 
-export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
+export function MysteryBoxOverlay({ box, onClose, expiresAt }: MysteryBoxOverlayProps) {
   const { t } = useTranslations();
   const [phase, setPhase] = useState<"shake" | "crack" | "reveal">("shake");
   const [pityCount, setPityCount] = useState(() => getPityCount());
@@ -79,6 +128,9 @@ export function MysteryBoxOverlay({ box, onClose }: MysteryBoxOverlayProps) {
       exit={{ opacity: 0 }}
     >
       <div className="w-full max-w-sm text-center">
+        {/* FOMO countdown timer */}
+        {expiresAt && <FomoCountdown expiresAt={expiresAt} />}
+
         {/* Box animation */}
         <div className="relative flex items-center justify-center mb-8">
           {/* Glow rings */}
