@@ -57,7 +57,7 @@ export function DailyLoginBonus({
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <div className="glass-card-strong rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">
           {isKo ? "출석 보상" : "Daily Login Bonus"}
@@ -112,7 +112,7 @@ export function DailyLoginBonus({
 
       {/* Claim button */}
       <motion.button
-        className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
+        className={`btn-3d w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
           claimed
             ? "bg-white/5 text-white/30 cursor-not-allowed"
             : "bg-amber-500 text-white hover:bg-amber-400 active:scale-95"

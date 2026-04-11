@@ -301,7 +301,7 @@ export function EvolutionCeremony({
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex-1 rounded-2xl py-3.5 text-sm font-semibold text-black transition-all active:scale-95"
+                className="btn-3d flex-1 rounded-2xl py-3.5 text-sm font-semibold text-black transition-all active:scale-95"
                 style={{
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                 }}
@@ -313,7 +313,7 @@ export function EvolutionCeremony({
               <button
                 type="button"
                 onClick={handleClose}
-                className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 active:scale-95"
+                className="glass-card btn-3d rounded-2xl px-6 py-3.5 text-sm font-medium text-white/80 transition-all hover:brightness-110 active:scale-95"
               >
                 {t("evolution.close")}
               </button>

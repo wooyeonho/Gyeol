@@ -306,7 +306,7 @@ export default function DiscoverPage() {
         {dna ? (
           <DailySpecialChallenge dna={dna} genLevel={genLevel} locale={locale} />
         ) : (
-          <Link href="/challenges" onClick={() => haptic("tap")} className="block rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition-colors">
+          <Link href="/challenges" onClick={() => haptic("tap")} className="block glass-card rounded-2xl p-4 hover:brightness-110 transition-all btn-3d">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-base">⚡</span>
@@ -385,7 +385,7 @@ export default function DiscoverPage() {
               <Link
                 href={card.href}
                 onClick={() => haptic("tap")}
-                className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
+                className={`group glass-card relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-white/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
               >
                 <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
                 <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors w-fit mb-2">
@@ -406,7 +406,7 @@ export default function DiscoverPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="mt-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5 text-center"
+            className="mt-6 glass-card rounded-2xl p-5 text-center"
           >
             <p className="text-sm text-white/50 leading-relaxed">
               {t("discover.allEmpty")}
@@ -437,15 +437,24 @@ export default function DiscoverPage() {
 
         <section className="grid grid-cols-3 gap-2">
           {[
-            { href: "/leaderboard", label: t("leaderboard.title"), icon: "🏆" },
-            { href: "/compare", label: t("compare.title"), icon: "⚔️" },
-            { href: "/time-travel", label: t("timeTravel.title"), icon: "⏳" },
+            { href: "/leaderboard",      label: locale === "ko" ? "리더보드"    : "Leaderboard",  icon: "🏆" },
+            { href: "/compare",          label: locale === "ko" ? "비교"        : "Compare",      icon: "⚔️" },
+            { href: "/time-travel",      label: locale === "ko" ? "시간여행"    : "Time Travel",  icon: "⏳" },
+            { href: "/gacha",            label: locale === "ko" ? "가챠"        : "Gacha",        icon: "🎰" },
+            { href: "/wellness",         label: locale === "ko" ? "웰니스"      : "Wellness",     icon: "💚" },
+            { href: "/wrapped",          label: locale === "ko" ? "연간 요약"   : "Wrapped",      icon: "🎁" },
+            { href: "/feed",             label: locale === "ko" ? "피드"        : "Feed",         icon: "📰" },
+            { href: "/community/spaces", label: locale === "ko" ? "커뮤니티"    : "Community",    icon: "🌐" },
+            { href: "/diary",            label: locale === "ko" ? "일기"        : "Diary",        icon: "📓" },
+            { href: "/challenges",       label: locale === "ko" ? "챌린지"      : "Challenges",   icon: "⚡" },
+            { href: "/care",             label: locale === "ko" ? "돌봄 기록"   : "Care Log",     icon: "🌱" },
+            { href: "/profile/customize",label: locale === "ko" ? "프로필"      : "Profile",      icon: "✨" },
           ].map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => haptic("tap")}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-4 text-center transition-all hover:bg-white/[0.12] hover:border-white/10 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="glass-card btn-3d flex flex-col items-center gap-1.5 rounded-2xl px-3 py-4 text-center transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <span className="text-xl">{item.icon}</span>
               <span className="text-xs font-medium text-white/70">{item.label}</span>

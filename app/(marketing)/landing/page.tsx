@@ -42,24 +42,24 @@ export default function LandingPage() {
             {t("landing.eyebrow")}
           </p>
 
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl">
+          <h1 className="mt-6 text-display">
             {t("landing.heroTitle")}
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-base leading-7 theme-text-subtle sm:text-lg">
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-7 theme-text-subtle sm:text-hero">
             {t("landing.heroSubtitle")}
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/demo"
-              className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95"
+              className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95 btn-3d"
             >
               Try it — 2 minutes, no signup
             </Link>
             <Link
               href="/login"
-              className="rounded-full border border-[color:var(--theme-border-strong)] bg-surface-1 px-8 py-3.5 text-sm font-medium theme-text-muted transition-all hover:bg-surface-2 active:scale-95"
+              className="glass-card rounded-full px-8 py-3.5 text-sm font-medium theme-text-muted transition-all hover:brightness-110 active:scale-95 btn-3d"
             >
               {t("landing.ctaSecondary")}
             </Link>
@@ -111,7 +111,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: i * 0.08 }}
-                className="theme-panel rounded-2xl p-5"
+                className="glass-card rounded-2xl p-5"
               >
                 <span className="text-2xl" aria-hidden="true">
                   {FEATURE_ICONS[icon]}

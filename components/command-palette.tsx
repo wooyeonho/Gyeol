@@ -31,8 +31,8 @@ export function CommandPalette({ locale = "ko", onThemeToggle }: CommandPaletteP
 
   const COMMANDS: Command[] = [
     // Navigation
-    { id: "nav-home",         icon: "🏠", label: isKo ? "홈으로"       : "Home",           action: () => router.push("/home"),            group: isKo ? "이동" : "Navigate" },
-    { id: "nav-chat",         icon: "💬", label: isKo ? "대화하기"     : "Chat",            action: () => router.push("/home"),            group: isKo ? "이동" : "Navigate" },
+    { id: "nav-home",         icon: "🏠", label: isKo ? "홈으로"       : "Home",           action: () => router.push("/"),            group: isKo ? "이동" : "Navigate" },
+    { id: "nav-chat",         icon: "💬", label: isKo ? "대화하기"     : "Chat",            action: () => router.push("/"),            group: isKo ? "이동" : "Navigate" },
     { id: "nav-room",         icon: "🏡", label: isKo ? "크리처 룸"    : "Creature Room",   action: () => router.push("/room"),            group: isKo ? "이동" : "Navigate" },
     { id: "nav-memories",     icon: "⭐", label: isKo ? "메모리 타임라인" : "Memories",    action: () => router.push("/memories"),        group: isKo ? "이동" : "Navigate" },
     { id: "nav-constellation",icon: "🌌", label: isKo ? "별자리"        : "Constellation",  action: () => router.push("/constellation"),   group: isKo ? "이동" : "Navigate" },

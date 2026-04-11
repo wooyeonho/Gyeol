@@ -60,10 +60,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="theme-panel w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
+    <div className="glass-card-strong w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.15)] relative z-10">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.loginEyebrow")}</p>
-        <h1 className="mt-3 text-2xl font-semibold">{t("auth.loginTitle")}</h1>
+        <h1 className="mt-3 text-section">{t("auth.loginTitle")}</h1>
         <p className="theme-text-subtle mt-3 text-sm leading-6">
           {t("auth.loginSubtitle")}
         </p>
@@ -76,13 +76,13 @@ export default function LoginPage() {
       )}
 
       <div className="mb-6 grid gap-2">
-        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
+        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit1")}
         </div>
-        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
+        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit2")}
         </div>
-        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
+        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.loginBenefit3")}
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50 btn-3d"
         >
           {loading ? t("auth.loginLoading") : t("auth.login")}
         </button>
@@ -147,7 +147,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleGuest}
           disabled={loading}
-          className="theme-subpanel min-h-12 rounded-xl px-4 py-3 text-base theme-text-muted hover:brightness-105 disabled:opacity-50"
+          className="glass-card min-h-12 rounded-xl px-4 py-3 text-base theme-text-muted hover:brightness-110 disabled:opacity-50 btn-3d"
         >
           {t("auth.guestContinue")}
         </button>

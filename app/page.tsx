@@ -36,6 +36,7 @@ import { CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
+import { StreakShield } from "@/components/streak-shield";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -682,7 +683,7 @@ export default function Home() {
         {/* Creature identity bar */}
         <div className="absolute bottom-3 inset-x-0 z-10 text-center pointer-events-none">
           <CreatureStatusIndicator activity={creature.state.activity} />
-          <p className="mt-1 text-base font-semibold text-white drop-shadow-lg tracking-wide">
+          <p className="mt-1 text-section text-white drop-shadow-lg">
             {agentState?.self_name ?? "GYEOL"}
           </p>
           {agentState?.genome?.species && (
@@ -713,6 +714,12 @@ export default function Home() {
                   days={agentState?.streak_days ?? 0}
                   size="sm"
                   showCount
+                />
+                <StreakShield
+                  count={typeof (agentState?.config as Record<string, unknown> | undefined)?.streak_shields === "number"
+                    ? (agentState!.config as Record<string, unknown>).streak_shields as number
+                    : 0}
+                  size="sm"
                 />
               </>
             )}
@@ -772,7 +779,7 @@ export default function Home() {
             transition={{ delay: 1.5, duration: 0.8 }}
             className="flex flex-col items-center gap-3 px-6 py-4"
           >
-            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md px-5 py-4 max-w-sm text-center">
+            <div className="glass-card rounded-2xl px-5 py-4 max-w-sm text-center">
               <p className="text-sm text-white/80 leading-relaxed">
                 {t("home.firstTimeGuide")}
               </p>
