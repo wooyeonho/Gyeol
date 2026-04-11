@@ -15,6 +15,11 @@ import {
 } from "@/lib/billing/catalog";
 import { useTranslations } from "@/components/i18n-provider";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import {
+  PLANS as WORLD_CLASS_PLANS,
+  annualSavingsKRW,
+  type BillingPeriod,
+} from "@/lib/revenue/world-class-monetization";
 
 type BillingData = {
   entitlements: Record<EntitlementKey, boolean>;
@@ -29,11 +34,15 @@ type BillingData = {
 
 const PLAN_ORDER: PlanTier[] = ["free", "pro", "premium"];
 
+const formatKRW = (n: number) =>
+  n === 0 ? "₩0" : "₩" + n.toLocaleString("ko-KR");
+
 export default function PlansPage() {
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submittingTier, setSubmittingTier] = useState<PlanTier | null>(null);
+  const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const { locale, t } = useTranslations();
   const planDefinitions = getLocalizedPlanDefinitions(locale);
   const renewalDate = billing?.subscription.current_period_end
@@ -180,6 +189,31 @@ export default function PlansPage() {
               {t("plans.chipDeeperValue")}
             </span>
           </div>
+
+          {/* Monthly / Annual toggle — Spotify/Calm pattern */}
+          <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 p-1">
+            <button
+              type="button"
+              onClick={() => setPeriod("monthly")}
+              className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${
+                period === "monthly" ? "bg-white text-black" : "text-white/60 hover:text-white"
+              }`}
+            >
+              월간
+            </button>
+            <button
+              type="button"
+              onClick={() => setPeriod("annual")}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition ${
+                period === "annual" ? "bg-white text-black" : "text-white/60 hover:text-white"
+              }`}
+            >
+              연간
+              <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">
+                −17%
+              </span>
+            </button>
+          </div>
         </header>
 
         {notice && (
@@ -297,6 +331,74 @@ export default function PlansPage() {
                 </button>
               )}
             </article>
+            );
+          })}
+        </section>
+
+        {/* Family + Enterprise tiers from the world-class monetization catalog */}
+        <section className="mt-8 grid gap-4 md:grid-cols-2">
+          {(["family", "enterprise"] as const).map((id) => {
+            const plan = WORLD_CLASS_PLANS[id];
+            const monthly = plan.priceKRW[period];
+            const savings = period === "annual" ? annualSavingsKRW(id) : 0;
+            const isEnterprise = id === "enterprise";
+            return (
+              <article
+                key={id}
+                className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                      {plan.name}
+                    </p>
+                    <h3 className="mt-2 text-2xl font-semibold">
+                      {isEnterprise ? "맞춤 견적" : formatKRW(monthly)}
+                      {!isEnterprise && (
+                        <span className="ml-1 text-sm font-normal text-white/50">
+                          / {period === "monthly" ? "월" : "년"}
+                        </span>
+                      )}
+                    </h3>
+                    {savings > 0 && (
+                      <p className="mt-1 text-xs text-emerald-300">
+                        연간 {formatKRW(savings)} 절약
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[10px] text-white/70"
+                    title={`${plan.seats}석`}
+                  >
+                    {plan.seats >= 9000 ? "무제한 좌석" : `${plan.seats}석`}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-white/65">{plan.tagline}</p>
+                <ul className="mt-4 space-y-1.5 text-sm text-white/80">
+                  {plan.features.map((f) => (
+                    <li key={f.id} className="flex items-start gap-2">
+                      <span
+                        className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full"
+                        style={{ background: isEnterprise ? "#c084fc" : "#60a5fa" }}
+                      />
+                      <span>{f.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                {isEnterprise ? (
+                  <a
+                    href="mailto:sales@gyeol.app?subject=Gyeol%20Enterprise%20문의"
+                    className="mt-5 block w-full rounded-xl border border-purple-400/40 bg-purple-500/15 px-4 py-3 text-center text-sm font-medium text-purple-100 hover:bg-purple-500/25"
+                  >
+                    영업팀 문의
+                  </a>
+                ) : (
+                  <div className="mt-5 rounded-xl border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-center text-xs text-blue-100">
+                    Family 결제는 곧 출시됩니다 — 대기자 명단에 올리려면
+                    설정 &gt; 가족 좌석에서 이메일을 남겨 주세요
+                  </div>
+                )}
+              </article>
             );
           })}
         </section>

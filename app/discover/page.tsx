@@ -300,6 +300,28 @@ export default function DiscoverPage() {
         />
         </motion.div>
 
+        <motion.div variants={itemVariants}>
+          <Link
+            href="/world-class"
+            onClick={() => haptic("tap")}
+            className="block rounded-3xl border border-indigo-400/30 bg-gradient-to-br from-indigo-500/15 via-fuchsia-500/10 to-amber-500/10 p-5 transition hover:border-indigo-400/60"
+          >
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-indigo-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 animate-pulse" />
+              NEW · World-Class Playbook
+            </div>
+            <div className="mt-1.5 text-lg font-bold leading-tight">
+              전 세계 최고의 앱 48개를{" "}
+              <span className="bg-gradient-to-r from-indigo-200 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
+                눈으로 직접 확인
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-white/70">
+              디자인 · 수익 · 기능 · 보안 · AI 존재 — 인터랙티브 데모 →
+            </div>
+          </Link>
+        </motion.div>
+
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         {/* Daily Special Challenges — procedural quests */}

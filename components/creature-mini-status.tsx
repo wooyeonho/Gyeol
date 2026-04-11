@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { worldClassMotion, numberColor } from "@/lib/design/world-class-playbook";
 
 export interface CreatureMiniStatusProps {
   /** Creature name */
@@ -70,10 +71,22 @@ export function CreatureMiniStatus({
       >
         {/* Collapsed row — always visible */}
         <motion.div layout="position" className="flex items-center gap-2 px-3 py-1.5">
-          {/* Mood emoji */}
-          <span className="text-sm" role="img" aria-label={mood ?? "neutral"}>
+          {/* Mood emoji — Calm-style breath loop (4s in / 6s out) from the
+              world-class design playbook so the idle surface feels alive. */}
+          <motion.span
+            className="text-sm"
+            role="img"
+            aria-label={mood ?? "neutral"}
+            animate={{ scale: [1, 1.035, 1] }}
+            transition={{
+              duration: worldClassMotion.breathLoop.transition.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.4, 1],
+            }}
+          >
             {emoji}
-          </span>
+          </motion.span>
 
           {/* Name */}
           <span className="text-[11px] font-medium text-white/60 max-w-[80px] truncate">
@@ -90,9 +103,11 @@ export function CreatureMiniStatus({
             />
           </div>
 
-          {/* Vitality number */}
+          {/* Vitality number — Robinhood number-theater color (semantic
+              direction). isLow → "down" red, healthy → neutral slate. */}
           <span
-            className={`text-[10px] tabular-nums font-medium ${isLow ? "text-red-400 animate-pulse" : "text-white/40"}`}
+            className={`text-[10px] tabular-nums font-medium ${isLow ? "animate-pulse" : ""}`}
+            style={{ color: numberColor(isLow ? "down" : "neutral") }}
           >
             {vitalityPercent}%
           </span>

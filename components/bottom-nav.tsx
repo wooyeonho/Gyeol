@@ -61,6 +61,8 @@ const DISCOVER_PATHS = new Set([
   "/market",
   "/room",
   "/constellation",
+  "/features",
+  "/world-class",
 ]);
 
 function isTabActive(pathname: string, tabPath: string) {
