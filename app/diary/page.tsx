@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
+import { DiaryReactions } from "@/components/diary-reactions";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import type { DiaryEntry } from "@/lib/diary/creature-diary";
@@ -150,6 +151,7 @@ export default function DiaryPage() {
                 <p className="text-sm text-white/80 leading-relaxed italic">
                   &ldquo;{selectedEntry.summary}&rdquo;
                 </p>
+                <DiaryReactions key={selectedEntry.id} entryId={selectedEntry.id} />
               </motion.div>
             )}
 

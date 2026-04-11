@@ -37,6 +37,14 @@ const ConversationSettings = dynamic(() => import("@/components/conversation-set
   ssr: false,
   loading: () => <div className="h-48 rounded-2xl bg-white/5 animate-pulse" />,
 });
+const NotificationPreferencesCard = dynamic(() => import("@/components/notification-preferences-card").then(m => ({ default: m.NotificationPreferencesCard })), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-2xl bg-white/5 animate-pulse" />,
+});
+const StreakShieldShop = dynamic(() => import("@/components/streak-shield-shop").then(m => ({ default: m.StreakShieldShop })), {
+  ssr: false,
+  loading: () => <div className="h-44 rounded-2xl bg-white/5 animate-pulse" />,
+});
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -950,6 +958,40 @@ export default function SettingsPage() {
             {t("settings.inviteBody")}
           </p>
           <InviteSection />
+        </section>
+
+        {/* Streak shield shop — buy shields with coins to protect flame */}
+        <StreakShieldShop />
+
+        {/* Notification preferences — opt-in categories + quiet hours */}
+        <NotificationPreferencesCard />
+
+        {/* Privacy & data control — GDPR export/delete dashboard */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+            {t("settings.privacyEyebrow") || (locale === "ko" ? "프라이버시 & 내 데이터" : "Privacy & Your Data")}
+          </p>
+          <p className="mt-1 text-sm text-white/60">
+            {t("settings.privacyBody") || (locale === "ko"
+              ? "저장된 대화·기억·DNA 데이터를 확인하고 내보내거나 삭제할 수 있어요."
+              : "View, export, or delete your stored conversations, memories, and DNA data.")}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/privacy/data-dashboard"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white"
+            >
+              <span aria-hidden>🛡️</span>
+              <span>{t("settings.privacyDashboard") || (locale === "ko" ? "내 데이터 대시보드" : "Data Dashboard")}</span>
+            </Link>
+            <Link
+              href="/privacy"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white/80"
+            >
+              <span aria-hidden>📄</span>
+              <span>{t("settings.privacyPolicy") || (locale === "ko" ? "개인정보처리방침" : "Privacy Policy")}</span>
+            </Link>
+          </div>
         </section>
 
         <button
