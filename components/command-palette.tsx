@@ -43,6 +43,7 @@ export function CommandPalette({ locale = "ko", onThemeToggle }: CommandPaletteP
     { id: "nav-diary",        icon: "📖", label: isKo ? "일기"          : "Diary",          action: () => router.push("/diary"),           group: isKo ? "이동" : "Navigate" },
     { id: "nav-wrapped",      icon: "🎁", label: isKo ? "연간 요약"     : "Wrapped",        action: () => router.push("/wrapped"),         group: isKo ? "이동" : "Navigate" },
     { id: "nav-wellness",     icon: "💚", label: isKo ? "웰니스"        : "Wellness",       action: () => router.push("/wellness"),        group: isKo ? "이동" : "Navigate" },
+    { id: "nav-emotion",      icon: "🫧", label: isKo ? "감정 대시보드"  : "Emotion Dashboard", action: () => router.push("/emotion"),      group: isKo ? "이동" : "Navigate" },
     { id: "nav-feed",         icon: "📰", label: isKo ? "피드"          : "Feed",           action: () => router.push("/feed"),            group: isKo ? "이동" : "Navigate" },
     { id: "nav-ar",           icon: "📱", label: isKo ? "AR 모드"       : "AR Mode",        action: () => router.push("/ar"),              group: isKo ? "이동" : "Navigate" },
     { id: "nav-gacha",        icon: "🎰", label: isKo ? "가챠"          : "Gacha",          action: () => router.push("/gacha"),           group: isKo ? "이동" : "Navigate" },

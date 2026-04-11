@@ -14,6 +14,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { SwipeNavigation } from "@/components/swipe-navigation";
 import { GlobalCelebration } from "@/components/global-celebration";
+import { EngagementCelebrationHost } from "@/components/engagement/engagement-celebration-host";
 import { GlobalKeyboardProvider } from "@/components/global-keyboard-provider";
 import { VitalsReporter } from "@/components/vitals-reporter";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
@@ -144,6 +145,7 @@ export default async function RootLayout({
           <CookieConsent />
           <OfflineIndicator />
           <GlobalCelebration />
+          <EngagementCelebrationHost />
           <GlobalKeyboardProvider />
           <CommandPalette locale={locale} />
           <VitalsReporter />
