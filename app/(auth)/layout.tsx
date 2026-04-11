@@ -9,7 +9,8 @@ export default function AuthLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+    <div className="relative min-h-screen aurora-bg text-foreground flex flex-col items-center justify-center p-4 overflow-hidden">
+      <div className="aurora-accent absolute inset-0 pointer-events-none" aria-hidden="true" />
       {children}
       <LegalFooter />
     </div>

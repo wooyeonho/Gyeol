@@ -221,7 +221,7 @@ export function MysteryBoxOverlay({ box, onClose, expiresAt }: MysteryBoxOverlay
                 type="button"
                 onClick={onClose}
                 whileTap={{ scale: 0.97 }}
-                className="w-full rounded-full py-3 text-sm font-bold text-black transition-colors"
+                className="btn-3d w-full rounded-full py-3 text-sm font-bold text-black transition-colors"
                 style={{ background: style.color }}
               >
                 {t("mysteryBox.claim")}

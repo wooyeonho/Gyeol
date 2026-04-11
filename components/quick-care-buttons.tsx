@@ -70,10 +70,10 @@ export function QuickCareButtons({ vitality, onCareComplete }: QuickCareButtonsP
             onClick={() => handleCare(action.key)}
             disabled={isCooling || isActive}
             whileTap={{ scale: 0.9 }}
-            className="relative flex flex-col items-center gap-1 rounded-2xl border px-4 py-3 transition-all disabled:opacity-40"
+            className="glass-card btn-3d relative flex flex-col items-center gap-1 rounded-2xl px-4 py-3 transition-all disabled:opacity-40"
             style={{
-              borderColor: isLow && action.key === "feed" ? `${action.color}60` : "rgba(255,255,255,0.08)",
-              background: isLow && action.key === "feed" ? `${action.color}12` : "rgba(255,255,255,0.04)",
+              borderColor: isLow && action.key === "feed" ? `${action.color}60` : undefined,
+              background: isLow && action.key === "feed" ? `${action.color}12` : undefined,
             }}
           >
             <AnimatePresence mode="wait">

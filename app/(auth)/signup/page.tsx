@@ -61,10 +61,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="theme-panel w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.08)]">
+    <div className="glass-card-strong w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.15)] relative z-10">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.signupEyebrow")}</p>
-        <h1 className="mt-3 text-2xl font-semibold">{t("auth.signupTitle")}</h1>
+        <h1 className="mt-3 text-section">{t("auth.signupTitle")}</h1>
         <p className="theme-text-subtle mt-3 text-sm leading-6">
           {t("auth.signupSubtitle")}
         </p>
@@ -77,10 +77,10 @@ export default function SignupPage() {
       )}
 
       <div className="mb-6 grid gap-2">
-        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
+        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.signupBenefit1")}
         </div>
-        <div className="theme-subpanel rounded-2xl p-3 text-sm theme-text-muted">
+        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
           {t("auth.signupBenefit2")}
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function SignupPage() {
             required
           />
         </div>
-        <label className="theme-subpanel flex items-start gap-3 rounded-2xl px-4 py-3 text-sm theme-text-muted">
+        <label className="glass-card flex items-start gap-3 rounded-2xl px-4 py-3 text-sm theme-text-muted">
           <input
             type="checkbox"
             checked={acceptedConsent}
@@ -144,7 +144,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50 btn-3d"
         >
           {loading ? t("auth.signupLoading") : t("auth.signupSubmit")}
         </button>
