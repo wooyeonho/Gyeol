@@ -437,9 +437,18 @@ export default function DiscoverPage() {
 
         <section className="grid grid-cols-3 gap-2">
           {[
-            { href: "/leaderboard", label: t("leaderboard.title"), icon: "🏆" },
-            { href: "/compare", label: t("compare.title"), icon: "⚔️" },
-            { href: "/time-travel", label: t("timeTravel.title"), icon: "⏳" },
+            { href: "/leaderboard",      label: locale === "ko" ? "리더보드"    : "Leaderboard",  icon: "🏆" },
+            { href: "/compare",          label: locale === "ko" ? "비교"        : "Compare",      icon: "⚔️" },
+            { href: "/time-travel",      label: locale === "ko" ? "시간여행"    : "Time Travel",  icon: "⏳" },
+            { href: "/gacha",            label: locale === "ko" ? "가챠"        : "Gacha",        icon: "🎰" },
+            { href: "/wellness",         label: locale === "ko" ? "웰니스"      : "Wellness",     icon: "💚" },
+            { href: "/wrapped",          label: locale === "ko" ? "연간 요약"   : "Wrapped",      icon: "🎁" },
+            { href: "/feed",             label: locale === "ko" ? "피드"        : "Feed",         icon: "📰" },
+            { href: "/community/spaces", label: locale === "ko" ? "커뮤니티"    : "Community",    icon: "🌐" },
+            { href: "/diary",            label: locale === "ko" ? "일기"        : "Diary",        icon: "📓" },
+            { href: "/challenges",       label: locale === "ko" ? "챌린지"      : "Challenges",   icon: "⚡" },
+            { href: "/care",             label: locale === "ko" ? "돌봄 기록"   : "Care Log",     icon: "🌱" },
+            { href: "/profile/customize",label: locale === "ko" ? "프로필"      : "Profile",      icon: "✨" },
           ].map((item) => (
             <Link
               key={item.href}

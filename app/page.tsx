@@ -36,6 +36,7 @@ import { CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
+import { StreakShield } from "@/components/streak-shield";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -713,6 +714,12 @@ export default function Home() {
                   days={agentState?.streak_days ?? 0}
                   size="sm"
                   showCount
+                />
+                <StreakShield
+                  count={typeof (agentState?.config as Record<string, unknown> | undefined)?.streak_shields === "number"
+                    ? (agentState!.config as Record<string, unknown>).streak_shields as number
+                    : 0}
+                  size="sm"
                 />
               </>
             )}

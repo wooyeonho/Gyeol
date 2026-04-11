@@ -33,6 +33,10 @@ const StreakHeatmap = dynamic(() => import("@/components/streak-heatmap").then(m
   loading: () => <div className="h-28 rounded-2xl bg-white/5 animate-pulse" />,
 });
 const GrowthChart = dynamic(() => import("@/components/growth-chart").then(m => ({ default: m.GrowthChart })), { ssr: false });
+const ConversationSettings = dynamic(() => import("@/components/conversation-settings").then(m => ({ default: m.ConversationSettings })), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-2xl bg-white/5 animate-pulse" />,
+});
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -665,6 +669,19 @@ export default function SettingsPage() {
             }}
             locale={locale}
           />
+        </section>
+
+        {/* Conversation Settings — tone sliders, content filters */}
+        <section id="settings-conversation" className="theme-panel scroll-mt-24 rounded-3xl p-5">
+          <div className="mb-3">
+            <p className="theme-text-faint text-xs uppercase tracking-[0.2em]">
+              {locale === "ko" ? "대화 설정" : "Conversation Settings"}
+            </p>
+            <p className="theme-text-subtle mt-1 text-sm">
+              {locale === "ko" ? "크리처와의 대화 톤과 주제를 설정하세요" : "Customize tone and topics"}
+            </p>
+          </div>
+          <ConversationSettings />
         </section>
 
         <section className="theme-panel rounded-3xl p-4">

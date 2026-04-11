@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
+import { PityProgress } from "@/components/pity-progress";
 import { type MysteryBox, type BoxRarity } from "@/lib/engagement/mystery-box";
 import {
   getPityCount,
@@ -227,19 +228,15 @@ export function MysteryBoxOverlay({ box, onClose, expiresAt }: MysteryBoxOverlay
                 {t("mysteryBox.claim")}
               </motion.button>
 
-              {/* Pity counter — subtle display */}
-              <div className="mt-4 flex flex-col items-center gap-1">
-                <p className="text-[10px] text-white/25 tabular-nums tracking-wide">
-                  {pityCount}/{LEGENDARY_PITY_THRESHOLD}
-                </p>
-
-                {/* Encouragement near pity threshold */}
+              {/* Pity progress — Genshin-style visual bars */}
+              <div className="mt-4 w-full px-1">
+                <PityProgress />
                 {showEncouragement && (
                   <motion.p
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-xs font-medium text-amber-400/80"
+                    className="mt-2 text-center text-xs font-medium text-amber-400/80"
                   >
                     {t("mysteryBox.pityEncouragement")}
                   </motion.p>
