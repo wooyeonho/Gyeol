@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { FeaturedBadgePicker } from "@/components/engagement/featured-badge-picker";
 
 const BACKGROUND_THEMES = [
   { id: "default", label: "기본", preview: "from-[#0a0a0f] to-[#0f0f14]" },
@@ -10,8 +11,6 @@ const BACKGROUND_THEMES = [
   { id: "forest", label: "숲", preview: "from-green-900/80 to-emerald-900/80" },
   { id: "sunset", label: "노을", preview: "from-orange-900/80 to-rose-900/80" },
 ];
-
-const PINNED_MEMORY_SLOTS = [0, 1, 2];
 
 export default function ProfileCustomizePage() {
   const [selectedTheme, setSelectedTheme] = useState("default");
@@ -82,27 +81,8 @@ export default function ProfileCustomizePage() {
           <p className="text-[10px] text-white/25 mt-1 text-right">{bio.length}/120</p>
         </div>
 
-        {/* Pinned memories */}
-        <div className="glass-card rounded-2xl border border-white/10 p-4">
-          <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">
-            대표 기억 (최대 3개)
-          </p>
-          <p className="text-[10px] text-white/25 mb-3">프로필에 고정할 소중한 기억을 선택해요</p>
-          <div className="space-y-2">
-            {PINNED_MEMORY_SLOTS.map((slot) => (
-              <div
-                key={slot}
-                className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-3"
-              >
-                <span className="text-white/20 text-xs">💭</span>
-                <span className="text-xs text-white/25">기억 선택하기...</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-white/20 mt-2">
-            메모리 타임라인에서 선택 기능이 곧 추가될 예정이에요
-          </p>
-        </div>
+        {/* Featured badges (Phase 2-3) */}
+        <FeaturedBadgePicker locale="ko" />
 
         {/* Save */}
         <motion.button
