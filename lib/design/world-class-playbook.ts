@@ -1,9 +1,10 @@
 /**
- * World-class design playbook — synthesized from 10+ top-tier apps.
+ * World-class design playbook — synthesized from 18+ top-tier apps.
  *
  * Source apps analyzed (see WORLD_CLASS_APPS_RESEARCH.md):
  *   Apple HIG, Linear, Figma, Notion, Arc Browser, Airbnb DLS, Stripe,
- *   Robinhood, Headspace/Calm, Duolingo, Pinterest, Instagram.
+ *   Robinhood, Headspace/Calm, Duolingo, Pinterest, Instagram, Procreate,
+ *   Bear, Things 3, Raycast, Apple Weather, Spotify.
  *
  * This module is the **behavior** layer that sits on top of
  * `lib/design/tokens.ts`. Tokens define the raw values; the playbook codifies
@@ -101,6 +102,48 @@ export const DESIGN_PRINCIPLES: readonly DesignPrinciple[] = [
     source: "Notion",
     rule: "Typing `/` in any text field must open the inline slash command menu.",
     appliesTo: ["chat-input", "memory-editor", "diary"],
+  },
+  {
+    id: "pressure-brush",
+    source: "Procreate",
+    rule: "Canvas input must respect pressure/velocity — map to opacity/size.",
+    appliesTo: ["portrait-canvas", "room-editor"],
+  },
+  {
+    id: "typo-first-reading",
+    source: "Bear",
+    rule: "Reading surfaces prefer a 62ch measure, 1.6 line-height, serif or humanist sans.",
+    appliesTo: ["memory-reader", "diary", "story"],
+  },
+  {
+    id: "whitespace-as-feature",
+    source: "Things 3",
+    rule: "Quick-entry surfaces must never look cramped — top/bottom 16px min even in dense modes.",
+    appliesTo: ["quick-entry", "slash-menu"],
+  },
+  {
+    id: "inline-command-result",
+    source: "Raycast",
+    rule: "Global commands must render inline results in the same surface, not in a new page.",
+    appliesTo: ["command-palette", "search-modal"],
+  },
+  {
+    id: "ambient-sky",
+    source: "Apple Weather",
+    rule: "Idle backgrounds should reflect real-world time-of-day and weather as a soft tint.",
+    appliesTo: ["home-hero", "room-ambient"],
+  },
+  {
+    id: "cover-centric",
+    source: "Spotify",
+    rule: "Media cards prioritize a single dominant image — min 60% of card area.",
+    appliesTo: ["album-card", "portrait-gallery"],
+  },
+  {
+    id: "vital-pulse",
+    source: "결 (original)",
+    rule: "Living-presence vitals must pulse on a 60fps raf loop, never setInterval — use sine, not step.",
+    appliesTo: ["living-presence-beacon", "creature-idle"],
   },
 ] as const;
 
@@ -232,4 +275,58 @@ export function rowPadding(density: Density): number {
 
 export function staggerDelay(index: number, stepMs = 40, capMs = 320): number {
   return Math.min(index * stepMs, capMs) / 1000;
+}
+
+/* ── Ambient-sky tint (Apple Weather) ──────────────────────────────────── */
+
+export type TimeOfDay = "dawn" | "morning" | "noon" | "afternoon" | "dusk" | "night";
+
+/** Bucket a Date into a 6-band time-of-day key. */
+export function timeOfDayFromDate(date: Date = new Date()): TimeOfDay {
+  const h = date.getHours();
+  if (h < 6) return "night";
+  if (h < 9) return "dawn";
+  if (h < 12) return "morning";
+  if (h < 14) return "noon";
+  if (h < 18) return "afternoon";
+  if (h < 21) return "dusk";
+  return "night";
+}
+
+/**
+ * Return a CSS gradient string for the ambient-sky background tint that
+ * Apple Weather uses. Pure function — no DOM access.
+ */
+export function ambientSkyTint(tod: TimeOfDay): string {
+  switch (tod) {
+    case "dawn":
+      return "linear-gradient(180deg, rgb(255 214 170) 0%, rgb(255 170 146) 50%, rgb(136 122 184) 100%)";
+    case "morning":
+      return "linear-gradient(180deg, rgb(186 230 253) 0%, rgb(191 219 254) 50%, rgb(224 242 254) 100%)";
+    case "noon":
+      return "linear-gradient(180deg, rgb(147 197 253) 0%, rgb(191 219 254) 50%, rgb(224 242 254) 100%)";
+    case "afternoon":
+      return "linear-gradient(180deg, rgb(191 219 254) 0%, rgb(254 215 170) 50%, rgb(253 186 116) 100%)";
+    case "dusk":
+      return "linear-gradient(180deg, rgb(251 146 60) 0%, rgb(244 114 182) 50%, rgb(139 92 246) 100%)";
+    case "night":
+      return "linear-gradient(180deg, rgb(15 23 42) 0%, rgb(30 27 75) 50%, rgb(88 28 135) 100%)";
+  }
+}
+
+/* ── Vital pulse helper (결 living-presence) ──────────────────────────── */
+
+/**
+ * Compute a normalized sine pulse in [0, 1] that completes one beat in
+ * 60 / bpm seconds. Use this to drive opacity / scale of heart visuals.
+ * Intentionally deterministic so tests can assert exact values.
+ */
+export function vitalPulse(bpm: number, tMs: number): number {
+  const beatMs = 60_000 / Math.max(30, bpm);
+  const phase = (tMs % beatMs) / beatMs; // 0..1
+  // Two-lobe heartbeat: a sharp lub-dub. cosine squared gives smooth envelope.
+  const lub = Math.pow(Math.cos((phase - 0.15) * Math.PI * 3), 2);
+  const dub = Math.pow(Math.cos((phase - 0.42) * Math.PI * 4), 2) * 0.6;
+  const raw = Math.max(lub, dub);
+  return Math.max(0, Math.min(1, raw));
 }

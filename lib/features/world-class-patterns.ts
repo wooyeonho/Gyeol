@@ -1,9 +1,10 @@
 /**
- * World-class feature patterns — synthesized from 10+ productivity/AI giants.
+ * World-class feature patterns — synthesized from 18+ productivity/AI giants.
  *
  * Source apps (see WORLD_CLASS_APPS_RESEARCH.md):
  *   Notion, Linear, Figma, Slack, VS Code, Raycast, Arc Browser, Superhuman,
- *   Things, Fantastical, ChatGPT, Claude, Midjourney, Replika, Pi.
+ *   Things, Fantastical, ChatGPT, Claude, Midjourney, Replika, Pi, Obsidian,
+ *   Craft, Cron, Sunrise, Readwise, Day One.
  *
  * This module is the **interaction vocabulary** layer. It supplies:
  *   1. A slash-command catalog (Notion/Linear style).
@@ -351,4 +352,144 @@ export function linearizeBranch(tree: ConversationTree, leafId: string): Convers
 /** Find every branch point (a node with 2+ children) — useful for the UI map. */
 export function listBranchPoints(tree: ConversationTree): ConversationNode[] {
   return Object.values(tree.nodesById).filter((n) => n.childrenIds.length > 1);
+}
+
+/* ── 6. Spaced repetition review (Readwise / Anki) ─────────────────────── */
+
+export type ReviewGrade = "forgot" | "hard" | "good" | "easy";
+
+export type ReviewState = {
+  /** Current ease factor, 1.3..3.0 range. Higher = remembered better. */
+  ease: number;
+  /** Days until next scheduled review. */
+  intervalDays: number;
+  /** Number of consecutive `good`/`easy` reviews. */
+  streak: number;
+};
+
+export const INITIAL_REVIEW_STATE: ReviewState = {
+  ease: 2.5,
+  intervalDays: 1,
+  streak: 0,
+};
+
+/**
+ * SM-2-ish spaced repetition. Pure function: returns the next state for a
+ * given grade. Conservative ease adjustments so that forgotten cards come
+ * back quickly but not punishingly.
+ */
+export function scheduleNextReview(state: ReviewState, grade: ReviewGrade): ReviewState {
+  if (grade === "forgot") {
+    return {
+      ease: Math.max(1.3, state.ease - 0.2),
+      intervalDays: 1,
+      streak: 0,
+    };
+  }
+  const easeDelta = grade === "hard" ? -0.15 : grade === "good" ? 0 : 0.15;
+  const nextEase = Math.max(1.3, Math.min(3.0, state.ease + easeDelta));
+  const nextStreak = state.streak + 1;
+  let nextInterval: number;
+  if (nextStreak === 1) nextInterval = grade === "easy" ? 4 : 1;
+  else if (nextStreak === 2) nextInterval = grade === "easy" ? 10 : 6;
+  else nextInterval = Math.round(state.intervalDays * nextEase);
+  return {
+    ease: nextEase,
+    intervalDays: Math.max(1, nextInterval),
+    streak: nextStreak,
+  };
+}
+
+/* ── 7. Knowledge graph / backlinks (Obsidian / Craft) ─────────────────── */
+
+export type GraphNodeId = string;
+export type GraphEdge = { from: GraphNodeId; to: GraphNodeId; weight: number };
+
+export type KnowledgeGraph = {
+  nodes: Set<GraphNodeId>;
+  edges: GraphEdge[];
+};
+
+export function createKnowledgeGraph(): KnowledgeGraph {
+  return { nodes: new Set(), edges: [] };
+}
+
+/** Add a directional link with an optional weight (default 1). */
+export function linkNodes(
+  graph: KnowledgeGraph,
+  from: GraphNodeId,
+  to: GraphNodeId,
+  weight: number = 1,
+): KnowledgeGraph {
+  const nodes = new Set(graph.nodes);
+  nodes.add(from);
+  nodes.add(to);
+  return {
+    nodes,
+    edges: [...graph.edges, { from, to, weight }],
+  };
+}
+
+/** Return incoming edges for a node, sorted by weight desc. */
+export function backlinksFor(graph: KnowledgeGraph, node: GraphNodeId): GraphEdge[] {
+  return graph.edges.filter((e) => e.to === node).sort((a, b) => b.weight - a.weight);
+}
+
+/** Extract `[[wiki-style]]` link targets from a body of text. */
+export function extractLinkTargets(text: string): string[] {
+  const out: string[] = [];
+  const re = /\[\[([^\]\n]+)\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const target = m[1].trim();
+    if (target.length > 0) out.push(target);
+  }
+  return out;
+}
+
+/* ── 8. Morning briefing card (Sunrise / Fantastical) ──────────────────── */
+
+export type BriefingCard = {
+  title: string;
+  bullets: string[];
+  ctaLabel: string;
+};
+
+export type BriefingInput = {
+  /** Number of new reflections since last seen. */
+  newReflections: number;
+  /** Current streak days. */
+  streakDays: number;
+  /** Memories scheduled for review today. */
+  reviewsDueToday: number;
+  /** Currently active challenges, for progress echo. */
+  activeChallengeCount: number;
+};
+
+/**
+ * Build a concise morning briefing. Pure, stable output — identical input
+ * always produces identical bullets so tests are trivial.
+ */
+export function buildMorningBriefing(input: BriefingInput): BriefingCard {
+  const bullets: string[] = [];
+  if (input.newReflections > 0) {
+    bullets.push(`결이 새로 남긴 리플렉션 ${input.newReflections}개`);
+  }
+  if (input.streakDays > 0) {
+    bullets.push(`${input.streakDays}일째 함께하는 중`);
+  }
+  if (input.reviewsDueToday > 0) {
+    bullets.push(`오늘 돌아볼 기억 ${input.reviewsDueToday}개`);
+  }
+  if (input.activeChallengeCount > 0) {
+    bullets.push(`진행 중인 챌린지 ${input.activeChallengeCount}개`);
+  }
+  if (bullets.length === 0) {
+    bullets.push("조용한 아침. 천천히 한마디만 건네보자.");
+  }
+  return {
+    title: "오늘의 브리핑",
+    bullets,
+    ctaLabel: "결에게 인사하기",
+  };
 }

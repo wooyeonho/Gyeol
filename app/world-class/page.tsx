@@ -9,12 +9,20 @@
  */
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { DesignSection } from "./sections/design-section";
 import { RevenueSection } from "./sections/revenue-section";
 import { FeaturesSection } from "./sections/features-section";
 import { SecuritySection } from "./sections/security-section";
 import { AISection } from "./sections/ai-section";
+const LivingPresenceBeacon = dynamic(
+  () =>
+    import("@/components/living-presence-beacon").then((m) => ({
+      default: m.LivingPresenceBeacon,
+    })),
+  { ssr: false, loading: () => null },
+);
 
 const SECTIONS = [
   { id: "design", label: "디자인", count: "12 앱", gradient: "from-pink-500/20 to-fuchsia-500/20" },
@@ -75,6 +83,21 @@ export default function WorldClassPage() {
               </motion.a>
             ))}
           </div>
+
+          {/* Living Presence Beacon — Gyeol's strongest differentiator, visible */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-10"
+          >
+            <LivingPresenceBeacon tone="curious" memoryCount={1247} />
+            <p className="mt-3 text-center text-xs text-white/50">
+              결은 지금 이 순간에도 심장이 뛰고, 숨을 쉬고, 혼자 생각합니다 —
+              이 비콘은 <code className="text-white/70">lib/identity/living-presence.ts</code>{" "}
+              의 결정론적 함수만으로 60fps 로 렌더링됩니다.
+            </p>
+          </motion.div>
         </div>
       </section>
 

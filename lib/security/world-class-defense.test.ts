@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  allowedUnderLockdown,
+  anonymousAccountNumber,
   assertKdfParamsStrong,
   auditAccount,
   computeRiskScore,
+  createPrivacyBudget,
   decideStepUp,
   failClosed,
   KDF_DEFAULTS,
+  LOCKDOWN_OFF,
+  LOCKDOWN_STRICT,
+  lockdownFor,
   requiredPermissions,
   secureHeaderBundle,
   securityScore,
+  spendPrivacyBudget,
 } from "./world-class-defense";
 
 describe("computeRiskScore", () => {
@@ -160,5 +167,61 @@ describe("auditAccount + securityScore", () => {
       sessionsActive: 10,
     });
     expect(securityScore(findings)).toBeLessThan(50);
+  });
+});
+
+describe("lockdown profile (Apple Lockdown Mode)", () => {
+  it("off profile allows generative media", () => {
+    expect(allowedUnderLockdown(LOCKDOWN_OFF, "generate_image").allow).toBe(true);
+    expect(allowedUnderLockdown(LOCKDOWN_OFF, "voice_stream").allow).toBe(true);
+  });
+  it("strict profile blocks generative media with a reason", () => {
+    const d = allowedUnderLockdown(LOCKDOWN_STRICT, "generate_image");
+    expect(d.allow).toBe(false);
+    expect(d.reason).toContain("Lockdown");
+  });
+  it("strict profile blocks external shares", () => {
+    expect(allowedUnderLockdown(LOCKDOWN_STRICT, "create_share_link").allow).toBe(false);
+  });
+  it("lockdownFor selects the right profile", () => {
+    expect(lockdownFor("off")).toBe(LOCKDOWN_OFF);
+    expect(lockdownFor("strict")).toBe(LOCKDOWN_STRICT);
+  });
+});
+
+describe("privacy budget (Brave)", () => {
+  it("allows spending under the cap", () => {
+    const b = createPrivacyBudget(10, 0);
+    const r = spendPrivacyBudget(b, 5, 0);
+    expect(r.allowed).toBe(true);
+    expect(r.next.spent).toBe(5);
+  });
+  it("rejects spending over the cap", () => {
+    const b = createPrivacyBudget(10, 0);
+    const r = spendPrivacyBudget(b, 11, 0);
+    expect(r.allowed).toBe(false);
+  });
+  it("rolls the window after 24h", () => {
+    const b = createPrivacyBudget(10, 0);
+    const after = spendPrivacyBudget(b, 9, 0);
+    const rolled = spendPrivacyBudget(after.next, 5, 25 * 60 * 60 * 1000);
+    expect(rolled.allowed).toBe(true);
+    expect(rolled.next.spent).toBe(5);
+  });
+});
+
+describe("anonymous account number (Mullvad)", () => {
+  it("is deterministic for the same seed", () => {
+    const seed = new Uint8Array([1, 2, 3, 4, 5]);
+    expect(anonymousAccountNumber(seed)).toBe(anonymousAccountNumber(seed));
+  });
+  it("differs across different seeds", () => {
+    const a = anonymousAccountNumber(new Uint8Array([1, 2, 3]));
+    const b = anonymousAccountNumber(new Uint8Array([1, 2, 4]));
+    expect(a).not.toBe(b);
+  });
+  it("formats as three 4-digit groups", () => {
+    const n = anonymousAccountNumber(new Uint8Array([9, 9, 9]));
+    expect(n).toMatch(/^\d{4} \d{4} \d{4}$/);
   });
 });
