@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  backlinksFor,
+  buildMorningBriefing,
+  createKnowledgeGraph,
   DEFAULT_SNIPPETS,
   expandSnippet,
+  extractLinkTargets,
   forkBranch,
   formatShortcut,
+  INITIAL_REVIEW_STATE,
   linearizeBranch,
+  linkNodes,
   listBranchPoints,
   parseQuickEntry,
+  scheduleNextReview,
   searchSlashCommands,
   type ConversationNode,
   type ConversationTree,
@@ -114,5 +121,98 @@ describe("conversation branching", () => {
     t = forkBranch(t, "root", { role: "assistant", content: "b", createdAt: 3 }, "b1");
     const points = listBranchPoints(t);
     expect(points.map((p) => p.id)).toContain("root");
+  });
+});
+
+describe("spaced repetition (Readwise)", () => {
+  it("forgot resets interval and lowers ease", () => {
+    const next = scheduleNextReview({ ease: 2.5, intervalDays: 10, streak: 4 }, "forgot");
+    expect(next.intervalDays).toBe(1);
+    expect(next.streak).toBe(0);
+    expect(next.ease).toBeLessThan(2.5);
+  });
+  it("good at streak=1 yields 1 day, streak=2 yields 6 days", () => {
+    const s1 = scheduleNextReview(INITIAL_REVIEW_STATE, "good");
+    expect(s1.intervalDays).toBe(1);
+    expect(s1.streak).toBe(1);
+    const s2 = scheduleNextReview(s1, "good");
+    expect(s2.intervalDays).toBe(6);
+    expect(s2.streak).toBe(2);
+  });
+  it("easy accelerates past good", () => {
+    const easy = scheduleNextReview(INITIAL_REVIEW_STATE, "easy");
+    const good = scheduleNextReview(INITIAL_REVIEW_STATE, "good");
+    expect(easy.intervalDays).toBeGreaterThan(good.intervalDays);
+  });
+  it("clamps ease to [1.3, 3.0]", () => {
+    let s = INITIAL_REVIEW_STATE;
+    for (let i = 0; i < 30; i++) s = scheduleNextReview(s, "easy");
+    expect(s.ease).toBeLessThanOrEqual(3.0);
+    let s2 = INITIAL_REVIEW_STATE;
+    for (let i = 0; i < 30; i++) s2 = scheduleNextReview(s2, "hard");
+    expect(s2.ease).toBeGreaterThanOrEqual(1.3);
+  });
+});
+
+describe("knowledge graph (Obsidian)", () => {
+  it("linkNodes is pure and adds nodes to the set", () => {
+    const g = createKnowledgeGraph();
+    const g2 = linkNodes(g, "a", "b");
+    expect(g.nodes.size).toBe(0);
+    expect(g2.nodes.has("a")).toBe(true);
+    expect(g2.nodes.has("b")).toBe(true);
+    expect(g2.edges.length).toBe(1);
+  });
+  it("backlinksFor returns only incoming edges, sorted desc", () => {
+    let g = createKnowledgeGraph();
+    g = linkNodes(g, "a", "target", 1);
+    g = linkNodes(g, "b", "target", 5);
+    g = linkNodes(g, "target", "c", 9); // outgoing, should not appear
+    const back = backlinksFor(g, "target");
+    expect(back).toHaveLength(2);
+    expect(back[0].from).toBe("b");
+    expect(back[1].from).toBe("a");
+  });
+  it("extractLinkTargets finds [[wiki]] style references", () => {
+    const targets = extractLinkTargets("오늘은 [[달빛]] 과 [[약속]] 이 떠올랐다.");
+    expect(targets).toEqual(["달빛", "약속"]);
+  });
+  it("extractLinkTargets returns empty for plain text", () => {
+    expect(extractLinkTargets("plain text")).toEqual([]);
+  });
+});
+
+describe("morning briefing (Sunrise / Fantastical)", () => {
+  it("is stable for the same input", () => {
+    const input = {
+      newReflections: 2,
+      streakDays: 5,
+      reviewsDueToday: 3,
+      activeChallengeCount: 1,
+    };
+    const a = buildMorningBriefing(input);
+    const b = buildMorningBriefing(input);
+    expect(a).toEqual(b);
+  });
+  it("falls back to a quiet message when there is nothing to surface", () => {
+    const card = buildMorningBriefing({
+      newReflections: 0,
+      streakDays: 0,
+      reviewsDueToday: 0,
+      activeChallengeCount: 0,
+    });
+    expect(card.bullets).toHaveLength(1);
+    expect(card.bullets[0]).toContain("조용한");
+  });
+  it("includes counts when they are non-zero", () => {
+    const card = buildMorningBriefing({
+      newReflections: 4,
+      streakDays: 10,
+      reviewsDueToday: 0,
+      activeChallengeCount: 2,
+    });
+    expect(card.bullets.some((b) => b.includes("4"))).toBe(true);
+    expect(card.bullets.some((b) => b.includes("10"))).toBe(true);
+    expect(card.bullets.some((b) => b.includes("2"))).toBe(true);
   });
 });

@@ -1,10 +1,11 @@
 /**
- * World-class defense playbook — synthesized from 10+ top security products.
+ * World-class defense playbook — synthesized from 18+ top security products.
  *
  * Source apps (see WORLD_CLASS_APPS_RESEARCH.md):
  *   Signal, 1Password, Bitwarden, ProtonMail, Apple iCloud Keychain,
  *   Cloudflare, Okta/Auth0, Keeper, Tor/Tails, NordVPN, Google Advanced
- *   Protection, iOS App Store Review (ATT).
+ *   Protection, iOS App Store Review (ATT), Tutanota, Mullvad, KeePassXC,
+ *   Yubico/FIDO2, Apple Lockdown Mode, Brave Shields.
  *
  * This file is a **defense-in-depth helper layer** — pure functions that any
  * middleware, RLS policy, or API route can call. It intentionally does NOT
@@ -337,4 +338,140 @@ export function securityScore(findings: readonly AuditFinding[]): number {
       f.severity === "critical" ? 40 : f.severity === "high" ? 20 : f.severity === "warn" ? 8 : 2;
   }
   return Math.max(0, 100 - penalty);
+}
+
+/* ── 9. Lockdown profile (Apple Lockdown Mode) ─────────────────────────── */
+
+export type LockdownProfile = {
+  /** Disable AI voice/image artifact generation. */
+  blockGenerativeMedia: boolean;
+  /** Force passkey for *every* sensitive action. */
+  requirePasskeyForAllSensitive: boolean;
+  /** Disallow any external share link creation. */
+  blockExternalShares: boolean;
+  /** Disallow non-essential third-party connections. */
+  blockIntegrations: boolean;
+  /** Shorten all session TTLs aggressively. */
+  sessionTtlMs: number;
+};
+
+export const LOCKDOWN_OFF: LockdownProfile = {
+  blockGenerativeMedia: false,
+  requirePasskeyForAllSensitive: false,
+  blockExternalShares: false,
+  blockIntegrations: false,
+  sessionTtlMs: ISOLATION_POLICY.normal.ttlMs,
+};
+
+export const LOCKDOWN_STRICT: LockdownProfile = {
+  blockGenerativeMedia: true,
+  requirePasskeyForAllSensitive: true,
+  blockExternalShares: true,
+  blockIntegrations: true,
+  sessionTtlMs: 15 * 60 * 1000,
+};
+
+/** Return the profile that should apply given the user's chosen level. */
+export function lockdownFor(level: "off" | "strict"): LockdownProfile {
+  return level === "strict" ? LOCKDOWN_STRICT : LOCKDOWN_OFF;
+}
+
+/**
+ * Decide whether a given action is permitted under a lockdown profile.
+ * Returns a typed decision so the caller UI can explain the block cleanly.
+ */
+export type LockdownAction =
+  | "generate_image"
+  | "voice_stream"
+  | "create_share_link"
+  | "install_integration"
+  | "passkey_gated_action";
+
+export function allowedUnderLockdown(
+  profile: LockdownProfile,
+  action: LockdownAction,
+): { allow: boolean; reason?: string } {
+  switch (action) {
+    case "generate_image":
+    case "voice_stream":
+      return profile.blockGenerativeMedia
+        ? { allow: false, reason: "Lockdown: generative media disabled" }
+        : { allow: true };
+    case "create_share_link":
+      return profile.blockExternalShares
+        ? { allow: false, reason: "Lockdown: external shares disabled" }
+        : { allow: true };
+    case "install_integration":
+      return profile.blockIntegrations
+        ? { allow: false, reason: "Lockdown: integrations disabled" }
+        : { allow: true };
+    case "passkey_gated_action":
+      return profile.requirePasskeyForAllSensitive
+        ? { allow: true, reason: "Lockdown: passkey required" }
+        : { allow: true };
+  }
+}
+
+/* ── 10. Privacy budget (Brave / differential-privacy inspired) ────────── */
+
+/**
+ * A simple daily "privacy budget" that limits how much analytics / telemetry
+ * a user emits in a 24h window. Going over the budget flips to minimal mode.
+ */
+export type PrivacyBudget = {
+  /** Total units for a rolling 24h window. */
+  dailyUnits: number;
+  /** Units spent so far. */
+  spent: number;
+  /** When the window started in ms. */
+  windowStartMs: number;
+};
+
+export function createPrivacyBudget(dailyUnits: number = 100, nowMs: number = Date.now()): PrivacyBudget {
+  return { dailyUnits, spent: 0, windowStartMs: nowMs };
+}
+
+/** Spend `cost` units from the budget — rolls the window if it's expired. */
+export function spendPrivacyBudget(
+  budget: PrivacyBudget,
+  cost: number,
+  nowMs: number = Date.now(),
+): { next: PrivacyBudget; allowed: boolean } {
+  const windowMs = 24 * 60 * 60 * 1000;
+  let rolled = budget;
+  if (nowMs - budget.windowStartMs >= windowMs) {
+    rolled = { ...budget, spent: 0, windowStartMs: nowMs };
+  }
+  if (rolled.spent + cost > rolled.dailyUnits) {
+    return { next: rolled, allowed: false };
+  }
+  return { next: { ...rolled, spent: rolled.spent + cost }, allowed: true };
+}
+
+/* ── 11. Anonymous account identifier (Mullvad) ────────────────────────── */
+
+/**
+ * Produce a 12-digit grouped "account number" style identifier from a seed,
+ * similar to Mullvad's anonymous accounts. Deterministic so the same seed
+ * always yields the same display value — caller stores the raw seed.
+ *
+ * Implementation is a simple FNV-1a-style 32-bit hash extended with a second
+ * pass to generate 12 digits. Intentionally avoids BigInt literals so the
+ * file remains compatible with older tsconfig targets.
+ */
+export function anonymousAccountNumber(seedBytes: Uint8Array): string {
+  const fnv = (seed: number): number => {
+    let h = seed >>> 0;
+    for (let i = 0; i < seedBytes.length; i++) {
+      h ^= seedBytes[i];
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h >>> 0;
+  };
+  const a = fnv(0x811c9dc5); // 32-bit FNV offset basis
+  const b = fnv(0xdeadbeef);
+  // Fold to a 12-digit positive decimal number.
+  const combined = (a * 1_000_003 + b) >>> 0;
+  const twelve = String(combined % 1_000_000_000_000).padStart(12, "0");
+  return `${twelve.slice(0, 4)} ${twelve.slice(4, 8)} ${twelve.slice(8, 12)}`;
 }

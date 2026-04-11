@@ -46,6 +46,11 @@ import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
 import { QuickCareButtons } from "@/components/quick-care-buttons";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
 import { ConversationStarter } from "@/components/conversation-starter";
+const LivingPresenceBeacon = dynamic(
+  () => import("@/components/living-presence-beacon").then((m) => ({ default: m.LivingPresenceBeacon })),
+  { ssr: false, loading: () => null },
+);
+import { moodToEmotionTone } from "@/lib/identity/mood-to-tone";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -758,6 +763,15 @@ export default function Home() {
         activity={creature.state.activity}
         primaryColor={appearance.palette.primary}
       />
+
+      {/* ===== LIVING PRESENCE BEACON — Gyeol's strongest differentiator, visible. ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 pt-3 md:px-6">
+        <LivingPresenceBeacon
+          tone={moodToEmotionTone(agentState?.mood ?? null)}
+          memoryCount={agentState?.total_messages ?? 0}
+          compact
+        />
+      </div>
 
       {/* ===== HUB + LIVING FEED ===== */}
       <div className="relative z-10 flex-shrink-0">

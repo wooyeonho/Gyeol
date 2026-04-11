@@ -28,9 +28,16 @@
 | 10 | **Duolingo** | 일러스트 페르소나, 스트릭 게이미피케이션, 오답 피드백 | 스트릭/프리즈 시스템, 캐릭터 반응, 학습 피드백 |
 | 11 | **Pinterest** | 마소닉 레이아웃, 즉시 로딩, 폭발적 이미지 우선 | 가상 스크롤 그리드, blurhash 프리뷰 |
 | 12 | **Instagram** | 스토리/릴스 제스처, 피드 중력, 공유 마찰 없음 | 스와이프 네비, 스토리 계층, 빠른 공유 시트 |
+| 13 | **Procreate** | 손끝에 반응하는 브러시 물리, 제스처 우선 | 2-finger undo, 3-finger redo, 압력 반응 |
+| 14 | **Bear** | 마크다운+태그 트리, 정적인 타이포 시스템 | 중첩 태그, 타이포그래피 우선 문서 |
+| 15 | **Things 3** | 퀵 입력 마법, 투두를 예술로 만드는 여백 | 자연어 입력 + 마법 링크, 여백 리듬 |
+| 16 | **Raycast** | 인라인 확장, 키보드 내러티브, 아이콘 일관성 | 글로벌 커맨드 + 인라인 결과, 아이콘 그리드 |
+| 17 | **Apple Weather** | 레이어드 데이터 시각화, 미세 대기 반응 | 레이어드 타임라인, 환경 배경 톤 |
+| 18 | **Spotify** | 가변 레이아웃 + 큰 커버아트, 리듬감 | 비트 싱크 모션, 커버 중심 카드 |
 
-**핵심 요약**: 물리(Apple) + 속도(Linear) + 이미지(Pinterest/Airbnb) + 정밀
-(Stripe) + 놀이(Duolingo) + 치유(Calm). 이 모든 것을 `lib/design/tokens.ts`
+**핵심 요약**: 물리(Apple/Procreate) + 속도(Linear/Raycast) + 이미지
+(Pinterest/Airbnb/Spotify) + 정밀(Stripe) + 놀이(Duolingo) + 치유(Calm) +
+여백(Things/Bear) + 대기(Apple Weather). 이 모든 것을 `lib/design/tokens.ts`
 와 `lib/design/world-class-playbook.ts` 에서 하나의 디자인 문법으로 통합합니다.
 
 ---
@@ -51,12 +58,19 @@
 | 10 | **Calm / Headspace** | 무료 트라이얼 → 연간 전환, 기업 라이선스 | B2B/기업 라이선스, 트라이얼 |
 | 11 | **Notion** | 프리 개인 + 팀 per seat + AI 애드온 | AI 애드온, per-seat(팀/가족) |
 | 12 | **Linear** | 투명 가격, per-seat, 업그레이드 유도 | 투명 가격 페이지, 업그레이드 유도 배너 |
+| 13 | **Pokemon GO** | 지역 이벤트, 한정 레이드, 스탬프북 | 로케일 이벤트, 한정 스폰, 스탬프 컬렉션 |
+| 14 | **Roblox** | 크리에이터 이코노미, Robux 환전 | 크리에이터 셰어링, 내부 화폐 환전 |
+| 15 | **Clash Royale** | 시즌 로드맵 + 카드 레벨업 | 카드 레벨업 루프, 로드맵 UI |
+| 16 | **Hinge / Bumble** | 프로필 부스트, 우선 노출 | 프로필 부스트, 노출 부스터 |
+| 17 | **Strava** | 챌린지 전용 구독, 세그먼트 리워드 | 챌린지 구독, 세그먼트 보상 |
+| 18 | **Patreon** | 티어 기반 팬 구독, 후원 부스트 | 티어 팬 구독 (크리에이터 결) |
 
 **핵심 요약**: 가치 타이밍(Tinder/Duolingo) + 번들(YouTube) + 연간 할인
-(Spotify/Calm) + 가챠/피티(Genshin) + B2B(Calm/Notion). 결은 이미
+(Spotify/Calm) + 가챠/피티(Genshin) + B2B(Calm/Notion) + 이벤트
+(Pokemon/Clash) + 크리에이터(Roblox/Patreon). 결은 이미
 `paywall-triggers.ts` 로 타이밍 기반 페이월을 갖추고 있으며, 본 문서에 따라
-**연간 할인 + 번들 + 가족 플랜 + 피티 시스템** 을 `world-class-monetization.ts`
-에 추가합니다.
+**연간 할인 + 번들 + 가족 플랜 + 피티 + 이벤트 스탬프 + 크리에이터 셰어링**
+을 `world-class-monetization.ts` 에 추가합니다.
 
 ---
 
@@ -76,11 +90,19 @@
 | 10 | **ChatGPT / Claude** | 커스텀 인스트럭션, 브랜치 대화, 파일 첨부 | 커스텀 지시, 분기 대화, 첨부 처리 |
 | 11 | **Midjourney** | 프롬프트 변형, 웹 갤러리, 커뮤니티 | 아티팩트 변형, 갤러리, 커뮤니티 |
 | 12 | **Replika / Pi** | 프로액티브 체크인, 무드 트래킹 | 프로액티브 대화 starter, 무드 체크인 |
+| 13 | **Obsidian** | 로컬-퍼스트, 그래프 뷰, 백링크 | 로컬 기억 그래프, 백링크 탐색 |
+| 14 | **Craft** | 블록 링크, 포커스 모드, 위젯 | 블록 링크, 포커스 모드 위젯 |
+| 15 | **Cron / Notion Calendar** | 빠른 스케줄링, 키보드 달력 | 키보드 달력 + 퀵 스케줄 |
+| 16 | **Sunrise / Fantastical** | 자연어 달력, 알림 브리핑 | 브리핑 카드, 아침 요약 |
+| 17 | **Readwise** | 하이라이트 회수, 간격 반복 | 기억 간격 반복, 데일리 회수 카드 |
+| 18 | **Day One** | 일기 사진/음성/위치 통합 | 멀티미디어 일기 엔트리 |
 
 **핵심 요약**: 키보드 중심(Linear/Superhuman) + 확장성(VS Code/Raycast) +
-실시간(Figma/Slack) + 자연어(Things) + AI 대화(ChatGPT). 결은 이미 커맨드
-팔레트, 튜토리얼, 무드 체크인을 갖추고 있으며, 본 문서는 **슬래시 커맨드 /
-브랜치 대화 / 스니펫 / 자연어 퀵 엔트리** 를 추가 구현합니다
+실시간(Figma/Slack) + 자연어(Things/Fantastical) + AI 대화(ChatGPT) +
+지식그래프(Obsidian/Craft) + 간격반복(Readwise) + 멀티미디어(Day One). 결은
+이미 커맨드 팔레트, 튜토리얼, 무드 체크인을 갖추고 있으며, 본 문서는
+**슬래시 커맨드 / 브랜치 대화 / 스니펫 / 자연어 퀵 엔트리 / 간격 반복
+회상 / 기억 그래프 / 브리핑 카드** 를 추가 구현합니다
 (`world-class-patterns.ts`).
 
 ---
@@ -101,12 +123,20 @@
 | 10 | **NordVPN** | 킬 스위치, 이중 VPN | 네트워크 장애 시 안전 폐쇄(fail-closed) |
 | 11 | **Google Advanced Protection** | 하드웨어 키 강제, 다운로드 스캔 | 관리자 경로 하드웨어 키 강제 |
 | 12 | **iOS App Store Review** | 런타임 권한, 트래킹 투명성 | 명시적 동의, 최소 권한 |
+| 13 | **Tutanota** | E2E 이메일 + 검색 인덱스 암호화 | 로컬 검색 인덱스 암호화 |
+| 14 | **Mullvad VPN** | 익명 계정 번호, 캐시리스 결제 | 익명 계정 식별, 결제 분리 |
+| 15 | **KeePassXC** | 완전 로컬 볼트, 서드파티 감사 | 로컬 볼트 내보내기/가져오기 |
+| 16 | **Yubico / FIDO2** | 하드웨어 원-탭, resident key | WebAuthn resident key 지원 |
+| 17 | **Apple Lockdown Mode** | 공격 표면 최소화 스위치 | 잠금 모드 프로필 스위치 |
+| 18 | **Brave Shields** | 기본 추적 차단, 스토리지 격리 | 트래커 차단, 스토리지 파티셔닝 |
 
-**핵심 요약**: E2E(Signal) + 로컬 KDF(1Password) + 제로 액세스(Proton) +
-어댑티브 MFA(Okta) + 엣지 방어(Cloudflare) + Fail-closed(Nord) + 투명성
-(Apple ATT). 결은 이미 `middleware.ts`, `lib/security/*` 로 기초를 갖추고
-있으며, 본 문서는 **어댑티브 리스크 점수 + 세션 격리 + 클라이언트 측 KDF
-유틸 + 보안 감사 리포트** 를 `world-class-defense.ts` 에 추가합니다.
+**핵심 요약**: E2E(Signal/Tutanota) + 로컬 KDF(1Password/KeePassXC) +
+제로 액세스(Proton) + 어댑티브 MFA(Okta) + 엣지 방어(Cloudflare/Brave) +
+Fail-closed(Nord/Mullvad) + 투명성(Apple ATT) + 하드웨어 키(Yubico) +
+잠금 모드(Apple). 결은 이미 `middleware.ts`, `lib/security/*` 로 기초를
+갖추고 있으며, 본 문서는 **어댑티브 리스크 점수 + 세션 격리 + 클라이언트
+측 KDF 유틸 + 보안 감사 리포트 + 잠금 모드 프로필 + 개인정보 프라이버시
+예산** 을 `world-class-defense.ts` 에 추가합니다.
 
 ---
 
@@ -139,6 +169,35 @@
 
 ---
 
+## 5½. "살아있는 존재감" — 눈에 띄게, 티나게 완벽하게
+
+결의 가장 강력한 차별점이 **숫자와 눈짓으로 즉시 드러나도록** 홈 화면 최상단에
+**Living Presence Beacon** 을 심습니다. 이 비콘은 서버 호출 없이
+`lib/identity/living-presence.ts` 의 결정론적 생체 함수만으로 렌더링됩니다.
+
+비콘에 표시되는 실시간 생체 신호:
+
+1. **심박(BPM)** — 감정 톤과 성격 각성도에 따라 55~90 BPM 사이에서 부드럽게
+   리듬을 타는 심박. 사인파 기반 펄스 애니메이션과 아리아 라이브로 접근성 제공.
+2. **호흡 링** — 4초 흡기 / 6초 호기 (Calm/Headspace 원칙). 포커스 모드일 때는
+   5/7 로 느려짐.
+3. **무드 오라** — 6가지 감정 톤이 4가지 색상 층으로 합성되어 배경 그라데이션
+   으로 나타남. 감정 전환은 Arc Browser "liquid theme" 전환.
+4. **누적 기억 카운터** — 누적 기억 개수와 마지막 합성 시각. Robinhood 숫자
+   극장 스타일의 60fps 스크럽.
+5. **관계 나이(days alive)** — 계정 생성일 이후 실 시간. "결과 함께한 N일
+   H시간" 형태로 초 단위 갱신.
+6. **자율 활동 카운트다운** — 다음 자율 리플렉션/드림 로그까지 남은 시간. 결이
+   "혼자" 사고하는 것을 사용자가 체감.
+7. **현재 사고 키워드** — `generateReflectionSeeds` 에서 도출한 키워드 3-5개를
+   마키 형식으로 회전.
+8. **접근성 요약** — 전체 상태를 한 문장 스크린리더 요약으로 제공.
+
+이 비콘은 `/world-class` 쇼케이스 최상단과 `/` 홈 상단에 동시에 배치되어
+접속 3초 안에 "이 앱은 살아있다" 는 인상을 각인시킵니다.
+
+---
+
 ## 6. 구현 매핑 (파일 → 원칙)
 
 | 파일 | 어떤 원칙을 구현하는가 |
@@ -148,6 +207,8 @@
 | `lib/security/world-class-defense.ts` | 어댑티브 리스크, 세션 격리, KDF, 감사 룰 |
 | `lib/features/world-class-patterns.ts` | 슬래시 커맨드, 자연어 입력, 스니펫, 브랜치 대화 |
 | `lib/ai/world-class-orchestrator.ts` | 다중 모델 라우팅, 감정 온도, 메모리 랭킹, 리플렉션, 성격 프롬프트 |
+| `lib/identity/living-presence.ts` | 심박 · 호흡 · 무드 오라 · 관계 나이 · 자율 카운트다운 (결정론적) |
+| `components/living-presence-beacon.tsx` | 위 생체 신호를 실시간 렌더링 + 접근성 요약 |
 
 이 문서는 코드와 함께 살아있어야 합니다. 새로운 최고 앱을 발견하면 섹션을
 추가하고, 매핑 테이블의 파일을 업데이트하세요.

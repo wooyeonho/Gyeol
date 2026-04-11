@@ -2,16 +2,25 @@ import { describe, expect, it } from "vitest";
 import {
   annualSavingsKRW,
   bundleEffectivePriceKRW,
+  canJoinChallenge,
+  CHALLENGES,
   computeARPU,
+  computeCreatorPayout,
   computeMRR,
   DEFAULT_PITY,
   generateBattlePass,
   getPlan,
+  isBoostActive,
+  isStampBookComplete,
   PLANS,
   pityDropRate,
   planHasFeature,
+  PROFILE_BOOSTS,
   resolveFeatureAccess,
   simulatePull,
+  stampEvent,
+  stampsUnlocked,
+  type EventStampBook,
 } from "./world-class-monetization";
 
 describe("plan catalog", () => {
@@ -122,5 +131,79 @@ describe("revenue rollups", () => {
   });
   it("ARPU returns 0 for zero users", () => {
     expect(computeARPU([], 0)).toBe(0);
+  });
+});
+
+describe("event stamp book (Pokemon GO)", () => {
+  const book: EventStampBook = {
+    campaign: "summer_bloom",
+    startsAt: 0,
+    endsAt: 1_000,
+    stamps: [
+      { id: "s1", label: "첫 대화", unlockedAt: null, rewardLabel: "코인 10" },
+      { id: "s2", label: "기억 저장", unlockedAt: null, rewardLabel: "코인 20" },
+    ],
+  };
+  it("stampsUnlocked starts at zero", () => {
+    expect(stampsUnlocked(book)).toBe(0);
+  });
+  it("stampEvent is immutable and marks the stamp", () => {
+    const next = stampEvent(book, "s1", 500);
+    expect(book.stamps[0].unlockedAt).toBeNull();
+    expect(next.stamps[0].unlockedAt).toBe(500);
+  });
+  it("isStampBookComplete requires every stamp", () => {
+    const one = stampEvent(book, "s1", 1);
+    expect(isStampBookComplete(one)).toBe(false);
+    const both = stampEvent(one, "s2", 2);
+    expect(isStampBookComplete(both)).toBe(true);
+  });
+});
+
+describe("profile boost (Hinge / Bumble)", () => {
+  it("has at least one spotlight boost", () => {
+    expect(Object.keys(PROFILE_BOOSTS).length).toBeGreaterThan(0);
+  });
+  it("is active for exactly the configured duration", () => {
+    const boost = PROFILE_BOOSTS.spotlight_10min;
+    expect(isBoostActive("spotlight_10min", 0, boost.durationMs - 1)).toBe(true);
+    expect(isBoostActive("spotlight_10min", 0, boost.durationMs + 1)).toBe(false);
+  });
+});
+
+describe("creator revenue share (Roblox / Patreon)", () => {
+  it("splits gross into creator + platform", () => {
+    const payout = computeCreatorPayout(100_000, "sapling");
+    expect(payout.creatorKRW + payout.platformKRW).toBe(100_000);
+  });
+  it("gives stewards the best split", () => {
+    const s = computeCreatorPayout(100_000, "sapling").creatorKRW;
+    const g = computeCreatorPayout(100_000, "gardener").creatorKRW;
+    const w = computeCreatorPayout(100_000, "steward").creatorKRW;
+    expect(w).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(s);
+  });
+  it("flags below-minimum payouts as ineligible", () => {
+    const tiny = computeCreatorPayout(1_000, "sapling");
+    expect(tiny.eligibleForPayout).toBe(false);
+  });
+});
+
+describe("challenge subscription (Strava)", () => {
+  it("blocks free users from paid challenges", () => {
+    expect(canJoinChallenge("free", "memory_marathon")).toBe(false);
+  });
+  it("lets pro users join memory_marathon", () => {
+    expect(canJoinChallenge("pro", "memory_marathon")).toBe(true);
+  });
+  it("gates mood_sunrise to premium and above", () => {
+    expect(canJoinChallenge("pro", "mood_sunrise")).toBe(false);
+    expect(canJoinChallenge("premium", "mood_sunrise")).toBe(true);
+    expect(canJoinChallenge("family", "mood_sunrise")).toBe(true);
+  });
+  it("exposes a reward label for each challenge", () => {
+    for (const c of Object.values(CHALLENGES)) {
+      expect(c.reward.length).toBeGreaterThan(0);
+    }
   });
 });

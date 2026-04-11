@@ -1,9 +1,10 @@
 /**
- * World-class monetization patterns — synthesized from 10+ top-grossing apps.
+ * World-class monetization patterns — synthesized from 18+ top-grossing apps.
  *
  * Source apps (see WORLD_CLASS_APPS_RESEARCH.md):
  *   Tinder, Duolingo, Candy Crush, Genshin Impact, Spotify, YouTube Premium,
- *   Netflix, Disney+, TikTok Live, Calm, Notion, Linear.
+ *   Netflix, Disney+, TikTok Live, Calm, Notion, Linear, Pokemon GO, Roblox,
+ *   Clash Royale, Hinge/Bumble, Strava, Patreon.
  *
  * This module complements `lib/revenue/paywall-triggers.ts`:
  *   — paywall-triggers.ts handles *when* to show a paywall.
@@ -324,4 +325,158 @@ export function computeARPU(
 ): number {
   if (activeUsers <= 0) return 0;
   return computeMRR(events, nowMs) / activeUsers;
+}
+
+/* ── Event stamp book (Pokemon GO / Clash Royale) ──────────────────────── */
+
+export type EventStamp = {
+  id: string;
+  label: string;
+  /** Timestamp at which completing the stamp grants the reward. */
+  unlockedAt: number | null;
+  rewardLabel: string;
+};
+
+export type EventStampBook = {
+  campaign: string;
+  startsAt: number;
+  endsAt: number;
+  stamps: EventStamp[];
+};
+
+/** Pure: mark a stamp as unlocked, returning a new stamp book. */
+export function stampEvent(book: EventStampBook, stampId: string, atMs: number): EventStampBook {
+  return {
+    ...book,
+    stamps: book.stamps.map((s) => (s.id === stampId ? { ...s, unlockedAt: atMs } : s)),
+  };
+}
+
+/** How many stamps are currently unlocked. */
+export function stampsUnlocked(book: EventStampBook): number {
+  return book.stamps.filter((s) => s.unlockedAt !== null).length;
+}
+
+/** Whether every stamp in the book is unlocked. */
+export function isStampBookComplete(book: EventStampBook): boolean {
+  return book.stamps.every((s) => s.unlockedAt !== null);
+}
+
+/* ── Profile boost (Hinge / Bumble) ────────────────────────────────────── */
+
+export type ProfileBoost = {
+  id: string;
+  /** Duration in ms during which the profile is surfaced more. */
+  durationMs: number;
+  /** Multiplier applied to exposure ranking while active. */
+  exposureMultiplier: number;
+  /** Cost in coins. */
+  coinCost: number;
+};
+
+export const PROFILE_BOOSTS: Record<string, ProfileBoost> = {
+  spotlight_10min: {
+    id: "spotlight_10min",
+    durationMs: 10 * 60 * 1000,
+    exposureMultiplier: 10,
+    coinCost: 50,
+  },
+  spotlight_30min: {
+    id: "spotlight_30min",
+    durationMs: 30 * 60 * 1000,
+    exposureMultiplier: 6,
+    coinCost: 120,
+  },
+  spotlight_evening: {
+    id: "spotlight_evening",
+    durationMs: 3 * 60 * 60 * 1000,
+    exposureMultiplier: 3,
+    coinCost: 300,
+  },
+};
+
+/** Whether a boost bought at `startedAt` is still active at `now`. */
+export function isBoostActive(boostId: keyof typeof PROFILE_BOOSTS, startedAt: number, now: number): boolean {
+  const boost = PROFILE_BOOSTS[boostId];
+  if (!boost) return false;
+  return now - startedAt < boost.durationMs;
+}
+
+/* ── Creator revenue share (Roblox / Patreon) ─────────────────────────── */
+
+export type CreatorTier = "sapling" | "gardener" | "steward";
+
+export type CreatorShareConfig = {
+  tier: CreatorTier;
+  /** Platform's cut expressed as a fraction [0, 1]. */
+  platformFee: number;
+  /** Minimum payout threshold in KRW. */
+  minPayoutKRW: number;
+};
+
+export const CREATOR_TIERS: Record<CreatorTier, CreatorShareConfig> = {
+  sapling: { tier: "sapling", platformFee: 0.3, minPayoutKRW: 50_000 },
+  gardener: { tier: "gardener", platformFee: 0.22, minPayoutKRW: 30_000 },
+  steward: { tier: "steward", platformFee: 0.15, minPayoutKRW: 10_000 },
+};
+
+/**
+ * Compute the creator's share and the platform fee for a gross amount.
+ */
+export function computeCreatorPayout(grossKRW: number, tier: CreatorTier): {
+  creatorKRW: number;
+  platformKRW: number;
+  eligibleForPayout: boolean;
+} {
+  const cfg = CREATOR_TIERS[tier];
+  const platformKRW = Math.round(grossKRW * cfg.platformFee);
+  const creatorKRW = grossKRW - platformKRW;
+  return {
+    creatorKRW,
+    platformKRW,
+    eligibleForPayout: creatorKRW >= cfg.minPayoutKRW,
+  };
+}
+
+/* ── Challenge subscription (Strava) ───────────────────────────────────── */
+
+export type ChallengeId = "memory_marathon" | "mood_sunrise" | "portrait_30";
+
+export type Challenge = {
+  id: ChallengeId;
+  label: string;
+  /** Only accessible to these plan ids. */
+  requiredPlans: readonly PlanId[];
+  /** Goal count — e.g. 30 memories, 14 mood check-ins. */
+  goal: number;
+  /** Reward label string. */
+  reward: string;
+};
+
+export const CHALLENGES: Record<ChallengeId, Challenge> = {
+  memory_marathon: {
+    id: "memory_marathon",
+    label: "기억 마라톤",
+    requiredPlans: ["pro", "premium", "family"],
+    goal: 30,
+    reward: "한정 컬렉터블 기억 스킨",
+  },
+  mood_sunrise: {
+    id: "mood_sunrise",
+    label: "새벽 무드 챌린지",
+    requiredPlans: ["premium", "family"],
+    goal: 14,
+    reward: "Sunrise 호흡 링 테마",
+  },
+  portrait_30: {
+    id: "portrait_30",
+    label: "30일 초상화",
+    requiredPlans: ["premium", "family"],
+    goal: 30,
+    reward: "30-frame 성장 타임랩스",
+  },
+};
+
+export function canJoinChallenge(userPlan: PlanId, challengeId: ChallengeId): boolean {
+  return CHALLENGES[challengeId].requiredPlans.includes(userPlan);
 }
