@@ -5,6 +5,7 @@ import { useAgentStore } from "@/store/agent-store";
 import { LevelUpToast } from "@/components/engagement/level-up-toast";
 import { AchievementUnlockToast } from "@/components/engagement/achievement-unlock-toast";
 import { useAchievementUnlock } from "@/hooks/use-achievement-unlock";
+import { CoinBurstHost } from "@/components/effects/coin-burst";
 
 const LAST_LEVEL_KEY = "gyeol:last-seen-level";
 
@@ -72,6 +73,7 @@ export function EngagementCelebrationHost() {
         achievement={achievement}
         onDismiss={() => void dismissAchievement()}
       />
+      <CoinBurstHost />
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Menu, X, MessageCircle, Compass, Settings, Trophy, Users, Sparkles, BookOpen, HeartPulse, Medal, UserCircle2 } from 'lucide-react';
+import { Menu, X, MessageCircle, Compass, Settings, Trophy, Users, Sparkles, BookOpen, HeartPulse, Medal, UserCircle2, Gift, Cat } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from "@/components/i18n-provider";
 import { FocusTrap } from "@/components/focus-trap";
@@ -34,6 +34,8 @@ export function NavigationHub() {
     { href: "/emotion", icon: <Sparkles />, label: "감정 대시보드" },
     { href: "/diary", icon: <BookOpen />, label: "일기" },
     { href: "/wellness", icon: <HeartPulse />, label: "웰니스" },
+    { href: "/community/species", icon: <Cat />, label: "종족 커뮤니티" },
+    { href: "/invites", icon: <Gift />, label: "친구 초대" },
     { href: "/profile/customize", icon: <UserCircle2 />, label: "프로필 꾸미기" },
     { href: "/settings", icon: <Settings />, label: t("nav.settings") },
   ];

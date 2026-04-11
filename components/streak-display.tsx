@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/components/i18n-provider";
+import { ShieldShop } from "@/components/engagement/shield-shop";
 
 const WEEKDAY_LABELS: Record<string, string[]> = {
   ko: ["일", "월", "화", "수", "목", "금", "토"],
@@ -226,6 +227,7 @@ export function StreakDisplay({
           </p>
         </motion.div>
       )}
+      <ShieldShop />
     </motion.div>
   );
 }

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { ACHIEVEMENTS, type AchievementRarity } from "@/lib/engagement/achievements";
+import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
   common:    { label: "Common",    glow: "",                              border: "border-white/15",        text: "text-white/60" },
@@ -23,12 +24,16 @@ export default function AchievementsPage() {
   const [filter, setFilter] = useState<AchievementRarity | "all">("all");
 
   useEffect(() => {
-    // Load from API
-    fetch("/api/achievements")
+    // Load from API — the route returns each achievement definition
+    // with an `unlocked` boolean, so we filter + collect ids here.
+    fetch("/api/achievements", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { achievements: [] }))
       .then((data) => {
         if (Array.isArray(data.achievements)) {
-          setUnlockedIds(new Set((data.achievements as Array<{ achievement_id: string }>).map((a) => a.achievement_id)));
+          const ids = (data.achievements as Array<{ id: string; unlocked?: boolean }>)
+            .filter((a) => a.unlocked)
+            .map((a) => a.id);
+          setUnlockedIds(new Set(ids));
         }
       })
       .catch(() => {});
@@ -55,7 +60,15 @@ export default function AchievementsPage() {
           <p className="mt-1 text-sm text-white/40">
             {unlockedCount} / {ACHIEVEMENTS.filter((a) => !a.hidden).length} {t("achievements.unlocked") || "해금"}
           </p>
+          {unlockedCount === 0 && (
+            <p className="mx-auto mt-3 max-w-xs rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/55">
+              아직 해금된 업적이 없어요. 대화하고 돌봐주면 가장 먼저 &ldquo;첫 인사&rdquo; 같은 업적부터 열려요.
+            </p>
+          )}
         </header>
+
+        {/* Level unlock preview — "coming up at level X" */}
+        <LevelUnlockPreview />
 
         {/* Rarity filter */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

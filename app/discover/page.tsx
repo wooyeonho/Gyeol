@@ -26,6 +26,10 @@ const NarrativeEventCard = dynamic(() => import("@/components/narrative-event-ca
 const BattlePass = dynamic(() => import("@/components/battle-pass"), { ssr: false });
 const LeagueBadge = dynamic(() => import("@/components/league-badge"), { ssr: false });
 const PartyPanel = dynamic(() => import("@/components/party-panel").then(m => ({ default: m.PartyPanel })), { ssr: false });
+const CreatureRecommendations = dynamic(
+  () => import("@/components/discover/creature-recommendations").then(m => ({ default: m.CreatureRecommendations })),
+  { ssr: false },
+);
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -447,6 +451,9 @@ export default function DiscoverPage() {
 
         {/* Species Codex — Pokedex-style collection */}
         <SpeciesCodex locale={locale} />
+
+        {/* Phase 3-1: live creature recommendations */}
+        <CreatureRecommendations />
 
         {/* More Ways divider */}
         <div className="flex items-center gap-2 px-1 pt-2">

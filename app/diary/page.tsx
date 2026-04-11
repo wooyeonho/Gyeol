@@ -60,6 +60,31 @@ export default function DiaryPage() {
   };
 
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [genMessage, setGenMessage] = useState<string | null>(null);
+
+  const generateToday = useCallback(async () => {
+    if (!agentId || generating) return;
+    setGenerating(true);
+    setGenMessage(null);
+    try {
+      const res = await fetch("/api/diary/generate", { method: "POST" });
+      if (res.status === 429) {
+        setGenMessage("잠시 후 다시 시도해 주세요");
+      } else if (res.ok) {
+        const json = (await res.json()) as { skipped: boolean };
+        setGenMessage(json.skipped ? "오늘 일기는 이미 있어요" : "오늘 일기가 생성됐어요 ✨");
+        void fetchDiary();
+      } else {
+        setGenMessage("생성 실패");
+      }
+    } catch {
+      setGenMessage("네트워크 오류");
+    } finally {
+      setGenerating(false);
+      setTimeout(() => setGenMessage(null), 2800);
+    }
+  }, [agentId, generating, fetchDiary]);
 
   return (
     <div className="min-h-screen bg-background px-4 pb-28 pt-16">
@@ -87,6 +112,26 @@ export default function DiaryPage() {
           <button type="button" onClick={nextMonth} className="rounded-full p-2 text-white/50 hover:bg-white/5">
             →
           </button>
+        </div>
+
+        {/* Manual generation — Phase 2-1 fallback for users who arrive
+            before the cron has had a chance to run for today. */}
+        <div className="flex items-center justify-between rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-indigo-100">오늘의 일기</p>
+            <p className="text-[11px] text-indigo-200/60">
+              {genMessage ?? "아직 오늘 일기가 없다면 지금 바로 생성할 수 있어요"}
+            </p>
+          </div>
+          <motion.button
+            type="button"
+            onClick={generateToday}
+            disabled={generating || !agentId}
+            whileTap={{ scale: 0.94 }}
+            className="shrink-0 rounded-lg border border-indigo-300/40 bg-indigo-400/15 px-3 py-1.5 text-[11px] font-semibold text-indigo-100 transition-colors hover:bg-indigo-400/25 disabled:opacity-50"
+          >
+            {generating ? "…" : "생성"}
+          </motion.button>
         </div>
 
         {loading ? (
