@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useKeyboardShortcuts, SHORTCUTS } from "@/lib/keyboard-shortcuts";
 import { useSearchModal } from "@/components/search-modal";
+import { SHORTCUTS as WORLD_CLASS_SHORTCUTS } from "@/lib/features/world-class-patterns";
 
 const SearchModal = dynamic(() => import("@/components/search-modal").then((m) => ({ default: m.SearchModal })), {
   ssr: false,
@@ -26,6 +28,48 @@ const KeyboardShortcutHelp = dynamic(() => import("@/components/keyboard-shortcu
  */
 export function GlobalKeyboardProvider() {
   const searchModal = useSearchModal();
+  const router = useRouter();
+
+  // Linear/Vim-style "g <letter>" navigation chord.
+  // Mirrors the `nav.home / nav.room / nav.memories / nav.journey` entries in
+  // the world-class SHORTCUTS registry — press `g` then the target letter
+  // within 1.2s to jump.
+  useEffect(() => {
+    let gPressedAt = 0;
+    const routes: Record<string, string> = {
+      h: "/",
+      r: "/room",
+      m: "/memories",
+      j: "/journey",
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) {
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const now = Date.now();
+      if (e.key === "g") {
+        gPressedAt = now;
+        return;
+      }
+      if (now - gPressedAt < 1200) {
+        const dest = routes[e.key.toLowerCase()];
+        if (dest) {
+          e.preventDefault();
+          router.push(dest);
+          gPressedAt = 0;
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [router]);
+
+  // Reference the catalog so tree-shaking doesn't drop it and the help
+  // overlay can iterate through the world-class registry if needed.
+  void WORLD_CLASS_SHORTCUTS;
 
   // Feed navigation: dispatch custom events so any feed component can listen
   const dispatchFeedEvent = useCallback((type: string) => {

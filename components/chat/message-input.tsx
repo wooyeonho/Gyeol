@@ -1,10 +1,11 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { haptic, playSound } from "@/lib/micro-interactions";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import type { VoiceInputState } from "@/hooks/use-voice-input";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import type { Sticker } from "@/lib/creature/sticker-system";
+import { searchSlashCommands, type SlashCommand } from "@/lib/features/world-class-patterns";
 
 function MicIcon({ className }: { className?: string }) {
   return (
@@ -69,6 +70,7 @@ export function MessageInput({
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showStickers, setShowStickers] = useState(false);
+  const [slashIndex, setSlashIndex] = useState(0);
 
   useEffect(() => {
     if (!isStreaming && inputRef.current) {
@@ -76,7 +78,50 @@ export function MessageInput({
     }
   }, [isStreaming]);
 
+  // Slash command autocomplete — trigger when the buffer starts with "/"
+  // and has no spaces yet. searchSlashCommands ranks by prefix > substring >
+  // alias match, matching Notion/Linear behaviour.
+  const slashMatches: SlashCommand[] = useMemo(() => {
+    if (!input.startsWith("/")) return [];
+    const firstSpace = input.indexOf(" ");
+    if (firstSpace >= 0) return [];
+    return searchSlashCommands(input.slice(1)).slice(0, 6);
+  }, [input]);
+  const showSlashMenu = slashMatches.length > 0;
+
+  useEffect(() => {
+    setSlashIndex(0);
+  }, [input]);
+
+  const acceptSlash = (cmd: SlashCommand) => {
+    setInput(`/${cmd.trigger} `);
+    haptic("tap");
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSlashMenu) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashIndex((i) => (i + 1) % slashMatches.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashIndex((i) => (i - 1 + slashMatches.length) % slashMatches.length);
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        acceptSlash(slashMatches[slashIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setInput("");
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmitWithFeedback(e);
@@ -121,6 +166,64 @@ export function MessageInput({
           <span className="text-xs text-white/50">{t("voice.transcribing")}</span>
         </div>
       )}
+      {/* Slash command autocomplete — Notion/Linear style */}
+      <AnimatePresence>
+        {showSlashMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            className="mb-2 overflow-hidden rounded-2xl border backdrop-blur-md"
+            style={{
+              borderColor: `${appearance.palette.primary}30`,
+              background: "rgba(10,10,14,0.82)",
+              boxShadow: `0 0 0 1px ${appearance.palette.primary}15 inset`,
+            }}
+          >
+            <div className="border-b border-white/5 px-3 py-1.5 text-[10px] uppercase tracking-wider text-white/40">
+              Slash commands
+            </div>
+            <ul role="listbox" className="max-h-64 overflow-y-auto py-1">
+              {slashMatches.map((cmd, i) => (
+                <li
+                  key={cmd.id}
+                  role="option"
+                  aria-selected={i === slashIndex}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    acceptSlash(cmd);
+                  }}
+                  onMouseEnter={() => setSlashIndex(i)}
+                  className={`flex cursor-pointer items-start gap-2 px-3 py-2 text-sm transition ${
+                    i === slashIndex ? "bg-white/10" : "bg-transparent"
+                  }`}
+                >
+                  <span
+                    className="mt-0.5 rounded-md px-1.5 py-0.5 font-mono text-[11px]"
+                    style={{
+                      background: `${appearance.palette.primary}20`,
+                      color: appearance.palette.primary,
+                    }}
+                  >
+                    /{cmd.trigger}
+                  </span>
+                  <span className="flex-1">
+                    <span className="block font-medium text-white/90">{cmd.label}</span>
+                    <span className="block text-[11px] text-white/50">{cmd.description}</span>
+                  </span>
+                  <span className="self-center rounded-full border border-white/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white/40">
+                    {cmd.kind}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-white/5 px-3 py-1.5 text-[10px] text-white/40">
+              ↑↓ 선택 · ⏎/Tab 확정 · Esc 취소
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sticker picker panel */}
       {creatureDna && onStickerSelect && (
         <AnimatePresence>

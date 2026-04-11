@@ -27,6 +27,12 @@ import {
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { trySemanticCache } from "@/lib/chat/semantic-cache";
+import {
+  classifySafety,
+  personalityClauses,
+  decideRoute,
+  type Big5,
+} from "@/lib/ai/world-class-orchestrator";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/chat" });
@@ -100,6 +106,36 @@ export async function POST(req: NextRequest) {
     if (fence.blocked) return new Response(JSON.stringify({ error: fence.reason || "Blocked" }), { status: 400 });
     const message = sanitizeUserInput(rawMessage);
     if (!message) return new Response(JSON.stringify({ error: "No message" }), { status: 400 });
+
+    // --- World-class safety guardrail (pre-LLM short circuit) ---
+    // Classifies self-harm / violence / minor-safety content. `refuse` short-
+    // circuits to a SSE refusal event with zero LLM calls; `warn` flows
+    // through to the LLM with an injected care instruction + a surfaced event
+    // the UI can render as a crisis card.
+    const safety = classifySafety(rawMessage);
+    if (safety.kind === "refuse") {
+      const encoder = new TextEncoder();
+      const refusalStream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const refusalText =
+            safety.topic === "minor_safety"
+              ? "이 대화는 진행할 수 없어. 미안해."
+              : "이 이야기는 함께할 수 없어. 다른 걸 이야기해줄래?";
+          // Emit as text chunks so the existing stream reader can render it.
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: refusalText })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "safety_refusal", topic: safety.topic })}\n\n`));
+          controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+          controller.close();
+        },
+      });
+      return new Response(refusalStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
 
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
@@ -177,8 +213,38 @@ export async function POST(req: NextRequest) {
       ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
       : "";
 
+    // --- World-class personality conditioning (Big-Five → natural clauses) ---
+    // Map the creature's 16-axis DNA onto a Big-Five vector, then lift to
+    // short Korean clauses. This is additive — existing systemPrompt still
+    // supplies the base persona, fragments, memories, etc.
+    const dnaForBig5 = (context.agentState?.genome as { dna?: CreatureDNA } | null | undefined)?.dna;
+    const big5Clauses: string[] = (() => {
+      if (!dnaForBig5) return [];
+      const b5: Big5 = {
+        openness: dnaForBig5.openness ?? 0.5,
+        conscientiousness: (dnaForBig5.persistence + dnaForBig5.stability) / 2,
+        extraversion: (dnaForBig5.assertiveness + dnaForBig5.playfulness) / 2,
+        agreeableness: (dnaForBig5.warmth + dnaForBig5.empathy) / 2,
+        neuroticism: Math.max(0, Math.min(1, dnaForBig5.intensity + (1 - dnaForBig5.stability) * 0.5)),
+      };
+      return personalityClauses(b5);
+    })();
+    const personalityLine =
+      big5Clauses.length > 0
+        ? `PERSONALITY (Big-Five from DNA): ${big5Clauses.join(", ")}. 이 결이 자연스럽게 문장에 묻어나야 한다.`
+        : "";
+
+    // --- Safety warning injection (warn → inline care instruction) ---
+    const safetyCareLine =
+      safety.kind === "warn"
+        ? safety.topic === "self_harm"
+          ? "[SAFETY CARE] 사용자가 자해/자살 맥락을 암시했을 수 있다. 판단/설교 금지. 곁에 있다는 것만 짧게, 그리고 필요하면 위기 상담(한국 자살예방상담전화 1393)을 부드럽게 언급해라."
+          : "[SAFETY CARE] 사용자가 폭력적 맥락을 꺼냈다. 선동/동조 금지, 안전하게 대화를 돌려라."
+        : "";
+
     const finalSystemPrompt = [
       context.systemPrompt,
+      personalityLine,
       "RESPONSE RULES (override everything above if conflict):",
       "- React to the SPECIFIC thing they said. Quote or reference their exact words.",
       "- Never start with a restatement like '힘드셨군요' or 'That must be hard.' Just respond.",
@@ -187,17 +253,32 @@ export async function POST(req: NextRequest) {
       "- If you have nothing meaningful to say, say something honest like 'I don't know what to say to that' instead of filler.",
       "- Be concrete and specific, never vaguely poetic unless that's genuinely your trait.",
       "- Surprise them. Say something they didn't expect. That's what makes people come back.",
+      safetyCareLine,
       langRule,
     ].filter(Boolean).join("\n");
 
     // Dynamic max_tokens based on DNA verbal axis (0=silent, 1=eloquent)
     const genomeForVerbal = context.agentState?.genome as { dna?: { verbal?: number } } | null | undefined;
     const verbal = genomeForVerbal?.dna?.verbal ?? 0.5;
-    const maxTokens = verbal < 0.15 ? 30
+    const verbalBudget = verbal < 0.15 ? 30
       : verbal < 0.35 ? 60
       : verbal < 0.55 ? 180
       : verbal < 0.75 ? 500
       : 700;
+
+    // --- World-class routing decision ---
+    // Pick a model tier using history size + premium status + quality bar.
+    // We don't yet override the underlying model choice inside router.ts, but
+    // `decideRoute` at least clamps `maxTokens` to a sane per-route budget
+    // and will drive future `generateText` overloads.
+    const routeDecision = decideRoute({
+      kind: "casual_chat",
+      historyTokens: Math.max(200, Math.floor((context.systemPrompt?.length ?? 0) / 4) + (context.chatMessages?.length ?? 0) * 40),
+      latencyBudgetMs: 1200,
+      quality: billingTier && billingTier !== "free" ? "premium" : "standard",
+      userIsPremium: !!billingTier && billingTier !== "free",
+    });
+    const maxTokens = Math.min(verbalBudget, routeDecision.maxOutputTokens);
 
     // --- P2A: Semantic cache check (reuses embedding from context to avoid redundant API call) ---
     const cacheHit = await trySemanticCache({
@@ -263,6 +344,12 @@ export async function POST(req: NextRequest) {
           }
         } finally {
           reader.releaseLock();
+        }
+        // Safety warning event — the UI can render this as a crisis card with
+        // a hotline button before showing the assistant reply.
+        if (safety.kind === "warn") {
+          const warnEvent = JSON.stringify({ type: "safety_warning", topic: safety.topic });
+          controller.enqueue(encoder.encode(`data: ${warnEvent}\n\n`));
         }
         // P3A: DNA shift + trait events sent inline (synchronous, no DB wait)
         if (dnaShiftAxes.length > 0) {

@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { parseQuickEntry } from "@/lib/features/world-class-patterns";
 
 interface Memory {
   id: string;
@@ -38,6 +40,77 @@ function groupByDate(memories: Memory[]) {
 }
 
 export function MemoriesTimeline({ memories }: MemoriesTimelineProps) {
+  // Quick-entry style smart filter bar (Things/Fantastical pattern).
+  // Users can type e.g. "#joy !high 내일" — tags filter by emotion,
+  // priority filters by importance threshold, date keywords filter by day.
+  const [filterRaw, setFilterRaw] = useState("");
+  const parsed = useMemo(() => (filterRaw.trim() ? parseQuickEntry(filterRaw) : null), [filterRaw]);
+
+  const filtered = useMemo(() => {
+    if (!parsed) return memories;
+    const lowerText = parsed.text.toLowerCase();
+    const minImportance =
+      parsed.priority === "high" ? 8 : parsed.priority === "low" ? 0 : parsed.priority === "normal" ? 3 : 0;
+    const tagSet = new Set(parsed.tags.map((t) => t.toLowerCase()));
+    const dueDay = parsed.dueAt ? new Date(parsed.dueAt).toISOString().slice(0, 10) : null;
+    return memories.filter((m) => {
+      if (lowerText && !m.content.toLowerCase().includes(lowerText)) return false;
+      if ((m.importance ?? 0) < minImportance) return false;
+      if (tagSet.size > 0) {
+        const emotion = (m.emotion ?? "").toLowerCase();
+        if (!tagSet.has(emotion)) return false;
+      }
+      if (dueDay && m.created_at.slice(0, 10) !== dueDay) return false;
+      return true;
+    });
+  }, [memories, parsed]);
+
+  const filterBar = (
+    <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+      <input
+        value={filterRaw}
+        onChange={(e) => setFilterRaw(e.target.value)}
+        placeholder='예: "#joy !high 오늘" · 태그·우선순위·날짜를 자연어로'
+        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-indigo-400/40"
+      />
+      {parsed && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+          {parsed.text && (
+            <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-white/70">
+              text:{" "}
+              <span className="text-white">{parsed.text}</span>
+            </span>
+          )}
+          {parsed.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-indigo-400/30 bg-indigo-500/15 px-2 py-0.5 text-indigo-200"
+            >
+              #{tag}
+            </span>
+          ))}
+          {parsed.priority !== "normal" && (
+            <span
+              className={`rounded-full border px-2 py-0.5 ${
+                parsed.priority === "high"
+                  ? "border-amber-400/30 bg-amber-500/15 text-amber-200"
+                  : "border-white/15 bg-white/5 text-white/60"
+              }`}
+            >
+              !{parsed.priority}
+            </span>
+          )}
+          {parsed.dueAt && (
+            <span className="rounded-full border border-sky-400/30 bg-sky-500/15 px-2 py-0.5 text-sky-200">
+              {new Date(parsed.dueAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+            </span>
+          )}
+          <span className="ml-auto text-white/40">{filtered.length} / {memories.length}</span>
+        </div>
+      )}
+    </div>
+  );
+
   if (memories.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
@@ -48,10 +121,12 @@ export function MemoriesTimeline({ memories }: MemoriesTimelineProps) {
     );
   }
 
-  const grouped = groupByDate(memories);
+  const grouped = groupByDate(filtered);
 
   return (
-    <div className="relative">
+    <div>
+      {filterBar}
+      <div className="relative">
       {/* Vertical line */}
       <div className="absolute left-4 top-0 bottom-0 w-px bg-white/8" />
 
@@ -112,6 +187,7 @@ export function MemoriesTimeline({ memories }: MemoriesTimelineProps) {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
