@@ -17,6 +17,7 @@ import { ActiveCounter } from "@/components/active-counter";
 import { ComebackBanner } from "@/components/comeback-banner";
 import { RewardExpiryCountdown } from "@/components/reward-expiry-countdown";
 import { DuoStreakAlertBanner } from "@/components/duo-streak-alert-banner";
+import { InspirationOfTheDay } from "@/components/inspiration-of-the-day";
 import { getStreakFreezeDates } from "@/lib/economy/shop";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { shouldCreaturePing, getCreaturePingPrompt, markPingDelivered } from "@/lib/engagement/creature-ping";
@@ -240,6 +241,7 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
     <div className="relative z-10 mx-auto w-full max-w-[720px] px-2 pt-3">
       <ComebackBanner onComebackDetected={onComebackDetected} />
       <DuoStreakAlertBanner />
+      <InspirationOfTheDay />
       {/* BeReal-style creature ping */}
       <AnimatePresence>
         {creaturePing && (

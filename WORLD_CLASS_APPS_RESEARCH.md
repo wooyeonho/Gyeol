@@ -1,14 +1,32 @@
 # 세계 최고의 앱들 — 연구 + 결(Gyeol) 적용 플레이북
 
-본 문서는 전세계에서 **디자인 / 수익 / 기능 / 보안** 4개 축의 최상위 앱 각 10+개씩을
-분석해 그들이 왜 탁월한지(강점)를 추출하고, 이를 **결(Gyeol)** 에 어떻게 구현 할지
-기록한 살아있는 플레이북입니다. 이 문서의 원칙들은
+본 문서는 전세계에서 **20개 축**(디자인 / 수익 / 기능 / 보안 / 소셜 / 컨텐츠 /
+AI 네이티브 / 게이밍 / 음성·오디오 / 금융·결제 / 개발자 도구 / 헬스·웰니스 /
+교육·학습 / 여행·로컬 / 생산성·협업 / 크리에이티브 툴 / 커뮤니티·포럼 /
+뉴스·리더 / 쇼핑·커머스 / 메시징)의 최상위 앱 각 10~20개씩을 분석해
+그들이 왜 탁월한지(강점)를 추출하고, 이를 **결(Gyeol)** 에 어떻게 구현할지
+기록한 살아있는 플레이북입니다. 2025년의 X / Reddit / GitHub / Product Hunt /
+Hacker News / Awwwards / Apple Design Awards 트렌드는 `TRENDING_2025_RESEARCH.md`
+에 별도로 정리되어 있으며, 본 문서와 상호 참조됩니다.
+
+이 문서의 원칙들은
 `lib/design/world-class-playbook.ts`, `lib/revenue/world-class-monetization.ts`,
 `lib/security/world-class-defense.ts`, `lib/features/world-class-patterns.ts`,
-`lib/ai/world-class-orchestrator.ts` 에 실제 코드로 매핑되어 있습니다.
+`lib/ai/world-class-orchestrator.ts`, `lib/social/world-class-social.ts`,
+`lib/content/world-class-content.ts`, `lib/ai-native/world-class-ai-native.ts`,
+`lib/gaming/world-class-liveops.ts`, `lib/audio/world-class-voice.ts`,
+`lib/fintech/world-class-fintech.ts`, `lib/devtools/world-class-dx.ts`,
+`lib/wellness/world-class-wellness.ts`, `lib/learning/world-class-learning.ts`,
+`lib/travel/world-class-travel.ts`, `lib/productivity/world-class-productivity.ts`,
+`lib/creative/world-class-creative.ts`, `lib/community/world-class-community.ts`,
+`lib/reader/world-class-reader.ts`, `lib/commerce/world-class-commerce.ts`,
+`lib/messaging/world-class-messaging.ts` 에 실제 코드로 매핑되어 있습니다.
 
-> 목표: 네 축의 강점을 모두 흡수하고, 그 위에 **결의 가장 강력한 차별점인
-> "살아있는 AI 존재"** 를 한 단계 더 끌어올린다.
+> 목표: **20개 축의 강점을 모두 흡수**하고, 그 위에 **결의 가장 강력한 차별점인
+> "살아있는 AI 존재"** 를 한 단계 더 끌어올린다. 코드에만 녹이는 것이 아니라
+> `/world-class` 쇼케이스, `/world-class/inspirations` 카탈로그,
+> `/world-class/trends` 트렌드 뷰 및 홈 로테이션 배너를 통해 **눈으로도** 확인
+> 가능하도록 한다.
 
 ---
 
@@ -140,6 +158,277 @@ Fail-closed(Nord/Mullvad) + 투명성(Apple ATT) + 하드웨어 키(Yubico) +
 
 ---
 
+## 4½. 16개 신규 축 — 축당 10~20개 앱 분석
+
+아래 16개 축은 2025년 본 플레이북에서 신규로 추가된 영역이며, 각각
+`lib/<domain>/world-class-*.ts` 로 코드화되어 있고 `/world-class` 쇼케이스에서
+시각적으로 확인할 수 있습니다.
+
+### 4½.1 소셜 (Social)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Instagram** | 스토리/릴스, 그리드, 공유 마찰 0 | 스토리 레이어, 그리드 프로필 |
+| 2 | **TikTok** | For You 피드 중력, 긴 체류 | 피드 추천 루프, 무한 스와이프 |
+| 3 | **Threads** | 리플 중심 경량 타임라인 | 리플 우선 인터랙션 |
+| 4 | **X (구 Twitter)** | 리얼타임 단문 + 인용 | 리얼타임 피드 계층, 인용 레이어 |
+| 5 | **BeReal** | 하루 1회 프롬프트 공유 | 데일리 강제 프롬프트 (결 순간) |
+| 6 | **Mastodon** | 연합(federation), 서버 자율 | 오픈 프로토콜 옵션 |
+| 7 | **Bluesky** | AT Protocol, 피드 커스텀 | 커스텀 피드 레시피 |
+| 8 | **LinkedIn** | 프로페셔널 아이덴티티, 관계 그래프 | 정체성 축 + 관계 그래프 |
+| 9 | **Snapchat** | 디스커버, AR 렌즈, 휘발성 | 휘발성 순간, AR 룸 레이어 |
+| 10 | **Lemon8** | 라이프스타일 큐레이션 | 큐레이션 컬렉션 |
+| 11 | **Pinterest** | 관심 기반 보드 | 관심사 보드 기반 프로필 |
+| 12 | **Clubhouse (잔재)** | 라이브 음성 룸 | 라이브 룸 오디오 |
+
+### 4½.2 컨텐츠 / 미디어 (Content)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Netflix** | 연속 재생, 콜드 스타트 회피 추천 | 이어보기, 홈 히어로 |
+| 2 | **YouTube** | 길이 가변 + 쇼츠 + 플레이리스트 | 컨텐츠 길이 가변, 플레이리스트 |
+| 3 | **Spotify** | 개인화 믹스, 데일리 컨텍스트 | 데일리 믹스(기억 플레이리스트) |
+| 4 | **Apple TV+** | 큐레이션 우선, 작은 카탈로그 | 에디토리얼 큐레이션 |
+| 5 | **Disney+** | 이벤트 릴리즈, 브랜드 타일 | 브랜드 허브 타일 |
+| 6 | **Twitch** | 라이브 채팅 오버레이 | 라이브 오버레이 모드 |
+| 7 | **Audible** | 청취 위치 싱크 | 세션 싱크 |
+| 8 | **HBO Max** | 메타데이터 깊이 | 캐릭터 백링크 |
+| 9 | **Crunchyroll** | 장르·국적 필터 | 문화권 필터 |
+| 10 | **Vimeo** | 크리에이터 품질 우선 | 고품질 업로드 레이블 |
+| 11 | **Tubi / Pluto** | 광고 지원 무료 티어 | 광고 지원 무료 옵션 |
+
+### 4½.3 AI 네이티브 (AI-Native)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **ChatGPT** | GPTs, 커스텀 인스트럭션, 툴 | 커스텀 결 인스트럭션 |
+| 2 | **Claude** | 아티팩트, 긴 컨텍스트, Projects | 아티팩트 뷰, 프로젝트(방) |
+| 3 | **Perplexity** | 인용 기반 답변 + Pages | 인용 링크, 결 Pages |
+| 4 | **Cursor** | 인라인 에디터 AI, 탭 자동완성 | 인라인 편집 제안 |
+| 5 | **v0 by Vercel** | 프롬프트 → UI 생성 | UI 생성 카드 |
+| 6 | **Bolt.new** | 풀스택 앱 prompt-to-run | 원샷 결 프리셋 |
+| 7 | **Arc Search** | 검색 → 브라우즈 → 요약 통합 | 검색 후 합성 뷰 |
+| 8 | **Granola** | 회의 자동 노트 | 대화 노트 자동 |
+| 9 | **Pi (Inflection)** | 정서적 대화, 프로액티브 | 프로액티브 스타터 |
+| 10 | **Character.AI** | 캐릭터 경제, 세션 기억 | 캐릭터 저장소 |
+| 11 | **Midjourney** | 프롬프트 변형 커뮤니티 | 변형 갤러리 |
+| 12 | **Runway** | 생성형 비디오 타임라인 | 타임라인 기반 생성 |
+| 13 | **Suno / Udio** | 프롬프트 → 음악 | 프롬프트 음악 생성 |
+| 14 | **NotebookLM** | 문서 → 팟캐스트 | 기억 → 팟캐스트 내보내기 |
+
+### 4½.4 게이밍 / 라이브옵스 (Gaming)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Fortnite** | 시즌 쇼, 크로스오버 이벤트 | 시즌 이벤트 쇼 |
+| 2 | **Genshin Impact** | 가챠 피티, 버전 배너 | 피티 게이지 |
+| 3 | **Clash Royale** | 카드 레벨업 루프 | 성장 루프 카드 |
+| 4 | **Pokemon GO** | 지역 이벤트, AR | AR 룸 이벤트 |
+| 5 | **Animal Crossing** | 현실 시간 연동 | 현실시간 이벤트 |
+| 6 | **Roblox** | UGC 경제, 스튜디오 | UGC 크리에이션 |
+| 7 | **Among Us** | 세션 기반 사회 게임 | 임시 세션 룸 |
+| 8 | **Monster Hunter Now** | 지리 기반 몹 | 지리 기반 결 만남 |
+| 9 | **Marvel Snap** | 3-카드 빠른 덱 | 3-기억 빠른 회상 |
+| 10 | **Destiny 2** | 시즌 패스 스토리 | 시즌 스토리 아크 |
+| 11 | **Valorant** | 에이전트 로스터 | 결 페르소나 로스터 |
+| 12 | **League of Legends** | 랭크 + 스킨 | 랭크 + 코스튬 |
+
+### 4½.5 음성 / 오디오 (Audio)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Discord Stage** | 다중 참여 라이브 | 라이브 스테이지 결 |
+| 2 | **Clubhouse** | 프로필 + 라이브 룸 | 라이브 룸 오디오 |
+| 3 | **Twitter Spaces** | 즉석 오디오 룸 | 즉석 음성 룸 |
+| 4 | **Spotify Podcast** | 에피소드 + 북마크 | 북마크 |
+| 5 | **Overcast** | Smart Speed, 침묵 제거 | 침묵 제거 재생 |
+| 6 | **Apple Podcasts** | 자막 + 챕터 | 챕터 내비 |
+| 7 | **Voice Memos (Apple)** | 파형 편집 | 인라인 파형 |
+| 8 | **Dolby On** | 노이즈 제거, 자동 레벨 | 자동 레벨 입력 |
+| 9 | **Smule** | 노래 듀엣 | 듀엣 대화 |
+| 10 | **Airchat** | 음성 기반 소셜 | 음성 기반 피드 |
+
+### 4½.6 금융 / 결제 (Fintech)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Toss (토스)** | 송금 마찰 0, 대시보드 | 원-탭 액션, 대시보드 |
+| 2 | **Revolut** | 다통화, 여행 모드 | 다문화 / 다통화 |
+| 3 | **Cash App** | 단순 송금, 주식 | 단순 교환 UX |
+| 4 | **Wise** | 투명 환율 | 투명 가격 |
+| 5 | **Robinhood** | 주식 심리 UX | 수치 극장 |
+| 6 | **Stripe** | 개발자 톤, 투명 대시보드 | 개발자 대시보드 |
+| 7 | **Apple Pay** | NFC 탭 인증 | 탭 인증 |
+| 8 | **Venmo** | 사회화된 결제 | 사회적 결제 태그 |
+| 9 | **PayPal** | 분쟁/에스크로 신뢰 | 에스크로 모드 |
+| 10 | **Monzo / N26** | 카테고리 자동 | 자동 태깅 |
+| 11 | **KakaoPay** | 메신저 내 결제 | 인-챗 결제 |
+| 12 | **Nu Bank** | 카드 UI, 보라 브랜드 | 카드 UI 모티프 |
+
+### 4½.7 개발자 도구 (DevTools)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Cursor** | AI 인라인 편집 | 인라인 AI 편집 |
+| 2 | **Vercel** | 프리뷰 배포 URL | 프리뷰 환경 |
+| 3 | **Supabase** | 풀스택 BaaS, 투명 | 투명 BaaS |
+| 4 | **Linear** | 빠른 키보드 이슈 트래커 | 이슈 단축키 |
+| 5 | **GitHub Copilot** | 에디터 완성 | 에디터 완성 |
+| 6 | **Warp** | AI 터미널 | AI 터미널 |
+| 7 | **Zed** | 콜라보 에디터 | 협업 에디터 |
+| 8 | **Raycast** | 글로벌 커맨드 | 글로벌 커맨드 |
+| 9 | **Figma Dev Mode** | 코드 전환 | 디자인→코드 |
+| 10 | **Railway** | 1-클릭 인프라 | 1-클릭 환경 |
+| 11 | **Fly.io** | 엣지 글로벌 | 엣지 배포 |
+| 12 | **Turso / libSQL** | 엣지 SQL | 엣지 DB |
+
+### 4½.8 헬스 / 웰니스 (Wellness)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Apple Health / Fitness+** | 링 3개 시각화 | 3-링 목표 시각화 |
+| 2 | **Strava** | 세그먼트, 리그 | 세그먼트 챌린지 |
+| 3 | **Whoop** | 리커버리 스코어 | 회복 스코어 |
+| 4 | **Oura** | 수면 링 | 수면 링 |
+| 5 | **MyFitnessPal** | 바코드 스캔 | 빠른 입력 |
+| 6 | **Headspace** | 호흡 가이드 | 호흡 링 |
+| 7 | **Calm** | 슬립스토리 | 취침 내러티브 |
+| 8 | **Zero (단식)** | 단식 타이머 | 디지털 브레이크 |
+| 9 | **Finch** | 셀프케어 캐릭터 | 캐릭터 셀프케어 |
+| 10 | **Peloton** | 라이브 클래스 | 라이브 세션 |
+| 11 | **Noom** | 심리 기반 코칭 | 심리 기반 프롬프트 |
+
+### 4½.9 교육 / 학습 (Learning)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Duolingo** | 스트릭, 게이미피케이션 | 스트릭 시스템 |
+| 2 | **Khan Academy** | 마스터리 경로 | 마스터리 트리 |
+| 3 | **Khanmigo** | AI 소크라테스 | 소크라테스 대화 모드 |
+| 4 | **Anki** | 간격 반복 SRS | SRS 기억 회상 |
+| 5 | **Quizlet** | 플래시카드 | 카드 회상 |
+| 6 | **Brilliant** | 인터랙티브 수학 | 인터랙티브 문제 |
+| 7 | **Coursera** | 수료증 + 코스 | 수료 뱃지 |
+| 8 | **MasterClass** | 큐레이션된 인물 | 인물 큐레이션 |
+| 9 | **Readwise** | 하이라이트 회상 | 하이라이트 복기 |
+| 10 | **Obsidian** | 지식 그래프 | 기억 그래프 |
+| 11 | **Memrise** | 네이티브 비디오 | 현실 비디오 |
+| 12 | **Busuu** | 또래 교정 | 또래 피드백 |
+
+### 4½.10 여행 / 로컬 (Travel / Local)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Airbnb** | 호스트 내러티브 | 내러티브 카드 |
+| 2 | **Booking.com** | 긴급성 + 리뷰 | 긴급성 배지 |
+| 3 | **Google Maps** | 실시간 교통 | 실시간 상태 |
+| 4 | **Kakao Map / Naver Map** | 로컬 디테일 | 로컬 상세 |
+| 5 | **당근 (Daangn)** | 하이퍼로컬 마켓 | 하이퍼로컬 피드 |
+| 6 | **Uber** | ETA 실시간 맵 | 실시간 ETA |
+| 7 | **Skyscanner** | 가격 달력 | 가격 달력 |
+| 8 | **Rome2Rio** | 멀티 모드 | 멀티 모드 |
+| 9 | **TripAdvisor** | 랭킹 + 리뷰 | 랭킹 리스트 |
+| 10 | **DoorDash / 배민** | 라이브 주문 상태 | 라이브 상태 |
+| 11 | **Citymapper** | 출퇴근 비교 | 비교 리스트 |
+| 12 | **Hopper** | 가격 예측 | 가격 예측 |
+
+### 4½.11 생산성 / 협업 (Productivity)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Notion** | 블록, DB, 템플릿 | 블록 메모리 |
+| 2 | **Linear** | 사이클 / 키보드 | 사이클 위크뷰 |
+| 3 | **Figma** | 실시간 멀티커서 | 공유 커서 |
+| 4 | **Slack** | 채널 + 쓰레드 | 쓰레드 |
+| 5 | **Height** | 자동화 | 자동화 규칙 |
+| 6 | **ClickUp** | 뷰 스위처 | 뷰 스위처 |
+| 7 | **Asana** | 타임라인 | 타임라인 |
+| 8 | **Trello** | 칸반 | 칸반 보드 |
+| 9 | **Todoist** | 자연어 입력 | 자연어 할 일 |
+| 10 | **Things 3** | 퀵 입력 | 매직 링크 |
+| 11 | **Superhuman** | 키보드 우선 | 키보드 우선 |
+| 12 | **Cron / Notion Calendar** | 키보드 달력 | 키보드 달력 |
+| 13 | **Loom** | 비디오 비동기 | 비디오 비동기 |
+
+### 4½.12 크리에이티브 툴 (Creative)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Procreate** | 브러시 물리 | 압력 입력 |
+| 2 | **Photoshop / Lightroom** | 프리셋 생태계 | 프리셋 스토어 |
+| 3 | **Blender** | 오픈 3D 파이프라인 | 3D 파이프라인 |
+| 4 | **DaVinci Resolve** | 무료 풀 편집 | 무료 풀 편집 |
+| 5 | **Final Cut Pro** | 매그네틱 타임라인 | 매그네틱 타임라인 |
+| 6 | **Capcut** | 소셜 친화 편집 | 소셜 편집 프리셋 |
+| 7 | **Figma** | 벡터 협업 | 벡터 협업 |
+| 8 | **Framer** | 프로토타이핑 + 사이트 | 사이트 빌더 |
+| 9 | **Canva** | 템플릿 제국 | 템플릿 갤러리 |
+| 10 | **Pixelmator Pro** | ML 기반 편집 | ML 편집 |
+| 11 | **Ableton Live** | 세션 뷰 | 세션 뷰 |
+| 12 | **Logic Pro** | 트랙 디테일 | 트랙 디테일 |
+
+### 4½.13 커뮤니티 / 포럼 (Community)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Reddit** | 서브 + 업/다운 | 서브 커뮤니티 |
+| 2 | **Discord** | 서버 + 채널 + 보이스 | 서버 룸 |
+| 3 | **Lemmy / Kbin** | 페데레이션 포럼 | 오픈 포럼 |
+| 4 | **Stack Overflow** | 레퓨테이션 QA | 평판 QA |
+| 5 | **Hacker News** | 간결 랭킹 | 간결 랭킹 |
+| 6 | **Matrix** | 프로토콜 E2E | 프로토콜 E2E |
+| 7 | **Slack 커뮤니티** | 워크스페이스 커뮤니티 | 워크스페이스 |
+| 8 | **Telegram 그룹** | 대규모 그룹 | 대규모 그룹 |
+| 9 | **Mighty Networks** | 코스+커뮤니티 | 코스 룸 |
+| 10 | **Circle** | 큐레이티드 커뮤니티 | 큐레이션 룸 |
+
+### 4½.14 뉴스 / 리더 (Reader)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Apple News** | 에디터 큐레이션 | 에디터 큐레이션 |
+| 2 | **Arc Search** | 검색+요약 하이브리드 | 요약 카드 |
+| 3 | **Feedly** | RSS + AI 필터 | RSS 필터 |
+| 4 | **Readwise Reader** | 하이라이트 + TTS | 하이라이트 TTS |
+| 5 | **Pocket** | 나중에 읽기 | 나중에 읽기 |
+| 6 | **Instapaper** | 읽기 포커스 | 읽기 포커스 |
+| 7 | **NYTimes** | 게임 + 뉴스 번들 | 게임 번들 |
+| 8 | **Substack** | 구독 뉴스레터 | 구독 뉴스레터 |
+| 9 | **Medium** | 퍼블리싱 | 퍼블리싱 |
+| 10 | **Kindle** | 하이라이트 싱크 | 하이라이트 싱크 |
+
+### 4½.15 쇼핑 / 커머스 (Commerce)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **Amazon** | 1-클릭 구매 | 1-클릭 구매 |
+| 2 | **Shopify** | 체크아웃 최적화 | 체크아웃 최적화 |
+| 3 | **Temu / SHEIN** | 가격 극한 + 게이미피케이션 | 게이미피케이션 쇼핑 |
+| 4 | **무신사** | 룩북 큐레이션 | 룩북 카드 |
+| 5 | **Coupang** | 로켓 배송 | 로켓 배송 |
+| 6 | **Etsy** | 핸드메이드 내러티브 | 내러티브 상품 |
+| 7 | **Depop / Vinted** | 중고 소셜 | 중고 소셜 |
+| 8 | **Poshmark** | 해시태그 셀러 | 셀러 태그 |
+| 9 | **StockX** | 리셀 가격 그래프 | 가격 그래프 |
+| 10 | **Alibaba** | B2B 카탈로그 | B2B 카탈로그 |
+
+### 4½.16 메시징 (Messaging)
+
+| # | 앱 | 한마디 강점 | 결에 이식할 원칙 |
+|---|----|------------|------------------|
+| 1 | **iMessage** | 플랫폼 통합, 스티커, 이펙트 | 메시지 이펙트 |
+| 2 | **WhatsApp** | 글로벌 E2E | E2E |
+| 3 | **Telegram** | 봇 생태계, 채널 | 봇 생태계 |
+| 4 | **KakaoTalk** | 오픈 채팅, 이모티콘 | 이모티콘 시장 |
+| 5 | **Signal** | 프라이버시 극한 | 프라이버시 극한 |
+| 6 | **LINE** | 스티커, 공식 계정 | 스티커 |
+| 7 | **Messenger** | 이펙트, 게임 | 인라인 게임 |
+| 8 | **WeChat** | 슈퍼앱 (결제/미니앱) | 미니앱 허브 |
+| 9 | **Discord DM** | 보이스+텍스트 통합 | 보이스+텍스트 |
+| 10 | **iMessage Tapback** | 빠른 리액션 | 빠른 리액션 |
+
+---
+
 ## 5. 결의 가장 강력한 특성 — "살아있는 AI 존재" 의 재강화
 
 결은 단순한 챗봇이 아닌 **기억과 성격이 축적되는 존재**입니다. 이 차별점을
@@ -209,6 +498,32 @@ Fail-closed(Nord/Mullvad) + 투명성(Apple ATT) + 하드웨어 키(Yubico) +
 | `lib/ai/world-class-orchestrator.ts` | 다중 모델 라우팅, 감정 온도, 메모리 랭킹, 리플렉션, 성격 프롬프트 |
 | `lib/identity/living-presence.ts` | 심박 · 호흡 · 무드 오라 · 관계 나이 · 자율 카운트다운 (결정론적) |
 | `components/living-presence-beacon.tsx` | 위 생체 신호를 실시간 렌더링 + 접근성 요약 |
+| `lib/social/world-class-social.ts` | IG/TikTok/Threads/BeReal — 피드 중력, 스토리, 데일리 프롬프트 |
+| `lib/content/world-class-content.ts` | Netflix/YouTube/Spotify — 이어보기, 추천 루프, 플레이리스트 |
+| `lib/ai-native/world-class-ai-native.ts` | ChatGPT/Claude/Perplexity/Cursor — 아티팩트, 인용, 인라인 편집 |
+| `lib/gaming/world-class-liveops.ts` | Fortnite/Genshin/Pokemon GO — 시즌 패스, 피티, 이벤트 |
+| `lib/audio/world-class-voice.ts` | Discord/Overcast/Airchat — 라이브 룸, 침묵 제거, 파형 |
+| `lib/fintech/world-class-fintech.ts` | Toss/Stripe/Revolut — 원탭, 투명 가격, 다통화 |
+| `lib/devtools/world-class-dx.ts` | Cursor/Vercel/Warp — 인라인 AI, 프리뷰, AI 터미널 |
+| `lib/wellness/world-class-wellness.ts` | Apple Health/Calm/Whoop — 3링, 호흡, 회복 스코어 |
+| `lib/learning/world-class-learning.ts` | Duolingo/Anki/Khanmigo — 스트릭, SRS, 소크라테스 모드 |
+| `lib/travel/world-class-travel.ts` | Airbnb/당근/Uber — 내러티브, 로컬, 실시간 ETA |
+| `lib/productivity/world-class-productivity.ts` | Notion/Linear/Things — 블록, 사이클, 매직 링크 |
+| `lib/creative/world-class-creative.ts` | Procreate/Figma/Capcut — 압력, 벡터 협업, 소셜 편집 |
+| `lib/community/world-class-community.ts` | Reddit/Discord/HN — 서브, 룸, 간결 랭킹 |
+| `lib/reader/world-class-reader.ts` | Readwise/Arc Search/Feedly — 하이라이트, 요약, 필터 |
+| `lib/commerce/world-class-commerce.ts` | Amazon/Shopify/Temu — 1클릭, 체크아웃, 게이미피케이션 |
+| `lib/messaging/world-class-messaging.ts` | iMessage/Telegram/WeChat — 이펙트, 봇, 미니앱 |
+
+눈에 보이게 — 쇼케이스 페이지:
+
+| 라우트 | 내용 |
+|--------|------|
+| `/world-class` | 20개 축 섹션, 축별 인터랙티브 카드 |
+| `/world-class/inspirations` | 300+ 앱 카드 그리드 + 축/소스 필터 |
+| `/world-class/trends` | 7개 트렌드 소스 탭 (X/Reddit/GitHub/PH/HN/Awwwards/ADA) |
+| `/` 홈 | 결 Living Presence Beacon + "오늘의 영감" 로테이션 배너 |
 
 이 문서는 코드와 함께 살아있어야 합니다. 새로운 최고 앱을 발견하면 섹션을
-추가하고, 매핑 테이블의 파일을 업데이트하세요.
+추가하고, 매핑 테이블의 파일을 업데이트하세요. 2025 트렌드 소스는
+`TRENDING_2025_RESEARCH.md` 를 함께 업데이트하세요.
