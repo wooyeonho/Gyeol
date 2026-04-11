@@ -39,6 +39,7 @@ import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
 import { LevelBar } from "@/components/engagement/level-bar";
 import { StreakShield } from "@/components/streak-shield";
+import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
@@ -740,6 +741,15 @@ export default function Home() {
           {/* BG3-style heart gauge — shows creature-user bond level */}
           <div className="flex justify-center mt-1">
             <AffinityHeartGauge score={agentState?.intimacy_score ?? 0} compact />
+          </div>
+          {/* Duolingo/Replika-style evolution progress bar */}
+          <div className="flex justify-center mt-1.5 pointer-events-auto">
+            <EvolutionProgressBar
+              genLevel={agentState?.gen_level ?? 1}
+              progress={typeof agentState?.progress === "number" ? agentState.progress : 0}
+              locale={locale}
+              size="sm"
+            />
           </div>
           {/* Pokemon-style type badge */}
           {creatureDna && (

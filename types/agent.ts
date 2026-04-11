@@ -53,6 +53,8 @@ export interface AgentState {
   agent_id: string;
   vitality: number;
   gen_level: number;
+  /** Progress toward next evolution (0-100) */
+  progress?: number;
   mood: string | null;
   self_name: string | null;
   status: "active" | "echo" | "dormant" | string;

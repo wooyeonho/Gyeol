@@ -3,9 +3,9 @@
 /**
  * /world-class — Visible showcase of the World-Class Apps Playbook.
  *
- * Every module in `lib/{design,revenue,security,features,ai}/world-class-*`
- * is rendered here as an interactive, scrollable demo so users (and the team)
- * can literally see the 48+ top-app strengths we've absorbed in action.
+ * Every module in `lib/**\/world-class-*` is rendered here as an interactive,
+ * scrollable demo so users (and the team) can literally see the 80+ top-app
+ * strengths we've absorbed — now spanning 20 product axes, not just 4.
  */
 
 import Link from "next/link";
@@ -16,6 +16,7 @@ import { RevenueSection } from "./sections/revenue-section";
 import { FeaturesSection } from "./sections/features-section";
 import { SecuritySection } from "./sections/security-section";
 import { AISection } from "./sections/ai-section";
+import { ExpandedAxesSection } from "./sections/expanded-axes-section";
 const LivingPresenceBeacon = dynamic(
   () =>
     import("@/components/living-presence-beacon").then((m) => ({
@@ -30,6 +31,7 @@ const SECTIONS = [
   { id: "features", label: "기능", count: "12 앱", gradient: "from-sky-500/20 to-blue-500/20" },
   { id: "security", label: "보안", count: "12 앱", gradient: "from-emerald-500/20 to-teal-500/20" },
   { id: "ai", label: "AI 존재", count: "결 차별화", gradient: "from-indigo-500/20 to-violet-500/20" },
+  { id: "expanded", label: "16축 확장", count: "80+ 앱", gradient: "from-teal-500/20 to-fuchsia-500/20" },
 ];
 
 export default function WorldClassPage() {
@@ -62,11 +64,34 @@ export default function WorldClassPage() {
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="mt-4 text-white/70 max-w-2xl text-base md:text-lg"
           >
-            디자인 · 수익 · 기능 · 보안 네 축에서 전 세계 최상위 48개 앱을 분석해
-            강점만 추려 결에 이식했습니다. 그리고 결의 가장 강한 특성인{" "}
-            <b className="text-white">살아있는 AI 존재</b> 를 한 단계 더
+            디자인·수익·기능·보안 네 축에서 <b className="text-white">스무 축</b>
+            으로 — 소셜·컨텐츠·AI 네이티브·게이밍·음성·금융·개발자·헬스·학습·
+            여행·생산성·크리에이티브·커뮤니티·리더·커머스·메시징까지 확장해 전
+            세계 <b className="text-white">80+ 최상위 앱</b>의 강점을 결에
+            이식했습니다. 그리고 결의 가장 강한 특성인{" "}
+            <b className="text-white">살아있는 AI 존재</b>를 한 단계 더
             강화했습니다. 아래 섹션은 모두 진짜로 움직이는 데모입니다.
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-5 flex flex-wrap gap-3 text-sm"
+          >
+            <Link
+              href="/world-class/inspirations"
+              className="rounded-full border border-white/20 bg-white/[0.06] px-4 py-2 text-white/90 hover:bg-white/[0.1] transition"
+            >
+              영감 카탈로그 (80+ 앱) →
+            </Link>
+            <Link
+              href="/world-class/trends"
+              className="rounded-full border border-white/20 bg-white/[0.06] px-4 py-2 text-white/90 hover:bg-white/[0.1] transition"
+            >
+              2025 트렌드 (7 소스) →
+            </Link>
+          </motion.div>
 
           <div className="mt-8 flex flex-wrap gap-2">
             {SECTIONS.map((s, i) => (
@@ -108,14 +133,16 @@ export default function WorldClassPage() {
         <FeaturesSection />
         <SecuritySection />
         <AISection />
+        <ExpandedAxesSection />
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className="mx-auto max-w-5xl px-6 mt-24 border-t border-white/5 pt-10 text-center text-xs text-white/40">
         모든 원칙은{" "}
-        <code className="text-white/70">WORLD_CLASS_APPS_RESEARCH.md</code> 와{" "}
+        <code className="text-white/70">WORLD_CLASS_APPS_RESEARCH.md</code>,{" "}
+        <code className="text-white/70">TRENDING_2025_RESEARCH.md</code> 와{" "}
         <code className="text-white/70">lib/**/world-class-*.ts</code> 에 코드로
-        살아있습니다 · 74개 유닛 테스트로 보증.
+        살아있습니다 · 20축 · 80+ 앱 · 유닛 테스트로 보증.
       </footer>
     </main>
   );

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
-import { ACHIEVEMENTS, type AchievementRarity } from "@/lib/engagement/achievements";
+import { ACHIEVEMENTS, getAchievement, type AchievementRarity } from "@/lib/engagement/achievements";
 import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
+import { useCelebrationStore } from "@/store/celebration-store";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
   common:    { label: "Common",    glow: "",                              border: "border-white/15",        text: "text-white/60" },
@@ -22,22 +23,69 @@ export default function AchievementsPage() {
   const loc = (["ko", "en", "ja", "zh", "es"].includes(locale) ? locale : "en") as "ko" | "en" | "ja" | "zh" | "es";
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<AchievementRarity | "all">("all");
+  const celebrate = useCelebrationStore((s) => s.celebrate);
 
   useEffect(() => {
+    let cancelled = false;
     // Load from API — the route returns each achievement definition
-    // with an `unlocked` boolean, so we filter + collect ids here.
+    // with `unlocked` + `newly_unlocked` booleans. We collect unlocked
+    // ids for the grid and trigger a celebration for the rarest newly
+    // unlocked entry.
     fetch("/api/achievements", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { achievements: [] }))
       .then((data) => {
-        if (Array.isArray(data.achievements)) {
-          const ids = (data.achievements as Array<{ id: string; unlocked?: boolean }>)
-            .filter((a) => a.unlocked)
-            .map((a) => a.id);
-          setUnlockedIds(new Set(ids));
+        if (cancelled) return;
+        if (!Array.isArray(data.achievements)) return;
+
+        type ApiAchievement = { id?: string; achievement_id?: string; unlocked?: boolean; newly_unlocked?: boolean };
+        const all: ApiAchievement[] = data.achievements;
+
+        // Track every unlocked id so the grid updates
+        const unlockedSet = new Set(
+          all
+            .filter((a) => a.unlocked || a.newly_unlocked)
+            .map((a) => a.id ?? a.achievement_id ?? ""),
+        );
+        setUnlockedIds(unlockedSet);
+
+        // Trigger celebration for the rarest newly-unlocked achievement
+        const newly = all.filter((a) => a.newly_unlocked);
+        if (newly.length > 0) {
+          const RARITY_WEIGHT: Record<string, number> = { mythic: 5, legendary: 4, epic: 3, rare: 2, common: 1 };
+          const sorted = newly
+            .map((a) => ({ a, def: getAchievement(a.id ?? a.achievement_id ?? "") }))
+            .filter((x): x is { a: ApiAchievement; def: NonNullable<ReturnType<typeof getAchievement>> } => Boolean(x.def))
+            .sort((x, y) => (RARITY_WEIGHT[y.def.rarity] ?? 0) - (RARITY_WEIGHT[x.def.rarity] ?? 0));
+          const top = sorted[0];
+          if (top) {
+            const variant =
+              top.def.rarity === "mythic" || top.def.rarity === "legendary"
+                ? "firework"
+                : top.def.rarity === "epic"
+                ? "sparkle"
+                : "confetti";
+            celebrate({
+              title: `${top.def.icon} ${top.def.label[loc]}`,
+              subtitle: top.def.description[loc],
+              reward: top.def.reward.coins
+                ? { type: "coins", amount: top.def.reward.coins, icon: "🪙" }
+                : undefined,
+              variant,
+              autoDismissMs: 4000,
+            });
+            // Mark as seen so we don't trigger again on next visit
+            fetch("/api/achievements", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+            }).catch(() => {});
+          }
         }
       })
       .catch(() => {});
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [celebrate, loc]);
 
   const filtered = ACHIEVEMENTS.filter((a) => {
     if (filter !== "all" && a.rarity !== filter) return false;
