@@ -37,6 +37,14 @@ const ConversationSettings = dynamic(() => import("@/components/conversation-set
   ssr: false,
   loading: () => <div className="h-48 rounded-2xl bg-white/5 animate-pulse" />,
 });
+const NotificationPreferencesCard = dynamic(() => import("@/components/notification-preferences-card").then(m => ({ default: m.NotificationPreferencesCard })), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-2xl bg-white/5 animate-pulse" />,
+});
+const StreakShieldShop = dynamic(() => import("@/components/streak-shield-shop").then(m => ({ default: m.StreakShieldShop })), {
+  ssr: false,
+  loading: () => <div className="h-44 rounded-2xl bg-white/5 animate-pulse" />,
+});
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
 import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -951,6 +959,12 @@ export default function SettingsPage() {
           </p>
           <InviteSection />
         </section>
+
+        {/* Streak shield shop — buy shields with coins to protect flame */}
+        <StreakShieldShop />
+
+        {/* Notification preferences — opt-in categories + quiet hours */}
+        <NotificationPreferencesCard />
 
         {/* Privacy & data control — GDPR export/delete dashboard */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
