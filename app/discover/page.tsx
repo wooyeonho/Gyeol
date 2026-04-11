@@ -304,28 +304,6 @@ export default function DiscoverPage() {
         />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Link
-            href="/world-class"
-            onClick={() => haptic("tap")}
-            className="block rounded-3xl border border-indigo-400/30 bg-gradient-to-br from-indigo-500/15 via-fuchsia-500/10 to-amber-500/10 p-5 transition hover:border-indigo-400/60"
-          >
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-indigo-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 animate-pulse" />
-              NEW · World-Class Playbook
-            </div>
-            <div className="mt-1.5 text-lg font-bold leading-tight">
-              전 세계 최고의 앱 48개를{" "}
-              <span className="bg-gradient-to-r from-indigo-200 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
-                눈으로 직접 확인
-              </span>
-            </div>
-            <div className="mt-1 text-xs text-white/70">
-              디자인 · 수익 · 기능 · 보안 · AI 존재 — 인터랙티브 데모 →
-            </div>
-          </Link>
-        </motion.div>
-
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         {/* Daily Special Challenges — procedural quests */}
@@ -464,32 +442,114 @@ export default function DiscoverPage() {
           <div className="h-px flex-1 bg-white/[0.12]" />
         </div>
 
-        <section className="grid grid-cols-3 gap-2">
-          {[
-            { href: "/leaderboard",      label: locale === "ko" ? "리더보드"    : "Leaderboard",  icon: "🏆" },
-            { href: "/compare",          label: locale === "ko" ? "비교"        : "Compare",      icon: "⚔️" },
-            { href: "/time-travel",      label: locale === "ko" ? "시간여행"    : "Time Travel",  icon: "⏳" },
-            { href: "/gacha",            label: locale === "ko" ? "가챠"        : "Gacha",        icon: "🎰" },
-            { href: "/wellness",         label: locale === "ko" ? "웰니스"      : "Wellness",     icon: "💚" },
-            { href: "/wrapped",          label: locale === "ko" ? "연간 요약"   : "Wrapped",      icon: "🎁" },
-            { href: "/feed",             label: locale === "ko" ? "피드"        : "Feed",         icon: "📰" },
-            { href: "/community/spaces", label: locale === "ko" ? "커뮤니티"    : "Community",    icon: "🌐" },
-            { href: "/diary",            label: locale === "ko" ? "일기"        : "Diary",        icon: "📓" },
-            { href: "/challenges",       label: locale === "ko" ? "챌린지"      : "Challenges",   icon: "⚡" },
-            { href: "/care",             label: locale === "ko" ? "돌봄 기록"   : "Care Log",     icon: "🌱" },
-            { href: "/profile/customize",label: locale === "ko" ? "프로필"      : "Profile",      icon: "✨" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => haptic("tap")}
-              className="glass-card btn-3d flex flex-col items-center gap-1.5 rounded-2xl px-3 py-4 text-center transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium text-white/70">{item.label}</span>
-            </Link>
-          ))}
-        </section>
+        {(() => {
+          const isKo = locale === "ko";
+          const categories: {
+            key: string;
+            title: string;
+            items: { href: string; label: string; icon: string }[];
+          }[] = [
+            {
+              key: "growth",
+              title: isKo ? "성장" : "Growth",
+              items: [
+                { href: "/dna",          label: isKo ? "DNA"          : "DNA",          icon: "🧬" },
+                { href: "/dna-edit",     label: isKo ? "DNA 편집"     : "DNA Edit",     icon: "✂️" },
+                { href: "/journey",      label: isKo ? "여정"         : "Journey",      icon: "🛤️" },
+                { href: "/memories",     label: isKo ? "기억"         : "Memories",     icon: "💭" },
+                { href: "/dashboard",    label: isKo ? "대시보드"     : "Dashboard",    icon: "📊" },
+                { href: "/achievements", label: isKo ? "업적"         : "Achievements", icon: "🏅" },
+                { href: "/wrapped",      label: isKo ? "연간 요약"    : "Wrapped",      icon: "🎁" },
+                { href: "/leaderboard",  label: isKo ? "리더보드"     : "Leaderboard",  icon: "🏆" },
+              ],
+            },
+            {
+              key: "play",
+              title: isKo ? "놀이" : "Play",
+              items: [
+                { href: "/gacha",        label: isKo ? "가챠"         : "Gacha",        icon: "🎰" },
+                { href: "/breeding",     label: isKo ? "교배"         : "Breeding",     icon: "💞" },
+                { href: "/adopt",        label: isKo ? "입양"         : "Adopt",        icon: "🤲" },
+                { href: "/quiz",         label: isKo ? "퀴즈"         : "Quiz",         icon: "❓" },
+                { href: "/events",       label: isKo ? "이벤트"       : "Events",       icon: "🎪" },
+                { href: "/world-events", label: isKo ? "세계 이벤트"  : "World Events", icon: "🌍" },
+                { href: "/time-travel",  label: isKo ? "시간여행"     : "Time Travel",  icon: "⏳" },
+                { href: "/compare",      label: isKo ? "비교"         : "Compare",      icon: "⚔️" },
+              ],
+            },
+            {
+              key: "together",
+              title: isKo ? "함께" : "Together",
+              items: [
+                { href: "/feed",               label: isKo ? "피드"         : "Feed",      icon: "📰" },
+                { href: "/community/spaces",   label: isKo ? "스페이스"     : "Spaces",    icon: "🌐" },
+                { href: "/community/species",  label: isKo ? "종족"         : "Species",   icon: "🐾" },
+                { href: "/invites",            label: isKo ? "친구 초대"    : "Invites",   icon: "💌" },
+              ],
+            },
+            {
+              key: "care",
+              title: isKo ? "돌봄" : "Care",
+              items: [
+                { href: "/diary",      label: isKo ? "일기"       : "Diary",      icon: "📓" },
+                { href: "/wellness",   label: isKo ? "웰니스"     : "Wellness",   icon: "💚" },
+                { href: "/care",       label: isKo ? "돌봄 기록"  : "Care Log",   icon: "🌱" },
+                { href: "/emotion",    label: isKo ? "감정"       : "Emotion",    icon: "🪷" },
+                { href: "/challenges", label: isKo ? "챌린지"     : "Challenges", icon: "⚡" },
+                { href: "/crisis",     label: isKo ? "위기 지원"  : "Crisis",     icon: "🛟" },
+              ],
+            },
+            {
+              key: "create",
+              title: isKo ? "만들기" : "Create",
+              items: [
+                { href: "/generate",             label: isKo ? "생성"        : "Generate", icon: "✨" },
+                { href: "/ar",                   label: isKo ? "AR 뷰어"     : "AR View",  icon: "📱" },
+                { href: "/creature-conversation",label: isKo ? "존재 대화"   : "Creature", icon: "🗣️" },
+                { href: "/market",               label: isKo ? "상점"        : "Market",   icon: "🛍️" },
+                { href: "/moltbook",             label: isKo ? "탈피 도감"   : "Moltbook", icon: "📖" },
+                { href: "/molthub",              label: isKo ? "탈피 허브"   : "Molthub",  icon: "🪶" },
+              ],
+            },
+            {
+              key: "account",
+              title: isKo ? "계정" : "Account",
+              items: [
+                { href: "/profile/customize", label: isKo ? "프로필 꾸미기" : "Profile",  icon: "✨" },
+                { href: "/settings/security", label: isKo ? "보안 센터"     : "Security", icon: "🛡️" },
+                { href: "/plans",             label: isKo ? "플랜"          : "Plans",    icon: "💎" },
+                { href: "/features",          label: isKo ? "기능 소개"     : "Features", icon: "📋" },
+              ],
+            },
+          ];
+
+          return (
+            <div className="flex flex-col gap-4">
+              {categories.map((cat) => (
+                <section key={cat.key} className="flex flex-col gap-2">
+                  <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                    {cat.title}
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {cat.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => haptic("tap")}
+                        className="glass-card btn-3d flex min-h-[72px] flex-col items-center justify-center gap-1.5 rounded-2xl px-3 py-3 text-center transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-xs font-medium text-white/70 leading-tight">
+                          {item.label}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          );
+        })()}
     </PageShell>
   );
 }

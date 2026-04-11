@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Menu, X, MessageCircle, Compass, Settings, Trophy, Users, Sparkles, BookOpen, HeartPulse, Medal, UserCircle2, Gift, Cat } from 'lucide-react';
+import { Menu, X, MessageCircle, Compass, Settings, Trophy, Users, Sparkles, BookOpen, HeartPulse, Medal, UserCircle2, Gift, Cat, Dna, Map, Brain, ShoppingBag, CreditCard, Shield, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from "@/components/i18n-provider";
 import { FocusTrap } from "@/components/focus-trap";
@@ -26,9 +26,13 @@ export function NavigationHub() {
   const links = [
     { href: "/", icon: <MessageCircle />, label: t("nav.chat") },
     { href: "/discover", icon: <Compass />, label: t("nav.discover") },
+    // Core existence surfaces
+    { href: "/dna", icon: <Dna />, label: "DNA" },
+    { href: "/journey", icon: <Map />, label: "여정" },
+    { href: "/memories", icon: <Brain />, label: "기억" },
+    { href: "/dashboard", icon: <LayoutDashboard />, label: "대시보드" },
+    // Social & engagement
     { href: "/social", icon: <Users />, label: t("socialPage.title") },
-    // Phase 1/2 engagement surfaces — make the new pages reachable
-    // from a single menu so users actually see them.
     { href: "/leaderboard", icon: <Trophy />, label: t("leaderboard.title") },
     { href: "/achievements", icon: <Medal />, label: t("achievements.title") || "업적" },
     { href: "/emotion", icon: <Sparkles />, label: "감정 대시보드" },
@@ -36,7 +40,11 @@ export function NavigationHub() {
     { href: "/wellness", icon: <HeartPulse />, label: "웰니스" },
     { href: "/community/species", icon: <Cat />, label: "종족 커뮤니티" },
     { href: "/invites", icon: <Gift />, label: "친구 초대" },
+    { href: "/market", icon: <ShoppingBag />, label: "상점" },
+    // Account
     { href: "/profile/customize", icon: <UserCircle2 />, label: "프로필 꾸미기" },
+    { href: "/plans", icon: <CreditCard />, label: "플랜" },
+    { href: "/settings/security", icon: <Shield />, label: "보안 센터" },
     { href: "/settings", icon: <Settings />, label: t("nav.settings") },
   ];
 
