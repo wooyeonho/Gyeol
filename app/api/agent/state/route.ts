@@ -7,6 +7,7 @@ import { getDemoAgentState } from "@/lib/demo/runtime";
 import { generateInitialDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getLatestSubscription } from "@/lib/billing/service";
+import { getEngagementState } from "@/lib/engagement/streak-xp";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/agent/state" });
@@ -47,7 +48,27 @@ export async function GET() {
       // Non-fatal — default to free
     }
 
-    return NextResponse.json({ agentId, agentState: state ?? null, hasMultipleAgents: hasMultiple, planTier });
+    // Merge engagement state (streak + XP) into agent state so clients get the
+    // real streak_days instead of the stale schema column default.
+    let engagement: Awaited<ReturnType<typeof getEngagementState>> | null = null;
+    try {
+      engagement = await getEngagementState(user.id);
+    } catch {
+      // Non-fatal
+    }
+
+    const mergedState =
+      state && engagement
+        ? { ...(state as Record<string, unknown>), streak_days: engagement.currentStreak }
+        : state;
+
+    return NextResponse.json({
+      agentId,
+      agentState: mergedState ?? null,
+      hasMultipleAgents: hasMultiple,
+      planTier,
+      engagement,
+    });
   } catch (e) {
     log.error("GET /api/agent/state error", e instanceof Error ? e : { detail: String(e) });
     if (isMissingEnvError(e)) {

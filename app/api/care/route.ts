@@ -6,6 +6,11 @@ import { careBodySchema, parseBody } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
+  recordActivity,
+  ensureLeagueEnrollment,
+  type ActivityResult,
+} from "@/lib/engagement/streak-xp";
+import {
   applyCareDecay,
   createDefaultCareState,
   feedCreature,
@@ -139,7 +144,21 @@ export async function POST(req: NextRequest) {
       .update({ config: updatedConfig })
       .eq("agent_id", agentId);
 
-    return NextResponse.json({ careState: newCareState, coinsSpent: cost, dnaNudge });
+    // Advance streak + award XP + update league placement (non-fatal on failure)
+    let engagement: ActivityResult | null = null;
+    try {
+      await ensureLeagueEnrollment(user.id);
+      engagement = await recordActivity(user.id, action === "feed" ? "care:feed" : "care:rest");
+    } catch {
+      // non-fatal
+    }
+
+    return NextResponse.json({
+      careState: newCareState,
+      coinsSpent: cost,
+      dnaNudge,
+      engagement,
+    });
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

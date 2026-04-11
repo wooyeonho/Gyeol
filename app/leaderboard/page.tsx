@@ -16,8 +16,9 @@ import { TabBar } from "@/components/discover/tab-bar";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { PageSkeleton } from "@/components/discover/skeleton";
+import { LeagueBoard } from "@/components/engagement/league-board";
 
-type Tab = "level" | "messages" | "vitality";
+type Tab = "league" | "level" | "messages" | "vitality";
 
 export default function LeaderboardPage() {
   const { locale, t } = useTranslations();
@@ -25,7 +26,7 @@ export default function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("level");
+  const [tab, setTab] = useState<Tab>("league");
   const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [followBusyId, setFollowBusyId] = useState<string | null>(null);
 
@@ -42,19 +43,21 @@ export default function LeaderboardPage() {
       ? data.byLevel
       : tab === "messages"
         ? data.byMessages
-        : data.byVitality
+        : tab === "vitality"
+          ? data.byVitality
+          : []
     : [];
 
   const context = useMemo(() => {
     if (!data) return null;
-    return tab === "level"
-      ? data.contexts.level
-      : tab === "messages"
-        ? data.contexts.messages
-        : data.contexts.vitality;
+    if (tab === "level") return data.contexts.level;
+    if (tab === "messages") return data.contexts.messages;
+    if (tab === "vitality") return data.contexts.vitality;
+    return null;
   }, [data, tab]);
 
   const tabs: { key: Tab; label: string }[] = [
+    { key: "league", label: "🏆 리그" },
     { key: "level", label: t("leaderboard.tabLevel") },
     { key: "messages", label: t("leaderboard.tabMessages") },
     { key: "vitality", label: t("leaderboard.tabVitality") },
@@ -221,7 +224,13 @@ export default function LeaderboardPage() {
           <TabBar tabs={tabs} active={tab} onChange={setTab} sticky />
         </motion.div>
 
-        {context?.self && (
+        {tab === "league" && (
+          <motion.div variants={itemVariants} className="mt-4">
+            <LeagueBoard />
+          </motion.div>
+        )}
+
+        {tab !== "league" && context?.self && (
           <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
             <div className="theme-panel-strong rounded-2xl p-5">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-cyan-100/80">
@@ -323,14 +332,14 @@ export default function LeaderboardPage() {
           </section>
         )}
 
-        {entries.length === 0 ? (
+        {tab !== "league" && entries.length === 0 ? (
           <AnimatedEmptyState
             icon="social"
             title={t("leaderboard.empty")}
             description={t("leaderboard.emptyDesc")}
             accentColor="#818cf8"
           />
-        ) : (
+        ) : tab !== "league" ? (
           <div className="space-y-3">
             {entries.map((entry, i) => {
               const appearance = resolveIdentityAppearance(
@@ -409,7 +418,7 @@ export default function LeaderboardPage() {
               );
             })}
           </div>
-        )}
+        ) : null}
     </PageShell>
   );
 }
