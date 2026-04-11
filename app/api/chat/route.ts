@@ -12,6 +12,7 @@ import { chatBodySchema } from "@/lib/validation/schemas";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { buildChatPromptContext } from "@/lib/chat/context";
 import { persistChatTurn } from "@/lib/chat/post-process";
+import { recordActivity, ensureLeagueEnrollment } from "@/lib/engagement/streak-xp";
 import { createAssistantTapStream } from "@/lib/chat/stream";
 import { getAllowedChatOrigin } from "@/lib/chat/origin";
 import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
@@ -402,6 +403,13 @@ export async function POST(req: NextRequest) {
           reply: fullResponse,
           writer: service,
         });
+        // Advance engagement streak + award XP (non-fatal)
+        try {
+          await ensureLeagueEnrollment(user.id);
+          await recordActivity(user.id, "chat:message");
+        } catch {
+          // non-fatal — engagement is best-effort
+        }
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
           agentId,

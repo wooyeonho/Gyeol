@@ -33,9 +33,11 @@ const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => 
   loading: () => null,
 });
 import { CreatureStatusIndicator } from "@/components/creature-status";
+import { CreatureTapReact } from "@/components/effects/creature-tap";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
+import { LevelBar } from "@/components/engagement/level-bar";
 import { StreakShield } from "@/components/streak-shield";
 import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -84,7 +86,7 @@ const EnergyBar = dynamic(() => import("@/components/energy-bar").then((m) => ({
 export default function Home() {
   const { locale, t } = useTranslations();
   const showTutorial = useShouldShowTutorial();
-  const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
+  const { agentState, engagement, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
@@ -556,9 +558,14 @@ export default function Home() {
       )}
 
       {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
+      {/* Phase 4-2: CreatureTapReact wraps the stage so taps trigger a
+          wiggle animation + floating emoji reaction. The inner div keeps
+          its own class + style so the hero layout and background
+          gradient are unaffected. */}
+      <CreatureTapReact className="flex-shrink-0">
       <div
         data-tutorial="creature"
-        className="relative flex-shrink-0 overflow-hidden"
+        className="relative overflow-hidden"
         style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
         {/* Circadian time-of-day tint overlay */}
@@ -752,9 +759,20 @@ export default function Home() {
           )}
         </div>
       </div>
+      </CreatureTapReact>
 
       {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
       <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
+        {engagement && (
+          <div className="mb-2">
+            <LevelBar
+              level={engagement.level}
+              xpIntoLevel={engagement.xpIntoLevel}
+              xpForNext={engagement.xpForNext}
+              compact
+            />
+          </div>
+        )}
         <QuickCareButtons
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}

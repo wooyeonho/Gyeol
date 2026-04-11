@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { ACHIEVEMENTS, getAchievement, type AchievementRarity } from "@/lib/engagement/achievements";
+import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
 import { useCelebrationStore } from "@/store/celebration-store";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
@@ -26,8 +27,11 @@ export default function AchievementsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // Load from API — API returns `newly_unlocked` flag per achievement on this fetch.
-    fetch("/api/achievements")
+    // Load from API — the route returns each achievement definition
+    // with `unlocked` + `newly_unlocked` booleans. We collect unlocked
+    // ids for the grid and trigger a celebration for the rarest newly
+    // unlocked entry.
+    fetch("/api/achievements", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { achievements: [] }))
       .then((data) => {
         if (cancelled) return;
@@ -38,7 +42,9 @@ export default function AchievementsPage() {
 
         // Track every unlocked id so the grid updates
         const unlockedSet = new Set(
-          all.filter((a) => a.unlocked || a.newly_unlocked).map((a) => a.id ?? a.achievement_id ?? ""),
+          all
+            .filter((a) => a.unlocked || a.newly_unlocked)
+            .map((a) => a.id ?? a.achievement_id ?? ""),
         );
         setUnlockedIds(unlockedSet);
 
@@ -102,7 +108,15 @@ export default function AchievementsPage() {
           <p className="mt-1 text-sm text-white/40">
             {unlockedCount} / {ACHIEVEMENTS.filter((a) => !a.hidden).length} {t("achievements.unlocked") || "해금"}
           </p>
+          {unlockedCount === 0 && (
+            <p className="mx-auto mt-3 max-w-xs rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/55">
+              아직 해금된 업적이 없어요. 대화하고 돌봐주면 가장 먼저 &ldquo;첫 인사&rdquo; 같은 업적부터 열려요.
+            </p>
+          )}
         </header>
+
+        {/* Level unlock preview — "coming up at level X" */}
+        <LevelUnlockPreview />
 
         {/* Rarity filter */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

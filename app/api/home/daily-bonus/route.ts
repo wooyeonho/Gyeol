@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { recordActivity, ensureLeagueEnrollment } from "@/lib/engagement/streak-xp";
 
 /**
  * POST /api/home/daily-bonus
@@ -73,10 +74,21 @@ export async function POST() {
     await service.rpc("add_coins", { p_user_id: user.id, p_amount: reward.amount }).throwOnError();
   }
 
+  // Advance streak and award XP — daily login is the canonical "show up" activity.
+  let engagement = null;
+  try {
+    await ensureLeagueEnrollment(user.id);
+    const xp = reward.type === "xp" ? reward.amount : undefined;
+    engagement = await recordActivity(user.id, "daily:login", xp);
+  } catch {
+    // non-fatal
+  }
+
   return NextResponse.json({
     ok: true,
     dayIndex,
     reward: { type: reward.type, amount: reward.amount },
+    engagement,
   });
 }
 

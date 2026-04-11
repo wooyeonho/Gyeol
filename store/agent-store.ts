@@ -1,9 +1,21 @@
 import { create } from "zustand";
 import type { AgentState } from "@/types/agent";
 
+export interface EngagementSnapshot {
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string | null;
+  shieldCount: number;
+  totalXp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForNext: number;
+}
+
 interface AgentStore {
   agentId: string | null;
   agentState: AgentState | null;
+  engagement: EngagementSnapshot | null;
   planTier: "free" | "pro" | "premium";
   loading: boolean;
   error: boolean;
@@ -17,14 +29,14 @@ const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 3000];
 
 export const useAgentStore = create<AgentStore>((set) => ({
-  agentId: null, agentState: null, planTier: "free", loading: true, error: false, evolutionEvent: null,
+  agentId: null, agentState: null, engagement: null, planTier: "free", loading: true, error: false, evolutionEvent: null,
   fetchAgentState: async (options) => {
     if (!options?.silent) set({ loading: true, error: false });
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
         const res = await fetch("/api/agent/state", { cache: "no-store" });
         if (res.status === 401) {
-          set({ loading: false, error: false, agentId: null, agentState: null });
+          set({ loading: false, error: false, agentId: null, agentState: null, engagement: null });
           return;
         }
         if (!res.ok) {
@@ -35,6 +47,7 @@ export const useAgentStore = create<AgentStore>((set) => ({
         set({
           agentId: typeof json.agentId === "string" ? json.agentId : null,
           agentState: (json.agentState as AgentState | null) ?? null,
+          engagement: (json.engagement as EngagementSnapshot | null) ?? null,
           planTier: tier === "pro" || tier === "premium" ? tier : "free",
           loading: false,
           error: false,
@@ -47,7 +60,7 @@ export const useAgentStore = create<AgentStore>((set) => ({
         }
       }
     }
-    set({ loading: false, error: true, agentId: null, agentState: null });
+    set({ loading: false, error: true, agentId: null, agentState: null, engagement: null });
   },
   triggerEvolution: (event) => set({ evolutionEvent: event }),
   clearEvolution: () => set({ evolutionEvent: null }),
