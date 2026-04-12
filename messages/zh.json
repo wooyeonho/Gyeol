@@ -1015,6 +1015,13 @@
     "stat_dna": "DNA性格轴",
     "stat_languages": "支持语言",
     "stat_creature": "WebGL生命体渲染",
+    "live_now": "实时在线",
+    "live_demo": "演示快照",
+    "liveProofTitle": "生态系统正在呼吸",
+    "liveProofSubtitle": "这些数字直接来自实时面板，每一个生命体都由他人的话语塑造而成。",
+    "liveStatAgents": "觉醒中的生命体",
+    "liveStatEncounters": "社交相遇",
+    "liveStatArtifacts": "已铸造的遗物",
     "finalCtaTitle": "准备好见你的生命体了吗？",
     "finalCtaBody": "开始对话，看着真正独特的东西诞生。你的生命体在等你。"
   },

@@ -1118,6 +1118,13 @@
     "stat_dna": "DNA personality axes",
     "stat_languages": "Languages supported",
     "stat_creature": "WebGL creature rendering",
+    "live_now": "Live now",
+    "live_demo": "Demo snapshot",
+    "liveProofTitle": "The ecosystem is breathing right now",
+    "liveProofSubtitle": "These numbers come straight from the live dashboard. Every creature here was shaped by another person's words.",
+    "liveStatAgents": "Creatures awake",
+    "liveStatEncounters": "Social encounters",
+    "liveStatArtifacts": "Artifacts forged",
     "finalCtaTitle": "Ready to meet your creature?",
     "finalCtaBody": "Start a conversation and watch something truly unique come to life. Your creature is waiting."
   },

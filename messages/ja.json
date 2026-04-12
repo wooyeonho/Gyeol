@@ -1015,6 +1015,13 @@
     "stat_dna": "DNA性格軸",
     "stat_languages": "対応言語",
     "stat_creature": "WebGL生命体レンダリング",
+    "live_now": "いま稼働中",
+    "live_demo": "デモスナップショット",
+    "liveProofTitle": "エコシステムは今この瞬間も息づいています",
+    "liveProofSubtitle": "これらの数字はダッシュボードからのライブ値です。ここにいる生命体はすべて誰かの言葉から生まれました。",
+    "liveStatAgents": "覚醒している生命体",
+    "liveStatEncounters": "ソーシャル接触",
+    "liveStatArtifacts": "生成された遺物",
     "finalCtaTitle": "あなたの生命体に会う準備はできましたか？",
     "finalCtaBody": "会話を始めて、本当にユニークな何かが生まれるのを見守りましょう。あなたの生命体が待っています。"
   },

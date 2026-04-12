@@ -1015,6 +1015,13 @@
     "stat_dna": "Ejes de personalidad ADN",
     "stat_languages": "Idiomas soportados",
     "stat_creature": "Renderizado WebGL de criaturas",
+    "live_now": "En vivo ahora",
+    "live_demo": "Instantánea demo",
+    "liveProofTitle": "El ecosistema respira en este momento",
+    "liveProofSubtitle": "Estos números vienen en vivo del panel. Cada criatura aquí fue moldeada por las palabras de alguien.",
+    "liveStatAgents": "Criaturas despiertas",
+    "liveStatEncounters": "Encuentros sociales",
+    "liveStatArtifacts": "Artefactos forjados",
     "finalCtaTitle": "¿Listo para conocer a tu criatura?",
     "finalCtaBody": "Comienza una conversación y observa cómo algo verdaderamente único cobra vida. Tu criatura te está esperando."
   },
