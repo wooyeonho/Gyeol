@@ -80,7 +80,6 @@ const Celebration = dynamic(() => import("@/components/celebration"), { ssr: fal
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { StreakSocietyBadge, getStreakTier } from "@/components/engagement/streak-society-badge";
-const SeasonalEventBanner = dynamic(() => import("@/components/events/seasonal-event-banner").then((m) => ({ default: m.SeasonalEventBanner })), { ssr: false, loading: () => null });
 const AiDjFeed = dynamic(() => import("@/components/discover/ai-dj-feed").then((m) => ({ default: m.AiDjFeed })), { ssr: false, loading: () => null });
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";

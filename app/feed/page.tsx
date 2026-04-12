@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
 import { NewPostsPill } from "@/components/social/new-posts-pill";
@@ -51,17 +51,23 @@ export default function FeedPage() {
   const [newPostCount, setNewPostCount] = useState(0);
   const { particles, burst } = useHeartBurst();
 
-  const loadFeed = useCallback(() => {
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
+      .catch(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [tab]);
+
+  const loadFeed = () => {
     setLoading(true);
     fetch(`/api/feed?tab=${tab}`)
       .then((r) => r.json())
       .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
       .catch(() => setLoading(false));
-  }, [tab]);
-
-  useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
+  };
 
   // Poll for new posts every 30s
   useEffect(() => {
