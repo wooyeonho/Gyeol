@@ -8,6 +8,8 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { SecurityBadge } from "@/components/auth/security-badge";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -60,10 +62,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/40 p-7 text-left backdrop-blur-2xl relative z-10">
-      <div className="mb-7">
+    <motion.div
+      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/40 p-7 text-left backdrop-blur-2xl relative z-10"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        className="mb-7"
+      >
         <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
-          <span className="h-1 w-1 rounded-full bg-cyan-300" />
+          <motion.span
+            className="h-1 w-1 rounded-full bg-cyan-300"
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
           {t("auth.loginEyebrow")}
         </div>
         <h1 className="mt-3 text-[22px] font-semibold leading-tight tracking-tight text-white">
@@ -72,7 +88,7 @@ export default function LoginPage() {
         <p className="mt-2 text-[13px] leading-[1.55] text-white/55">
           {t("auth.loginSubtitle")}
         </p>
-      </div>
+      </motion.div>
 
       {!isConfigured && (
         <div className="mb-5 rounded-lg border border-amber-300/20 bg-amber-400/[0.06] px-3.5 py-2.5 text-[12px] leading-[1.5] text-amber-50/90">
@@ -160,6 +176,9 @@ export default function LoginPage() {
           {t("auth.signupLink")} →
         </Link>
       </div>
-    </div>
+
+      {/* Signal × 1Password-style trust footer */}
+      <SecurityBadge />
+    </motion.div>
   );
 }

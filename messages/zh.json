@@ -89,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "此环境尚未配置 Supabase。在添加公开认证密钥前，密码、访客和社交登录将以预览模式运行。"
+    "configWarning": "此环境尚未配置 Supabase。在添加公开认证密钥前，密码、访客和社交登录将以预览模式运行。",
+    "securityTitle": "你的数据属于你",
+    "securityE2e": "密码在 Supabase 中以哈希方式保存，绝不存储或记录明文。",
+    "securityRls": "行级安全策略完全隔离每个账户，其他人无法读取你的记忆。",
+    "securityRateLimit": "速率限制和异常检测会自动阻止暴力破解尝试。"
   },
   "ageGate": {
     "eyebrow": "年龄确认",

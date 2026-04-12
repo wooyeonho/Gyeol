@@ -89,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "Supabase no está configurado en este entorno. Hasta que se añadan las claves públicas de autenticación, el acceso por contraseña, invitado y social funcionará en modo de vista previa."
+    "configWarning": "Supabase no está configurado en este entorno. Hasta que se añadan las claves públicas de autenticación, el acceso por contraseña, invitado y social funcionará en modo de vista previa.",
+    "securityTitle": "Tus datos siguen siendo tuyos",
+    "securityE2e": "Las contraseñas se almacenan cifradas en Supabase; nunca se guardan ni registran en texto plano.",
+    "securityRls": "La seguridad a nivel de fila aísla cada cuenta para que nadie más pueda leer tu memoria.",
+    "securityRateLimit": "El límite de peticiones y la detección de anomalías bloquean automáticamente los intentos de fuerza bruta."
   },
   "ageGate": {
     "eyebrow": "Verificación de edad",

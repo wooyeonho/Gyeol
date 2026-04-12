@@ -89,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "Supabase is not configured in this environment. Password, guest, and social login will stay in preview mode until the public auth keys are added."
+    "configWarning": "Supabase is not configured in this environment. Password, guest, and social login will stay in preview mode until the public auth keys are added.",
+    "securityTitle": "Your data stays yours",
+    "securityE2e": "Passwords are hashed on Supabase — never stored or logged in plaintext.",
+    "securityRls": "Row-level security isolates every account so no one else can read your memory.",
+    "securityRateLimit": "Rate-limiting and anomaly checks block brute-force attempts automatically."
   },
   "ageGate": {
     "eyebrow": "Age check",

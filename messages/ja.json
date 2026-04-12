@@ -89,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "この環境ではSupabaseが設定されていません。公開認証キーが追加されるまで、パスワード、ゲスト、ソーシャルログインはプレビューモードで動作します。"
+    "configWarning": "この環境ではSupabaseが設定されていません。公開認証キーが追加されるまで、パスワード、ゲスト、ソーシャルログインはプレビューモードで動作します。",
+    "securityTitle": "あなたのデータはあなたのもの",
+    "securityE2e": "パスワードはSupabaseでハッシュ化され、平文で保存・記録されることはありません。",
+    "securityRls": "Row-level securityで各アカウントを分離し、他の人があなたの記憶を読むことはできません。",
+    "securityRateLimit": "レート制限と異常検知がブルートフォース攻撃を自動的にブロックします。"
   },
   "ageGate": {
     "eyebrow": "年齢確認",

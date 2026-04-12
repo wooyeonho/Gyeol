@@ -89,7 +89,11 @@
       "oauth_exchange_failed": "소셜 로그인을 완료하지 못했습니다. 다시 시도해주세요.",
       "consent_required": "이용약관과 개인정보처리방침 동의가 필요합니다."
     },
-    "configWarning": "이 환경에는 Supabase가 연결되어 있지 않습니다. 공개 인증 키를 넣기 전까지 비밀번호, 게스트, 소셜 로그인은 미리보기 모드로 동작합니다."
+    "configWarning": "이 환경에는 Supabase가 연결되어 있지 않습니다. 공개 인증 키를 넣기 전까지 비밀번호, 게스트, 소셜 로그인은 미리보기 모드로 동작합니다.",
+    "securityTitle": "내 데이터는 내 것으로",
+    "securityE2e": "비밀번호는 Supabase에서 해시로만 보관됩니다. 평문은 저장·기록되지 않습니다.",
+    "securityRls": "Row-level security로 계정이 완전히 분리돼 다른 사람은 내 기억에 접근할 수 없습니다.",
+    "securityRateLimit": "요청 빈도 제한과 이상 탐지가 자동으로 무차별 대입 시도를 차단합니다."
   },
   "ageGate": {
     "eyebrow": "연령 확인",
