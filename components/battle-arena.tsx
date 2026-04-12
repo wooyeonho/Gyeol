@@ -94,13 +94,23 @@ export function BattleArena({
         setPlayerHp(newPlayerHp);
       }, 600);
 
-      // Check for battle end
+      // Check for battle end — determine winner by actual HP outcome
       setTimeout(() => {
         if (newOpponentHp <= 0 || newPlayerHp <= 0) {
-          const result = calculateBattleResult(playerCreature, opponentCreature);
+          const playerWon = newOpponentHp <= 0 && (newPlayerHp > 0 || newOpponentHp <= newPlayerHp);
+          const winner = playerWon ? playerCreature : opponentCreature;
+          const loser = playerWon ? opponentCreature : playerCreature;
+          const result = {
+            winner,
+            loser,
+            ratingChange: 32,
+            highlights: [] as ReturnType<typeof calculateBattleResult>["highlights"],
+            winnerDamageDealt: playerWon ? (opponentMaxHp - newOpponentHp) : (playerMaxHp - newPlayerHp),
+            loserDamageDealt: playerWon ? (playerMaxHp - newPlayerHp) : (opponentMaxHp - newOpponentHp),
+          };
           setBattleResult(result);
           setPhase("result");
-          onBattleEnd?.(result.winner === playerCreature);
+          onBattleEnd?.(playerWon);
         } else {
           setPhase("select");
         }

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { smartSpeedDuration, waveformPeaks, type StageRole, promoteRole, demoteRole } from "@/lib/audio/world-class-voice";
 import { getVoiceLine, deriveSpeechParams, type VoiceLineTrigger } from "@/lib/creature/voice-lines";
-import { getMoodFromDNA, generateMusicConfig, generateMelodyPattern, interpolateConfig, type MoodLayer, type MusicConfig } from "@/lib/sound/adaptive-music";
-import { getBiomeFromContext, getBiomeSoundLayers, BIOME_SOUNDS, type BiomeType, type SoundLayer } from "@/lib/sound/biome-sounds";
+import { getMoodFromDNA, generateMusicConfig, type MoodLayer } from "@/lib/sound/adaptive-music";
+import { getBiomeFromContext, getBiomeSoundLayers, type BiomeType } from "@/lib/sound/biome-sounds";
 
 type SoundProfile = { base_note?: string; tempo?: number; instruments?: string[]; scale?: string[] };
 
@@ -137,24 +137,20 @@ export default function Soundscape({
   // ── Adaptive music — mood-based soundtrack from DNA ──
   const [activeMood, setActiveMood] = useState<MoodLayer | null>(null);
   const [activeBiome, setActiveBiome] = useState<BiomeType | null>(null);
-  const musicConfigRef = useRef<MusicConfig | null>(null);
 
   useEffect(() => {
     if (!enabled || !creatureDna) return;
     const dna = creatureDna as Record<string, number>;
     const newMood = getMoodFromDNA(dna);
-    if (newMood !== activeMood) {
-      setActiveMood(newMood);
-      const config = generateMusicConfig(newMood);
-      musicConfigRef.current = config;
+    setActiveMood((prev) => (prev === newMood ? prev : newMood));
+    if (newMood) {
+      generateMusicConfig(newMood); // pre-warm config for future audio use
     }
     // Determine biome from DNA + time
     const hour = new Date().getHours();
     const timeOfDay = hour < 6 ? "night" : hour < 9 ? "dawn" : hour < 17 ? "day" : hour < 20 ? "dusk" : "night";
     const biome = getBiomeFromContext(dna, timeOfDay);
-    if (biome !== activeBiome) {
-      setActiveBiome(biome);
-    }
+    setActiveBiome((prev) => (prev === biome ? prev : biome));
   }, [enabled, creatureDna]);
 
   // Compute waveform peaks for visual indicator
@@ -165,8 +161,6 @@ export default function Soundscape({
   // Smart-speed duration display (if we know raw duration)
   const smartDuration = playing ? smartSpeedDuration(60, 8000) : 0;
 
-  // Biome layers for display
-  const biomeLayers = activeBiome ? getBiomeSoundLayers(activeBiome, "day") : [];
 
   if (!enabled) return null;
   return (

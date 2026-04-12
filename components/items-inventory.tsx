@@ -240,7 +240,7 @@ export function ItemsInventory({ locale = "ko" }: { locale?: string } = {}) {
 
       {/* Content */}
       <AnimatePresence mode="wait">
-        {tab === "inventory" ? (
+        {tab === "inventory" && (
           <motion.div
             key="inventory"
             initial={{ opacity: 0, x: -10 }}
@@ -263,7 +263,8 @@ export function ItemsInventory({ locale = "ko" }: { locale?: string } = {}) {
               ))
             )}
           </motion.div>
-        ) : (
+        )}
+        {tab === "equipped" && (
           <motion.div
             key="equipped"
             initial={{ opacity: 0, x: 10 }}
@@ -285,41 +286,45 @@ export function ItemsInventory({ locale = "ko" }: { locale?: string } = {}) {
             )}
           </motion.div>
         )}
-      </AnimatePresence>
-
-      {/* Loot tab */}
-      {tab === "loot" && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handleLootRoll()}
-              disabled={lootBusy}
-              className="flex-1 rounded-xl border border-amber-400/20 bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-4 py-3 text-sm font-medium text-amber-200 hover:from-amber-500/20 hover:to-orange-500/20 disabled:opacity-50 transition-all min-h-[48px]"
-            >
-              {lootBusy
-                ? "..."
-                : locale === "ko"
-                  ? "루트 생성 (50 코인)"
-                  : "Roll Loot (50 coins)"}
-            </button>
-          </div>
-          {lootError && (
-            <p className="text-xs text-red-400">{lootError}</p>
-          )}
-          {lootItems.length > 0 ? (
-            <div className="space-y-2">
-              {lootItems.map((item, idx) => (
-                <ProceduralItemCard key={`${item.seed}-${idx}`} item={item} locale={locale} />
-              ))}
+        {tab === "loot" && (
+          <motion.div
+            key="loot"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            className="space-y-3"
+          >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleLootRoll()}
+                disabled={lootBusy}
+                className="flex-1 rounded-xl border border-amber-400/20 bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-4 py-3 text-sm font-medium text-amber-200 hover:from-amber-500/20 hover:to-orange-500/20 disabled:opacity-50 transition-all min-h-[48px]"
+              >
+                {lootBusy
+                  ? "..."
+                  : locale === "ko"
+                    ? "루트 생성 (50 코인)"
+                    : "Roll Loot (50 coins)"}
+              </button>
             </div>
-          ) : (
-            <p className="py-8 text-center text-sm text-white/40">
-              {locale === "ko" ? "루트를 생성해보세요!" : "Roll for loot!"}
-            </p>
-          )}
-        </div>
-      )}
+            {lootError && (
+              <p className="text-xs text-red-400">{lootError}</p>
+            )}
+            {lootItems.length > 0 ? (
+              <div className="space-y-2">
+                {lootItems.map((item, idx) => (
+                  <ProceduralItemCard key={`${item.seed}-${idx}`} item={item} locale={locale} />
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-white/40">
+                {locale === "ko" ? "루트를 생성해보세요!" : "Roll for loot!"}
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
