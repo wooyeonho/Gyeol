@@ -145,6 +145,12 @@ export default function SocialPage() {
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [threadData, setThreadData] = useState<{ postId: string; threads: ThreadComment[]; total: number } | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
+  const [giftTargetId, setGiftTargetId] = useState<string | null>(null);
+  const [giftAmount, setGiftAmount] = useState(10);
+  const [giftMessage, setGiftMessage] = useState("");
+  const [giftBusy, setGiftBusy] = useState(false);
+  const [translateBusy, setTranslateBusy] = useState<string | null>(null);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
 
   /** Resolve reputation tier for display. Uses reactionCount as proxy for reputation. */
   function getReputationBadge(reactionCount: number) {
@@ -516,6 +522,53 @@ export default function SocialPage() {
       setNotice(t("socialPage.postPublished"));
     } finally {
       setPostBusy(false);
+    }
+  }
+
+  async function handleGift(targetAgentId: string) {
+    if (giftBusy || giftAmount < 1) return;
+    setGiftBusy(true);
+    try {
+      const res = await fetch("/api/social/gift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_agent_id: targetAgentId,
+          coins: giftAmount,
+          message: giftMessage.trim() || undefined,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((json?.error as string) || t("socialPage.loadError"));
+        return;
+      }
+      setGiftTargetId(null);
+      setGiftAmount(10);
+      setGiftMessage("");
+      setNotice(locale === "ko" ? `${giftAmount} 코인을 선물했습니다!` : `Sent ${giftAmount} coins as a gift!`);
+      setTimeout(() => setNotice(null), 3000);
+    } finally {
+      setGiftBusy(false);
+    }
+  }
+
+  async function handleTranslate(postId: string, text: string) {
+    if (translateBusy || translations[postId]) return;
+    setTranslateBusy(postId);
+    try {
+      const targetLang = locale === "ko" ? "en" : "ko";
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, targetLang }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.translated) {
+        setTranslations((prev) => ({ ...prev, [postId]: json.translated as string }));
+      }
+    } finally {
+      setTranslateBusy(null);
     }
   }
 
@@ -1078,7 +1131,20 @@ export default function SocialPage() {
                       >
                         {t("socialPage.reportPost")}
                       </button>
+                      <button
+                        type="button"
+                        disabled={translateBusy === post.id}
+                        onClick={() => void handleTranslate(post.id, post.content)}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/72 hover:bg-white/10 disabled:opacity-50"
+                      >
+                        {translateBusy === post.id ? "..." : (locale === "ko" ? "번역" : "Translate")}
+                      </button>
                     </div>
+                    {translations[post.id] && (
+                      <div className="mt-2 rounded-xl border border-cyan-300/15 bg-cyan-400/5 px-3 py-2 text-sm text-cyan-100/80 italic">
+                        {translations[post.id]}
+                      </div>
+                    )}
                     {socialPublicEnabled && (
                       <div className="mt-3 flex gap-2">
                         <input
@@ -1201,19 +1267,55 @@ export default function SocialPage() {
                               : t("social.discoverAgent")}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      disabled={followBusyId === agent.id}
-                      onClick={() => void handleFollow(agent.id, !agent.is_following)}
-                      className={`ml-auto rounded-full border px-3 py-1.5 text-xs ${
-                        agent.is_following
-                          ? "border-white/15 bg-white/5 text-white/72"
-                          : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
-                      } disabled:opacity-50`}
-                    >
-                      {agent.is_following ? t("social.unfollow") : t("social.follow")}
-                    </button>
+                    <div className="ml-auto flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        disabled={followBusyId === agent.id}
+                        onClick={() => void handleFollow(agent.id, !agent.is_following)}
+                        className={`rounded-full border px-3 py-1.5 text-xs ${
+                          agent.is_following
+                            ? "border-white/15 bg-white/5 text-white/72"
+                            : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100"
+                        } disabled:opacity-50`}
+                      >
+                        {agent.is_following ? t("social.unfollow") : t("social.follow")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGiftTargetId(giftTargetId === agent.id ? null : agent.id)}
+                        className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-200 hover:bg-amber-400/15"
+                      >
+                        {locale === "ko" ? "선물" : "Gift"}
+                      </button>
+                    </div>
                   </div>
+                  {giftTargetId === agent.id && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-300/15 bg-amber-400/5 p-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={1000}
+                        value={giftAmount}
+                        onChange={(e) => setGiftAmount(Math.max(1, Math.min(1000, Number(e.target.value))))}
+                        className="w-20 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white text-center"
+                      />
+                      <input
+                        type="text"
+                        value={giftMessage}
+                        onChange={(e) => setGiftMessage(e.target.value)}
+                        placeholder={locale === "ko" ? "메시지 (선택)" : "Message (optional)"}
+                        className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/30"
+                      />
+                      <button
+                        type="button"
+                        disabled={giftBusy}
+                        onClick={() => void handleGift(agent.id)}
+                        className="rounded-full border border-amber-300/25 bg-amber-400/15 px-3 py-1.5 text-xs text-amber-200 disabled:opacity-50"
+                      >
+                        {giftBusy ? "..." : (locale === "ko" ? "보내기" : "Send")}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}

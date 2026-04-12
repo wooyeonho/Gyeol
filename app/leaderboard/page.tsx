@@ -18,7 +18,17 @@ import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { PageSkeleton } from "@/components/discover/skeleton";
 import { LeagueBoard } from "@/components/engagement/league-board";
 
-type Tab = "league" | "level" | "messages" | "vitality";
+type Tab = "league" | "level" | "messages" | "vitality" | "score";
+
+type RankingEntry = {
+  agent_id: string;
+  self_name: string;
+  gen_level: number;
+  vitality: number;
+  coins: number;
+  total_messages: number;
+  score: number;
+};
 
 export default function LeaderboardPage() {
   const { locale, t } = useTranslations();
@@ -29,6 +39,8 @@ export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("league");
   const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [followBusyId, setFollowBusyId] = useState<string | null>(null);
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
+  const [rankingsLoading, setRankingsLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/leaderboard")
@@ -56,11 +68,22 @@ export default function LeaderboardPage() {
     return null;
   }, [data, tab]);
 
+  useEffect(() => {
+    if (tab !== "score" || rankings.length > 0 || rankingsLoading) return;
+    setRankingsLoading(true);
+    fetch("/api/rankings")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fetch"))))
+      .then((d: { rankings: RankingEntry[] }) => setRankings(d.rankings ?? []))
+      .catch(() => { /* rankings unavailable */ })
+      .finally(() => setRankingsLoading(false));
+  }, [tab, rankings.length, rankingsLoading]);
+
   const tabs: { key: Tab; label: string }[] = [
     { key: "league", label: "🏆 리그" },
     { key: "level", label: t("leaderboard.tabLevel") },
     { key: "messages", label: t("leaderboard.tabMessages") },
     { key: "vitality", label: t("leaderboard.tabVitality") },
+    { key: "score", label: locale === "ko" ? "📊 종합점수" : "📊 Score" },
   ];
   const relationshipStats = useMemo(() => {
     const source = data?.byLevel ?? [];
@@ -332,14 +355,76 @@ export default function LeaderboardPage() {
           </section>
         )}
 
-        {tab !== "league" && entries.length === 0 ? (
+        {tab === "score" && (
+          <div className="space-y-3">
+            {rankingsLoading ? (
+              <div className="py-8 text-center text-sm text-white/40">
+                {locale === "ko" ? "로딩 중..." : "Loading..."}
+              </div>
+            ) : rankings.length === 0 ? (
+              <div className="py-8 text-center text-sm text-white/40">
+                {locale === "ko" ? "랭킹 데이터 없음" : "No ranking data"}
+              </div>
+            ) : (
+              rankings.map((entry, i) => {
+                const isTop3 = i < 3;
+                return (
+                  <div
+                    key={`score-${entry.agent_id}`}
+                    className={`flex items-center gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 ${
+                      isTop3 ? "border-white/15" : "border-white/8 bg-white/[0.03]"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                        i === 0
+                          ? "bg-yellow-400/20 text-yellow-300"
+                          : i === 1
+                            ? "bg-gray-300/20 text-gray-300"
+                            : i === 2
+                              ? "bg-orange-400/20 text-orange-300"
+                              : "theme-subpanel theme-text-subtle"
+                      }`}
+                    >
+                      {i + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {entry.self_name || t("leaderboard.unnamed")}
+                      </p>
+                      <div className="theme-text-subtle mt-1 flex items-center gap-3 text-xs">
+                        <span>Gen {entry.gen_level}</span>
+                        <span>·</span>
+                        <span>{entry.total_messages} {t("leaderboard.conversations")}</span>
+                        <span>·</span>
+                        <span>{Math.round(entry.vitality * 100)}%</span>
+                        <span>·</span>
+                        <span>🪙 {entry.coins}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-amber-300">
+                        {entry.score}
+                      </p>
+                      <p className="theme-text-faint text-[11px]">
+                        {locale === "ko" ? "점" : "pts"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {tab !== "league" && tab !== "score" && entries.length === 0 ? (
           <AnimatedEmptyState
             icon="social"
             title={t("leaderboard.empty")}
             description={t("leaderboard.emptyDesc")}
             accentColor="#818cf8"
           />
-        ) : tab !== "league" ? (
+        ) : tab !== "league" && tab !== "score" ? (
           <div className="space-y-3">
             {entries.map((entry, i) => {
               const appearance = resolveIdentityAppearance(
