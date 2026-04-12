@@ -860,6 +860,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "Light your first flame",
+    "emptyBody": "One message is all it takes — your streak starts today.",
+    "emptyFirstMilestone": "First goal · 3 days",
+    "emptyCta": "Start a conversation",
     "countdownH": "h",
     "countdownM": "m",
     "weekdaysSingle": ["S", "M", "T", "W", "T", "F", "S"]

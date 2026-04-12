@@ -854,6 +854,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "最初の炎を灯そう",
+    "emptyBody": "一言話すだけで、今日から連続記録が始まります。",
+    "emptyFirstMilestone": "最初の目標 · 3日",
+    "emptyCta": "会話を始める",
     "countdownH": "時間",
     "countdownM": "分",
     "weekdaysSingle": ["日", "月", "火", "水", "木", "金", "土"]

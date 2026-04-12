@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
@@ -88,9 +88,16 @@ export default function DnaEditPage() {
   const totalCost = totalChanges * COST_PER_POINT;
   const canAfford = coins >= totalCost;
 
+  const lastHapticRef = useRef(0);
   const handleSlider = (axis: string, value: number) => {
     if (!editedDna) return;
     setEditedDna({ ...editedDna, [axis]: value });
+    // Light tick every 120ms max during drag — tactile confirmation of live sync
+    const now = performance.now();
+    if (now - lastHapticRef.current > 120) {
+      lastHapticRef.current = now;
+      haptic("tap");
+    }
   };
 
   const handleSave = async () => {
@@ -173,8 +180,8 @@ export default function DnaEditPage() {
         ) : editedDna ? (
           <>
             {/* ===== Live DNA Preview ===== */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/60">
-              <div className="relative h-48 w-full">
+            <div className="sticky top-4 z-10 overflow-hidden rounded-3xl border border-white/10 bg-black/70 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur">
+              <div className="relative h-72 w-full">
                 <ThreeErrorBoundary
                   fallback={
                     <div className="flex h-full items-center justify-center">
@@ -185,8 +192,8 @@ export default function DnaEditPage() {
                   <VoidCanvas
                     shape="creature"
                     color={previewTheme ? `hsl(${Math.round(previewTheme.accentHue)}, ${Math.round(previewTheme.accentSaturation)}%, 55%)` : "#6366f1"}
-                    size={28}
-                    glow={50}
+                    size={34}
+                    glow={60}
                     vitality={1}
                     enableThree={true}
                     contained
@@ -195,21 +202,53 @@ export default function DnaEditPage() {
                     restoring3dLabel=""
                   />
                 </ThreeErrorBoundary>
+                {/* Live sync pulse — re-keys on every DNA change */}
+                <motion.div
+                  key={`${editedDna.analytical}-${editedDna.intuitive}-${editedDna.warmth}-${editedDna.playfulness}-${editedDna.curiosity}-${editedDna.creativity}`}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-300/50"
+                  initial={{ scale: 0.9, opacity: 0.7 }}
+                  animate={{ scale: 1.25, opacity: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                />
+                {/* LIVE pill — confirms the preview is bound to the sliders */}
+                <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-indigo-400/40 bg-indigo-500/20 px-2 py-0.5 backdrop-blur-sm">
+                  <motion.span
+                    className="h-1.5 w-1.5 rounded-full bg-indigo-300"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-indigo-100">
+                    {t("dnaEdit.live") || "LIVE"}
+                  </span>
+                </div>
               </div>
               {/* Species + verbal mode indicator */}
               <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-white/40">{isKo ? "종" : "Species"}</span>
-                  <span className="text-xs font-medium text-white/80">
+                  <motion.span
+                    key={previewSpecies?.name ?? "—"}
+                    className="text-xs font-medium text-white/85"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     {previewSpecies?.name ?? "—"}
-                  </span>
+                  </motion.span>
                 </div>
                 {verbalLabel && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-white/40">💬</span>
-                    <span className={`text-xs font-mono ${verbalLabel.color}`}>
+                    <motion.span
+                      key={verbalLabel.mode}
+                      className={`text-xs font-mono ${verbalLabel.color}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.25 }}
+                    >
                       {verbalLabel.mode}
-                    </span>
+                    </motion.span>
                     <span className="text-[10px] text-white/30">{verbalLabel.desc}</span>
                   </div>
                 )}

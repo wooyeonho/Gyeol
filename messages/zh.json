@@ -854,6 +854,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "点燃第一簇火焰",
+    "emptyBody": "只需一句话，连续记录从今天开始。",
+    "emptyFirstMilestone": "首个目标 · 3 天",
+    "emptyCta": "开始对话",
     "countdownH": "时",
     "countdownM": "分",
     "weekdaysSingle": ["日", "一", "二", "三", "四", "五", "六"]

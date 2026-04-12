@@ -83,6 +83,57 @@ export function StreakDisplay({
     );
   }
 
+  if (days === 0) {
+    return (
+      <motion.div
+        className="relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-transparent p-5"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+      >
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-400/15 blur-2xl"
+          animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="relative flex items-start gap-4">
+          <motion.div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-amber-400/10 text-3xl"
+            animate={{ rotate: [0, -6, 6, -3, 3, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.2 }}
+          >
+            🔥
+          </motion.div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-amber-200/80">
+              {t("streak.label")}
+            </p>
+            <p className="mt-1 text-base font-semibold text-white">
+              {t("streak.emptyTitle")}
+            </p>
+            <p className="mt-1 text-sm leading-5 text-white/75">
+              {t("streak.emptyBody")}
+            </p>
+          </div>
+        </div>
+        <div className="relative mt-4 flex items-center gap-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-400"
+              initial={{ width: "0%" }}
+              animate={{ width: "4%" }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            />
+          </div>
+          <span className="text-[11px] font-medium text-amber-100/85">
+            {t("streak.emptyFirstMilestone")}
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       className="relative rounded-2xl border border-white/10 bg-white/[0.04] p-4"

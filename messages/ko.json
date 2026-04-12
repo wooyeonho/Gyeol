@@ -860,6 +860,10 @@
     "peakTier": "최고 구간",
     "warningKeep": "오늘 대화하지 않으면 {count}일 연속 기록이 끊어집니다!",
     "dangerTimer": "스트릭 위험! 자정까지 {countdown} 남았습니다.",
+    "emptyTitle": "첫 불꽃을 피워보세요",
+    "emptyBody": "한 마디만 건네도 오늘부터 연속 기록이 시작돼요.",
+    "emptyFirstMilestone": "첫 목표 · 3일",
+    "emptyCta": "지금 대화 시작하기",
     "countdownH": "시간",
     "countdownM": "분",
     "weekdaysSingle": ["일", "월", "화", "수", "목", "금", "토"]
