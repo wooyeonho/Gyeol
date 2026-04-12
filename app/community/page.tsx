@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
 import { SpringCard } from "@/components/ui/spring-card";
-import { SkeletonCard } from "@/components/ui/skeleton";
 
 type CollectiveStats = {
   total_agents: number;

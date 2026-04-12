@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
-import { SpringButton } from "@/components/ui/spring-button";
 
 type Tab = "all" | "friends" | "ai";
 

@@ -8,7 +8,6 @@ import { ACHIEVEMENTS, getAchievement, type AchievementRarity } from "@/lib/enga
 import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
 import { useCelebrationStore } from "@/store/celebration-store";
 import { AchievementCard } from "@/components/gamification/achievement-card";
-import { SkeletonCard } from "@/components/ui/skeleton";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
   common:    { label: "Common",    glow: "",                              border: "border-white/15",        text: "text-white/60" },

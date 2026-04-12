@@ -6,7 +6,6 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { haptic } from "@/lib/micro-interactions";
 import { SpringButton } from "@/components/ui/spring-button";
-import { SpringCard } from "@/components/ui/spring-card";
 import {
   initOrRefreshDailyChallenges,
   writeDailyChallengeState,
