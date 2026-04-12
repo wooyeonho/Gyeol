@@ -121,15 +121,48 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+function buildJsonLd(locale: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://gyeol.app";
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "GYEOL",
+    url: appUrl,
+    applicationCategory: "LifestyleApplication",
+    operatingSystem: "Web",
+    inLanguage: locale,
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "KRW",
+    },
+    description:
+      locale === "ko"
+        ? "나만의 AI 존재와 매일 대화하며 기억과 성장의 궤적을 쌓는 앱"
+        : "An AI companion that turns conversation into memory, growth, and living presence.",
+  };
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
+  const jsonLd = buildJsonLd(locale);
 
   return (
     <html lang={locale} className={pretendard.variable}>
+      <head>
+        <link rel="preconnect" href="https://api.groq.com" />
+        <link rel="preconnect" href="https://generativelanguage.googleapis.com" />
+        <link rel="dns-prefetch" href="https://api.groq.com" />
+        <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${pretendard.className} bg-background text-foreground min-h-screen antialiased`}>
         <ReducedMotionProvider>
         <I18nProvider initialLocale={locale}>
