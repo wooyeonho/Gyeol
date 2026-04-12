@@ -161,7 +161,10 @@
     "silentActionStroke": "Stroke",
     "silentActionTap": "Tap",
     "silentActionShake": "Shake",
-    "silentActionStay": "Stay still"
+    "silentActionStay": "Stay still",
+    "thinking": "{name} is thinking…",
+    "memoryPill": "Holding {count} memories",
+    "memoryAria": "Gyeol remembers {count} conversations"
   },
   "album": {
     "title": "Growth album",

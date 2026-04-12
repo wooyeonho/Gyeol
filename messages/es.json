@@ -161,7 +161,10 @@
     "silentActionStroke": "Acariciar",
     "silentActionTap": "Tocar",
     "silentActionShake": "Sacudir",
-    "silentActionStay": "Quedarse quieto"
+    "silentActionStay": "Quedarse quieto",
+    "thinking": "{name} está pensando…",
+    "memoryPill": "Guardando {count} recuerdos",
+    "memoryAria": "Gyeol recuerda {count} conversaciones"
   },
   "album": {
     "title": "Growth album",

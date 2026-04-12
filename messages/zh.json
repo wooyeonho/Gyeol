@@ -161,7 +161,10 @@
     "silentActionStroke": "轻抚",
     "silentActionTap": "轻拍",
     "silentActionShake": "摇晃",
-    "silentActionStay": "静静待着"
+    "silentActionStay": "静静待着",
+    "thinking": "{name}正在思考…",
+    "memoryPill": "保存着 {count} 条记忆",
+    "memoryAria": "结记得 {count} 次对话"
   },
   "album": {
     "title": "Growth album",

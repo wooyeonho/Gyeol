@@ -161,7 +161,10 @@
     "silentActionStroke": "쓰다듬기",
     "silentActionTap": "두드리기",
     "silentActionShake": "흔들기",
-    "silentActionStay": "가만히 있기"
+    "silentActionStay": "가만히 있기",
+    "thinking": "{name}이 생각하는 중…",
+    "memoryPill": "{count}개의 기억을 간직하는 중",
+    "memoryAria": "결이 {count}개의 대화를 기억하고 있어요"
   },
   "album": {
     "title": "성장 앨범",

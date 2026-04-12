@@ -161,7 +161,10 @@
     "silentActionStroke": "なでる",
     "silentActionTap": "たたく",
     "silentActionShake": "揺らす",
-    "silentActionStay": "じっとする"
+    "silentActionStay": "じっとする",
+    "thinking": "{name}が考え中…",
+    "memoryPill": "{count}件の記憶を抱えています",
+    "memoryAria": "結は{count}件の会話を覚えています"
   },
   "album": {
     "title": "Growth album",
