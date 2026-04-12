@@ -53,7 +53,6 @@ export default function FeedPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
     fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
@@ -62,6 +61,7 @@ export default function FeedPage() {
   }, [tab]);
 
   const loadFeed = () => {
+    setEvents([]);
     setLoading(true);
     fetch(`/api/feed?tab=${tab}`)
       .then((r) => r.json())
@@ -111,7 +111,7 @@ export default function FeedPage() {
           {tabs.map((t) => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => { setLoading(true); setTab(t.key); }}
               className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${
                 tab === t.key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
               }`}
