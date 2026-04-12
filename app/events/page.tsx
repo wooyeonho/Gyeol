@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
@@ -9,11 +9,29 @@ import {
   getEventTimeRemaining,
 } from "@/lib/engagement/seasonal-event";
 
+interface WarEvent {
+  id: string;
+  side_a: string;
+  side_b: string;
+  side_a_score: number;
+  side_b_score: number;
+  ends_at: string;
+  status: string;
+}
+
 export default function EventsPage() {
   const { locale, t } = useTranslations();
   const localeKey = locale === "en" ? "en" : "ko";
 
   const activeEvent = useMemo(() => getActiveSeasonalEvent(), []);
+  const [warEvent, setWarEvent] = useState<WarEvent | null>(null);
+
+  useEffect(() => {
+    fetch("/api/events/war")
+      .then((r) => r.json())
+      .then((d: WarEvent | null) => { if (d) setWarEvent(d); })
+      .catch(() => {});
+  }, []);
   const timeRemaining = useMemo(
     () => (activeEvent ? getEventTimeRemaining(activeEvent) : null),
     [activeEvent],
@@ -140,8 +158,29 @@ export default function EventsPage() {
               ))}
             </div>
 
-            {/* Community goal */}
-            {activeEvent.community_goal && (
+                {/* War Event (from API) */}
+                {warEvent && (
+                  <div className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/[0.05] p-4">
+                    <h3 className="text-xs uppercase tracking-wider text-rose-400/70 mb-2">⚔️ War Event</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="text-center flex-1">
+                        <p className="text-sm font-semibold text-white">{warEvent.side_a}</p>
+                        <p className="text-lg font-bold text-rose-400">{warEvent.side_a_score}</p>
+                      </div>
+                      <span className="text-white/30 text-xs">VS</span>
+                      <div className="text-center flex-1">
+                        <p className="text-sm font-semibold text-white">{warEvent.side_b}</p>
+                        <p className="text-lg font-bold text-cyan-400">{warEvent.side_b_score}</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-white/30 mt-2 text-center">
+                      {new Date(warEvent.ends_at).toLocaleDateString(locale)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Community goal */}
+                {activeEvent.community_goal && (
               <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <h3 className="text-xs uppercase tracking-wider text-white/50 mb-2">
                   {t("events.communityGoal")}
