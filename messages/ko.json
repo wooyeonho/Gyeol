@@ -1213,6 +1213,10 @@
     "criticalTitle": "위험해요!",
     "criticalBody": "{name}의 생명력이 매우 낮아요. 빨리 돌아와주세요"
   },
+  "dna": {
+    "heatmapLabel": "활동 리듬",
+    "heatmapHint": "지난 {days}일 중 {count}일 활동"
+  },
   "journey": {
     "title": "우리의 여정",
     "dnaChart": "DNA 변화",

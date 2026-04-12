@@ -1213,6 +1213,10 @@
     "criticalTitle": "Critical!",
     "criticalBody": "{name}'s vitality is very low. Please come back soon"
   },
+  "dna": {
+    "heatmapLabel": "Activity rhythm",
+    "heatmapHint": "{count} active days in the last {days}"
+  },
   "journey": {
     "title": "Our Journey",
     "dnaChart": "DNA Changes",

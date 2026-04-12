@@ -1207,6 +1207,10 @@
     "criticalTitle": "¡Peligro!",
     "criticalBody": "La vitalidad de {name} es muy baja. Por favor, vuelve pronto"
   },
+  "dna": {
+    "heatmapLabel": "Ritmo de actividad",
+    "heatmapHint": "{count} días activos en los últimos {days}"
+  },
   "journey": {
     "title": "Nuestro viaje",
     "dnaChart": "Cambios de ADN",

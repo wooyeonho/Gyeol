@@ -1207,6 +1207,10 @@
     "criticalTitle": "危険！",
     "criticalBody": "{name}の生命力がとても低いです。早く戻ってきてください"
   },
+  "dna": {
+    "heatmapLabel": "活動リズム",
+    "heatmapHint": "直近{days}日のうち{count}日アクティブ"
+  },
   "journey": {
     "title": "私たちの旅",
     "dnaChart": "DNA変化",

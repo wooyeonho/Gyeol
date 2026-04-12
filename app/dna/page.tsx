@@ -23,6 +23,10 @@ const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(
 const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
 const TeamManager = dynamic(() => import("@/components/team-manager").then(m => m.TeamManager), { ssr: false });
 const ItemCompareCard = dynamic(() => import("@/components/item-compare-card").then(m => ({ default: m.ItemCompareCard })), { ssr: false });
+const ActivityHeatmap = dynamic(() => import("@/components/dna/activity-heatmap").then(m => ({ default: m.ActivityHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-[140px] animate-pulse rounded-2xl bg-white/[0.04]" />,
+});
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -378,6 +382,9 @@ export default function DNAPage() {
         <div className="flex justify-center">
           <RadarChart dna={activeDNA} size={300} locale={locale} />
         </div>
+
+        {/* GitHub-style 12-week activity heatmap — shows real rhythm */}
+        <ActivityHeatmap accentColor="#22d3ee" />
 
         {/* Group bars */}
         <div className="space-y-4">

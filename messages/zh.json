@@ -1207,6 +1207,10 @@
     "criticalTitle": "危险！",
     "criticalBody": "{name}的生命力非常低，请快回来"
   },
+  "dna": {
+    "heatmapLabel": "活跃节奏",
+    "heatmapHint": "过去{days}天中有{count}天活跃"
+  },
   "journey": {
     "title": "我们的旅程",
     "dnaChart": "DNA变化",
