@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { SpringCard } from "@/components/ui/spring-card";
+import { SkeletonFeedCard } from "@/components/ui/skeleton";
+import { SpringButton } from "@/components/ui/spring-button";
 
 type Tab = "all" | "friends" | "ai";
 
@@ -86,8 +89,10 @@ export default function FeedPage() {
 
         {/* Feed content */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <SkeletonFeedCard key={i} />
+            ))}
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-12">
@@ -105,13 +110,13 @@ export default function FeedPage() {
               const name = event.agent?.custom_name ?? "크리처";
               const level = event.agent?.level ?? 1;
               return (
-                <motion.div
-                  key={event.id}
-                  className="glass-card rounded-2xl border border-white/[0.07] p-4 flex items-start gap-3"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                >
+                  <SpringCard
+                    key={event.id}
+                    className="glass-card flex items-start gap-3"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                  >
                   <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-xl flex-shrink-0">
                     {speciesEmoji}
                   </div>
@@ -125,7 +130,7 @@ export default function FeedPage() {
                     </p>
                     <p className="text-[10px] text-white/25 mt-1">{timeAgo(event.created_at)}</p>
                   </div>
-                </motion.div>
+                </SpringCard>
               );
             })}
           </div>

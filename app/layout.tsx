@@ -20,6 +20,8 @@ import { VitalsReporter } from "@/components/vitals-reporter";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { CommandPalette } from "@/components/command-palette";
 import { ToastProvider } from "@/components/ui/toast-provider";
+import { OfflineBanner } from "@/components/ui/offline-banner";
+import { CatchBoundary } from "@/components/ui/catch-boundary";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -185,10 +187,13 @@ export default async function RootLayout({
           <VitalsReporter />
           <PwaInstallPrompt />
           <ToastProvider />
+          <OfflineBanner />
           <NavigationHub />
           <AnalyticsProvider>
             <SwipeNavigation>
-              <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+              <CatchBoundary>
+                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+              </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
         </I18nProvider>
