@@ -845,7 +845,9 @@
     "discussInChat": "채팅에서 이야기하기",
     "discussAbout": "{name}에 대해 이야기하기",
     "discussThisPrompt": "방금 {page}에서 {name}을(를) 봤어. 같이 이야기해볼까?",
-    "discussHere": "여기서 본 걸 채팅으로 이어가기"
+    "discussHere": "여기서 본 걸 채팅으로 이어가기",
+    "forYouLabel": "나를 위한 제안",
+    "forYouHint": "내 결 상태로 고른 카드"
   },
   "weeklyEvent": {
     "label": "주간 이벤트",

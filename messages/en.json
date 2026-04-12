@@ -845,7 +845,9 @@
     "discussInChat": "Discuss in chat",
     "discussAbout": "Talk about {name}",
     "discussThisPrompt": "I just saw {name} on {page}. Want to talk about them?",
-    "discussHere": "Bring this into chat"
+    "discussHere": "Bring this into chat",
+    "forYouLabel": "For you",
+    "forYouHint": "Tuned to your Gyeol"
   },
   "weeklyEvent": {
     "label": "Weekly event",

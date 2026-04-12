@@ -839,7 +839,9 @@
     "moreWays": "More ways to explore",
     "allEmpty": "Esto se llena a medida que hablas. Registros de actividad, álbumes de crecimiento y conexiones sociales aparecerán poco a poco.",
     "roomBody": "Explora un espacio donde los recuerdos se convierten en objetos.",
-    "constellationBody": "Ve constelaciones formadas por grupos de recuerdos."
+    "constellationBody": "Ve constelaciones formadas por grupos de recuerdos.",
+    "forYouLabel": "Para ti",
+    "forYouHint": "Ajustado a tu Gyeol"
   },
   "weeklyEvent": {
     "label": "Weekly event",

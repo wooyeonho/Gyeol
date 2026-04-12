@@ -30,6 +30,10 @@ const DiscoverCreatureSections = dynamic(() => import("@/components/discover/cre
   ssr: false,
   loading: () => <div className="h-40 rounded-2xl bg-white/[0.04] animate-pulse" />,
 });
+const ForYouStrip = dynamic(() => import("@/components/discover/for-you-strip").then(m => ({ default: m.ForYouStrip })), {
+  ssr: false,
+  loading: () => <div className="h-28 rounded-2xl bg-white/[0.03] animate-pulse" />,
+});
 
 function CardIcon({ type }: { type: string }) {
   const cls = "h-8 w-8";
@@ -120,6 +124,10 @@ export default function DiscoverPage() {
   const agentState = useAgentStore((s) => s.agentState);
   const dna = (agentState?.genome as unknown as { dna?: CreatureDNA } | null)?.dna ?? null;
   const genLevel = (agentState?.gen_level as number) ?? 1;
+  const totalMessages = typeof agentState?.total_messages === "number" ? agentState.total_messages : 0;
+  const streakDays = typeof agentState?.streak_days === "number" ? agentState.streak_days : 0;
+  const vitality = typeof agentState?.vitality === "number" ? agentState.vitality : 1;
+  const isSilentCreature = (dna?.verbal ?? 0.5) < 0.15;
   const [counts, setCounts] = useState<DiscoverCounts>({
     activity: 0,
     album: 0,
@@ -302,6 +310,22 @@ export default function DiscoverPage() {
           title={t("discover.title")}
           subtitle={t("discover.subtitle")}
         />
+        </motion.div>
+
+        {/* Personalized For-You rail — ranks actionable tiles from live agent state
+            (DNA, streak, vitality, memory, challenge progress) so the interest
+            graph isn't hidden behind three scrolls. */}
+        <motion.div variants={itemVariants}>
+          <ForYouStrip
+            dna={dna}
+            totalMessages={totalMessages}
+            streakDays={streakDays}
+            genLevel={genLevel}
+            challengeCompleted={challengeCompleted}
+            challengeTotal={challengeTotal}
+            vitality={vitality}
+            isSilent={isSilentCreature}
+          />
         </motion.div>
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />

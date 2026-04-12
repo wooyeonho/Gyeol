@@ -839,7 +839,9 @@
     "moreWays": "More ways to explore",
     "allEmpty": "随着对话的增多，这里会逐渐丰富起来。活动记录、成长相册、社交关系会一一出现。",
     "roomBody": "探索记忆变成物体的空间。",
-    "constellationBody": "查看由记忆之星组成的星座。"
+    "constellationBody": "查看由记忆之星组成的星座。",
+    "forYouLabel": "为你推荐",
+    "forYouHint": "根据你的结调整"
   },
   "weeklyEvent": {
     "label": "Weekly event",
