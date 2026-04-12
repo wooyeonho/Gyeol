@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MoodCheckin } from "@/components/mood-checkin";
+import {
+  BREATH_CADENCES,
+  recoveryScore,
+  recoveryBand,
+  ringCompletion,
+  breathCycleMs,
+  updateGentleStreak,
+  type RingGoal,
+  type BreathMode,
+} from "@/lib/wellness/world-class-wellness";
 
 interface MoodEntry {
   mood: string;
@@ -126,6 +136,93 @@ export default function WellnessPage() {
             </p>
           )}
         </div>
+
+        {/* Recovery score & breathing guide — from wellness module */}
+        {(() => {
+          const score = recoveryScore({ hrvMs: 55, restingHr: 62, sleepHours: 7, stress: 0.3 });
+          const band = recoveryBand(score);
+          const bandColor = band === "green" ? "text-emerald-400" : band === "yellow" ? "text-amber-400" : "text-red-400";
+          // Gentle streak from mood history
+          const daysSinceLast = history.length > 0
+            ? Math.floor((Date.now() - new Date(history[0].date).getTime()) / (24 * 3600 * 1000))
+            : 99;
+          const streak = updateGentleStreak(history.length, daysSinceLast);
+          return (
+            <>
+              <div className="glass-card rounded-2xl border border-white/10 p-5">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">
+                  회복 점수
+                </p>
+                <div className="flex items-center gap-4">
+                  <span className={`text-3xl font-bold ${bandColor}`}>{score}</span>
+                  <div>
+                    <p className={`text-sm font-semibold capitalize ${bandColor}`}>{band}</p>
+                    <p className="text-xs text-white/40">
+                      {band === "green" ? "컨디션 좋음" : band === "yellow" ? "보통" : "휴식 필요"}
+                    </p>
+                  </div>
+                  <div className="ml-auto text-right">
+                    <p className="text-sm font-semibold text-white/70">{streak}일</p>
+                    <p className="text-[10px] text-white/30">연속 기록</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card rounded-2xl border border-white/10 p-5">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">
+                  호흡 가이드
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["calm", "focus", "sleep", "energize"] as BreathMode[]).map((mode) => {
+                    const cadence = BREATH_CADENCES[mode];
+                    const cycleMs = breathCycleMs(mode);
+                    return (
+                      <div key={mode} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                        <p className="text-sm font-medium text-white/80 capitalize">{mode}</p>
+                        <p className="text-[10px] text-white/40 mt-1">
+                          {cadence.inhaleMs / 1000}s / {cadence.holdMs / 1000}s / {cadence.exhaleMs / 1000}s
+                        </p>
+                        <p className="text-[10px] text-emerald-400/60 mt-0.5">
+                          {(cycleMs / 1000).toFixed(0)}s cycle
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
+        {/* Wellness rings */}
+        {(() => {
+          const rings: RingGoal[] = [
+            { id: "move", target: 100, progress: todayDone ? 80 : 20 },
+            { id: "exercise", target: 100, progress: todayDone ? 60 : 10 },
+            { id: "mind", target: 100, progress: todayDone ? 100 : 30 },
+          ];
+          return (
+            <div className="glass-card rounded-2xl border border-white/10 p-5">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">
+                웰니스 링
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {rings.map((ring) => {
+                  const pct = Math.round(ringCompletion(ring) * 100);
+                  const closed = pct >= 100;
+                  return (
+                    <div key={ring.id} className="flex flex-col items-center gap-1.5">
+                      <div className={`relative h-14 w-14 rounded-full border-[3px] flex items-center justify-center ${closed ? "border-emerald-400" : "border-white/15"}`}>
+                        <span className="text-xs font-bold text-white/80">{pct}%</span>
+                      </div>
+                      <span className="text-[10px] text-white/40 capitalize">{ring.id}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Crisis resource */}
         <div className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.05] p-4">

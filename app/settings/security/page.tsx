@@ -18,9 +18,12 @@ import {
   type SecurityEvent,
 } from "@/lib/security/audit-log";
 import { generateRecoveryPhrase } from "@/lib/security/e2e-vault";
+import { startAutoLock, type AutoLockController } from "@/lib/security/auto-lock";
 import {
   auditAccount,
   securityScore as worldClassSecurityScore,
+  lockdownFor,
+  anonymousAccountNumber,
   type AuditFinding,
   type AuditSeverity,
 } from "@/lib/security/world-class-defense";
@@ -56,6 +59,8 @@ export default function SecurityCenterPage() {
     typeof window === "undefined" ? [] : listLocalSecurityEvents(20),
   );
   const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
+  const [lockdownMode, setLockdownMode] = useState<"off" | "strict">("off");
+  const lockdownProfile = lockdownFor(lockdownMode);
 
   useEffect(() => {
     // External async probe — this *is* the right use of useEffect.
@@ -202,6 +207,39 @@ export default function SecurityCenterPage() {
             }))
           }
         />
+      </section>
+
+      {/* ── Lockdown mode (Apple-inspired) ── */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Lockdown Mode</h2>
+            <p className="text-xs text-neutral-400">
+              Blocks generative media, external shares, and integrations.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLockdownMode(m => m === "off" ? "strict" : "off")}
+            className={`relative h-7 w-12 rounded-full transition-colors ${
+              lockdownMode === "strict" ? "bg-red-500" : "bg-neutral-700"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                lockdownMode === "strict" ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+        {lockdownMode === "strict" && (
+          <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-200 space-y-1">
+            <p>• Generative media: blocked</p>
+            <p>• External shares: blocked</p>
+            <p>• Integrations: blocked</p>
+            <p>• Session TTL: {Math.round(lockdownProfile.sessionTtlMs / 60000)} minutes</p>
+          </div>
+        )}
       </section>
 
       {/* ── Account health audit (Bitwarden Vault Health) ── */}

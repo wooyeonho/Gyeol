@@ -22,6 +22,16 @@ import {
   getPurchasedItems,
   type ShopItemId,
 } from "@/lib/economy/shop";
+import {
+  PLANS,
+  annualSavingsKRW,
+  bundleEffectivePriceKRW,
+  canJoinChallenge,
+  CHALLENGES,
+  type PlanId,
+} from "@/lib/revenue/world-class-monetization";
+import { formatCurrency, categorizeTransaction } from "@/lib/fintech/world-class-fintech";
+import { cartTotals, freeShippingGap } from "@/lib/commerce/world-class-commerce";
 
 type Item = {
   id: string;
@@ -215,6 +225,57 @@ export default function MarketPage() {
         </div>
       )}
 
+      {/* Plan comparison — monetization catalog */}
+      <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+        <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "ko" ? "플랜 비교" : "Plan Comparison"}</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(["free", "pro", "premium", "family"] as const).map((planId) => {
+            const plan = PLANS[planId];
+            const savings = annualSavingsKRW(planId);
+            const userPlan: PlanId = (billing?.plan.tier as PlanId) ?? "free";
+            const isCurrent = userPlan === planId;
+            return (
+              <div key={planId} className={`rounded-xl border p-3 text-center ${isCurrent ? "border-cyan-400/30 bg-cyan-500/10" : "border-white/10 bg-white/[0.02]"}`}>
+                <p className="text-xs font-semibold text-white/80">{plan.name}</p>
+                <p className="mt-1 text-sm font-bold text-white">{formatCurrency(plan.priceKRW.monthly, "KRW")}<span className="text-[10px] text-white/40">/mo</span></p>
+                {savings > 0 && (
+                  <p className="mt-0.5 text-[10px] text-emerald-400/80">
+                    {locale === "ko" ? "연간 절약" : "Save"} {formatCurrency(savings, "KRW")}
+                  </p>
+                )}
+                <p className="mt-1 text-[10px] text-white/40 line-clamp-2">{plan.tagline}</p>
+                {isCurrent && <span className="mt-1 inline-block rounded-full bg-cyan-500/20 px-2 py-0.5 text-[9px] text-cyan-300">Current</span>}
+              </div>
+            );
+          })}
+        </div>
+        {/* Challenges eligibility */}
+        <div className="flex gap-2 flex-wrap">
+          {(Object.keys(CHALLENGES) as Array<keyof typeof CHALLENGES>).map((cId) => {
+            const userPlan: PlanId = (billing?.plan.tier as PlanId) ?? "free";
+            const eligible = canJoinChallenge(userPlan, cId);
+            return (
+              <span key={cId} className={`rounded-full px-2 py-0.5 text-[10px] ${eligible ? "bg-emerald-500/15 text-emerald-300" : "bg-white/5 text-white/30"}`}>
+                {CHALLENGES[cId].label} {eligible ? "✓" : "🔒"}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Shopping cart nudge — free shipping gap */}
+      {(() => {
+        const gap = freeShippingGap(inv.coins * 100, 50000);
+        if (gap <= 0) return null;
+        return (
+          <div className="mb-4 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] px-4 py-2 text-xs text-amber-200/80">
+            {locale === "ko"
+              ? `무료 배송까지 ${formatCurrency(gap, "KRW")} 남았어요!`
+              : `${formatCurrency(gap, "KRW")} more for free shipping!`}
+          </div>
+        );
+      })()}
+
       {/* Tabs */}
       <TabBar
         tabs={[
@@ -345,7 +406,7 @@ export default function MarketPage() {
                 </div>
                 <div className="text-white/80 mt-1">{item.description}</div>
                 <div className="mt-3 flex items-center justify-between">
-                  <div className="text-amber-400">{item.price} {t("marketPage.coins")}</div>
+                  <div className="text-amber-400">{formatCurrency(item.price, "KRW")} {t("marketPage.coins")}</div>
                   <button
                     onClick={() => void purchase(item.id)}
                     disabled={buyingId === item.id}

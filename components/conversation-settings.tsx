@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { DISAPPEAR_SECONDS, type DisappearPreset } from "@/lib/messaging/world-class-messaging";
 
 interface ConversationSettingsData {
   tone_serious_humorous: number;
@@ -9,6 +10,7 @@ interface ConversationSettingsData {
   tone_brief_detailed: number;
   response_language: "ko" | "en" | "auto";
   restricted_topics: string[];
+  disappear_timer: DisappearPreset;
 }
 
 interface SliderProps {
@@ -68,6 +70,7 @@ export function ConversationSettings({ locale = "ko" }: ConversationSettingsProp
     tone_brief_detailed: 0,
     response_language: "ko",
     restricted_topics: [],
+    disappear_timer: "off",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -185,6 +188,32 @@ export function ConversationSettings({ locale = "ko" }: ConversationSettingsProp
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Disappearing messages (Signal-inspired) ── */}
+      <div className="glass-card rounded-2xl border border-white/10 p-4">
+        <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">
+          {isKo ? "사라지는 메시지" : "Disappearing Messages"}
+        </p>
+        <p className="text-[10px] text-white/25 mb-3">
+          {isKo ? "설정된 시간 후 메시지가 자동 삭제됩니다" : "Messages auto-delete after the set time"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(DISAPPEAR_SECONDS) as DisappearPreset[]).map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setSettings(s => ({ ...s, disappear_timer: preset }))}
+              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                settings.disappear_timer === preset
+                  ? "border-indigo-400/50 bg-indigo-400/20 text-indigo-200"
+                  : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
+            >
+              {preset === "off" ? (isKo ? "끄기" : "Off") : preset}
+            </button>
+          ))}
         </div>
       </div>
 

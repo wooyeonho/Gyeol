@@ -12,6 +12,20 @@ import {
   type Dungeon,
   type Encounter,
 } from "@/lib/game/encounter-system";
+import {
+  ALL_ITEMS,
+  RARITY_COLORS as ITEM_RARITY_COLORS,
+  type Item,
+  type ItemRarity,
+} from "@/lib/game/item-system";
+import {
+  getRankTitle,
+  type BattleCreature,
+} from "@/lib/game/pvp-system";
+import {
+  BIOME_CONFIG,
+  type Biome,
+} from "@/lib/game/dungeon-system";
 import { haptic } from "@/lib/micro-interactions";
 
 const ENCOUNTER_ICONS: Record<string, string> = {
@@ -44,6 +58,25 @@ export function DungeonExplorer({ locale = "ko" }: DungeonExplorerProps) {
     setDungeon(d);
   }, []);
 
+  const [lootDrop, setLootDrop] = useState<Item | null>(null);
+
+  /** Roll a random item drop from the catalog weighted by rarity */
+  const rollItemDrop = useCallback(() => {
+    const rarityWeights: Record<ItemRarity, number> = {
+      common: 50, uncommon: 30, rare: 15, epic: 4, legendary: 1,
+    };
+    const totalWeight = Object.values(rarityWeights).reduce((a, b) => a + b, 0);
+    let roll = Math.random() * totalWeight;
+    let selectedRarity: ItemRarity = "common";
+    for (const [rarity, weight] of Object.entries(rarityWeights) as [ItemRarity, number][]) {
+      roll -= weight;
+      if (roll <= 0) { selectedRarity = rarity; break; }
+    }
+    const candidates = ALL_ITEMS.filter((item) => item.rarity === selectedRarity);
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }, []);
+
   const handleResolveEncounter = useCallback((encId: string) => {
     haptic("tap");
     // First try dungeon encounters
@@ -56,7 +89,12 @@ export function DungeonExplorer({ locale = "ko" }: DungeonExplorerProps) {
         localStorage.setItem("gyeol_dungeon", JSON.stringify(dungeon));
         setDungeon({ ...dungeon });
         setResolvedRewards(enc.rewards);
-        setTimeout(() => setResolvedRewards(null), 2500);
+        // 25% chance of item drop from encounter
+        if (Math.random() < 0.25) {
+          const drop = rollItemDrop();
+          if (drop) setLootDrop(drop);
+        }
+        setTimeout(() => { setResolvedRewards(null); setLootDrop(null); }, 3000);
         return;
       }
     }
@@ -65,9 +103,14 @@ export function DungeonExplorer({ locale = "ko" }: DungeonExplorerProps) {
     if (rewards) {
       setEncounters(getActiveEncounters());
       setResolvedRewards(rewards);
-      setTimeout(() => setResolvedRewards(null), 2500);
+      // 15% chance of item drop from daily encounter
+      if (Math.random() < 0.15) {
+        const drop = rollItemDrop();
+        if (drop) setLootDrop(drop);
+      }
+      setTimeout(() => { setResolvedRewards(null); setLootDrop(null); }, 3000);
     }
-  }, [dungeon]);
+  }, [dungeon, rollItemDrop]);
 
   const handleAdvanceFloor = useCallback(() => {
     const result = advanceDungeonFloor();
@@ -108,6 +151,24 @@ export function DungeonExplorer({ locale = "ko" }: DungeonExplorerProps) {
                   ))}
                 </div>
               </div>
+              {/* Item loot drop (item-system.ts) */}
+              {lootDrop && (
+                <div className="mt-2 flex items-center gap-2 border-t border-amber-400/20 pt-2">
+                  <span className="text-lg">{lootDrop.icon}</span>
+                  <div>
+                    <p className="text-xs font-bold" style={{ color: ITEM_RARITY_COLORS[lootDrop.rarity] }}>
+                      {lootDrop.name}
+                    </p>
+                    <p className="text-[10px] text-white/40">{lootDrop.description}</p>
+                  </div>
+                  <span
+                    className="ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                    style={{ color: ITEM_RARITY_COLORS[lootDrop.rarity], background: `${ITEM_RARITY_COLORS[lootDrop.rarity]}20` }}
+                  >
+                    {lootDrop.rarity}
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

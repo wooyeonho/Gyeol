@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { haptic } from "@/lib/micro-interactions";
+import { rollD20, interpretRoll } from "@/lib/game/narrative-system";
 
 /* ── Props ── */
 
@@ -72,13 +73,37 @@ export function NarrativeEventCard({
   compact = false,
 }: NarrativeEventCardProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [diceRoll, setDiceRoll] = useState<number | null>(null);
+  const [rollResult, setRollResult] = useState<string | null>(null);
+
+  const ROLL_COLORS: Record<string, string> = {
+    critical_fail: "text-red-400",
+    fail: "text-orange-400",
+    partial: "text-yellow-400",
+    success: "text-green-400",
+    critical_success: "text-purple-400",
+  };
+
+  const ROLL_LABELS: Record<string, string> = {
+    critical_fail: "Critical Fail!",
+    fail: "Fail",
+    partial: "Partial Success",
+    success: "Success!",
+    critical_success: "Critical Success!",
+  };
 
   const handleChoose = useCallback(
     (choiceId: string) => {
       if (selectedId) return; // already chosen
       haptic("success");
       setSelectedId(choiceId);
-      onChoose?.(choiceId);
+      // Roll the D20 for BG3-style tension
+      const roll = rollD20();
+      const result = interpretRoll(roll);
+      setDiceRoll(roll);
+      setRollResult(result);
+      // Fire the onChoose after a brief delay for the dice animation
+      setTimeout(() => onChoose?.(choiceId), 800);
     },
     [selectedId, onChoose],
   );
@@ -189,6 +214,31 @@ export function NarrativeEventCard({
                 </motion.button>
               );
             })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* D20 Roll Result (BG3-inspired) */}
+      <AnimatePresence>
+        {diceRoll !== null && selectedId && !outcome && (
+          <motion.div
+            key="dice"
+            initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="my-3 flex flex-col items-center gap-1"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/20 bg-white/[0.06] shadow-lg">
+              <span className={`text-2xl font-bold tabular-nums ${rollResult ? ROLL_COLORS[rollResult] : "text-white"}`}>
+                {diceRoll}
+              </span>
+            </div>
+            {rollResult && (
+              <p className={`text-xs font-medium ${ROLL_COLORS[rollResult]}`}>
+                {ROLL_LABELS[rollResult]}
+              </p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

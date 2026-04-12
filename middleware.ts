@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { resolveLocale, LOCALE_COOKIE_NAME } from "@/lib/i18n/config";
+import { secureHeaderBundle } from "@/lib/security/world-class-defense";
 
 // ══════════════════════════════════════════
 // CSRF Protection — Origin header validation
@@ -234,19 +235,15 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
 
-  // ── Security response headers ──
-  response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=(), interest-cohort=()");
-  response.headers.set("X-DNS-Prefetch-Control", "on");
-  // ── CSP Reporting API (captures real violations for security monitoring) ──
+  // ── Security response headers (world-class defense bundle) ──
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  response.headers.set(
-    "Reporting-Endpoints",
-    `csp-endpoint="${appUrl}/api/csp-report"`
-  );
+  const secHeaders = secureHeaderBundle({ reportUri: `${appUrl}/api/csp-report` });
+  for (const [key, value] of Object.entries(secHeaders)) {
+    response.headers.set(key, value);
+  }
+  // CSP uses a nonce — set separately after the bundle
+  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("X-DNS-Prefetch-Control", "on");
 
   // Set locale cookie if missing or mismatched
   if (

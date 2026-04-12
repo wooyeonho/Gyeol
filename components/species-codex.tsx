@@ -14,6 +14,14 @@ import {
   type CatalogEntry,
   type CodexEntry,
 } from "@/lib/creature/species-codex";
+import {
+  getCodexCompletion,
+  getUndiscoveredHints,
+  CODEX_MILESTONES,
+  getCodexRarity,
+  calculateRarityBoostedReward,
+  type CodexRarity,
+} from "@/lib/game/codex-system";
 
 /* ================================================================
  *  SpeciesCodex — Pokemon Pokedex-style collection UI
@@ -47,6 +55,30 @@ export function SpeciesCodex({ locale = "en" }: SpeciesCodexProps) {
   }, []);
 
   const catalog = useMemo(() => getSpeciesCatalog(), []);
+
+  // ── Codex-system integration: milestones, hints, rarity ──
+  const discoveredSpeciesIds = useMemo(() => codex.map((e) => e.speciesId), [codex]);
+  const allSpeciesIds = useMemo(() => catalog.map((c) => c.id), [catalog]);
+
+  const codexCompletion = useMemo(
+    () => getCodexCompletion(discoveredSpeciesIds, allSpeciesIds.length),
+    [discoveredSpeciesIds, allSpeciesIds],
+  );
+
+  const reachedMilestones = useMemo(
+    () => CODEX_MILESTONES.filter((m) => codexCompletion.percentage >= m.threshold),
+    [codexCompletion.percentage],
+  );
+
+  const nextMilestone = useMemo(
+    () => CODEX_MILESTONES.find((m) => codexCompletion.percentage < m.threshold),
+    [codexCompletion.percentage],
+  );
+
+  const undiscoveredHints = useMemo(
+    () => getUndiscoveredHints(discoveredSpeciesIds, allSpeciesIds),
+    [discoveredSpeciesIds, allSpeciesIds],
+  );
   const discoveredIds = useMemo(() => new Set(codex.map((e) => e.speciesId)), [codex]);
   const ownedIds = useMemo(
     () => new Set(codex.filter((e) => e.owned).map((e) => e.speciesId)),
@@ -118,7 +150,55 @@ export function SpeciesCodex({ locale = "en" }: SpeciesCodexProps) {
             {isKo ? "128종" : "128 species"}
           </p>
         </div>
+
+        {/* ── Milestone progress (codex-system.ts) ── */}
+        {nextMilestone && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2">
+            <span className="text-sm">🎯</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-white/60 truncate">
+                {isKo ? nextMilestone.label.ko : nextMilestone.label.en}
+              </p>
+              <p className="text-[10px] text-white/30">
+                {isKo
+                  ? `${nextMilestone.threshold}% 달성 시 ${nextMilestone.reward.coins} 코인 + ${nextMilestone.reward.evolutionPoints} EP`
+                  : `At ${nextMilestone.threshold}%: ${nextMilestone.reward.coins} coins + ${nextMilestone.reward.evolutionPoints} EP`}
+              </p>
+            </div>
+            <span className="text-[10px] tabular-nums text-cyan-400/60">
+              {codexCompletion.percentage}/{nextMilestone.threshold}%
+            </span>
+          </div>
+        )}
+
+        {/* ── Reached milestones ── */}
+        {reachedMilestones.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {reachedMilestones.map((m) => (
+              <span
+                key={m.threshold}
+                className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] text-emerald-300"
+              >
+                {isKo ? m.label.ko : m.label.en}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* ── Undiscovered species hints (codex-system.ts) ── */}
+      {undiscoveredHints.length > 0 && (
+        <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-3 space-y-1.5">
+          <p className="text-[11px] uppercase tracking-widest text-white/30">
+            {isKo ? "미발견 힌트" : "Discovery Hints"}
+          </p>
+          {undiscoveredHints.map((hint, i) => (
+            <p key={i} className="text-[11px] italic text-white/25">
+              {hint}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex gap-2">
@@ -156,6 +236,7 @@ export function SpeciesCodex({ locale = "en" }: SpeciesCodexProps) {
                 entry={entry}
                 discovered={discovered}
                 owned={owned}
+                rarity={discovered ? getCodexRarity(entry.id, {}) : undefined}
                 isKo={isKo}
                 index={idx}
                 isSelected={selectedId === entry.id}
@@ -189,10 +270,25 @@ export function SpeciesCodex({ locale = "en" }: SpeciesCodexProps) {
 
 /* ─── Species Card ─────────────────────────────────────────────── */
 
+const RARITY_COLORS: Record<CodexRarity, string> = {
+  common: "text-white/40",
+  uncommon: "text-green-400",
+  rare: "text-blue-400",
+  "ultra-rare": "text-purple-400",
+};
+
+const RARITY_LABELS: Record<CodexRarity, { ko: string; en: string }> = {
+  common: { ko: "일반", en: "Common" },
+  uncommon: { ko: "비범", en: "Uncommon" },
+  rare: { ko: "희귀", en: "Rare" },
+  "ultra-rare": { ko: "초희귀", en: "Ultra Rare" },
+};
+
 function SpeciesCard({
   entry,
   discovered,
   owned,
+  rarity,
   isKo,
   index,
   isSelected,
@@ -201,6 +297,7 @@ function SpeciesCard({
   entry: CatalogEntry;
   discovered: boolean;
   owned: boolean;
+  rarity?: CodexRarity;
   isKo: boolean;
   index: number;
   isSelected: boolean;
@@ -268,6 +365,12 @@ function SpeciesCard({
               {isKo ? "미발견" : "Unknown"}
             </p>
           </>
+        )}
+        {/* Rarity badge (codex-system.ts) */}
+        {discovered && rarity && rarity !== "common" && (
+          <p className={`text-[8px] font-bold uppercase tracking-wider mt-0.5 ${RARITY_COLORS[rarity]}`}>
+            {isKo ? RARITY_LABELS[rarity].ko : RARITY_LABELS[rarity].en}
+          </p>
         )}
       </div>
     </motion.button>

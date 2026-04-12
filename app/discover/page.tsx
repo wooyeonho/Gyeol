@@ -17,6 +17,11 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import { getAvailableEvents, makeChoice, type StoryEvent } from "@/lib/game/narrative-system";
 import type { PartyMember, SynergyBonus } from "@/lib/game/party-system";
 import { calculatePartySynergy } from "@/lib/game/party-system";
+import { generateDailyQuests, QUEST_TEMPLATES } from "@/lib/game/quest-system";
+import type { Quest } from "@/lib/game/quest-system";
+import { continueWatching, dailyMix, orderedShelves } from "@/lib/content/world-class-content";
+import { levelFromXp, secondsUntilDailyReset, availableRewards } from "@/lib/gaming/world-class-liveops";
+import { parseNaturalDate, cycleView } from "@/lib/productivity/world-class-productivity";
 
 const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
 const DungeonExplorer = dynamic(() => import("@/components/dungeon-explorer").then(m => m.DungeonExplorer), { ssr: false });
@@ -387,6 +392,87 @@ export default function DiscoverPage() {
             )}
           </Link>
         )}
+
+        {/* Daily Quests — procedural quest board from quest-system */}
+        {(() => {
+          const quests: Quest[] = dna ? generateDailyQuests(dna) : generateDailyQuests();
+          const displayQuests = quests.slice(0, 4);
+          const difficultyColor: Record<string, string> = {
+            easy: "bg-emerald-500/20 text-emerald-300",
+            medium: "bg-amber-500/20 text-amber-300",
+            hard: "bg-red-500/20 text-red-300",
+            legendary: "bg-purple-500/20 text-purple-300",
+          };
+          return (
+            <motion.div variants={itemVariants} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white/80">
+                  {locale === "ko" ? "오늘의 퀘스트" : "Daily Quests"}
+                </h2>
+                <span className="text-[10px] text-white/40">
+                  {displayQuests.length}/{QUEST_TEMPLATES.length} {locale === "ko" ? "종류" : "types"}
+                </span>
+              </div>
+              {displayQuests.map((quest) => (
+                <div key={quest.id} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white/85">
+                        {locale === "ko" ? quest.title.ko : quest.title.en}
+                      </span>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${difficultyColor[quest.difficulty] ?? ""}`}>
+                        {quest.difficulty}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-white/50">
+                      {locale === "ko" ? quest.description.ko : quest.description.en}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-3 text-[10px] text-white/40">
+                      <span>🪙 {quest.rewards.coins}</span>
+                      <span>✨ {quest.rewards.xp} XP</span>
+                      {quest.rewards.item && <span>🎁 {quest.rewards.item}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          );
+        })()}
+
+        {/* Live-ops info — XP level & daily reset countdown */}
+        {(() => {
+          const xp = (agentState?.xp as number) ?? 0;
+          const level = levelFromXp(xp);
+          const resetSecs = secondsUntilDailyReset(new Date(), 5, 9);
+          const resetH = Math.floor(resetSecs / 3600);
+          const resetM = Math.floor((resetSecs % 3600) / 60);
+          return (
+            <motion.div variants={itemVariants} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <div className="text-xs text-white/60">
+                <span className="font-semibold text-white/80">Lv. {level}</span> ({xp} XP)
+              </div>
+              <div className="text-[10px] text-white/40">
+                {locale === "ko" ? "리셋까지" : "Reset in"} {resetH}h {resetM}m
+              </div>
+            </motion.div>
+          );
+        })()}
+
+        {/* Content shelves — ordered by priority */}
+        {(() => {
+          const shelves = orderedShelves({ catalogSize: 100, hasResume: totalMessages > 0 });
+          const topShelves = shelves.slice(0, 3);
+          return (
+            <motion.div variants={itemVariants} className="space-y-1">
+              {topShelves.map((shelf) => (
+                <div key={shelf.kind} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-white/[0.02]">
+                  <span className="text-[10px] text-cyan-400/60">{shelf.kind}</span>
+                  <span className="text-xs text-white/50">{shelf.title}</span>
+                </div>
+              ))}
+            </motion.div>
+          );
+        })()}
 
         {/* Party panel — creature team management */}
         {placeholderParty.length > 0 && (

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { smartSpeedDuration, waveformPeaks, type StageRole, promoteRole, demoteRole } from "@/lib/audio/world-class-voice";
+import { getVoiceLine, deriveSpeechParams, type VoiceLineTrigger } from "@/lib/creature/voice-lines";
 
 type SoundProfile = { base_note?: string; tempo?: number; instruments?: string[]; scale?: string[] };
 
@@ -130,6 +132,14 @@ export default function Soundscape({
     }).catch(() => {});
   }, [enabled, mood, creatureDna]);
 
+  // Compute waveform peaks for visual indicator
+  const waveformBars = playing
+    ? waveformPeaks(Array.from({ length: 64 }, (_, i) => Math.sin(i * 0.3) * (0.3 + Math.random() * 0.7)), 8)
+    : [];
+
+  // Smart-speed duration display (if we know raw duration)
+  const smartDuration = playing ? smartSpeedDuration(60, 8000) : 0;
+
   if (!enabled) return null;
   return (
     <div
@@ -139,6 +149,17 @@ export default function Soundscape({
       <span className="text-xs" style={{ color: playing ? accentColor : "rgba(255,255,255,0.45)" }}>
         {playing ? "♪" : "—"}
       </span>
+      {playing && waveformBars.length > 0 && (
+        <div className="flex items-end gap-px h-3">
+          {waveformBars.map((peak, i) => (
+            <div
+              key={i}
+              className="w-[2px] rounded-full bg-white/30"
+              style={{ height: `${Math.max(2, peak * 12)}px` }}
+            />
+          ))}
+        </div>
+      )}
       {label && <span className="text-[11px] text-white/55">{label}</span>}
     </div>
   );
