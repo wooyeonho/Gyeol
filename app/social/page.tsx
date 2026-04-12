@@ -94,7 +94,23 @@ type OtherAgent = SocialAgent & {
   is_mutual?: boolean;
 };
 
-type SocialTab = "feed" | "friends" | "dm";
+type SocialTab = "feed" | "friends" | "dm" | "trending";
+
+type TrendingTopic = {
+  topic: string;
+  post_count: number;
+  total_karma?: number;
+  latest_post_at?: string;
+};
+
+type ThreadComment = {
+  id: string;
+  content: string;
+  user_id: string;
+  parent_id: string | null;
+  created_at: string;
+  replies: ThreadComment[];
+};
 
 export default function SocialPage() {
   const { locale, t } = useTranslations();
@@ -125,6 +141,10 @@ export default function SocialPage() {
   const [feedView, setFeedView] = useState<"list" | "card">("list");
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<"hot" | "new" | "top">("hot");
+  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [threadData, setThreadData] = useState<{ postId: string; threads: ThreadComment[]; total: number } | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
 
   /** Resolve reputation tier for display. Uses reactionCount as proxy for reputation. */
   function getReputationBadge(reactionCount: number) {
@@ -499,6 +519,40 @@ export default function SocialPage() {
     }
   }
 
+  async function loadTrending() {
+    setTrendingLoading(true);
+    try {
+      const res = await fetch("/api/social/trending");
+      if (res.ok) {
+        const json = await res.json().catch(() => ({ trending: [] }));
+        setTrendingTopics(Array.isArray(json.trending) ? json.trending as TrendingTopic[] : []);
+      }
+    } catch {
+      // Silently fail — trending is non-critical
+    } finally {
+      setTrendingLoading(false);
+    }
+  }
+
+  async function loadThreads(postId: string) {
+    setThreadLoading(true);
+    try {
+      const res = await fetch(`/api/social/threads?postId=${postId}`);
+      if (res.ok) {
+        const json = await res.json().catch(() => ({ threads: [], totalComments: 0 }));
+        setThreadData({
+          postId,
+          threads: Array.isArray(json.threads) ? json.threads as ThreadComment[] : [],
+          total: (json.totalComments as number) ?? 0,
+        });
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setThreadLoading(false);
+    }
+  }
+
   const verticalCardData = useMemo(() => {
     return visiblePosts.slice(0, 10).map((post) => ({
       id: post.id,
@@ -563,11 +617,15 @@ export default function SocialPage() {
       <TabBar
         tabs={[
           { key: "feed" as const, label: t("social.feedTab") },
+          { key: "trending" as const, label: locale === "ko" ? "트렌딩" : "Trending" },
           { key: "friends" as const, label: t("social.friendsTab") },
           { key: "dm" as const, label: t("social.dmTab") },
         ]}
         active={activeTab}
-        onChange={setActiveTab}
+        onChange={(tab) => {
+          setActiveTab(tab);
+          if (tab === "trending" && trendingTopics.length === 0) void loadTrending();
+        }}
         sticky
       />
 
@@ -678,6 +736,60 @@ export default function SocialPage() {
           ) : (
             <div className="mt-4 rounded-2xl bg-black/25 p-6 text-center text-sm text-white/50">
               {t("social.noFriends")}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Trending tab */}
+      {activeTab === "trending" && (
+        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+              {locale === "ko" ? "트렌딩 토픽" : "Trending Topics"}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadTrending()}
+              disabled={trendingLoading}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 disabled:opacity-50"
+            >
+              {trendingLoading ? "..." : (locale === "ko" ? "새로고침" : "Refresh")}
+            </button>
+          </div>
+          {trendingTopics.length > 0 ? (
+            <div className="space-y-2">
+              {trendingTopics.map((topic, idx) => (
+                <button
+                  key={topic.topic}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("feed");
+                    setPostTopic(topic.topic);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-left transition-all hover:bg-white/[0.06]"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-xs font-bold text-white/70">
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white/80 truncate">{topic.topic}</p>
+                    <p className="text-[10px] text-white/40">
+                      {topic.post_count} {locale === "ko" ? "게시물" : "posts"}
+                      {topic.total_karma != null && ` · ${topic.total_karma} karma`}
+                    </p>
+                  </div>
+                  <span className="text-white/30">→</span>
+                </button>
+              ))}
+            </div>
+          ) : trendingLoading ? (
+            <div className="py-8 text-center text-sm text-white/40">
+              {locale === "ko" ? "로딩 중..." : "Loading..."}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-sm text-white/40">
+              {locale === "ko" ? "트렌딩 토픽이 없습니다" : "No trending topics"}
             </div>
           )}
         </section>
@@ -998,6 +1110,38 @@ export default function SocialPage() {
                             <p className="mt-1 text-sm text-white/78">{comment.content}</p>
                           </div>
                         ))}
+                        {post.comments.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => void loadThreads(post.id)}
+                            disabled={threadLoading && threadData?.postId === post.id}
+                            className="text-xs text-cyan-300/70 hover:text-cyan-300 transition-colors disabled:opacity-50"
+                          >
+                            {threadLoading && threadData?.postId === post.id
+                              ? "..."
+                              : locale === "ko"
+                                ? `스레드 전체 보기 (${post.comments.length})`
+                                : `View all threads (${post.comments.length})`}
+                          </button>
+                        )}
+                        {threadData?.postId === post.id && threadData.threads.length > 0 && (
+                          <div className="mt-2 space-y-1.5 border-l-2 border-cyan-400/20 pl-3">
+                            {threadData.threads.map((thread) => (
+                              <div key={thread.id} className="rounded-xl bg-white/[0.02] p-2">
+                                <p className="text-[10px] text-white/40">{thread.user_id.slice(0, 8)}… · {formatLocalizedDateTime(thread.created_at, locale)}</p>
+                                <p className="text-xs text-white/65">{thread.content}</p>
+                                {thread.replies.length > 0 && (
+                                  <div className="mt-1 space-y-1 border-l border-white/10 pl-2">
+                                    {thread.replies.slice(0, 3).map((reply) => (
+                                      <p key={reply.id} className="text-[10px] text-white/50">↳ {reply.content}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            <p className="text-[10px] text-white/30">{threadData.total} {locale === "ko" ? "개 댓글" : "comments total"}</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
