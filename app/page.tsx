@@ -107,6 +107,8 @@ export default function Home() {
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
+    // Fetch engagement state (streak + XP) for home header
+    fetch("/api/engagement/state", { signal: AbortSignal.timeout(8000) }).catch(() => {});
   }, [fetchAgentState, fetchWorldState]);
 
   // Fetch daily bonus status — show modal if not yet claimed today

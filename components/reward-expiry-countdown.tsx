@@ -69,6 +69,9 @@ export function RewardExpiryCountdown() {
 
     fetchExpiry();
 
+    // Fire-and-forget: notify server that reward UI was viewed
+    fetch("/api/reward/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "reward_viewed" }) }).catch(() => {});
+
     // Re-fetch every 5 minutes to keep countdown fresh
     const interval = setInterval(fetchExpiry, 300_000);
     return () => {

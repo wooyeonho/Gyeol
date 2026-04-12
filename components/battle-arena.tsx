@@ -110,6 +110,16 @@ export function BattleArena({
           };
           setBattleResult(result);
           setPhase("result");
+          // Sync battle result to server
+          fetch("/api/room/battle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              agentId: playerCreature.name,
+              opponentId: opponentCreature.name,
+              moveType: nextMoves[nextMoves.length - 1] || "strike",
+            }),
+          }).catch(() => {});
           onBattleEnd?.(playerWon);
         } else {
           setPhase("select");
