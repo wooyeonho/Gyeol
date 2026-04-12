@@ -9,7 +9,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { SecurityBadge } from "@/components/auth/security-badge";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -29,6 +29,7 @@ export default function SignupPage() {
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
   const loginHref = `/login${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
   const isConfigured = isBrowserSupabaseConfigured();
+  const prefersReducedMotion = useReducedMotion();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,9 +65,9 @@ export default function SignupPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: prefersReducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
       className="glass-card-strong w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.15)] relative z-10"
     >
       <div className="mb-6">

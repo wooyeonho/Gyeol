@@ -9,7 +9,7 @@ import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { SecurityBadge } from "@/components/auth/security-badge";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -24,6 +24,7 @@ export default function LoginPage() {
   const nextPath = searchParams.get("next") || "/";
   const signupHref = `/signup${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
   const isConfigured = isBrowserSupabaseConfigured();
+  const prefersReducedMotion = useReducedMotion();
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
@@ -63,22 +64,30 @@ export default function LoginPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: prefersReducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
       className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/40 p-7 text-left backdrop-blur-2xl relative z-10"
     >
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        transition={{
+          duration: prefersReducedMotion ? 0 : 0.45,
+          delay: prefersReducedMotion ? 0 : 0.1,
+          ease: [0.16, 1, 0.3, 1],
+        }}
         className="mb-7"
       >
         <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
           <motion.span
             className="h-1 w-1 rounded-full bg-cyan-300"
-            animate={{ opacity: [0.4, 1, 0.4] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            animate={prefersReducedMotion ? { opacity: 0.8 } : { opacity: [0.4, 1, 0.4] }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            }
           />
           {t("auth.loginEyebrow")}
         </div>

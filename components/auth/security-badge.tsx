@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 
 /**
@@ -8,10 +8,15 @@ import { useTranslations } from "@/components/i18n-provider";
  * Communicates the actual, concrete guarantees (no plaintext password logs,
  * row-level security, rate-limiting) so visitors don't have to trust copy
  * alone. Designed to sit at the bottom of the login/signup card.
+ *
+ * Respects prefers-reduced-motion: the entrance transition collapses and
+ * the ping halo is suppressed so the component stays calm next to an
+ * animated particle background.
  */
 
 export function SecurityBadge() {
   const { t } = useTranslations();
+  const prefersReducedMotion = useReducedMotion();
 
   const items: Array<{ icon: string; label: string }> = [
     { icon: "🔒", label: t("auth.securityE2e") },
@@ -21,15 +26,24 @@ export function SecurityBadge() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: prefersReducedMotion ? 0 : 0.5,
+        delay: prefersReducedMotion ? 0 : 0.25,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className="mt-5 rounded-xl border border-emerald-300/15 bg-emerald-400/[0.04] px-3.5 py-3"
       role="status"
     >
       <div className="flex items-center gap-2">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+          {!prefersReducedMotion && (
+            <span
+              aria-hidden="true"
+              className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"
+            />
+          )}
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
         </span>
         <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200/80">
