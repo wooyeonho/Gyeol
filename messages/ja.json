@@ -41,6 +41,7 @@
     "settings": "Settings",
     "chat": "チャット",
     "discover": "発見",
+    "dna": "DNA",
     "profile": "プロフィール",
     "notifications": "通知"
   },
@@ -88,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "この環境ではSupabaseが設定されていません。公開認証キーが追加されるまで、パスワード、ゲスト、ソーシャルログインはプレビューモードで動作します。"
+    "configWarning": "この環境ではSupabaseが設定されていません。公開認証キーが追加されるまで、パスワード、ゲスト、ソーシャルログインはプレビューモードで動作します。",
+    "securityTitle": "あなたのデータはあなたのもの",
+    "securityE2e": "パスワードはSupabaseでハッシュ化され、平文で保存・記録されることはありません。",
+    "securityRls": "Row-level securityで各アカウントを分離し、他の人があなたの記憶を読むことはできません。",
+    "securityRateLimit": "レート制限と異常検知がブルートフォース攻撃を自動的にブロックします。"
   },
   "ageGate": {
     "eyebrow": "年齢確認",
@@ -160,7 +165,10 @@
     "silentActionStroke": "なでる",
     "silentActionTap": "たたく",
     "silentActionShake": "揺らす",
-    "silentActionStay": "じっとする"
+    "silentActionStay": "じっとする",
+    "thinking": "{name}が考え中…",
+    "memoryPill": "{count}件の記憶を抱えています",
+    "memoryAria": "結は{count}件の会話を覚えています"
   },
   "album": {
     "title": "Growth album",
@@ -196,6 +204,17 @@
     "staleDream": "Stale dream (24h)",
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
+  },
+  "homeHero": {
+    "streakLabel": "連続",
+    "levelLabel": "LV",
+    "memoryLabel": "記憶",
+    "xpToNext": "次のレベルまで {count} XP",
+    "streakAria": "{count}日連続 — 実績を開く",
+    "memoryAria": "記憶 {count} 件 — メモリーを開く",
+    "newUserEyebrow": "最初の一歩",
+    "newUserTitle": "最初の火花を灯そう",
+    "newUserBody": "一言の会話で、連続・レベル・記憶がすべて動き出します。"
   },
   "home": {
     "firstMinute": "FIRST MINUTE",
@@ -824,7 +843,9 @@
     "moreWays": "More ways to explore",
     "allEmpty": "会話を重ねるほど、ここが埋まっていきます。活動記録、成長アルバム、ソーシャルが一つずつ現れます。",
     "roomBody": "記憶がオブジェクトになる空間を探索しましょう。",
-    "constellationBody": "記憶の星たちが作る星座を確認しましょう。"
+    "constellationBody": "記憶の星たちが作る星座を確認しましょう。",
+    "forYouLabel": "あなたへ",
+    "forYouHint": "今のGyeolに合わせて"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -854,6 +875,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "最初の炎を灯そう",
+    "emptyBody": "一言話すだけで、今日から連続記録が始まります。",
+    "emptyFirstMilestone": "最初の目標 · 3日",
+    "emptyCta": "会話を始める",
     "countdownH": "時間",
     "countdownM": "分",
     "weekdaysSingle": ["日", "月", "火", "水", "木", "金", "土"]
@@ -994,6 +1019,13 @@
     "stat_dna": "DNA性格軸",
     "stat_languages": "対応言語",
     "stat_creature": "WebGL生命体レンダリング",
+    "live_now": "いま稼働中",
+    "live_demo": "デモスナップショット",
+    "liveProofTitle": "エコシステムは今この瞬間も息づいています",
+    "liveProofSubtitle": "これらの数字はダッシュボードからのライブ値です。ここにいる生命体はすべて誰かの言葉から生まれました。",
+    "liveStatAgents": "覚醒している生命体",
+    "liveStatEncounters": "ソーシャル接触",
+    "liveStatArtifacts": "生成された遺物",
     "finalCtaTitle": "あなたの生命体に会う準備はできましたか？",
     "finalCtaBody": "会話を始めて、本当にユニークな何かが生まれるのを見守りましょう。あなたの生命体が待っています。"
   },
@@ -1179,6 +1211,10 @@
     "criticalTitle": "危険！",
     "criticalBody": "{name}の生命力がとても低いです。早く戻ってきてください"
   },
+  "dna": {
+    "heatmapLabel": "活動リズム",
+    "heatmapHint": "直近{days}日のうち{count}日アクティブ"
+  },
   "journey": {
     "title": "私たちの旅",
     "dnaChart": "DNA変化",
@@ -1286,5 +1322,12 @@
     "dnaEffects": "DNA変化",
     "noCreatures": "招待できる存在がいません",
     "share": "会話をシェア"
+  },
+  "cookie": {
+    "title": "Cookie同意",
+    "message": "GYEOLは体験向上と分析のためにCookieを使用します。必須ではないCookieは拒否できます。",
+    "accept": "許可する",
+    "decline": "拒否する",
+    "learnMore": "詳しく見る"
   }
 }

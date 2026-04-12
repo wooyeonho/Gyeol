@@ -15,16 +15,11 @@ const NotificationCenter = dynamic(() => import("@/components/notification-cente
   loading: () => null,
 });
 
-function NavIcon({ name }: { name: "home" | "chat" | "discover" | "social" | "profile" }) {
-  const common = "h-4 w-4";
+type IconName = "chat" | "discover" | "dna" | "social" | "settings";
+
+function NavIcon({ name }: { name: IconName }) {
+  const common = "h-[18px] w-[18px]";
   switch (name) {
-    case "home":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5Z" />
-          <path d="M9 21V14h6v7" />
-        </svg>
-      );
     case "chat":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -38,32 +33,42 @@ function NavIcon({ name }: { name: "home" | "chat" | "discover" | "social" | "pr
           <path d="m10 14 5-5-2 6-6 2 3-3Z" />
         </svg>
       );
-    case "social":
+    case "dna":
       return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="8" cy="9" r="3" />
-          <circle cx="16" cy="9" r="3" />
-          <path d="M3 20c1-3 3-5 5-5s4 2 5 5" opacity=".6" />
-          <path d="M11 20c1-3 3-5 5-5s4 2 5 5" opacity=".6" />
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M7 3c0 4 10 4 10 9s-10 5-10 9" />
+          <path d="M17 3c0 4-10 4-10 9s10 5 10 9" />
+          <path d="M8 7h8M8 17h8M9.5 10h5M9.5 14h5" />
         </svg>
       );
-    case "profile":
+    case "social":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="9" cy="8" r="3.2" />
+          <circle cx="17" cy="10" r="2.4" />
+          <path d="M3 19c.8-3.4 3.2-5 6-5s5.2 1.6 6 5" />
+          <path d="M14.5 19c.5-2 2-3.2 4-3.2 1.6 0 2.8.7 3.5 2" />
+        </svg>
+      );
+    case "settings":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
         </svg>
       );
   }
 }
 
-const TABS = [
-  { path: "/", labelKey: "nav.home", icon: "home" as const, tutorialId: "nav-home" },
-  { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
-  { path: "/social", labelKey: "nav.social", icon: "social" as const, tutorialId: "nav-social" },
-  { path: "/settings", labelKey: "nav.profile", icon: "profile" as const, tutorialId: "nav-profile" },
+const TABS: Array<{ path: string; labelKey: string; icon: IconName; tutorialId: string; prominent?: boolean }> = [
+  { path: "/", labelKey: "nav.chat", icon: "chat", tutorialId: "nav-chat" },
+  { path: "/discover", labelKey: "nav.discover", icon: "discover", tutorialId: "nav-discover" },
+  { path: "/dna", labelKey: "nav.dna", icon: "dna", tutorialId: "nav-dna", prominent: true },
+  { path: "/social", labelKey: "nav.social", icon: "social", tutorialId: "nav-social" },
+  { path: "/settings", labelKey: "nav.settings", icon: "settings", tutorialId: "nav-settings" },
 ];
 
+// Paths that should light up the Discover tab (sub-sections of the Discover index).
 const DISCOVER_PATHS = new Set([
   "/discover",
   "/activity",
@@ -78,22 +83,30 @@ const DISCOVER_PATHS = new Set([
   "/features",
 ]);
 
+// Paths that should light up the DNA tab (includes the editor + related).
+const DNA_PATHS = new Set(["/dna", "/dna-edit", "/wrapped", "/quiz"]);
+
+// Paths that should light up the Social tab.
 const SOCIAL_PATHS = new Set([
   "/social",
   "/community",
   "/feed",
+  "/friendship",
   "/invite",
+  "/invites",
 ]);
 
 function isTabActive(pathname: string, tabPath: string) {
-  if (tabPath === "/") {
-    return pathname === "/";
-  }
-  if (tabPath === "/discover") {
-    return DISCOVER_PATHS.has(pathname);
-  }
+  if (tabPath === "/") return pathname === "/";
+  if (tabPath === "/discover") return DISCOVER_PATHS.has(pathname);
+  if (tabPath === "/dna") return DNA_PATHS.has(pathname) || pathname.startsWith("/dna/");
   if (tabPath === "/social") {
-    return SOCIAL_PATHS.has(pathname) || pathname.startsWith("/social") || pathname.startsWith("/community");
+    return (
+      SOCIAL_PATHS.has(pathname) ||
+      pathname.startsWith("/social/") ||
+      pathname.startsWith("/community/") ||
+      pathname.startsWith("/feed/")
+    );
   }
   return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
 }
@@ -133,25 +146,25 @@ export function BottomNav() {
         style={{ borderColor: `${appearance.palette.primary}25` }}
         aria-label="Bottom navigation"
       >
-        <div className="relative mx-auto flex max-w-md items-center justify-around px-3 py-2">
-          {/* Animated active pill indicator */}
+        <div className="relative mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
+          {/* Animated active pill indicator — sized for 5 tabs sharing space minus the bell. */}
           {activeIndex >= 0 && (
             <motion.div
-              className="absolute top-2 h-[calc(100%-1rem)] rounded-2xl"
+              className="absolute top-1.5 h-[calc(100%-0.75rem)] rounded-2xl"
               style={{
-                background: `${appearance.palette.primary}15`,
-                boxShadow: `0 0 0 1px ${appearance.palette.primary}20 inset, 0 0 20px ${appearance.palette.primary}08`,
-                /* Account for bell icon: tabs take proportional space */
-                width: `calc((100% - 56px) / ${TABS.length})`,
+                background: `${appearance.palette.primary}18`,
+                boxShadow: `0 0 0 1px ${appearance.palette.primary}25 inset, 0 0 20px ${appearance.palette.primary}0a`,
+                width: `calc((100% - 48px) / ${TABS.length})`,
               }}
               animate={{
-                left: `calc(${(activeIndex / TABS.length) * 100}% * (1 - 56px / 100%))`,
+                left: `calc((100% - 48px) * ${activeIndex / TABS.length})`,
               }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
             />
           )}
           {TABS.map((tab) => {
             const isActive = isTabActive(pathname, tab.path);
+            const prominent = tab.prominent;
             return (
               <Link
                 key={tab.path}
@@ -159,17 +172,34 @@ export function BottomNav() {
                 data-tutorial={tab.tutorialId}
                 onClick={() => haptic("tap")}
                 aria-label={t(tab.labelKey)}
-                className="relative z-10 flex min-h-14 min-w-[80px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                className="relative z-10 flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 style={{ color: isActive ? "var(--foreground)" : "var(--theme-text-subtle)" }}
               >
                 <motion.span
                   aria-hidden="true"
-                  animate={{ scale: isActive ? 1.1 : 1 }}
+                  animate={{ scale: isActive ? 1.12 : 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className={
+                    prominent
+                      ? "flex h-7 w-7 items-center justify-center rounded-full"
+                      : undefined
+                  }
+                  style={
+                    prominent
+                      ? {
+                          background: isActive
+                            ? `radial-gradient(circle at 30% 30%, ${appearance.palette.primary}50, ${appearance.palette.primary}15 70%)`
+                            : `radial-gradient(circle at 30% 30%, ${appearance.palette.primary}25, transparent 70%)`,
+                          boxShadow: isActive ? `0 0 18px ${appearance.palette.primary}40` : undefined,
+                        }
+                      : undefined
+                  }
                 >
                   <NavIcon name={tab.icon} />
                 </motion.span>
-                <span className={`text-xs font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-60"}`}>{t(tab.labelKey)}</span>
+                <span className={`text-[10px] font-medium transition-all duration-200 ${isActive ? "opacity-100" : "opacity-55"}`}>
+                  {t(tab.labelKey)}
+                </span>
               </Link>
             );
           })}

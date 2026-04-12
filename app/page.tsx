@@ -37,7 +37,7 @@ import { CreatureTapReact } from "@/components/effects/creature-tap";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
-import { LevelBar } from "@/components/engagement/level-bar";
+import { HomeHero } from "@/components/engagement/home-hero";
 import { StreakShield } from "@/components/streak-shield";
 import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -77,9 +77,6 @@ import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
 const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
-import { StreakHero } from "@/components/home/streak-hero";
-import { EmptyStateHero } from "@/components/home/empty-state-hero";
-import { MemoryIndicator } from "@/components/home/memory-indicator";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
@@ -595,53 +592,54 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
-        {/* When portrait is present, hide the 3D creature completely to avoid overlap.
-            The portrait IS the creature representation; showing both causes visual confusion. */}
-        <div
-          className="absolute inset-0 transition-opacity duration-[1200ms]"
-          style={{ opacity: portraitUrl ? 0 : 1, pointerEvents: portraitUrl ? "none" : "auto" }}
-        >
-        <ThreeErrorBoundary
-          fallback={
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
-              <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center">
-                <span className="text-2xl">&#x1F30C;</span>
-              </div>
-              <p className="text-sm text-white/50">{t("creature.restoring3d")}</p>
-            </div>
-          }
-        >
-          <VoidCanvas
-            shape={appearance.visual.shape as AgentVisual["shape"]}
-            color={appearance.visual.color}
-            size={creatureSize}
-            glow={Math.min(100, Math.max(0, appearance.visual.glow))}
-            animation={appearance.visual.animation}
-            particles={appearance.visual.particles}
-            background={appearance.visual.background}
-            vitality={vitality}
-            mood={agentState?.mood ?? undefined}
-            isListening={isStreaming}
-            motionBias={appearance.scene.motionBias}
-            pulseScale={appearance.scene.pulseScale}
-            onTap={handleCanvasTap}
-            onCreatureTouch={handleCreatureTouch}
-            enableThree={!performanceMinimal}
-            contained
-            breathPhase={creature.state.breathPhase}
-            creatureActivity={creature.state.activity}
-            excitePulse={creature.state.excitePulse}
-            pointerNorm={creature.state.pointerNorm}
-            restoring3dLabel={t("creature.restoring3d")}
-            dna={creatureDna}
-            conversationEnergy={creature.state.conversationEnergy}
-            genLevel={agentState?.gen_level ?? 1}
-            forceState={creature.state.forceState}
-            idleBehaviorParams={idleBehaviorParams}
-            idleBehavior={creature.state.idleActivity}
-          />
-        </ThreeErrorBoundary>
-        </div>
+        {/* When an AI portrait is present, unmount the 3D creature entirely.
+            Previously we just faded opacity, which left Three.js rendering and
+            caused a visible overlap during the 1200ms fade. Unmounting is both
+            cheaper and strictly mutually-exclusive with the portrait. */}
+        {!portraitUrl && (
+          <div className="absolute inset-0">
+            <ThreeErrorBoundary
+              fallback={
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+                  <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center">
+                    <span className="text-2xl">&#x1F30C;</span>
+                  </div>
+                  <p className="text-sm text-white/50">{t("creature.restoring3d")}</p>
+                </div>
+              }
+            >
+              <VoidCanvas
+                shape={appearance.visual.shape as AgentVisual["shape"]}
+                color={appearance.visual.color}
+                size={creatureSize}
+                glow={Math.min(100, Math.max(0, appearance.visual.glow))}
+                animation={appearance.visual.animation}
+                particles={appearance.visual.particles}
+                background={appearance.visual.background}
+                vitality={vitality}
+                mood={agentState?.mood ?? undefined}
+                isListening={isStreaming}
+                motionBias={appearance.scene.motionBias}
+                pulseScale={appearance.scene.pulseScale}
+                onTap={handleCanvasTap}
+                onCreatureTouch={handleCreatureTouch}
+                enableThree={!performanceMinimal}
+                contained
+                breathPhase={creature.state.breathPhase}
+                creatureActivity={creature.state.activity}
+                excitePulse={creature.state.excitePulse}
+                pointerNorm={creature.state.pointerNorm}
+                restoring3dLabel={t("creature.restoring3d")}
+                dna={creatureDna}
+                conversationEnergy={creature.state.conversationEnergy}
+                genLevel={agentState?.gen_level ?? 1}
+                forceState={creature.state.forceState}
+                idleBehaviorParams={idleBehaviorParams}
+                idleBehavior={creature.state.idleActivity}
+              />
+            </ThreeErrorBoundary>
+          </div>
+        )}
 
         {/* AI-generated portrait — HERO character visual. When present,
             becomes the dominant creature representation; procedural 3D
@@ -764,40 +762,22 @@ export default function Home() {
       </div>
       </CreatureTapReact>
 
-      {/* ===== STREAK HERO — Duolingo-style prominent streak + XP ===== */}
+      {/* ===== HOME HERO — Duolingo-style streak + level + memory anchor ===== */}
       <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-2">
-        <StreakHero
-          days={agentState?.streak_days ?? 0}
+        <HomeHero
+          streakDays={engagement?.currentStreak ?? (agentState?.streak_days ?? 0)}
+          todayActive={(agentState?.streak_days ?? 0) > 0}
           level={engagement?.level ?? 1}
-          totalXp={engagement?.totalXp ?? 0}
           xpIntoLevel={engagement?.xpIntoLevel ?? 0}
-          xpForNext={engagement?.xpForNext ?? 100}
-          accentColor={appearance.palette.primary}
-        />
-      </div>
-
-      {/* ===== EMPTY STATE HERO — CTA when streak=0 ===== */}
-      {(agentState?.streak_days ?? 0) === 0 && (agentState?.total_messages ?? 0) === 0 && (
-        <div className="relative z-10 flex-shrink-0 px-4 mb-2">
-          <EmptyStateHero
-            creatureName={agentState?.self_name ?? "GYEOL"}
-            hasStreak={(agentState?.streak_days ?? 0) > 0}
-            accentColor={appearance.palette.primary}
-          />
-        </div>
-      )}
-
-      {/* ===== MEMORY INDICATOR — shows AI remembers past conversations ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 mb-2">
-        <MemoryIndicator
-          totalMessages={agentState?.total_messages ?? 0}
-          creatureName={agentState?.self_name ?? "GYEOL"}
-          accentColor={appearance.palette.secondary}
+          xpForNext={engagement?.xpForNext ?? 50}
+          genLevel={typeof agentState?.gen_level === "number" ? agentState.gen_level : 1}
+          totalMessages={typeof agentState?.total_messages === "number" ? agentState.total_messages : 0}
+          isNewUser={!engagement || ((engagement.totalXp ?? 0) === 0 && (engagement.currentStreak ?? 0) === 0)}
         />
       </div>
 
       {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
-      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
+      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 mb-1">
         <QuickCareButtons
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}

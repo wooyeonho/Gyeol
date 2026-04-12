@@ -23,6 +23,10 @@ const SkillTreeView = dynamic(() => import("@/components/skill-tree-view").then(
 const ItemsInventory = dynamic(() => import("@/components/items-inventory").then(m => m.ItemsInventory), { ssr: false });
 const TeamManager = dynamic(() => import("@/components/team-manager").then(m => m.TeamManager), { ssr: false });
 const ItemCompareCard = dynamic(() => import("@/components/item-compare-card").then(m => ({ default: m.ItemCompareCard })), { ssr: false });
+const ActivityHeatmap = dynamic(() => import("@/components/dna/activity-heatmap").then(m => ({ default: m.ActivityHeatmap })), {
+  ssr: false,
+  loading: () => <div className="h-[140px] animate-pulse rounded-2xl bg-white/[0.04]" />,
+});
 
 const AXIS_GROUPS = [
   { key: "cognitive", labels: { ko: "인지", en: "Cognitive", ja: "認知", zh: "认知", es: "Cognitivo" }, axes: ["analytical", "intuitive", "verbal", "spatial"] as const, color: "#38bdf8" },
@@ -144,6 +148,130 @@ function RadarChart({ dna, size = 280, locale }: { dna: CreatureDNA; size?: numb
   );
 }
 
+/** Wrapped-style hero: pick the dominant + weakest axis and reveal them large. */
+function DnaWrappedHero({ dna, locale, hasDna }: { dna: CreatureDNA; locale: string; hasDna: boolean }) {
+  const entries = (DNA_AXES as readonly string[])
+    .map((axis) => ({ axis, value: (dna[axis as keyof CreatureDNA] ?? 0.5) as number }));
+  // Sort to find strongest (above 0.5 preferred) and rarest (farthest from 0.5 on low side).
+  const top = [...entries].sort((a, b) => b.value - a.value)[0];
+  const lean = [...entries].sort((a, b) => a.value - b.value)[0];
+
+  // Pick a gradient based on the dominant axis group.
+  const groupFor = (axis: string): { color: string; accent: string; labelKo: string; labelEn: string } => {
+    if (["analytical", "intuitive", "verbal", "spatial"].includes(axis))
+      return { color: "#38bdf8", accent: "#0ea5e9", labelKo: "인지", labelEn: "Cognitive" };
+    if (["warmth", "intensity", "stability", "openness"].includes(axis))
+      return { color: "#f472b6", accent: "#ec4899", labelKo: "감정", labelEn: "Emotional" };
+    if (["assertiveness", "empathy", "playfulness", "independence"].includes(axis))
+      return { color: "#34d399", accent: "#10b981", labelKo: "사회", labelEn: "Social" };
+    return { color: "#a78bfa", accent: "#8b5cf6", labelKo: "메타", labelEn: "Meta" };
+  };
+
+  const topGroup = groupFor(top.axis);
+  const leanGroup = groupFor(lean.axis);
+  const topPct = Math.round(top.value * 100);
+  const leanPct = Math.round(lean.value * 100);
+
+  const copy = locale === "ko"
+    ? {
+        eyebrow: hasDna ? "가장 두드러진 성향" : "아직 수집 중",
+        footnoteStrong: "최상위 축",
+        footnoteWeak: "가장 조용한 축",
+        cta: "대화를 이어갈수록 이 숫자가 움직여요",
+      }
+    : {
+        eyebrow: hasDna ? "Strongest trait" : "Collecting…",
+        footnoteStrong: "Top axis",
+        footnoteWeak: "Quietest axis",
+        cta: "These numbers shift every conversation",
+      };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="relative overflow-hidden rounded-3xl border border-white/10 p-6"
+      style={{
+        background: `radial-gradient(ellipse at top left, ${topGroup.color}22 0%, transparent 55%), radial-gradient(ellipse at bottom right, ${leanGroup.color}18 0%, transparent 60%), rgba(0,0,0,0.35)`,
+      }}
+    >
+      {/* Soft orbs */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-8 -top-8 h-40 w-40 rounded-full blur-3xl opacity-40"
+        style={{ background: topGroup.color }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-10 -right-10 h-44 w-44 rounded-full blur-3xl opacity-25"
+        style={{ background: leanGroup.accent }}
+      />
+
+      <div className="relative">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em]" style={{ color: topGroup.color }}>
+          {copy.eyebrow}
+        </p>
+
+        <div className="mt-3 flex items-baseline gap-3">
+          <motion.span
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="text-[56px] font-bold leading-none tracking-tight text-white tabular-nums"
+          >
+            {topPct}
+          </motion.span>
+          <span className="text-lg font-medium text-white/50">%</span>
+        </div>
+
+        <div className="mt-1 text-2xl font-semibold tracking-tight text-white">
+          {getDnaAxisLabel(top.axis, locale)}
+        </div>
+        <div className="mt-0.5 text-xs uppercase tracking-[0.18em]" style={{ color: topGroup.color }}>
+          {locale === "ko" ? topGroup.labelKo : topGroup.labelEn} · {copy.footnoteStrong}
+        </div>
+
+        {/* Progress bar for visual anchor */}
+        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${topPct}%` }}
+            transition={{ delay: 0.35, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            style={{ background: `linear-gradient(90deg, ${topGroup.color}, ${topGroup.accent})` }}
+          />
+        </div>
+
+        {/* Secondary lean axis — small counterweight */}
+        <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+              {copy.footnoteWeak}
+            </div>
+            <div className="mt-0.5 text-sm font-medium text-white/75">
+              {getDnaAxisLabel(lean.axis, locale)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-semibold tabular-nums text-white/80">
+              {leanPct}
+              <span className="text-xs text-white/40">%</span>
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: leanGroup.color }}>
+              {locale === "ko" ? leanGroup.labelKo : leanGroup.labelEn}
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-4 text-[11px] leading-relaxed text-white/45">
+          {copy.cta}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 /** Shows recent DNA axis mutations from agent config history */
 function MutationHistory({ config, locale }: { config: Record<string, unknown>; locale: string }) {
   const mutationTrait = config.mutation_trait as string | undefined;
@@ -247,10 +375,16 @@ export default function DNAPage() {
           </div>
         </header>
 
+        {/* Wrapped-style dominant-trait hero */}
+        <DnaWrappedHero dna={activeDNA} locale={locale} hasDna={Boolean(dna)} />
+
         {/* Radar chart */}
         <div className="flex justify-center">
           <RadarChart dna={activeDNA} size={300} locale={locale} />
         </div>
+
+        {/* GitHub-style 12-week activity heatmap — shows real rhythm */}
+        <ActivityHeatmap accentColor="#22d3ee" />
 
         {/* Group bars */}
         <div className="space-y-4">

@@ -91,6 +91,7 @@ export function MessageList({
   locale,
   accentColor,
   creatureName,
+  typingLabel,
 }: {
   messages: Array<{ id?: string; role: string; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
   isStreaming: boolean;
@@ -119,6 +120,8 @@ export function MessageList({
   accentColor?: string;
   /** Creature name for typing indicator */
   creatureName?: string;
+  /** Localized "{name} is thinking..." template for typing indicator */
+  typingLabel?: string;
 }) {
   // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
   const visibleMessages = useMemo(
@@ -434,6 +437,7 @@ export function MessageList({
             <TypingIndicator
               accentColor={accentColor}
               creatureName={creatureName}
+              label={typingLabel}
             />
           </motion.div>
         )}

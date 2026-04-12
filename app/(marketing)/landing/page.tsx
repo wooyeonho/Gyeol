@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
+import { LiveCounter } from "@/components/landing/live-counter";
 
 const FEATURES = [
   { icon: "dna", key: "dna" },
@@ -292,38 +293,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social proof / stats */}
+      {/* Live ecosystem counter — Instagram FOMO via real dashboard metrics */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6 }}
-            className="theme-panel rounded-3xl p-8 text-center"
-          >
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {t("landing.proofTitle")}
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-6 theme-text-subtle">
-              {t("landing.proofSubtitle")}
-            </p>
-
-            <div className="mt-10 grid gap-6 sm:grid-cols-3">
-              <div>
-                <p className="text-3xl font-bold text-accent">16</p>
-                <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_dna")}</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-accent">5</p>
-                <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_languages")}</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-accent">3D</p>
-                <p className="mt-1 text-sm theme-text-subtle">{t("landing.stat_creature")}</p>
-              </div>
-            </div>
-          </motion.div>
+          <LiveCounter />
         </div>
       </section>
 

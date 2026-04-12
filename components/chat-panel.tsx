@@ -181,23 +181,78 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
 
   // Verbal mode badge — helps users understand why their creature speaks this way
   const verbalBadge = (() => {
-    if (verbal < 0.15) return { mode: "SILENT", icon: "🤫", color: "border-red-400/30 text-red-300", desc: t("chat.verbalSilent") || "행동으로만 표현해요" };
-    if (verbal < 0.35) return { mode: "MINIMAL", icon: "💭", color: "border-orange-400/30 text-orange-300", desc: t("chat.verbalMinimal") || "단어나 소리만 내요" };
-    if (verbal < 0.55) return { mode: "BRIEF", icon: "💬", color: "border-yellow-300/30 text-yellow-200", desc: t("chat.verbalBrief") || "짧게 말해요" };
-    if (verbal >= 0.75) return { mode: "ELOQUENT", icon: "✨", color: "border-purple-400/30 text-purple-300", desc: t("chat.verbalEloquent") || "풍부하게 표현해요" };
+    if (verbal < 0.15) return {
+      mode: "SILENT", icon: "🤫",
+      tint: "rgba(248,113,113,0.9)", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.28)",
+      desc: t("chat.verbalSilent") || "행동으로만 표현해요",
+    };
+    if (verbal < 0.35) return {
+      mode: "MINIMAL", icon: "💭",
+      tint: "rgba(251,146,60,0.9)", bg: "rgba(251,146,60,0.08)", border: "rgba(251,146,60,0.28)",
+      desc: t("chat.verbalMinimal") || "단어나 소리만 내요",
+    };
+    if (verbal < 0.55) return {
+      mode: "BRIEF", icon: "💬",
+      tint: "rgba(253,224,71,0.9)", bg: "rgba(253,224,71,0.08)", border: "rgba(253,224,71,0.25)",
+      desc: t("chat.verbalBrief") || "짧게 말해요",
+    };
+    if (verbal >= 0.75) return {
+      mode: "ELOQUENT", icon: "✨",
+      tint: "rgba(192,132,252,0.95)", bg: "rgba(192,132,252,0.08)", border: "rgba(192,132,252,0.28)",
+      desc: t("chat.verbalEloquent") || "풍부하게 표현해요",
+    };
     return null; // Normal range (0.55–0.75) — no badge needed
   })();
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col px-4 ${navVisible ? "pb-24" : "pb-6"}`}>
       <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-        {/* Verbal axis badge — shows when creature has distinctive expression mode */}
+        {/* Memory context pill — Nomi-style "remembers N conversations" ambient reminder
+            so users feel the memory backend at a glance. Hidden on first session. */}
+        {totalMessages > 0 && !isFirstSession && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 420, damping: 30, delay: 0.1 }}
+            className="mx-auto mb-1 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] backdrop-blur-md"
+            style={{
+              borderColor: `${appearance.palette.primary}26`,
+              background: `${appearance.palette.primary}08`,
+              color: `${appearance.palette.primary}d0`,
+            }}
+            role="status"
+            aria-label={t("chat.memoryAria").replace("{count}", String(totalMessages))}
+          >
+            <span aria-hidden="true" className="text-[11px]">✦</span>
+            <span className="font-mono tracking-[0.08em]">
+              {t("chat.memoryPill").replace("{count}", totalMessages.toLocaleString())}
+            </span>
+          </motion.div>
+        )}
+        {/* Verbal axis badge — shows when creature has a distinctive expression mode.
+            Subtle iMessage-like entrance keeps it from feeling like a system chip. */}
         {verbalBadge && (
-          <div className={`mx-auto mb-2 flex items-center gap-1.5 rounded-full border ${verbalBadge.color} bg-white/[0.03] px-3 py-1 text-[11px] backdrop-blur-sm`}>
-            <span>{verbalBadge.icon}</span>
-            <span className="font-mono text-[10px] opacity-70">{verbalBadge.mode}</span>
-            <span className="opacity-60">{verbalBadge.desc}</span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            className="mx-auto mb-2 flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] backdrop-blur-md"
+            style={{
+              borderColor: verbalBadge.border,
+              backgroundColor: verbalBadge.bg,
+              color: verbalBadge.tint,
+              boxShadow: `0 0 24px -8px ${verbalBadge.border}`,
+            }}
+            role="status"
+            aria-label={`${verbalBadge.mode}: ${verbalBadge.desc}`}
+          >
+            <span aria-hidden="true">{verbalBadge.icon}</span>
+            <span className="font-mono text-[9.5px] tracking-[0.12em] opacity-80">
+              {verbalBadge.mode}
+            </span>
+            <span className="h-2.5 w-px" style={{ backgroundColor: verbalBadge.border }} aria-hidden="true" />
+            <span className="text-white/70">{verbalBadge.desc}</span>
+          </motion.div>
         )}
         <div className="min-h-0 flex-1 overflow-hidden">
           <MessageList
@@ -235,6 +290,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             locale={locale}
             accentColor={appearance.palette.primary}
             creatureName={agentState?.self_name ?? "결"}
+            typingLabel={t("chat.thinking")}
           />
         </div>
 

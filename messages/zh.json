@@ -41,6 +41,7 @@
     "settings": "Settings",
     "chat": "聊天",
     "discover": "发现",
+    "dna": "DNA",
     "profile": "个人",
     "notifications": "通知"
   },
@@ -88,7 +89,11 @@
       "oauth_exchange_failed": "We could not complete the social login. Please try again.",
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
-    "configWarning": "此环境尚未配置 Supabase。在添加公开认证密钥前，密码、访客和社交登录将以预览模式运行。"
+    "configWarning": "此环境尚未配置 Supabase。在添加公开认证密钥前，密码、访客和社交登录将以预览模式运行。",
+    "securityTitle": "你的数据属于你",
+    "securityE2e": "密码在 Supabase 中以哈希方式保存，绝不存储或记录明文。",
+    "securityRls": "行级安全策略完全隔离每个账户，其他人无法读取你的记忆。",
+    "securityRateLimit": "速率限制和异常检测会自动阻止暴力破解尝试。"
   },
   "ageGate": {
     "eyebrow": "年龄确认",
@@ -160,7 +165,10 @@
     "silentActionStroke": "轻抚",
     "silentActionTap": "轻拍",
     "silentActionShake": "摇晃",
-    "silentActionStay": "静静待着"
+    "silentActionStay": "静静待着",
+    "thinking": "{name}正在思考…",
+    "memoryPill": "保存着 {count} 条记忆",
+    "memoryAria": "结记得 {count} 次对话"
   },
   "album": {
     "title": "Growth album",
@@ -196,6 +204,17 @@
     "staleDream": "Stale dream (24h)",
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
+  },
+  "homeHero": {
+    "streakLabel": "连续",
+    "levelLabel": "LV",
+    "memoryLabel": "记忆",
+    "xpToNext": "距离下一级还差 {count} XP",
+    "streakAria": "连续 {count} 天 — 打开成就",
+    "memoryAria": "{count} 条记忆 — 打开记忆",
+    "newUserEyebrow": "第一步",
+    "newUserTitle": "现在点燃第一簇火花",
+    "newUserBody": "只需一句话，连续、等级和记忆同时开始。"
   },
   "home": {
     "firstMinute": "FIRST MINUTE",
@@ -824,7 +843,9 @@
     "moreWays": "More ways to explore",
     "allEmpty": "随着对话的增多，这里会逐渐丰富起来。活动记录、成长相册、社交关系会一一出现。",
     "roomBody": "探索记忆变成物体的空间。",
-    "constellationBody": "查看由记忆之星组成的星座。"
+    "constellationBody": "查看由记忆之星组成的星座。",
+    "forYouLabel": "为你推荐",
+    "forYouHint": "根据你的结调整"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -854,6 +875,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "点燃第一簇火焰",
+    "emptyBody": "只需一句话，连续记录从今天开始。",
+    "emptyFirstMilestone": "首个目标 · 3 天",
+    "emptyCta": "开始对话",
     "countdownH": "时",
     "countdownM": "分",
     "weekdaysSingle": ["日", "一", "二", "三", "四", "五", "六"]
@@ -994,6 +1019,13 @@
     "stat_dna": "DNA性格轴",
     "stat_languages": "支持语言",
     "stat_creature": "WebGL生命体渲染",
+    "live_now": "实时在线",
+    "live_demo": "演示快照",
+    "liveProofTitle": "生态系统正在呼吸",
+    "liveProofSubtitle": "这些数字直接来自实时面板，每一个生命体都由他人的话语塑造而成。",
+    "liveStatAgents": "觉醒中的生命体",
+    "liveStatEncounters": "社交相遇",
+    "liveStatArtifacts": "已铸造的遗物",
     "finalCtaTitle": "准备好见你的生命体了吗？",
     "finalCtaBody": "开始对话，看着真正独特的东西诞生。你的生命体在等你。"
   },
@@ -1179,6 +1211,10 @@
     "criticalTitle": "危险！",
     "criticalBody": "{name}的生命力非常低，请快回来"
   },
+  "dna": {
+    "heatmapLabel": "活跃节奏",
+    "heatmapHint": "过去{days}天中有{count}天活跃"
+  },
   "journey": {
     "title": "我们的旅程",
     "dnaChart": "DNA变化",
@@ -1286,5 +1322,12 @@
     "dnaEffects": "DNA变化",
     "noCreatures": "没有可邀请的存在",
     "share": "分享对话"
+  },
+  "cookie": {
+    "title": "Cookie 同意",
+    "message": "GYEOL 使用 Cookie 来改善您的体验和分析使用情况。您可以拒绝非必要的 Cookie。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "learnMore": "了解更多"
   }
 }

@@ -40,6 +40,7 @@
     "settings": "Settings",
     "chat": "Chat",
     "discover": "Discover",
+    "dna": "DNA",
     "profile": "Profile",
     "notifications": "Alerts"
   },
@@ -89,6 +90,10 @@
       "consent_required": "You must agree to the Terms of Service and Privacy Policy."
     },
     "configWarning": "Supabase is not configured in this environment. Password, guest, and social login will stay in preview mode until the public auth keys are added.",
+    "securityTitle": "Your data stays yours",
+    "securityE2e": "Passwords are hashed on Supabase — never stored or logged in plaintext.",
+    "securityRls": "Row-level security isolates every account so no one else can read your memory.",
+    "securityRateLimit": "Rate-limiting and anomaly checks block brute-force attempts automatically.",
     "securityScore": "Security Score",
     "securityGood": "Secure",
     "securityMedium": "Moderate",
@@ -168,6 +173,9 @@
     "silentActionTap": "Tap",
     "silentActionShake": "Shake",
     "silentActionStay": "Stay still",
+    "thinking": "{name} is thinking…",
+    "memoryPill": "Holding {count} memories",
+    "memoryAria": "Gyeol remembers {count} conversations",
     "typingIndicator": "{name} is thinking...",
     "memoryReference": "Memory reference",
     "emotionJoy": "Joy",
@@ -212,6 +220,17 @@
     "staleDream": "Stale dream (24h)",
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
+  },
+  "homeHero": {
+    "streakLabel": "STREAK",
+    "levelLabel": "LV",
+    "memoryLabel": "MEMORIES",
+    "xpToNext": "{count} XP to next level",
+    "streakAria": "{count}-day streak — open achievements",
+    "memoryAria": "{count} memories — open memories",
+    "newUserEyebrow": "FIRST STEP",
+    "newUserTitle": "Light your first spark now",
+    "newUserBody": "One message starts your streak, level, and memories all at once."
   },
   "home": {
     "firstMinute": "FIRST MINUTE",
@@ -865,6 +884,8 @@
     "discussAbout": "Talk about {name}",
     "discussThisPrompt": "I just saw {name} on {page}. Want to talk about them?",
     "discussHere": "Bring this into chat",
+    "forYouLabel": "For you",
+    "forYouHint": "Tuned to your Gyeol",
     "feedTitle": "Feed",
     "storiesTitle": "Stories",
     "trendingTitle": "Trending"
@@ -897,6 +918,10 @@
     "peakTier": "Peak tier",
     "warningKeep": "Talk today to keep your {count}-day streak alive!",
     "dangerTimer": "Streak danger! {countdown} until midnight.",
+    "emptyTitle": "Light your first flame",
+    "emptyBody": "One message is all it takes — your streak starts today.",
+    "emptyFirstMilestone": "First goal · 3 days",
+    "emptyCta": "Start a conversation",
     "countdownH": "h",
     "countdownM": "m",
     "weekdaysSingle": [
@@ -1142,6 +1167,13 @@
     "stat_dna": "DNA personality axes",
     "stat_languages": "Languages supported",
     "stat_creature": "WebGL creature rendering",
+    "live_now": "Live now",
+    "live_demo": "Demo snapshot",
+    "liveProofTitle": "The ecosystem is breathing right now",
+    "liveProofSubtitle": "These numbers come straight from the live dashboard. Every creature here was shaped by another person's words.",
+    "liveStatAgents": "Creatures awake",
+    "liveStatEncounters": "Social encounters",
+    "liveStatArtifacts": "Artifacts forged",
     "finalCtaTitle": "Ready to meet your creature?",
     "finalCtaBody": "Start a conversation and watch something truly unique come to life. Your creature is waiting."
   },
@@ -1229,6 +1261,10 @@
     "letterBody": "{name} wrote you a letter",
     "criticalTitle": "Critical!",
     "criticalBody": "{name}'s vitality is very low. Please come back soon"
+  },
+  "dna": {
+    "heatmapLabel": "Activity rhythm",
+    "heatmapHint": "{count} active days in the last {days}"
   },
   "journey": {
     "title": "Our Journey",
@@ -1344,5 +1380,12 @@
     "dnaEffects": "DNA Changes",
     "noCreatures": "No creatures to invite",
     "share": "Share conversation"
+  },
+  "cookie": {
+    "title": "Cookie consent",
+    "message": "GYEOL uses cookies to improve your experience and analyze usage. You can accept or decline non-essential cookies.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "learnMore": "Learn more"
   }
 }

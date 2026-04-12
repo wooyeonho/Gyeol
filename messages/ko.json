@@ -40,6 +40,7 @@
     "settings": "설정",
     "chat": "채팅",
     "discover": "탐색",
+    "dna": "DNA",
     "profile": "프로필",
     "notifications": "알림"
   },
@@ -89,6 +90,10 @@
       "consent_required": "이용약관과 개인정보처리방침 동의가 필요합니다."
     },
     "configWarning": "이 환경에는 Supabase가 연결되어 있지 않습니다. 공개 인증 키를 넣기 전까지 비밀번호, 게스트, 소셜 로그인은 미리보기 모드로 동작합니다.",
+    "securityTitle": "내 데이터는 내 것으로",
+    "securityE2e": "비밀번호는 Supabase에서 해시로만 보관됩니다. 평문은 저장·기록되지 않습니다.",
+    "securityRls": "Row-level security로 계정이 완전히 분리돼 다른 사람은 내 기억에 접근할 수 없습니다.",
+    "securityRateLimit": "요청 빈도 제한과 이상 탐지가 자동으로 무차별 대입 시도를 차단합니다.",
     "securityScore": "보안 점수",
     "securityGood": "안전",
     "securityMedium": "보통",
@@ -168,6 +173,9 @@
     "silentActionTap": "두드리기",
     "silentActionShake": "흔들기",
     "silentActionStay": "가만히 있기",
+    "thinking": "{name}이 생각하는 중…",
+    "memoryPill": "{count}개의 기억을 간직하는 중",
+    "memoryAria": "결이 {count}개의 대화를 기억하고 있어요",
     "typingIndicator": "{name}이(가) 생각 중...",
     "memoryReference": "기억 참조",
     "emotionJoy": "기쁨",
@@ -212,6 +220,17 @@
     "staleDream": "오래된 dream (24h)",
     "cronFreshness": "크론 최신성",
     "minutesAgo": "분 전"
+  },
+  "homeHero": {
+    "streakLabel": "연속",
+    "levelLabel": "LV",
+    "memoryLabel": "기억",
+    "xpToNext": "다음 레벨까지 {count} XP",
+    "streakAria": "{count}일 연속 대화 — 업적으로 이동",
+    "memoryAria": "총 {count}개 기억 — 메모리로 이동",
+    "newUserEyebrow": "첫 걸음",
+    "newUserTitle": "지금 첫 불꽃을 피워보세요",
+    "newUserBody": "한 마디 대화로 스트릭·레벨·기억이 동시에 시작됩니다."
   },
   "home": {
     "firstMinute": "FIRST MINUTE",
@@ -865,6 +884,8 @@
     "discussAbout": "{name}에 대해 이야기하기",
     "discussThisPrompt": "방금 {page}에서 {name}을(를) 봤어. 같이 이야기해볼까?",
     "discussHere": "여기서 본 걸 채팅으로 이어가기",
+    "forYouLabel": "나를 위한 제안",
+    "forYouHint": "내 결 상태로 고른 카드",
     "feedTitle": "피드",
     "storiesTitle": "스토리",
     "trendingTitle": "인기"
@@ -897,6 +918,10 @@
     "peakTier": "최고 구간",
     "warningKeep": "오늘 대화하지 않으면 {count}일 연속 기록이 끊어집니다!",
     "dangerTimer": "스트릭 위험! 자정까지 {countdown} 남았습니다.",
+    "emptyTitle": "첫 불꽃을 피워보세요",
+    "emptyBody": "한 마디만 건네도 오늘부터 연속 기록이 시작돼요.",
+    "emptyFirstMilestone": "첫 목표 · 3일",
+    "emptyCta": "지금 대화 시작하기",
     "countdownH": "시간",
     "countdownM": "분",
     "weekdaysSingle": [
@@ -1142,6 +1167,13 @@
     "stat_dna": "DNA 성격 축",
     "stat_languages": "지원 언어",
     "stat_creature": "WebGL 생명체 렌더링",
+    "live_now": "지금 살아있어요",
+    "live_demo": "데모 스냅샷",
+    "liveProofTitle": "지금 이 순간, 생태계는 숨 쉬고 있어요",
+    "liveProofSubtitle": "대시보드에서 실시간으로 가져온 숫자예요. 여기 있는 모든 생명체는 누군가의 말로부터 태어났어요.",
+    "liveStatAgents": "깨어 있는 생명체",
+    "liveStatEncounters": "소셜 접속",
+    "liveStatArtifacts": "생성된 유물",
     "finalCtaTitle": "당신의 생명체를 만날 준비가 되셨나요?",
     "finalCtaBody": "대화를 시작하고 정말 독특한 무언가가 살아나는 것을 지켜보세요. 당신의 생명체가 기다리고 있습니다."
   },
@@ -1229,6 +1261,10 @@
     "letterBody": "{name}이(가) 당신에게 편지를 썼어요",
     "criticalTitle": "위험해요!",
     "criticalBody": "{name}의 생명력이 매우 낮아요. 빨리 돌아와주세요"
+  },
+  "dna": {
+    "heatmapLabel": "활동 리듬",
+    "heatmapHint": "지난 {days}일 중 {count}일 활동"
   },
   "journey": {
     "title": "우리의 여정",
@@ -1344,5 +1380,12 @@
     "dnaEffects": "DNA 변화",
     "noCreatures": "초대할 수 있는 존재가 없어요",
     "share": "대화 공유하기"
+  },
+  "cookie": {
+    "title": "쿠키 동의",
+    "message": "GYEOL은 사용자 경험 개선과 분석을 위해 쿠키를 사용합니다. 비필수 쿠키는 거부할 수 있어요.",
+    "accept": "수락",
+    "decline": "거부",
+    "learnMore": "자세히 알아보기"
   }
 }

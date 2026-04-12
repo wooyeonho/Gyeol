@@ -6,11 +6,19 @@ import { useEffect, useRef } from "react";
  * Animated particle background for the login page.
  * Inspired by Linear's login page and Stripe's subtle animations.
  * Floating particles with gentle drift and glow effect.
+ *
+ * Respects prefers-reduced-motion: when the user has opted out, the
+ * canvas is not mounted at all so there's zero animation + zero rAF
+ * loop cost on the auth screens.
  */
 export function LoginParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");

@@ -8,6 +8,8 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { useTranslations } from "@/components/i18n-provider";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { SecurityBadge } from "@/components/auth/security-badge";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -22,6 +24,7 @@ export default function LoginPage() {
   const nextPath = searchParams.get("next") || "/";
   const signupHref = `/signup${nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
   const isConfigured = isBrowserSupabaseConfigured();
+  const prefersReducedMotion = useReducedMotion();
   const authError =
     error
     ?? (callbackErrorCode ? t(`auth.errors.${callbackErrorCode}`) : null);
@@ -60,115 +63,131 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="glass-card-strong w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.15)] relative z-10">
-      <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.loginEyebrow")}</p>
-        <h1 className="mt-3 text-section">{t("auth.loginTitle")}</h1>
-        <p className="theme-text-subtle mt-3 text-sm leading-6">
+    <motion.div
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: prefersReducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
+      className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/40 p-7 text-left backdrop-blur-2xl relative z-10"
+    >
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: prefersReducedMotion ? 0 : 0.45,
+          delay: prefersReducedMotion ? 0 : 0.1,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="mb-7"
+      >
+        <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
+          <motion.span
+            className="h-1 w-1 rounded-full bg-cyan-300"
+            animate={prefersReducedMotion ? { opacity: 0.8 } : { opacity: [0.4, 1, 0.4] }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            }
+          />
+          {t("auth.loginEyebrow")}
+        </div>
+        <h1 className="mt-3 text-[22px] font-semibold leading-tight tracking-tight text-white">
+          {t("auth.loginTitle")}
+        </h1>
+        <p className="mt-2 text-[13px] leading-[1.55] text-white/55">
           {t("auth.loginSubtitle")}
         </p>
-      </div>
+      </motion.div>
 
       {!isConfigured && (
-        <div className="mb-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-50">
+        <div className="mb-5 rounded-lg border border-amber-300/20 bg-amber-400/[0.06] px-3.5 py-2.5 text-[12px] leading-[1.5] text-amber-50/90">
           {t("auth.configWarning")}
         </div>
       )}
 
-      <div className="mb-6 grid gap-2">
-        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
-          {t("auth.loginBenefit1")}
-        </div>
-        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
-          {t("auth.loginBenefit2")}
-        </div>
-        <div className="glass-card rounded-2xl p-3 text-sm theme-text-muted">
-          {t("auth.loginBenefit3")}
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <div>
-          <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-white/88">
+          <label htmlFor="login-email" className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-white/45">
             {t("auth.email")}
           </label>
           <input
             id="login-email"
             type="email"
-            placeholder={t("auth.email")}
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "login-auth-error" : undefined}
-            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
+            className="min-h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[14px] text-white placeholder:text-white/25 transition-colors focus:border-white/25 focus:bg-white/[0.05] focus:outline-none"
             required
           />
         </div>
         <div>
-          <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-white/88">
+          <label htmlFor="login-password" className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-white/45">
             {t("auth.password")}
           </label>
           <input
             id="login-password"
             type="password"
-            placeholder={t("auth.password")}
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             aria-invalid={Boolean(authError)}
             aria-describedby={authError ? "login-auth-error" : undefined}
-            className="theme-input min-h-12 w-full rounded-xl px-4 py-3 text-base placeholder:text-[color:var(--theme-text-faint)]"
+            className="min-h-11 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[14px] text-white placeholder:text-white/25 transition-colors focus:border-white/25 focus:bg-white/[0.05] focus:outline-none"
             required
           />
         </div>
-        {authError && <p id="login-auth-error" className="text-sm text-red-400" role="alert">{authError}</p>}
+        {authError && (
+          <p id="login-auth-error" role="alert" className="-mt-1 text-[12px] leading-snug text-red-300/90">
+            {authError}
+          </p>
+        )}
         <button
           type="submit"
           disabled={loading}
-          className="min-h-12 rounded-xl bg-[color:var(--foreground)] px-4 py-3 text-base font-medium text-[color:var(--background)] disabled:opacity-50 btn-3d"
+          className="mt-1 min-h-11 rounded-lg bg-white px-4 py-2.5 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
         >
           {loading ? t("auth.loginLoading") : t("auth.login")}
         </button>
       </form>
 
-      <div className="mt-4">
-        <OAuthButtons
-          flow="login"
-          loading={loading}
-          nextPath={nextPath}
-          onError={(message) => setError(message || null)}
-          onLoadingChange={setLoading}
-        />
+      <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-white/30">
+        <div className="h-px flex-1 bg-white/[0.08]" />
+        <span>or</span>
+        <div className="h-px flex-1 bg-white/[0.08]" />
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 text-sm">
-        <button
-          type="button"
-          onClick={handleGuest}
-          disabled={loading}
-          className="glass-card min-h-12 rounded-xl px-4 py-3 text-base theme-text-muted hover:brightness-110 disabled:opacity-50 btn-3d"
-        >
-          {t("auth.guestContinue")}
-        </button>
-        <Link
-          href={signupHref}
-          className="min-h-12 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-4 py-3 text-center text-base font-medium text-cyan-100 hover:brightness-110"
-        >
-          {t("auth.signupLink")}
+      <OAuthButtons
+        flow="login"
+        loading={loading}
+        nextPath={nextPath}
+        onError={(message) => setError(message || null)}
+        onLoadingChange={setLoading}
+      />
+
+      <button
+        type="button"
+        onClick={handleGuest}
+        disabled={loading}
+        className="mt-2.5 min-h-11 w-full rounded-lg border border-white/[0.08] bg-transparent px-4 py-2.5 text-[13px] text-white/70 transition-colors hover:border-white/20 hover:text-white disabled:opacity-40"
+      >
+        {t("auth.guestContinue")}
+      </button>
+
+      <div className="mt-6 flex items-center justify-between gap-2 text-[12px] text-white/45">
+        <Link href="/forgot-password" className="transition-colors hover:text-white/80">
+          {t("auth.forgotPasswordLink") ?? "비밀번호를 잊으셨나요?"}
         </Link>
-        <div className="theme-text-faint flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1 text-center">
-          <Link href="/forgot-password" className="hover:text-[color:var(--foreground)]">
-            {t("auth.forgotPasswordLink") ?? "비밀번호를 잊으셨나요?"}
-          </Link>
-          <Link href="/features" className="hover:text-[color:var(--foreground)]">
-            {t("auth.loginFeaturesLink")}
-          </Link>
-          <Link href="/explore" className="hover:text-[color:var(--foreground)]">
-            {t("auth.loginExploreLink")}
-          </Link>
-        </div>
+        <Link href={signupHref} className="font-medium text-white/80 transition-colors hover:text-white">
+          {t("auth.signupLink")} →
+        </Link>
       </div>
-    </div>
+
+      {/* Signal × 1Password-style trust footer */}
+      <SecurityBadge />
+    </motion.div>
   );
 }
