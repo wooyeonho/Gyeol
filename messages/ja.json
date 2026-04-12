@@ -30,7 +30,9 @@
     "awake": "起きています",
     "breathingLabel": "呼吸中",
     "eyeTracking": "視線追跡中",
-    "restoring3d": "3D復元中..."
+    "restoring3d": "3D復元中...",
+    "generatePortrait": "AIポートレート生成",
+    "generatingPortrait": "ポートレート生成中..."
   },
   "nav": {
     "home": "Home",
@@ -93,7 +95,15 @@
     "securityTitle": "あなたのデータはあなたのもの",
     "securityE2e": "パスワードはSupabaseでハッシュ化され、平文で保存・記録されることはありません。",
     "securityRls": "Row-level securityで各アカウントを分離し、他の人があなたの記憶を読むことはできません。",
-    "securityRateLimit": "レート制限と異常検知がブルートフォース攻撃を自動的にブロックします。"
+    "securityRateLimit": "レート制限と異常検知がブルートフォース攻撃を自動的にブロックします。",
+    "forgotPasswordLink": "パスワードをお忘れですか?",
+    "securityScore": "セキュリティスコア",
+    "securityGood": "安全",
+    "securityMedium": "普通",
+    "securityLow": "脆弱",
+    "privacyDashboard": "プライバシーダッシュボード",
+    "loginWelcome": "Gyeolへようこそ",
+    "loginSubline": "会話は記憶となり、記憶は成長となります"
   },
   "ageGate": {
     "eyebrow": "年齢確認",
@@ -168,7 +178,16 @@
     "silentActionStay": "じっとする",
     "thinking": "{name}が考え中…",
     "memoryPill": "{count}件の記憶を抱えています",
-    "memoryAria": "結は{count}件の会話を覚えています"
+    "memoryAria": "結は{count}件の会話を覚えています",
+    "typingIndicator": "{name}が考えています...",
+    "memoryReference": "記憶の参照",
+    "emotionJoy": "喜び",
+    "emotionSadness": "悲しみ",
+    "emotionAnger": "怒り",
+    "emotionSurprise": "驚き",
+    "emotionFear": "恐れ",
+    "emotionLove": "愛",
+    "emotionNeutral": "穏やか"
   },
   "album": {
     "title": "Growth album",
@@ -326,7 +345,19 @@
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
     "returningPrompt3": "Build a short action plan from my current state.",
-    "firstTimeGuide": "下に何か話しかけてみてください。あなたの存在が目覚めます。"
+    "firstTimeGuide": "下に何か話しかけてみてください。あなたの存在が目覚めます。",
+    "emptyStateTitle": "{name}があなたを待っています",
+    "emptyStateBody": "最初の会話を始めて、クリーチャーの成長を見守りましょう。毎日のチャットでストリークが積み上がります!",
+    "totalXp": "合計",
+    "startStreakCta": "ストリークを始めよう!",
+    "memoryIndicator": "Gyeolは{days}日前の会話を覚えています",
+    "memoryIndicatorToday": "Gyeolは今日の会話を覚えています",
+    "noMemoriesYet": "まだ記憶がありません — 会話を始めましょう!",
+    "idleThinking": "考え中...",
+    "idleDreaming": "夢見中...",
+    "idleExploring": "探検中...",
+    "streakZeroTitle": "今日、最初の会話を始めましょう!",
+    "streakZeroBody": "毎日の会話でストリークが積み上がり、特別な報酬が得られます"
   },
   "activity": {
     "title": "Activity",
@@ -817,7 +848,13 @@
     "birthAlive": "生命が形成されている...",
     "birthNotice": "誕生しました。",
     "birthUnique": "この生命体は世界にたった一つだけ。あなただけの存在。",
-    "birthDNA": "DNAが決まっている..."
+    "birthDNA": "DNAが決まっている...",
+    "dnaPresetLively": "活発なGyeol",
+    "dnaPresetCalm": "穏やかなGyeol",
+    "dnaPresetMystic": "神秘的なGyeol",
+    "dnaPresetCreative": "創造的なGyeol",
+    "presetDescription": "性格プリセットを選ぶと、クリーチャーのDNAが設定されます",
+    "tryDemo": "ログインせずに試す"
   },
   "evolution": {
     "share": "Share",
@@ -845,7 +882,16 @@
     "roomBody": "記憶がオブジェクトになる空間を探索しましょう。",
     "constellationBody": "記憶の星たちが作る星座を確認しましょう。",
     "forYouLabel": "あなたへ",
-    "forYouHint": "今のGyeolに合わせて"
+    "forYouHint": "今のGyeolに合わせて",
+    "dailyChallenges": "今日のチャレンジ",
+    "perfectDay": "完璧な一日!報酬を受け取れます",
+    "discussInChat": "チャットで話す",
+    "discussAbout": "{name}について話す",
+    "discussThisPrompt": "たった今{page}で{name}を見ました。一緒に話しませんか?",
+    "discussHere": "ここで見たことをチャットに持ち込む",
+    "feedTitle": "フィード",
+    "storiesTitle": "ストーリー",
+    "trendingTitle": "トレンド"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -881,7 +927,15 @@
     "emptyCta": "会話を始める",
     "countdownH": "時間",
     "countdownM": "分",
-    "weekdaysSingle": ["日", "月", "火", "水", "木", "金", "土"]
+    "weekdaysSingle": [
+      "日",
+      "月",
+      "火",
+      "水",
+      "木",
+      "金",
+      "土"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1309,7 +1363,14 @@
     "reset": "リセット",
     "preview": "プレビュー",
     "noChanges": "変更なし",
-    "maxAdjustment": "軸ごとに最大±{max}調整可能"
+    "maxAdjustment": "軸ごとに最大±{max}調整可能",
+    "radarTitle": "DNAレーダー",
+    "timelineTitle": "変化のタイムライン",
+    "heatmapTitle": "ケアヒートマップ",
+    "shareCard": "シェアカード作成",
+    "last30days": "過去30日",
+    "noDataYet": "まだデータがありません",
+    "careCount": "{count}回のケア"
   },
   "creatureConversation": {
     "title": "クリーチャー会話",
