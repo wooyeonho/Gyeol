@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { ScratchCard } from "@/components/scratch-card";
 import { SpinWheel } from "@/components/spin-wheel";
@@ -15,6 +15,10 @@ export default function GachaPage() {
   const [tab, setTab] = useState<"scratch" | "spin">("scratch");
   const [scratchDone, setScratchDone] = useState(false);
   const [spinDone, setSpinDone] = useState(false);
+
+  const trackReward = useCallback(() => {
+    fetch("/api/reward/track", { method: "POST" }).catch(() => {});
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#0a0a0f] px-4 pt-8 pb-24">
@@ -54,7 +58,7 @@ export default function GachaPage() {
             </p>
             <ScratchCard
               reward={WEEKLY_SCRATCH_REWARD}
-              onRevealed={() => setScratchDone(true)}
+              onRevealed={() => { setScratchDone(true); trackReward(); }}
             />
             {scratchDone && (
               <motion.div
@@ -76,7 +80,7 @@ export default function GachaPage() {
           >
             <SpinWheel
               canSpin={!spinDone}
-              onResult={() => setSpinDone(true)}
+              onResult={() => { setSpinDone(true); trackReward(); }}
             />
           </motion.div>
         )}

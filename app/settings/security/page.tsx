@@ -60,6 +60,9 @@ export default function SecurityCenterPage() {
   );
   const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
   const [lockdownMode, setLockdownMode] = useState<"off" | "strict">("off");
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const lockdownProfile = lockdownFor(lockdownMode);
 
   useEffect(() => {
@@ -323,12 +326,54 @@ export default function SecurityCenterPage() {
               deletion. GDPR & CCPA compliant.
             </p>
             <div className="mt-3 flex gap-2">
-              <button className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white hover:bg-white/10">
-                Export my data
+              <button
+                type="button"
+                disabled={exporting}
+                onClick={async () => {
+                  setExporting(true);
+                  try {
+                    const res = await fetch("/api/gdpr/export");
+                    if (!res.ok) throw new Error();
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "gyeol-data-export.json";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch { /* silent */ }
+                  setExporting(false);
+                }}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:opacity-50"
+              >
+                {exporting ? "Exporting..." : "Export my data"}
               </button>
-              <button className="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20">
-                Delete account
-              </button>
+              {!deleteConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(true)}
+                  className="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
+                >
+                  Delete account
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={async () => {
+                    setDeleting(true);
+                    try {
+                      const res = await fetch("/api/gdpr/delete", { method: "DELETE" });
+                      if (res.ok) window.location.href = "/";
+                    } catch { /* silent */ }
+                    setDeleting(false);
+                    setDeleteConfirm(false);
+                  }}
+                  className="rounded-full border border-rose-500/50 bg-rose-500/20 px-4 py-1.5 text-xs font-bold text-rose-100 hover:bg-rose-500/30 disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Confirm delete"}
+                </button>
+              )}
             </div>
           </div>
         </div>

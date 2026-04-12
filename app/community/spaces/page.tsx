@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 interface Space {
@@ -13,68 +13,54 @@ interface Space {
   color: string;
 }
 
-const SPACES: Space[] = [
-  {
-    id: "night-chat",
-    name: "새벽 대화 클럽",
-    description: "밤이 깊어질수록 솔직해지는 이야기들",
-    emoji: "🌙",
-    memberCount: 142,
-    tags: ["감성", "솔직함"],
-    color: "#818cf8",
-  },
-  {
-    id: "philosophy",
-    name: "철학 탐구자들",
-    description: "삶의 의미와 존재에 대한 깊은 대화",
-    emoji: "🌌",
-    memberCount: 87,
-    tags: ["철학", "사색"],
-    color: "#a855f7",
-  },
-  {
-    id: "creature-masters",
-    name: "크리처 육성 고수들",
-    description: "크리처 육성 팁과 전략을 나누는 공간",
-    emoji: "🌟",
-    memberCount: 213,
-    tags: ["게임", "전략"],
-    color: "#f59e0b",
-  },
-  {
-    id: "creative-writing",
-    name: "창작 글쓰기",
-    description: "크리처와 함께 쓰는 이야기들",
-    emoji: "✍️",
-    memberCount: 64,
-    tags: ["창작", "글쓰기"],
-    color: "#4ade80",
-  },
-  {
-    id: "music-vibes",
-    name: "뮤직 바이브",
-    description: "오늘의 플레이리스트와 감정 공유",
-    emoji: "🎵",
-    memberCount: 189,
-    tags: ["음악", "감정"],
-    color: "#06b6d4",
-  },
-  {
-    id: "study-with-me",
-    name: "같이 공부해요",
-    description: "크리처와 함께하는 집중 스터디",
-    emoji: "📚",
-    memberCount: 95,
-    tags: ["공부", "집중"],
-    color: "#f87171",
-  },
+interface SpeciesEntry {
+  species: string;
+  member_count: number;
+  total_level: number;
+  newest_name: string | null;
+  icon: string;
+}
+
+const SPECIES_COLORS = [
+  "#818cf8", "#a855f7", "#f59e0b", "#4ade80", "#06b6d4", "#f87171",
+  "#ec4899", "#8b5cf6", "#14b8a6", "#f97316",
+];
+
+const FALLBACK_SPACES: Space[] = [
+  { id: "night-chat", name: "새벽 대화 클럽", description: "밤이 깊어질수록 솔직해지는 이야기들", emoji: "🌙", memberCount: 142, tags: ["감성", "솔직함"], color: "#818cf8" },
+  { id: "philosophy", name: "철학 탐구자들", description: "삶의 의미와 존재에 대한 깊은 대화", emoji: "🌌", memberCount: 87, tags: ["철학", "사색"], color: "#a855f7" },
+  { id: "creature-masters", name: "크리처 육성 고수들", description: "크리처 육성 팁과 전략을 나누는 공간", emoji: "🌟", memberCount: 213, tags: ["게임", "전략"], color: "#f59e0b" },
+  { id: "creative-writing", name: "창작 글쓰기", description: "크리처와 함께 쓰는 이야기들", emoji: "✍️", memberCount: 64, tags: ["창작", "글쓰기"], color: "#4ade80" },
+  { id: "music-vibes", name: "뮤직 바이브", description: "오늘의 플레이리스트와 감정 공유", emoji: "🎵", memberCount: 189, tags: ["음악", "감정"], color: "#06b6d4" },
+  { id: "study-with-me", name: "같이 공부해요", description: "크리처와 함께하는 집중 스터디", emoji: "📚", memberCount: 95, tags: ["공부", "집중"], color: "#f87171" },
 ];
 
 export default function CommunitySpacesPage() {
   const [joined, setJoined] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
+  const [spaces, setSpaces] = useState<Space[]>(FALLBACK_SPACES);
 
-  const filtered = SPACES.filter(
+  useEffect(() => {
+    fetch("/api/community/species", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { entries: SpeciesEntry[] } | null) => {
+        if (d?.entries?.length) {
+          const apiSpaces: Space[] = d.entries.map((e, i) => ({
+            id: e.species,
+            name: `${e.icon} ${e.species}`,
+            description: e.newest_name ? `최근 멤버: ${e.newest_name}` : `Lv합계 ${e.total_level}`,
+            emoji: e.icon,
+            memberCount: e.member_count,
+            tags: ["종족"],
+            color: SPECIES_COLORS[i % SPECIES_COLORS.length],
+          }));
+          setSpaces(apiSpaces);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filtered = spaces.filter(
     (s) =>
       s.name.includes(filter) ||
       s.description.includes(filter) ||
