@@ -201,6 +201,12 @@ export default function DiscoverPage() {
     const result = makeChoice(narrativeEvent.id, choiceId);
     if (result) {
       setNarrativeOutcome(isKo ? result.outcome.ko : result.outcome.en);
+      // Persist choice to server
+      fetch("/api/narrative", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: narrativeEvent.id, choiceId }),
+      }).catch(() => { /* best-effort server save */ });
     }
   };
 

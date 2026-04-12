@@ -17,6 +17,59 @@ import { getRarity, getCollectionCompleteness } from "@/lib/album/rarity";
 
 type Milestone = { type: string; label: string; at: string; summary?: string };
 
+function CreatureSelfie({ locale }: { locale: string }) {
+  const isKo = locale === "ko";
+  const [generating, setGenerating] = useState(false);
+  const [selfie, setSelfie] = useState<{ imageUrl: string; prompt: string } | null>(null);
+  const [error, setError] = useState("");
+
+  const generate = async () => {
+    setGenerating(true);
+    setError("");
+    try {
+      const res = await fetch("/api/creature/selfie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "album_visit" }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.imageUrl) {
+        setSelfie(json as { imageUrl: string; prompt: string });
+      } else {
+        setError(json?.error ?? (isKo ? "생성 실패" : "Generation failed"));
+      }
+    } catch {
+      setError(isKo ? "네트워크 오류" : "Network error");
+    }
+    setGenerating(false);
+  };
+
+  return (
+    <div className="mt-5 rounded-2xl border border-purple-300/15 bg-purple-400/[0.04] p-4">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-purple-200/60 mb-2">
+        {isKo ? "크리처 셀피" : "Creature Selfie"}
+      </p>
+      {selfie ? (
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={selfie.imageUrl} alt="Creature selfie" className="w-full rounded-xl" />
+          <p className="text-[10px] text-white/30 italic">{selfie.prompt}</p>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void generate()}
+          disabled={generating}
+          className="w-full rounded-xl border border-purple-300/20 bg-purple-400/10 py-3 text-sm text-purple-200 hover:bg-purple-400/20 transition-colors disabled:opacity-50"
+        >
+          {generating ? (isKo ? "생성 중..." : "Generating...") : isKo ? "AI 셀피 생성하기" : "Generate AI Selfie"}
+        </button>
+      )}
+      {error && <p className="mt-1 text-[11px] text-rose-300">{error}</p>}
+    </div>
+  );
+}
+
 export default function AlbumPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [visual, setVisual] = useState<{ color?: string; shape?: string } | null>(null);
@@ -194,6 +247,9 @@ export default function AlbumPage() {
           </ul>
           </>
         )}
+        {/* Creature Selfie Generator */}
+        <CreatureSelfie locale={locale} />
+
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"

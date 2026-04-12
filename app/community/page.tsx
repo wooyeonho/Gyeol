@@ -1,10 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
 
+type CollectiveStats = {
+  total_agents: number;
+  mood_distribution: Record<string, number>;
+  avg_vitality: number;
+  avg_gen_level: number;
+};
+
 export default function CommunityPage() {
-  const { t } = useTranslations();
+  const { locale, t } = useTranslations();
+  const [collective, setCollective] = useState<CollectiveStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/collective", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.collective) setCollective(data.collective as CollectiveStats);
+      })
+      .catch(() => { /* collective stats unavailable */ });
+  }, []);
+
   const cards = [
     {
       href: "/explore",
@@ -42,6 +61,29 @@ export default function CommunityPage() {
             {t("communityPage.subtitle")}
           </p>
         </div>
+        {/* Collective Intelligence Stats */}
+        {collective && (
+          <div className="mt-6 rounded-[1.5rem] border border-cyan-300/15 bg-cyan-400/[0.04] p-5">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/70">
+              {locale === "ko" ? "집단 지성" : "Collective Intelligence"}
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-xl bg-white/[0.04] p-3">
+                <p className="text-lg font-semibold text-white">{collective.total_agents}</p>
+                <p className="text-[10px] text-white/40">{locale === "ko" ? "생명체" : "Creatures"}</p>
+              </div>
+              <div className="rounded-xl bg-white/[0.04] p-3">
+                <p className="text-lg font-semibold text-emerald-300">{(collective.avg_vitality * 100).toFixed(0)}%</p>
+                <p className="text-[10px] text-white/40">{locale === "ko" ? "평균 활력" : "Avg Vitality"}</p>
+              </div>
+              <div className="rounded-xl bg-white/[0.04] p-3">
+                <p className="text-lg font-semibold text-amber-300">Lv.{collective.avg_gen_level.toFixed(1)}</p>
+                <p className="text-[10px] text-white/40">{locale === "ko" ? "평균 세대" : "Avg Gen"}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           {cards.map((card) => (
             <Link

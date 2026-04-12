@@ -300,13 +300,29 @@ export default function DataDashboardPage() {
           <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">
             {copy.exportEyebrow}
           </p>
-          <a
-            href="/api/gdpr/export"
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
-          >
-            <span className="text-base">📦</span>
-            <span>{copy.exportCta}</span>
-          </a>
+          <div className="space-y-2">
+            <a
+              href="/api/gdpr/export"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+            >
+              <span className="text-base">📦</span>
+              <span>{copy.exportCta}</span>
+            </a>
+            <a
+              href="/api/export/conversations?format=markdown"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+            >
+              <span className="text-base">💬</span>
+              <span>{loc === "ko" ? "대화 내역 내보내기 (Markdown)" : "Export Conversations (Markdown)"}</span>
+            </a>
+            <a
+              href="/api/export/conversations?format=json"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+            >
+              <span className="text-base">📄</span>
+              <span>{loc === "ko" ? "대화 내역 내보내기 (JSON)" : "Export Conversations (JSON)"}</span>
+            </a>
+          </div>
         </div>
 
         {/* Delete account */}

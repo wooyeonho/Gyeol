@@ -161,10 +161,31 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     };
   }, [historyLoaded, hydrateRecentMessages, messages.length, totalMessages]);
 
+  // Notify server of typing activity (debounced)
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifyTyping = useCallback((typing: boolean) => {
+    fetch("/api/agent/typing-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ typing }),
+    }).catch(() => {});
+  }, []);
+
+  const handleInputChange = useCallback((value: string) => {
+    setInput(value);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (value.trim()) {
+      notifyTyping(true);
+      typingTimerRef.current = setTimeout(() => notifyTyping(false), 3000);
+    }
+  }, [notifyTyping]);
+
   const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    notifyTyping(false);
     sendMessage(trimmed, { source: "input", locale, totalMessages });
     setInput("");
   };
@@ -351,7 +372,7 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         <div className="shrink-0 pt-3">
           <MessageInput
             input={input}
-            setInput={setInput}
+            setInput={handleInputChange}
             isStreaming={isStreaming}
             placeholder={placeholder}
             appearance={appearance}

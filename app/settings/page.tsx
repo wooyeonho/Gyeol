@@ -219,6 +219,234 @@ function SettingsToggle({
   );
 }
 
+function EarningsRedeemSection({ locale }: { locale: string }) {
+  const isKo = locale === "ko";
+  const [redeemCoins, setRedeemCoins] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [history, setHistory] = useState<Array<{ id: string; coins_amount: number; krw_requested: number; status: string; created_at: string }>>([]);
+  const [rate, setRate] = useState(10);
+
+  useEffect(() => {
+    fetch("/api/earnings/redeem", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setHistory(data.requests ?? []);
+          setRate(data.rate ?? 10);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleRedeem = async () => {
+    const coins = parseInt(redeemCoins, 10);
+    if (!coins || coins < 100) {
+      setMessage(isKo ? "최소 100코인 이상 필요합니다" : "Minimum 100 coins required");
+      setStatus("error");
+      return;
+    }
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/earnings/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coins }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok) {
+        setStatus("success");
+        setMessage(isKo ? `${json.krw_requested}원 환전 요청 완료` : `Requested ${json.krw_requested} KRW`);
+        setRedeemCoins("");
+      } else {
+        setStatus("error");
+        setMessage(json?.error === "Insufficient coins" ? (isKo ? "코인이 부족합니다" : "Insufficient coins") : (json?.error ?? "Error"));
+      }
+    } catch {
+      setStatus("error");
+      setMessage(isKo ? "네트워크 오류" : "Network error");
+    }
+  };
+
+  return (
+    <section className="rounded-3xl border border-amber-300/15 bg-amber-400/[0.04] p-5">
+      <p className="text-xs uppercase tracking-[0.2em] text-amber-200/70 mb-1">
+        {isKo ? "코인 환전" : "Coin Redemption"}
+      </p>
+      <p className="text-[11px] text-white/40 mb-3">
+        {isKo ? `1코인 = ${rate}원` : `1 coin = ${rate} KRW`}
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          value={redeemCoins}
+          onChange={(e) => setRedeemCoins(e.target.value)}
+          placeholder={isKo ? "환전할 코인 수" : "Coins to redeem"}
+          min={100}
+          className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-300/40 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => void handleRedeem()}
+          disabled={status === "loading"}
+          className="rounded-xl bg-amber-500/20 border border-amber-400/30 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/30 disabled:opacity-40"
+        >
+          {status === "loading" ? "..." : isKo ? "환전" : "Redeem"}
+        </button>
+      </div>
+      {message && (
+        <p className={`mt-2 text-[11px] ${status === "success" ? "text-emerald-300" : "text-rose-300"}`}>{message}</p>
+      )}
+      {history.length > 0 && (
+        <div className="mt-3 space-y-1">
+          <p className="text-[10px] text-white/30 uppercase tracking-wider">{isKo ? "환전 내역" : "History"}</p>
+          {history.slice(0, 5).map((req) => (
+            <div key={req.id} className="flex items-center justify-between text-[11px] text-white/50">
+              <span>{req.coins_amount} coins → {req.krw_requested}원</span>
+              <span className={req.status === "pending" ? "text-amber-300" : req.status === "completed" ? "text-emerald-300" : "text-white/30"}>
+                {req.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function IntegrationsSection({ locale }: { locale: string }) {
+  const isKo = locale === "ko";
+  const INTEGRATIONS = ["calendar", "slack", "notion", "discord"] as const;
+  const [saving, setSaving] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<Record<string, string>>({});
+  const [connected, setConnected] = useState<Record<string, boolean>>({});
+
+  const handleConnect = async (service: string) => {
+    const token = tokens[service];
+    if (!token?.trim()) return;
+    setSaving(service);
+    try {
+      const res = await fetch(`/api/integrations/${service}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: token.trim() }),
+      });
+      if (res.ok) {
+        setConnected((prev) => ({ ...prev, [service]: true }));
+        setTokens((prev) => ({ ...prev, [service]: "" }));
+      }
+    } catch { /* best-effort */ }
+    setSaving(null);
+  };
+
+  return (
+    <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+      <p className="text-xs uppercase tracking-[0.2em] text-white/45 mb-1">
+        {isKo ? "외부 연동" : "Integrations"}
+      </p>
+      <p className="text-[11px] text-white/30 mb-3">
+        {isKo ? "외부 서비스를 연결하면 크리처가 더 많은 맥락을 이해합니다 (프리미엄)" : "Connect services for richer creature context (Premium)"}
+      </p>
+      <div className="space-y-2">
+        {INTEGRATIONS.map((svc) => (
+          <div key={svc} className="flex items-center gap-2">
+            <span className="w-16 text-xs text-white/60 capitalize">{svc}</span>
+            {connected[svc] ? (
+              <span className="text-[11px] text-emerald-300">{isKo ? "연결됨" : "Connected"}</span>
+            ) : (
+              <>
+                <input
+                  value={tokens[svc] ?? ""}
+                  onChange={(e) => setTokens((prev) => ({ ...prev, [svc]: e.target.value }))}
+                  placeholder="Access token"
+                  className="flex-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-xs text-white placeholder:text-white/25 focus:border-cyan-300/30 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleConnect(svc)}
+                  disabled={saving === svc || !tokens[svc]?.trim()}
+                  className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] text-white/70 hover:bg-white/15 disabled:opacity-40"
+                >
+                  {saving === svc ? "..." : isKo ? "연결" : "Connect"}
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function IoTPreferencesSection({ locale }: { locale: string }) {
+  const isKo = locale === "ko";
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({
+    smart_light: false,
+    smart_speaker: false,
+    ambient_display: false,
+  });
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/iot", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.preferences && typeof data.preferences === "object") {
+          setPrefs((prev) => ({ ...prev, ...(data.preferences as Record<string, boolean>) }));
+        }
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  const togglePref = (key: string) => {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next);
+    fetch("/api/iot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferences: next }),
+    }).catch(() => { /* best-effort */ });
+  };
+
+  if (!loaded) return null;
+
+  const items = [
+    { key: "smart_light", label: isKo ? "스마트 조명" : "Smart Light", desc: isKo ? "기분에 따라 조명 색상 변경" : "Change light color by mood" },
+    { key: "smart_speaker", label: isKo ? "스마트 스피커" : "Smart Speaker", desc: isKo ? "크리처가 스피커로 인사" : "Creature greets via speaker" },
+    { key: "ambient_display", label: isKo ? "앰비언트 디스플레이" : "Ambient Display", desc: isKo ? "대기 화면에 크리처 상태 표시" : "Show creature on ambient display" },
+  ];
+
+  return (
+    <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+      <p className="text-xs uppercase tracking-[0.2em] text-white/45 mb-1">
+        {isKo ? "IoT 연동" : "IoT Preferences"}
+      </p>
+      <p className="text-[11px] text-white/30 mb-3">
+        {isKo ? "스마트 기기와 크리처를 연결합니다" : "Connect your creature to smart devices"}
+      </p>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => togglePref(item.key)}
+            className="flex w-full items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-3 text-left transition-all hover:bg-white/[0.06]"
+          >
+            <div>
+              <p className="text-sm text-white/80">{item.label}</p>
+              <p className="text-[10px] text-white/35">{item.desc}</p>
+            </div>
+            <span className={`h-5 w-9 rounded-full transition-colors ${prefs[item.key] ? "bg-cyan-400/30 border-cyan-300/40" : "bg-white/10"} border relative`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${prefs[item.key] ? "translate-x-4" : "translate-x-0.5"}`} />
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const { locale, t } = useTranslations();
   const [state, setState] = useState<AgentState | null>(null);
@@ -965,6 +1193,15 @@ export default function SettingsPage() {
 
         {/* Notification preferences — opt-in categories + quiet hours */}
         <NotificationPreferencesCard />
+
+        {/* Earnings — coin redemption */}
+        <EarningsRedeemSection locale={locale} />
+
+        {/* Integrations — calendar, slack, etc */}
+        <IntegrationsSection locale={locale} />
+
+        {/* IoT Preferences */}
+        <IoTPreferencesSection locale={locale} />
 
         {/* Privacy & data control — GDPR export/delete dashboard */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
