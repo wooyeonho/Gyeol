@@ -175,6 +175,26 @@ async function handleStreamResponse(
     const decoder = new TextDecoder();
     let sseBuffer = "";
 
+    // Timeout UX: show "taking longer" message after 30s of no content
+    let lastContentTime = Date.now();
+    const SLOW_THRESHOLD = 30_000;
+    const slowTimer = setInterval(() => {
+      if (Date.now() - lastContentTime > SLOW_THRESHOLD && get().isStreaming) {
+        const last = get().messages[get().messages.length - 1];
+        if (last?.role === "assistant" && !last.content) {
+          set((s) => {
+            const msgs = [...s.messages];
+            const lastMsg = msgs[msgs.length - 1];
+            if (lastMsg?.role === "assistant" && !lastMsg.content) {
+              const slowCopy = (locale ?? "ko").startsWith("en") ? "Taking a bit longer…" : "좀 더 걸리고 있어요…";
+              msgs[msgs.length - 1] = { ...lastMsg, content: slowCopy };
+            }
+            return { messages: msgs };
+          });
+        }
+      }
+    }, SLOW_THRESHOLD);
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -211,6 +231,7 @@ async function handleStreamResponse(
               const content = parsed.choices?.[0]?.delta?.content || "";
               if (content) {
                 contentBuffer += content;
+                lastContentTime = Date.now();
                 scheduleFlush();
               }
             }
@@ -223,6 +244,7 @@ async function handleStreamResponse(
       }
     }
     // Flush any remaining buffered content
+    clearInterval(slowTimer);
     if (flushTimer) clearTimeout(flushTimer);
     flushBuffer();
     // After stream ends, check if the assistant message is still empty (all deltas failed to parse)
