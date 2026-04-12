@@ -1292,5 +1292,12 @@
     "dnaEffects": "DNA 변화",
     "noCreatures": "초대할 수 있는 존재가 없어요",
     "share": "대화 공유하기"
+  },
+  "cookie": {
+    "title": "쿠키 동의",
+    "message": "GYEOL은 사용자 경험 개선과 분석을 위해 쿠키를 사용합니다. 비필수 쿠키는 거부할 수 있어요.",
+    "accept": "수락",
+    "decline": "거부",
+    "learnMore": "자세히 알아보기"
   }
 }

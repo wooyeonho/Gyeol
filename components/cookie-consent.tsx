@@ -41,16 +41,24 @@ export function CookieConsent() {
     setVisible(false);
   }
 
+  // `t()` returns the raw key when a string is missing, so `||` never hits
+  // the fallback. Check for the key itself to keep fallbacks usable even if
+  // i18n files drift.
   const isKo = locale === "ko";
-  const message =
-    t("cookie.message") ||
-    (isKo
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    return v && v !== key ? v : fallback;
+  };
+  const message = tr(
+    "cookie.message",
+    isKo
       ? "GYEOL은 사용자 경험 개선과 분석을 위해 쿠키를 사용합니다. 비필수 쿠키를 수락하거나 거부할 수 있습니다."
-      : "We use cookies to improve your experience and analyze usage. You can accept or decline non-essential cookies.");
-  const acceptLabel = t("cookie.accept") || (isKo ? "수락" : "Accept");
-  const declineLabel = t("cookie.decline") || (isKo ? "거부" : "Decline");
-  const learnMoreLabel = t("cookie.learnMore") || (isKo ? "자세히 알아보기" : "Learn more");
-  const titleLabel = t("cookie.title") || (isKo ? "쿠키 동의" : "Cookie consent");
+      : "We use cookies to improve your experience and analyze usage. You can accept or decline non-essential cookies.",
+  );
+  const acceptLabel = tr("cookie.accept", isKo ? "수락" : "Accept");
+  const declineLabel = tr("cookie.decline", isKo ? "거부" : "Decline");
+  const learnMoreLabel = tr("cookie.learnMore", isKo ? "자세히 알아보기" : "Learn more");
+  const titleLabel = tr("cookie.title", isKo ? "쿠키 동의" : "Cookie consent");
 
   return (
     <AnimatePresence>

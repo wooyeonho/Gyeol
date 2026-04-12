@@ -592,53 +592,54 @@ export default function Home() {
             filter: appearance.scene.motionBias === "mystic" ? "blur(8px)" : "blur(2px)",
           }}
         />
-        {/* When portrait is present, hide the 3D creature completely to avoid overlap.
-            The portrait IS the creature representation; showing both causes visual confusion. */}
-        <div
-          className="absolute inset-0 transition-opacity duration-[1200ms]"
-          style={{ opacity: portraitUrl ? 0 : 1, pointerEvents: portraitUrl ? "none" : "auto" }}
-        >
-        <ThreeErrorBoundary
-          fallback={
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
-              <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center">
-                <span className="text-2xl">&#x1F30C;</span>
-              </div>
-              <p className="text-sm text-white/50">{t("creature.restoring3d")}</p>
-            </div>
-          }
-        >
-          <VoidCanvas
-            shape={appearance.visual.shape as AgentVisual["shape"]}
-            color={appearance.visual.color}
-            size={creatureSize}
-            glow={Math.min(100, Math.max(0, appearance.visual.glow))}
-            animation={appearance.visual.animation}
-            particles={appearance.visual.particles}
-            background={appearance.visual.background}
-            vitality={vitality}
-            mood={agentState?.mood ?? undefined}
-            isListening={isStreaming}
-            motionBias={appearance.scene.motionBias}
-            pulseScale={appearance.scene.pulseScale}
-            onTap={handleCanvasTap}
-            onCreatureTouch={handleCreatureTouch}
-            enableThree={!performanceMinimal}
-            contained
-            breathPhase={creature.state.breathPhase}
-            creatureActivity={creature.state.activity}
-            excitePulse={creature.state.excitePulse}
-            pointerNorm={creature.state.pointerNorm}
-            restoring3dLabel={t("creature.restoring3d")}
-            dna={creatureDna}
-            conversationEnergy={creature.state.conversationEnergy}
-            genLevel={agentState?.gen_level ?? 1}
-            forceState={creature.state.forceState}
-            idleBehaviorParams={idleBehaviorParams}
-            idleBehavior={creature.state.idleActivity}
-          />
-        </ThreeErrorBoundary>
-        </div>
+        {/* When an AI portrait is present, unmount the 3D creature entirely.
+            Previously we just faded opacity, which left Three.js rendering and
+            caused a visible overlap during the 1200ms fade. Unmounting is both
+            cheaper and strictly mutually-exclusive with the portrait. */}
+        {!portraitUrl && (
+          <div className="absolute inset-0">
+            <ThreeErrorBoundary
+              fallback={
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+                  <div className="h-16 w-16 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center">
+                    <span className="text-2xl">&#x1F30C;</span>
+                  </div>
+                  <p className="text-sm text-white/50">{t("creature.restoring3d")}</p>
+                </div>
+              }
+            >
+              <VoidCanvas
+                shape={appearance.visual.shape as AgentVisual["shape"]}
+                color={appearance.visual.color}
+                size={creatureSize}
+                glow={Math.min(100, Math.max(0, appearance.visual.glow))}
+                animation={appearance.visual.animation}
+                particles={appearance.visual.particles}
+                background={appearance.visual.background}
+                vitality={vitality}
+                mood={agentState?.mood ?? undefined}
+                isListening={isStreaming}
+                motionBias={appearance.scene.motionBias}
+                pulseScale={appearance.scene.pulseScale}
+                onTap={handleCanvasTap}
+                onCreatureTouch={handleCreatureTouch}
+                enableThree={!performanceMinimal}
+                contained
+                breathPhase={creature.state.breathPhase}
+                creatureActivity={creature.state.activity}
+                excitePulse={creature.state.excitePulse}
+                pointerNorm={creature.state.pointerNorm}
+                restoring3dLabel={t("creature.restoring3d")}
+                dna={creatureDna}
+                conversationEnergy={creature.state.conversationEnergy}
+                genLevel={agentState?.gen_level ?? 1}
+                forceState={creature.state.forceState}
+                idleBehaviorParams={idleBehaviorParams}
+                idleBehavior={creature.state.idleActivity}
+              />
+            </ThreeErrorBoundary>
+          </div>
+        )}
 
         {/* AI-generated portrait — HERO character visual. When present,
             becomes the dominant creature representation; procedural 3D

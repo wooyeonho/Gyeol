@@ -122,47 +122,6 @@ export default function FeaturesPage() {
           </div>
         </header>
 
-        <Link
-          href="/world-class"
-          className="mb-8 block rounded-3xl border border-indigo-400/30 bg-gradient-to-br from-indigo-500/15 via-fuchsia-500/10 to-amber-500/10 p-6 sm:p-7 transition hover:border-indigo-400/60"
-        >
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-indigo-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
-            World-Class Playbook
-          </div>
-          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-            전 세계 최고의 앱 48개,{" "}
-            <span className="bg-gradient-to-r from-indigo-200 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
-              결 하나에 모두
-            </span>
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">
-            디자인 · 수익 · 기능 · 보안 네 축 × 12개 앱씩 총 48개 앱의 강점을
-            추출해 결에 이식했습니다. 그리고 결의 가장 강한 특성 — 살아있는 AI
-            존재 — 를 한 단계 더 강화했습니다. 모든 원칙은 인터랙티브 데모로
-            눌러볼 수 있습니다.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs">
-            {[
-              "🎨 디자인 12 앱",
-              "💰 수익 12 앱",
-              "⚡ 기능 12 앱",
-              "🛡️ 보안 12 앱",
-              "✨ AI 존재",
-            ].map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/85"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-          <div className="mt-4 inline-flex items-center gap-1 text-sm text-indigo-200">
-            인터랙티브 데모 보기 →
-          </div>
-        </Link>
-
         <section className="mb-8 grid gap-3 md:grid-cols-3">
           <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <p className="text-sm font-medium">{t("featuresPage.pillar1Title")}</p>

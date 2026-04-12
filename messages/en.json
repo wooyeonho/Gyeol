@@ -1292,5 +1292,12 @@
     "dnaEffects": "DNA Changes",
     "noCreatures": "No creatures to invite",
     "share": "Share conversation"
+  },
+  "cookie": {
+    "title": "Cookie consent",
+    "message": "GYEOL uses cookies to improve your experience and analyze usage. You can accept or decline non-essential cookies.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "learnMore": "Learn more"
   }
 }

@@ -1286,5 +1286,12 @@
     "dnaEffects": "DNA变化",
     "noCreatures": "没有可邀请的存在",
     "share": "分享对话"
+  },
+  "cookie": {
+    "title": "Cookie 同意",
+    "message": "GYEOL 使用 Cookie 来改善您的体验和分析使用情况。您可以拒绝非必要的 Cookie。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "learnMore": "了解更多"
   }
 }

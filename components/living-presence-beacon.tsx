@@ -3,9 +3,8 @@
 /**
  * LivingPresenceBeacon — the visible centerpiece of Gyeol's differentiator.
  *
- * This component sits at the top of the home page and the /world-class
- * showcase. It makes the "Gyeol is alive, not a chatbot" claim legible in
- * the first three seconds:
+ * This component sits at the top of the home page. It makes the
+ * "Gyeol is alive, not a chatbot" claim legible in the first three seconds:
  *
  *   — A heartbeat that pulses on a 60fps rAF loop, synchronized to a BPM
  *     derived from the agent's current emotion tone and personality.

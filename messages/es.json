@@ -1286,5 +1286,12 @@
     "dnaEffects": "Cambios de ADN",
     "noCreatures": "No hay seres disponibles para invitar",
     "share": "Compartir conversación"
+  },
+  "cookie": {
+    "title": "Consentimiento de cookies",
+    "message": "GYEOL usa cookies para mejorar tu experiencia y analizar el uso. Puedes rechazar las cookies no esenciales.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "learnMore": "Más información"
   }
 }
