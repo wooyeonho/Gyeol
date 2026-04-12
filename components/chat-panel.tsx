@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { onScreenshotAttempt } from "@/lib/security/screenshot-detect";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { MessageList } from "@/components/chat/message-list";
@@ -160,6 +161,15 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
       cancelled = true;
     };
   }, [historyLoaded, hydrateRecentMessages, messages.length, totalMessages]);
+
+  // Screenshot detection — Snapchat-style protection for private chats
+  const [screenshotWarning, setScreenshotWarning] = useState(false);
+  useEffect(() => {
+    return onScreenshotAttempt(() => {
+      setScreenshotWarning(true);
+      setTimeout(() => setScreenshotWarning(false), 3000);
+    });
+  }, []);
 
   // Notify server of typing activity (debounced)
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -314,6 +324,18 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
             typingLabel={t("chat.thinking")}
           />
         </div>
+
+        {/* Screenshot warning — Snapchat-style notification */}
+        {screenshotWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mx-auto mb-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-1.5 text-xs text-rose-200 backdrop-blur-sm"
+          >
+            Screenshot detected
+          </motion.div>
+        )}
 
         {/* Silent mode — verbal < 0.15: touch interaction instead of text */}
         {isSilentMode && (
