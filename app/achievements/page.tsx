@@ -7,6 +7,7 @@ import { ACHIEVEMENTS, getAchievement, type AchievementRarity } from "@/lib/enga
 import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
 import { useCelebrationStore } from "@/store/celebration-store";
 import { AchievementCard } from "@/components/gamification/achievement-card";
+import { AchievementShareCard } from "@/components/engagement/achievement-share-card";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
   common:    { label: "Common",    glow: "",                              border: "border-white/15",        text: "text-white/60" },
@@ -140,7 +141,27 @@ export default function AchievementsPage() {
         <div className="space-y-3">
           {filtered.map((ach) => {
             const unlocked = unlockedIds.has(ach.id);
-            return (
+            return unlocked ? (
+              <AchievementShareCard
+                key={ach.id}
+                achievement={{
+                  id: ach.id,
+                  name: ach.label[loc],
+                  description: ach.description[loc],
+                  icon: ach.icon,
+                  rarity: ach.rarity,
+                }}
+                onShare={(id) => {
+                  if (typeof navigator?.share === "function") {
+                    navigator.share({
+                      title: `GYEOL - ${ach.label[loc]}`,
+                      text: ach.description[loc],
+                      url: `${window.location.origin}/api/og/achievement?id=${id}`,
+                    }).catch(() => {});
+                  }
+                }}
+              />
+            ) : (
               <AchievementCard
                 key={ach.id}
                 achievement={ach}
