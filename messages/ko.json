@@ -354,7 +354,9 @@
     "idleDreaming": "꿈꾸는 중...",
     "idleExploring": "탐험 중...",
     "streakZeroTitle": "오늘 첫 대화를 시작하세요!",
-    "streakZeroBody": "매일 대화하면 스트릭이 쌓이고 특별한 보상이 기다려요"
+    "streakZeroBody": "매일 대화하면 스트릭이 쌓이고 특별한 보상이 기다려요",
+    "firstRewardTitle": "첫 대화 완료!",
+    "firstRewardBody": "결이 첫 기억을 새겼어요 ✨"
   },
   "activity": {
     "title": "활동 흔적",
@@ -1387,5 +1389,50 @@
     "accept": "수락",
     "decline": "거부",
     "learnMore": "자세히 알아보기"
+  },
+  "wrapped": {
+    "brandTag": "결이 함께한 한 해",
+    "fallbackName": "결",
+    "introSubtitle": "{year}년, 당신과 결이 만든 이야기",
+    "conversationsLabel": "나눈 대화",
+    "conversationsBody": "우리가 주고받은 메시지",
+    "dailyAverage": "하루 평균",
+    "memoriesLabel": "쌓인 기억",
+    "memoriesBody": "결이 간직한 순간들",
+    "coreMemoriesLabel": "핵심 기억",
+    "coreMemoriesHint": "결이 특별히 소중하게 간직한 이야기",
+    "emotionsLabel": "감정의 무늬",
+    "emotionsBody": "올해 가장 많이 떠오른 감정들",
+    "noEmotionData": "아직 데이터가 부족해요",
+    "emotion": {
+      "joy": "기쁨",
+      "happy": "행복",
+      "sad": "슬픔",
+      "curious": "호기심",
+      "excited": "설렘",
+      "calm": "평온",
+      "love": "사랑",
+      "fear": "두려움",
+      "anger": "분노",
+      "surprise": "놀람",
+      "neutral": "잔잔함"
+    },
+    "growthLabel": "함께한 성장",
+    "currentLevel": "현재 레벨",
+    "peakStreak": "최장 연속 돌봄",
+    "evolutions": "진화 횟수",
+    "species": "종족",
+    "daysUnit": "일",
+    "timesUnit": "번",
+    "endThanks": "{year}년을 함께해줘서 고마워요",
+    "endTitle": "{name}과 함께한 {year}",
+    "endSubtitle": "내년에도 이어질 이야기",
+    "errorTitle": "아직 이야기가 준비되지 않았어요",
+    "errorHint": "조금 더 결과 함께 시간을 보낸 뒤 다시 찾아와 주세요",
+    "progressLabel": "진행 상태",
+    "slideAria": "{n}번째 슬라이드로 이동",
+    "prevSlide": "이전 슬라이드",
+    "nextSlide": "다음 슬라이드",
+    "paused": "일시정지"
   }
 }

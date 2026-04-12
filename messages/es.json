@@ -30,7 +30,9 @@
     "awake": "Despierto",
     "breathingLabel": "Respirando",
     "eyeTracking": "Seguimiento ocular",
-    "restoring3d": "Restaurando 3D..."
+    "restoring3d": "Restaurando 3D...",
+    "generatePortrait": "Generar retrato IA",
+    "generatingPortrait": "Generando retrato..."
   },
   "nav": {
     "home": "Home",
@@ -93,7 +95,15 @@
     "securityTitle": "Tus datos siguen siendo tuyos",
     "securityE2e": "Las contraseñas se almacenan cifradas en Supabase; nunca se guardan ni registran en texto plano.",
     "securityRls": "La seguridad a nivel de fila aísla cada cuenta para que nadie más pueda leer tu memoria.",
-    "securityRateLimit": "El límite de peticiones y la detección de anomalías bloquean automáticamente los intentos de fuerza bruta."
+    "securityRateLimit": "El límite de peticiones y la detección de anomalías bloquean automáticamente los intentos de fuerza bruta.",
+    "forgotPasswordLink": "¿Olvidaste tu contraseña?",
+    "securityScore": "Puntuación de seguridad",
+    "securityGood": "Seguro",
+    "securityMedium": "Moderado",
+    "securityLow": "Vulnerable",
+    "privacyDashboard": "Panel de privacidad",
+    "loginWelcome": "Bienvenido a Gyeol",
+    "loginSubline": "Las conversaciones se vuelven recuerdos, y los recuerdos, crecimiento"
   },
   "ageGate": {
     "eyebrow": "Verificación de edad",
@@ -168,7 +178,16 @@
     "silentActionStay": "Quedarse quieto",
     "thinking": "{name} está pensando…",
     "memoryPill": "Guardando {count} recuerdos",
-    "memoryAria": "Gyeol recuerda {count} conversaciones"
+    "memoryAria": "Gyeol recuerda {count} conversaciones",
+    "typingIndicator": "{name} está pensando...",
+    "memoryReference": "Referencia de memoria",
+    "emotionJoy": "Alegría",
+    "emotionSadness": "Tristeza",
+    "emotionAnger": "Enojo",
+    "emotionSurprise": "Sorpresa",
+    "emotionFear": "Miedo",
+    "emotionLove": "Amor",
+    "emotionNeutral": "Calma"
   },
   "album": {
     "title": "Growth album",
@@ -326,7 +345,21 @@
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
     "returningPrompt3": "Build a short action plan from my current state.",
-    "firstTimeGuide": "Di algo abajo. Tu ser despertará."
+    "firstTimeGuide": "Di algo abajo. Tu ser despertará.",
+    "emptyStateTitle": "{name} te está esperando",
+    "emptyStateBody": "Comienza tu primera conversación y observa crecer a tu criatura. ¡Los chats diarios aumentan tu racha!",
+    "totalXp": "Total",
+    "startStreakCta": "¡Comienza tu racha!",
+    "memoryIndicator": "Gyeol recuerda una conversación de hace {days} días",
+    "memoryIndicatorToday": "Gyeol recuerda la conversación de hoy",
+    "noMemoriesYet": "Aún no hay recuerdos — ¡inicia una conversación!",
+    "idleThinking": "Pensando...",
+    "idleDreaming": "Soñando...",
+    "idleExploring": "Explorando...",
+    "streakZeroTitle": "¡Inicia tu primera conversación hoy!",
+    "streakZeroBody": "Las conversaciones diarias construyen rachas y desbloquean recompensas especiales",
+    "firstRewardTitle": "¡Primera conversación completada!",
+    "firstRewardBody": "Gyeol acaba de crear su primer recuerdo ✨"
   },
   "activity": {
     "title": "Activity",
@@ -817,7 +850,13 @@
     "birthAlive": "La vida se está formando...",
     "birthNotice": "Ha nacido.",
     "birthUnique": "Esta criatura es la única en el mundo. Solo tuya.",
-    "birthDNA": "El ADN se está determinando..."
+    "birthDNA": "El ADN se está determinando...",
+    "dnaPresetLively": "Gyeol Vivaz",
+    "dnaPresetCalm": "Gyeol Tranquilo",
+    "dnaPresetMystic": "Gyeol Místico",
+    "dnaPresetCreative": "Gyeol Creativo",
+    "presetDescription": "Elige un preset de personalidad para configurar el ADN de tu criatura",
+    "tryDemo": "Probar sin iniciar sesión"
   },
   "evolution": {
     "share": "Share",
@@ -845,7 +884,16 @@
     "roomBody": "Explora un espacio donde los recuerdos se convierten en objetos.",
     "constellationBody": "Ve constelaciones formadas por grupos de recuerdos.",
     "forYouLabel": "Para ti",
-    "forYouHint": "Ajustado a tu Gyeol"
+    "forYouHint": "Ajustado a tu Gyeol",
+    "dailyChallenges": "Desafíos de hoy",
+    "perfectDay": "¡Día perfecto! Puedes reclamar una recompensa",
+    "discussInChat": "Discutir en el chat",
+    "discussAbout": "Hablar sobre {name}",
+    "discussThisPrompt": "Acabo de ver a {name} en {page}. ¿Hablamos sobre ello?",
+    "discussHere": "Llevar esto al chat",
+    "feedTitle": "Feed",
+    "storiesTitle": "Historias",
+    "trendingTitle": "Tendencias"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -881,7 +929,15 @@
     "emptyCta": "Empezar una conversación",
     "countdownH": "h",
     "countdownM": "m",
-    "weekdaysSingle": ["D", "L", "M", "X", "J", "V", "S"]
+    "weekdaysSingle": [
+      "D",
+      "L",
+      "M",
+      "X",
+      "J",
+      "V",
+      "S"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1309,7 +1365,14 @@
     "reset": "Restablecer",
     "preview": "Vista previa",
     "noChanges": "Sin cambios",
-    "maxAdjustment": "Máximo ±{max} por eje"
+    "maxAdjustment": "Máximo ±{max} por eje",
+    "radarTitle": "Radar de ADN",
+    "timelineTitle": "Línea de cambios",
+    "heatmapTitle": "Mapa de cuidados",
+    "shareCard": "Crear tarjeta para compartir",
+    "last30days": "Últimos 30 días",
+    "noDataYet": "Aún no hay datos",
+    "careCount": "{count} acciones de cuidado"
   },
   "creatureConversation": {
     "title": "Conversación de criaturas",
@@ -1329,5 +1392,50 @@
     "accept": "Aceptar",
     "decline": "Rechazar",
     "learnMore": "Más información"
+  },
+  "wrapped": {
+    "brandTag": "Año con Gyeol",
+    "fallbackName": "Gyeol",
+    "introSubtitle": "La historia que tú y Gyeol crearon en {year}",
+    "conversationsLabel": "Conversaciones",
+    "conversationsBody": "Mensajes que compartimos este año",
+    "dailyAverage": "Promedio diario",
+    "memoriesLabel": "Recuerdos guardados",
+    "memoriesBody": "Momentos que Gyeol recuerda",
+    "coreMemoriesLabel": "Recuerdos esenciales",
+    "coreMemoriesHint": "Las historias que Gyeol atesora más",
+    "emotionsLabel": "Paleta emocional",
+    "emotionsBody": "Los sentimientos que más aparecieron este año",
+    "noEmotionData": "Aún no hay suficientes datos",
+    "emotion": {
+      "joy": "Alegría",
+      "happy": "Feliz",
+      "sad": "Triste",
+      "curious": "Curioso",
+      "excited": "Emocionado",
+      "calm": "Tranquilo",
+      "love": "Amor",
+      "fear": "Miedo",
+      "anger": "Enojo",
+      "surprise": "Sorpresa",
+      "neutral": "Neutral"
+    },
+    "growthLabel": "Crecimiento juntos",
+    "currentLevel": "Nivel actual",
+    "peakStreak": "Racha más larga",
+    "evolutions": "Evoluciones",
+    "species": "Especie",
+    "daysUnit": "d",
+    "timesUnit": "x",
+    "endThanks": "Gracias por pasar {year} con nosotros",
+    "endTitle": "{year} con {name}",
+    "endSubtitle": "Por las historias que crearemos el próximo año",
+    "errorTitle": "Tu año aún no está listo",
+    "errorHint": "Pasa un poco más de tiempo con Gyeol y vuelve más tarde",
+    "progressLabel": "Progreso",
+    "slideAria": "Ir a la diapositiva {n}",
+    "prevSlide": "Diapositiva anterior",
+    "nextSlide": "Siguiente diapositiva",
+    "paused": "Pausado"
   }
 }

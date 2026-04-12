@@ -30,7 +30,9 @@
     "awake": "清醒中",
     "breathingLabel": "呼吸中",
     "eyeTracking": "视线追踪中",
-    "restoring3d": "正在恢复3D..."
+    "restoring3d": "正在恢复3D...",
+    "generatePortrait": "生成AI肖像",
+    "generatingPortrait": "正在生成肖像..."
   },
   "nav": {
     "home": "Home",
@@ -93,7 +95,15 @@
     "securityTitle": "你的数据属于你",
     "securityE2e": "密码在 Supabase 中以哈希方式保存，绝不存储或记录明文。",
     "securityRls": "行级安全策略完全隔离每个账户，其他人无法读取你的记忆。",
-    "securityRateLimit": "速率限制和异常检测会自动阻止暴力破解尝试。"
+    "securityRateLimit": "速率限制和异常检测会自动阻止暴力破解尝试。",
+    "forgotPasswordLink": "忘记密码?",
+    "securityScore": "安全评分",
+    "securityGood": "安全",
+    "securityMedium": "一般",
+    "securityLow": "薄弱",
+    "privacyDashboard": "隐私面板",
+    "loginWelcome": "欢迎来到 Gyeol",
+    "loginSubline": "对话化为记忆,记忆化为成长"
   },
   "ageGate": {
     "eyebrow": "年龄确认",
@@ -168,7 +178,16 @@
     "silentActionStay": "静静待着",
     "thinking": "{name}正在思考…",
     "memoryPill": "保存着 {count} 条记忆",
-    "memoryAria": "结记得 {count} 次对话"
+    "memoryAria": "结记得 {count} 次对话",
+    "typingIndicator": "{name}正在思考...",
+    "memoryReference": "记忆引用",
+    "emotionJoy": "喜悦",
+    "emotionSadness": "悲伤",
+    "emotionAnger": "愤怒",
+    "emotionSurprise": "惊讶",
+    "emotionFear": "恐惧",
+    "emotionLove": "爱",
+    "emotionNeutral": "平静"
   },
   "album": {
     "title": "Growth album",
@@ -326,7 +345,21 @@
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
     "returningPrompt3": "Build a short action plan from my current state.",
-    "firstTimeGuide": "在下方说点什么吧。你的存在将会觉醒。"
+    "firstTimeGuide": "在下方说点什么吧。你的存在将会觉醒。",
+    "emptyStateTitle": "{name}正在等你",
+    "emptyStateBody": "开始你的第一次对话,见证你的生命体成长。每日聊天会累积连续记录!",
+    "totalXp": "总计",
+    "startStreakCta": "开始你的连续记录!",
+    "memoryIndicator": "Gyeol 记得 {days} 天前的对话",
+    "memoryIndicatorToday": "Gyeol 记得今天的对话",
+    "noMemoriesYet": "还没有记忆 — 开始对话吧!",
+    "idleThinking": "思考中...",
+    "idleDreaming": "梦境中...",
+    "idleExploring": "探索中...",
+    "streakZeroTitle": "今天开始你的第一次对话!",
+    "streakZeroBody": "每日对话会累积连续记录,解锁特殊奖励",
+    "firstRewardTitle": "首次对话完成!",
+    "firstRewardBody": "结刚刚留下了第一个记忆 ✨"
   },
   "activity": {
     "title": "Activity",
@@ -817,7 +850,13 @@
     "birthAlive": "生命正在形成...",
     "birthNotice": "诞生了。",
     "birthUnique": "这个生命体是世界上独一无二的。只属于你。",
-    "birthDNA": "DNA正在确定..."
+    "birthDNA": "DNA正在确定...",
+    "dnaPresetLively": "活泼的 Gyeol",
+    "dnaPresetCalm": "平静的 Gyeol",
+    "dnaPresetMystic": "神秘的 Gyeol",
+    "dnaPresetCreative": "创意的 Gyeol",
+    "presetDescription": "选择一个性格预设来配置你生命体的 DNA",
+    "tryDemo": "无需登录体验"
   },
   "evolution": {
     "share": "Share",
@@ -845,7 +884,16 @@
     "roomBody": "探索记忆变成物体的空间。",
     "constellationBody": "查看由记忆之星组成的星座。",
     "forYouLabel": "为你推荐",
-    "forYouHint": "根据你的结调整"
+    "forYouHint": "根据你的结调整",
+    "dailyChallenges": "今日挑战",
+    "perfectDay": "完美的一天!可领取奖励",
+    "discussInChat": "在聊天中讨论",
+    "discussAbout": "谈谈 {name}",
+    "discussThisPrompt": "我刚在 {page} 上看到了 {name}。要聊聊吗?",
+    "discussHere": "把看到的带入聊天继续聊",
+    "feedTitle": "动态",
+    "storiesTitle": "故事",
+    "trendingTitle": "热门"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -881,7 +929,15 @@
     "emptyCta": "开始对话",
     "countdownH": "时",
     "countdownM": "分",
-    "weekdaysSingle": ["日", "一", "二", "三", "四", "五", "六"]
+    "weekdaysSingle": [
+      "日",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1309,7 +1365,14 @@
     "reset": "重置",
     "preview": "预览",
     "noChanges": "没有变化",
-    "maxAdjustment": "每轴最大±{max}调整"
+    "maxAdjustment": "每轴最大±{max}调整",
+    "radarTitle": "DNA 雷达",
+    "timelineTitle": "变化时间线",
+    "heatmapTitle": "照料热图",
+    "shareCard": "创建分享卡",
+    "last30days": "过去 30 天",
+    "noDataYet": "暂无数据",
+    "careCount": "{count} 次照料"
   },
   "creatureConversation": {
     "title": "生物对话",
@@ -1329,5 +1392,50 @@
     "accept": "接受",
     "decline": "拒绝",
     "learnMore": "了解更多"
+  },
+  "wrapped": {
+    "brandTag": "与结同行的一年",
+    "fallbackName": "结",
+    "introSubtitle": "{year}年,你与结共同谱写的故事",
+    "conversationsLabel": "交谈",
+    "conversationsBody": "今年我们分享的消息",
+    "dailyAverage": "日均",
+    "memoriesLabel": "珍藏的记忆",
+    "memoriesBody": "结所记得的瞬间",
+    "coreMemoriesLabel": "核心记忆",
+    "coreMemoriesHint": "结最珍视的故事",
+    "emotionsLabel": "情感色彩",
+    "emotionsBody": "今年最常出现的情绪",
+    "noEmotionData": "数据还不够",
+    "emotion": {
+      "joy": "喜悦",
+      "happy": "快乐",
+      "sad": "悲伤",
+      "curious": "好奇",
+      "excited": "兴奋",
+      "calm": "平静",
+      "love": "爱",
+      "fear": "恐惧",
+      "anger": "愤怒",
+      "surprise": "惊讶",
+      "neutral": "中立"
+    },
+    "growthLabel": "共同成长",
+    "currentLevel": "当前等级",
+    "peakStreak": "最长连续",
+    "evolutions": "进化次数",
+    "species": "种族",
+    "daysUnit": "天",
+    "timesUnit": "次",
+    "endThanks": "感谢你与我们一起度过{year}年",
+    "endTitle": "与{name}的{year}",
+    "endSubtitle": "致明年我们将创造的故事",
+    "errorTitle": "你的年度还没准备好",
+    "errorHint": "多陪伴结一些时间后再回来看看",
+    "progressLabel": "进度",
+    "slideAria": "跳转到第{n}张",
+    "prevSlide": "上一张",
+    "nextSlide": "下一张",
+    "paused": "已暂停"
   }
 }
