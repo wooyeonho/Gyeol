@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
-import { haptic } from "@/lib/micro-interactions";
 import { SpringButton } from "@/components/ui/spring-button";
 import {
   initOrRefreshDailyChallenges,
