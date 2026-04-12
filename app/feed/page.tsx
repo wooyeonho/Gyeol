@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
+import { NewPostsPill } from "@/components/social/new-posts-pill";
+import { RichPresenceBadge, type PresenceActivity } from "@/components/social/rich-presence-badge";
+import { useHeartBurst, HeartBurstOverlay } from "@/components/effects/heart-burst";
 
 type Tab = "all" | "friends" | "ai";
 
@@ -45,14 +48,34 @@ export default function FeedPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newPostCount, setNewPostCount] = useState(0);
+  const { particles, burst } = useHeartBurst();
 
-  useEffect(() => {
+  const loadFeed = useCallback(() => {
     setLoading(true);
     fetch(`/api/feed?tab=${tab}`)
       .then((r) => r.json())
-      .then((d) => { setEvents(d.events ?? []); setLoading(false); })
+      .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
       .catch(() => setLoading(false));
   }, [tab]);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  // Poll for new posts every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch(`/api/feed?tab=${tab}&after=${events[0]?.created_at ?? ""}`)
+        .then((r) => r.json())
+        .then((d) => {
+          const count = (d.events ?? []).length;
+          if (count > 0) setNewPostCount((prev) => prev + count);
+        })
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [tab, events]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "all", label: "전체", icon: "🌍" },
@@ -60,8 +83,16 @@ export default function FeedPage() {
     { key: "ai", label: "AI 추천", icon: "✨" },
   ];
 
+  const inferActivity = (eventType: string): PresenceActivity => {
+    if (eventType === "level_up" || eventType === "evolution") return "evolving";
+    if (eventType === "memory_created") return "chatting";
+    if (eventType === "achievement") return "exploring";
+    return "idle";
+  };
+
   return (
     <main className="min-h-screen bg-[#0a0a0f] px-4 pt-8 pb-24">
+      <NewPostsPill count={newPostCount} onClick={loadFeed} />
       <div className="mx-auto max-w-lg">
         {/* Header */}
         <div className="mb-6">
@@ -122,11 +153,22 @@ export default function FeedPage() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-white">{name}</span>
                       <span className="text-[10px] text-white/30">Lv.{level}</span>
+                      <RichPresenceBadge activity={inferActivity(event.event_type)} />
                     </div>
                     <p className="text-sm text-white/60 mt-0.5">
                       {info.emoji} {info.ko}
                     </p>
-                    <p className="text-[10px] text-white/25 mt-1">{timeAgo(event.created_at)}</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-[10px] text-white/25">{timeAgo(event.created_at)}</p>
+                      <button
+                        type="button"
+                        className="relative text-[10px] text-white/30 hover:text-rose-400 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); burst(e); }}
+                      >
+                        ❤ 좋아요
+                        <HeartBurstOverlay particles={particles} />
+                      </button>
+                    </div>
                   </div>
                 </SpringCard>
               );

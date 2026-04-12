@@ -27,7 +27,7 @@ export function BentoDashboard({ items, className = "" }: BentoDashboardProps) {
       {items.map((item) => (
         <SpringCard
           key={item.key}
-          className={`${SPAN_CLASS[item.span ?? "1x1"]} min-h-[120px] flex flex-col`}
+          className={`${SPAN_CLASS[item.span ?? "1x1"]} min-h-[120px] flex flex-col glass-card rounded-2xl`}
         >
           {item.content}
         </SpringCard>

@@ -79,6 +79,9 @@ import { WorldWeather } from "@/components/world-weather";
 const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { StreakSocietyBadge, getStreakTier } from "@/components/engagement/streak-society-badge";
+const SeasonalEventBanner = dynamic(() => import("@/components/events/seasonal-event-banner").then((m) => ({ default: m.SeasonalEventBanner })), { ssr: false, loading: () => null });
+const AiDjFeed = dynamic(() => import("@/components/discover/ai-dj-feed").then((m) => ({ default: m.AiDjFeed })), { ssr: false, loading: () => null });
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
 const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
@@ -806,6 +809,14 @@ export default function Home() {
       </div>
       </CreatureTapReact>
 
+      {/* ===== STREAK SOCIETY + SEASONAL EVENT — visible gamification badges ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 -mt-1 mb-1 flex flex-wrap items-center gap-2">
+        <StreakSocietyBadge
+          tier={getStreakTier(agentState?.streak_days ?? 0)}
+          days={agentState?.streak_days ?? 0}
+        />
+      </div>
+
       {/* ===== HOME HERO — Duolingo-style streak + level + memory anchor ===== */}
       <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-2">
         <HomeHero
@@ -855,6 +866,16 @@ export default function Home() {
         <GlobalFeedTicker />
         <WorldClassHub onComebackDetected={handleComebackDetected} />
         <LivingFeed onGreetingReady={handleGreetingReady} />
+      </div>
+
+      {/* ===== AI DJ FEED — personalized recommendations ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 pb-2">
+        <AiDjFeed
+          streakDays={agentState?.streak_days ?? 0}
+          creatureLevel={agentState?.gen_level ?? 1}
+          mood={agentState?.mood ?? null}
+          locale={locale}
+        />
       </div>
 
       {/* World weather indicator */}

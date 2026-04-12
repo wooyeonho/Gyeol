@@ -8,6 +8,7 @@ import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
+import { CompatibilityCard } from "@/components/social/compatibility-card";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
 import { ErrorBanner } from "@/components/discover/error-banner";
 import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
@@ -142,6 +143,22 @@ export default function ExplorePage() {
           );
         })}
       </motion.div>
+
+      {/* Compatibility Card — show when 2+ agents */}
+      {agents.length >= 2 && (
+        <motion.div variants={itemVariants} className="mb-4">
+          <CompatibilityCard
+            myCreatureName={agents[0]?.self_name || t("explore.nameless")}
+            otherCreatureName={agents[1]?.self_name || t("explore.nameless")}
+            score={Math.round(Math.random() * 60 + 30)}
+            topTraits={[
+              { axis: "curiosity", closeness: 0.82 },
+              { axis: "empathy", closeness: 0.65 },
+              { axis: "creativity", closeness: 0.73 },
+            ]}
+          />
+        </motion.div>
+      )}
 
       {agents.length === 0 && !error && (
         <motion.div variants={itemVariants}>
