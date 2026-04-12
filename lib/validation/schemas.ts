@@ -263,6 +263,28 @@ export const creaturePortraitBodySchema = z.object({
   mood: z.string().max(50).optional(),
 });
 
+// ── /api/narrative POST ──
+export const narrativeChoiceBodySchema = z.object({
+  eventId: z.string().min(1).max(100),
+  choiceId: z.string().min(1).max(100),
+});
+
+// ── /api/room/battle POST ──
+export const battleActionBodySchema = z.object({
+  agentId: agentId,
+  opponentId: agentId,
+  moveType: z.enum(["strike", "guard", "magic", "speed", "heal"]),
+});
+
+// ── /api/creator POST ──
+export const creatorSubmitBodySchema = z.object({
+  title: z.string().min(3).max(100),
+  description: z.string().min(10).max(2000),
+  type: z.enum(["story", "item_design", "challenge", "room_theme", "creature_skin"]),
+  price: z.number().int().min(0).max(100000).optional().default(0),
+  content: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
 /**
  * Parse and validate request body with a Zod schema.
  * Returns `{ success: true, data }` on success or `{ success: false, error }` on failure.
