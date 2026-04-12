@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { isPasskeySupported } from "@/lib/security/passkey";
+import { isPlatformAuthenticatorAvailable } from "@/lib/security/biometric-auth";
 import {
   listLocalSecurityEvents,
   describeSecurityEvent,
@@ -53,6 +54,7 @@ const SEVERITY_STYLE: Record<AuditSeverity, string> = {
 
 export default function SecurityCenterPage() {
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [status, setStatus] = useState<SecurityStatus>(DEFAULT_STATUS);
   // Lazy init reads localStorage once, client-side only.
   const [events] = useState<SecurityEvent[]>(() =>
@@ -68,6 +70,7 @@ export default function SecurityCenterPage() {
   useEffect(() => {
     // External async probe — this *is* the right use of useEffect.
     void isPasskeySupported().then(setPasskeyAvailable);
+    void isPlatformAuthenticatorAvailable().then(setBiometricAvailable);
   }, []);
 
   // Real Bitwarden-style account health audit. Derives a snapshot from the
@@ -196,6 +199,19 @@ export default function SecurityCenterPage() {
               setRecoveryPhrase(generateRecoveryPhrase(12));
             }
           }}
+        />
+
+        <SecurityRow
+          icon={<Smartphone className="h-5 w-5" />}
+          title="Biometric unlock (Face ID / Fingerprint)"
+          description={
+            biometricAvailable
+              ? "Use your device biometrics to unlock the app."
+              : "Your device does not support biometric authentication."
+          }
+          enabled={false}
+          disabled={!biometricAvailable}
+          onToggle={() => {}}
         />
 
         <SecurityRow

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { useTranslations } from "@/components/i18n-provider";
 import { CLIENT_EVENT } from "@/lib/analytics/catalog";
 import { trackClientEvent } from "@/lib/analytics/client";
@@ -23,5 +25,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     );
   }, [locale, pathname, ready]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <Analytics />
+      <SpeedInsights />
+      {children}
+    </>
+  );
 }
