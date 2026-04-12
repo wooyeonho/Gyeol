@@ -197,6 +197,17 @@
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
   },
+  "homeHero": {
+    "streakLabel": "STREAK",
+    "levelLabel": "LV",
+    "memoryLabel": "MEMORIES",
+    "xpToNext": "{count} XP to next level",
+    "streakAria": "{count}-day streak — open achievements",
+    "memoryAria": "{count} memories — open memories",
+    "newUserEyebrow": "FIRST STEP",
+    "newUserTitle": "Light your first spark now",
+    "newUserBody": "One message starts your streak, level, and memories all at once."
+  },
   "home": {
     "firstMinute": "FIRST MINUTE",
     "todaysStart": "TODAY'S START",

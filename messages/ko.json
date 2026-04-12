@@ -197,6 +197,17 @@
     "cronFreshness": "크론 최신성",
     "minutesAgo": "분 전"
   },
+  "homeHero": {
+    "streakLabel": "연속",
+    "levelLabel": "LV",
+    "memoryLabel": "기억",
+    "xpToNext": "다음 레벨까지 {count} XP",
+    "streakAria": "{count}일 연속 대화 — 업적으로 이동",
+    "memoryAria": "총 {count}개 기억 — 메모리로 이동",
+    "newUserEyebrow": "첫 걸음",
+    "newUserTitle": "지금 첫 불꽃을 피워보세요",
+    "newUserBody": "한 마디 대화로 스트릭·레벨·기억이 동시에 시작됩니다."
+  },
   "home": {
     "firstMinute": "FIRST MINUTE",
     "todaysStart": "TODAY'S START",

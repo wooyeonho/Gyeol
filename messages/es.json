@@ -197,6 +197,17 @@
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
   },
+  "homeHero": {
+    "streakLabel": "RACHA",
+    "levelLabel": "LV",
+    "memoryLabel": "RECUERDOS",
+    "xpToNext": "{count} XP para el siguiente nivel",
+    "streakAria": "Racha de {count} días — abrir logros",
+    "memoryAria": "{count} recuerdos — abrir memorias",
+    "newUserEyebrow": "PRIMER PASO",
+    "newUserTitle": "Enciende ahora tu primera chispa",
+    "newUserBody": "Con un mensaje arrancan tu racha, nivel y recuerdos a la vez."
+  },
   "home": {
     "firstMinute": "FIRST MINUTE",
     "todaysStart": "TODAY'S START",

@@ -197,6 +197,17 @@
     "cronFreshness": "Cron freshness",
     "minutesAgo": "m ago"
   },
+  "homeHero": {
+    "streakLabel": "连续",
+    "levelLabel": "LV",
+    "memoryLabel": "记忆",
+    "xpToNext": "距离下一级还差 {count} XP",
+    "streakAria": "连续 {count} 天 — 打开成就",
+    "memoryAria": "{count} 条记忆 — 打开记忆",
+    "newUserEyebrow": "第一步",
+    "newUserTitle": "现在点燃第一簇火花",
+    "newUserBody": "只需一句话，连续、等级和记忆同时开始。"
+  },
   "home": {
     "firstMinute": "FIRST MINUTE",
     "todaysStart": "TODAY'S START",

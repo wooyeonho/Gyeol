@@ -37,7 +37,7 @@ import { CreatureTapReact } from "@/components/effects/creature-tap";
 import { CreatureMiniStatus } from "@/components/creature-mini-status";
 import { StreakDisplay } from "@/components/streak-display";
 import { StreakFlame } from "@/components/streak-flame";
-import { LevelBar } from "@/components/engagement/level-bar";
+import { HomeHero } from "@/components/engagement/home-hero";
 import { StreakShield } from "@/components/streak-shield";
 import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
@@ -762,18 +762,22 @@ export default function Home() {
       </div>
       </CreatureTapReact>
 
+      {/* ===== HOME HERO — Duolingo-style streak + level + memory anchor ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-2">
+        <HomeHero
+          streakDays={engagement?.currentStreak ?? (agentState?.streak_days ?? 0)}
+          todayActive={(agentState?.streak_days ?? 0) > 0}
+          level={engagement?.level ?? 1}
+          xpIntoLevel={engagement?.xpIntoLevel ?? 0}
+          xpForNext={engagement?.xpForNext ?? 50}
+          genLevel={typeof agentState?.gen_level === "number" ? agentState.gen_level : 1}
+          totalMessages={typeof agentState?.total_messages === "number" ? agentState.total_messages : 0}
+          isNewUser={!engagement || ((engagement.totalXp ?? 0) === 0 && (engagement.currentStreak ?? 0) === 0)}
+        />
+      </div>
+
       {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
-      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
-        {engagement && (
-          <div className="mb-2">
-            <LevelBar
-              level={engagement.level}
-              xpIntoLevel={engagement.xpIntoLevel}
-              xpForNext={engagement.xpForNext}
-              compact
-            />
-          </div>
-        )}
+      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 mb-1">
         <QuickCareButtons
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}
