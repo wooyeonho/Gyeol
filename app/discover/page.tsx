@@ -441,7 +441,8 @@ export default function DiscoverPage() {
 
         {/* Live-ops info — XP level & daily reset countdown */}
         {(() => {
-          const xp = (agentState?.xp as number) ?? 0;
+          // AgentState has no xp field; derive from total_messages as proxy
+          const xp = totalMessages * 10 + streakDays * 50;
           const level = levelFromXp(xp);
           const resetSecs = secondsUntilDailyReset(new Date(), 5, 9);
           const resetH = Math.floor(resetSecs / 3600);
