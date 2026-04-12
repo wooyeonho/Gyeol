@@ -381,31 +381,56 @@ export default function DiscoverPage() {
           <div className="h-px flex-1 bg-white/[0.12]" />
         </div>
 
-        {/* 2×3 Bento Grid */}
+        {/* Bento Grid — Instagram Explore feel: one large hero + five compacts */}
         <motion.section
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-2 grid-rows-[auto_auto_auto] gap-3"
           initial="hidden"
           animate="visible"
         >
-          {cards.map((card, i) => (
-            <motion.div key={card.href} custom={i} variants={cardVariants}>
-              <Link
-                href={card.href}
-                onClick={() => haptic("tap")}
-                className={`group glass-card relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-white/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[130px]`}
+          {cards.map((card, i) => {
+            const isHero = i === 0; // first card spans both columns as a feature tile
+            return (
+              <motion.div
+                key={card.href}
+                custom={i}
+                variants={cardVariants}
+                className={isHero ? "col-span-2" : ""}
               >
-                <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors" />
-                <div className="rounded-xl bg-white/8 p-2 text-white/70 group-hover:text-white/90 transition-colors w-fit mb-2">
-                  <CardIcon type={card.iconType} />
-                </div>
-                <h2 className="text-sm font-semibold tracking-tight text-white leading-tight">{card.title}</h2>
-                <p className="theme-text-faint text-xs mt-0.5">
-                  {t("discover.itemsCount").replace("{count}", String(card.count))}
-                </p>
-                <p className="theme-text-subtle mt-auto pt-2 text-xs leading-5 line-clamp-2">{card.body}</p>
-              </Link>
-            </motion.div>
-          ))}
+                <Link
+                  href={card.href}
+                  onClick={() => haptic("tap")}
+                  className={`group relative flex ${isHero ? "flex-row items-center gap-4" : "flex-col"} overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br ${card.gradient} p-4 transition-all duration-300 hover:-translate-y-[2px] hover:border-white/[0.18] hover:shadow-xl hover:shadow-black/40 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${isHero ? "min-h-[112px]" : "min-h-[134px]"}`}
+                >
+                  {/* Ambient glow orb for depth */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-30 blur-2xl transition-opacity duration-300 group-hover:opacity-50"
+                    style={{ background: "white" }}
+                  />
+
+                  <div className={`rounded-xl bg-white/[0.08] p-2.5 text-white/80 transition-all duration-300 group-hover:bg-white/[0.14] group-hover:text-white ${isHero ? "flex-shrink-0" : "mb-2 w-fit"}`}>
+                    <CardIcon type={card.iconType} />
+                  </div>
+
+                  <div className={`${isHero ? "flex-1 min-w-0" : "flex flex-1 flex-col"}`}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h2 className={`font-semibold tracking-tight text-white leading-tight ${isHero ? "text-base" : "text-sm"}`}>
+                        {card.title}
+                      </h2>
+                      {card.count > 0 && (
+                        <span className="shrink-0 rounded-full bg-white/[0.1] px-2 py-0.5 text-[10px] font-medium tabular-nums text-white/80">
+                          {card.count}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-white/55 leading-snug ${isHero ? "mt-1 text-xs line-clamp-2" : "mt-auto pt-2 text-xs line-clamp-2"}`}>
+                      {card.body}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
         </motion.section>
 
         {counts.activity === 0 && counts.album === 0 && counts.social === 0 && counts.explore === 0 && counts.room === 0 && counts.constellation === 0 && (
