@@ -16,6 +16,71 @@ type ReferralStats = {
   coins_earned: number;
 };
 
+function ReferralApplySection() {
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const apply = async () => {
+    if (!code.trim()) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/referral/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        setStatus("success");
+        setMessage(json.message ?? "코드가 적용되었습니다!");
+      } else {
+        setStatus("error");
+        setMessage(json?.error === "Already redeemed" ? "이미 사용한 코드예요" :
+          json?.error === "Invalid code" ? "유효하지 않은 코드예요" :
+          json?.error === "Cannot use own code" ? "본인 코드는 사용할 수 없어요" :
+          "코드 적용에 실패했어요");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("네트워크 오류");
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/40">
+        초대 코드 입력
+      </p>
+      <p className="mb-3 text-[11px] text-white/30">
+        친구에게 받은 코드를 입력하면 양쪽 모두 보상을 받아요
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="초대 코드 입력"
+          disabled={status === "success"}
+          className="flex-1 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-cyan-300/40 focus:outline-none disabled:opacity-50"
+        />
+        <button
+          type="button"
+          onClick={() => void apply()}
+          disabled={!code.trim() || status === "loading" || status === "success"}
+          className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/15 disabled:opacity-40"
+        >
+          {status === "loading" ? "..." : status === "success" ? "완료" : "적용"}
+        </button>
+      </div>
+      {message && (
+        <p className={`mt-2 text-[11px] ${status === "success" ? "text-emerald-300" : "text-rose-300"}`}>
+          {message}
+        </p>
+      )}
+    </section>
+  );
+}
+
 /**
  * Phase 3-3: My Invites.
  *
@@ -139,6 +204,9 @@ export default function InvitesPage() {
             </Link>
           </div>
         </motion.section>
+
+        {/* Apply referral code */}
+        <ReferralApplySection />
 
         {/* Reward progress */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
