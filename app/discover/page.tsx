@@ -328,6 +328,34 @@ export default function DiscoverPage() {
           />
         </motion.div>
 
+        {/* Quick-access story feed — horizontal scroll (Instagram Explore inspired) */}
+        <motion.div variants={itemVariants} className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-white/80">{t("discover.storiesTitle") || "Stories"}</h2>
+            <Link href="/feed" className="text-xs text-cyan-400/70 hover:text-cyan-300">{t("discover.feedTitle") || "Feed"} →</Link>
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+            {[
+              { emoji: "📖", label: locale === "ko" ? "일기" : "Diary", href: "/diary", gradient: "from-purple-500/25 to-fuchsia-500/10" },
+              { emoji: "🧬", label: locale === "ko" ? "진화 기록" : "Evolution", href: "/activity", gradient: "from-cyan-500/25 to-blue-500/10" },
+              { emoji: "🏆", label: locale === "ko" ? "업적" : "Achievements", href: "/challenges", gradient: "from-amber-500/25 to-orange-500/10" },
+              { emoji: "💬", label: locale === "ko" ? "커뮤니티" : "Community", href: "/community/spaces", gradient: "from-emerald-500/25 to-teal-500/10" },
+              { emoji: "🎁", label: locale === "ko" ? "연간 요약" : "Wrapped", href: "/wrapped", gradient: "from-rose-500/25 to-pink-500/10" },
+            ].map((story) => (
+              <Link
+                key={story.href}
+                href={story.href}
+                onClick={() => haptic("tap")}
+                className={`flex-shrink-0 flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-gradient-to-br ${story.gradient} px-4 py-3 transition-all hover:border-white/20 active:scale-95`}
+                style={{ width: 80 }}
+              >
+                <span className="text-2xl">{story.emoji}</span>
+                <span className="text-[10px] font-medium text-white/70 text-center leading-tight">{story.label}</span>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />
 
         {/* Daily Special Challenges — procedural quests */}

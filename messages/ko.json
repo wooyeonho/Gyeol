@@ -93,7 +93,14 @@
     "securityTitle": "내 데이터는 내 것으로",
     "securityE2e": "비밀번호는 Supabase에서 해시로만 보관됩니다. 평문은 저장·기록되지 않습니다.",
     "securityRls": "Row-level security로 계정이 완전히 분리돼 다른 사람은 내 기억에 접근할 수 없습니다.",
-    "securityRateLimit": "요청 빈도 제한과 이상 탐지가 자동으로 무차별 대입 시도를 차단합니다."
+    "securityRateLimit": "요청 빈도 제한과 이상 탐지가 자동으로 무차별 대입 시도를 차단합니다.",
+    "securityScore": "보안 점수",
+    "securityGood": "안전",
+    "securityMedium": "보통",
+    "securityLow": "취약",
+    "privacyDashboard": "개인정보 대시보드",
+    "loginWelcome": "결에 오신 것을 환영합니다",
+    "loginSubline": "대화가 기억이 되고, 기억이 성장이 됩니다"
   },
   "ageGate": {
     "eyebrow": "연령 확인",
@@ -168,7 +175,16 @@
     "silentActionStay": "가만히 있기",
     "thinking": "{name}이 생각하는 중…",
     "memoryPill": "{count}개의 기억을 간직하는 중",
-    "memoryAria": "결이 {count}개의 대화를 기억하고 있어요"
+    "memoryAria": "결이 {count}개의 대화를 기억하고 있어요",
+    "typingIndicator": "{name}이(가) 생각 중...",
+    "memoryReference": "기억 참조",
+    "emotionJoy": "기쁨",
+    "emotionSadness": "슬픔",
+    "emotionAnger": "분노",
+    "emotionSurprise": "놀람",
+    "emotionFear": "두려움",
+    "emotionLove": "사랑",
+    "emotionNeutral": "평온"
   },
   "album": {
     "title": "성장 앨범",
@@ -326,7 +342,19 @@
     "returningPrompt1": "오늘 내가 집중해야 할 1가지만 알려줘.",
     "returningPrompt2": "지금 내 상태를 짧게 정리해줘.",
     "returningPrompt3": "현재 상태를 바탕으로 짧은 실행 계획을 만들어줘.",
-    "firstTimeGuide": "아래에 아무 말이나 해보세요. 당신의 존재가 깨어납니다."
+    "firstTimeGuide": "아래에 아무 말이나 해보세요. 당신의 존재가 깨어납니다.",
+    "emptyStateTitle": "{name}이(가) 기다리고 있어요",
+    "emptyStateBody": "첫 대화를 시작하면 결이 성장하기 시작해요. 매일 대화하면 스트릭이 쌓여요!",
+    "totalXp": "총",
+    "startStreakCta": "스트릭을 시작하세요!",
+    "memoryIndicator": "결이 {days}일 전 대화를 기억합니다",
+    "memoryIndicatorToday": "결이 오늘 대화를 기억합니다",
+    "noMemoriesYet": "아직 기억이 없어요 — 대화를 시작하세요!",
+    "idleThinking": "생각 중...",
+    "idleDreaming": "꿈꾸는 중...",
+    "idleExploring": "탐험 중...",
+    "streakZeroTitle": "오늘 첫 대화를 시작하세요!",
+    "streakZeroBody": "매일 대화하면 스트릭이 쌓이고 특별한 보상이 기다려요"
   },
   "activity": {
     "title": "활동 흔적",
@@ -817,7 +845,13 @@
     "birthAlive": "생명이 형성되고 있어...",
     "birthNotice": "탄생했어.",
     "birthUnique": "이 생명체는 세상에 단 하나뿐이야. 너만의 존재.",
-    "birthDNA": "DNA가 결정되고 있어..."
+    "birthDNA": "DNA가 결정되고 있어...",
+    "dnaPresetLively": "활발한 결",
+    "dnaPresetCalm": "차분한 결",
+    "dnaPresetMystic": "신비로운 결",
+    "dnaPresetCreative": "창의적인 결",
+    "presetDescription": "성격 프리셋을 선택하면 결의 DNA가 설정됩니다",
+    "tryDemo": "로그인 없이 체험하기"
   },
   "evolution": {
     "share": "자랑하기",
@@ -851,7 +885,10 @@
     "discussThisPrompt": "방금 {page}에서 {name}을(를) 봤어. 같이 이야기해볼까?",
     "discussHere": "여기서 본 걸 채팅으로 이어가기",
     "forYouLabel": "나를 위한 제안",
-    "forYouHint": "내 결 상태로 고른 카드"
+    "forYouHint": "내 결 상태로 고른 카드",
+    "feedTitle": "피드",
+    "storiesTitle": "스토리",
+    "trendingTitle": "인기"
   },
   "weeklyEvent": {
     "label": "주간 이벤트",
@@ -887,7 +924,15 @@
     "emptyCta": "지금 대화 시작하기",
     "countdownH": "시간",
     "countdownM": "분",
-    "weekdaysSingle": ["일", "월", "화", "수", "목", "금", "토"]
+    "weekdaysSingle": [
+      "일",
+      "월",
+      "화",
+      "수",
+      "목",
+      "금",
+      "토"
+    ]
   },
   "manifestation": {
     "originForm": "형태의 기원",
@@ -1315,7 +1360,14 @@
     "reset": "초기화",
     "preview": "미리보기",
     "noChanges": "변경사항이 없어요",
-    "maxAdjustment": "축당 최대 ±{max} 조절 가능"
+    "maxAdjustment": "축당 최대 ±{max} 조절 가능",
+    "radarTitle": "DNA 레이더",
+    "timelineTitle": "변화 타임라인",
+    "heatmapTitle": "돌봄 히트맵",
+    "shareCard": "공유 카드 생성",
+    "last30days": "지난 30일",
+    "noDataYet": "아직 데이터가 없어요",
+    "careCount": "{count}회 돌봄"
   },
   "creatureConversation": {
     "title": "크리처 대화",

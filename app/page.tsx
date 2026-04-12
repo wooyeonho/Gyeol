@@ -901,7 +901,7 @@ export default function Home() {
               className="absolute -top-8 right-0 text-white/40 hover:text-white/70 text-sm"
               onClick={() => setShowDailyBonus(false)}
             >
-              닫기
+              {t("common.close") || "닫기"}
             </button>
             <DailyLoginBonus
               currentDayIndex={bonusDayIndex}

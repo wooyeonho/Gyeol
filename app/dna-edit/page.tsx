@@ -12,6 +12,8 @@ import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNATheme } from "@/lib/theme/dna-theme";
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
+import { DnaRadarChart } from "@/components/dna/radar-chart";
+import { CareHeatmap } from "@/components/dna/care-heatmap";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -253,6 +255,24 @@ export default function DnaEditPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* ===== DNA Radar Chart — 16-axis visual ===== */}
+            <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="mb-2 text-sm font-medium text-white/70">
+                {t("dnaEditor.radarTitle") || "DNA Radar"}
+              </h3>
+              <DnaRadarChart
+                dna={editedDna}
+                previousDna={currentDna}
+                accentColor="#818cf8"
+                size={220}
+              />
+            </div>
+
+            {/* ===== Care Heatmap — GitHub-style activity grid ===== */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <CareHeatmap careDates={[]} accentColor="#22d3ee" />
             </div>
 
             {/* Cost display */}

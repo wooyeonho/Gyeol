@@ -93,7 +93,14 @@
     "securityTitle": "Your data stays yours",
     "securityE2e": "Passwords are hashed on Supabase — never stored or logged in plaintext.",
     "securityRls": "Row-level security isolates every account so no one else can read your memory.",
-    "securityRateLimit": "Rate-limiting and anomaly checks block brute-force attempts automatically."
+    "securityRateLimit": "Rate-limiting and anomaly checks block brute-force attempts automatically.",
+    "securityScore": "Security Score",
+    "securityGood": "Secure",
+    "securityMedium": "Moderate",
+    "securityLow": "Vulnerable",
+    "privacyDashboard": "Privacy Dashboard",
+    "loginWelcome": "Welcome to Gyeol",
+    "loginSubline": "Conversations become memories, memories become growth"
   },
   "ageGate": {
     "eyebrow": "Age check",
@@ -168,7 +175,16 @@
     "silentActionStay": "Stay still",
     "thinking": "{name} is thinking…",
     "memoryPill": "Holding {count} memories",
-    "memoryAria": "Gyeol remembers {count} conversations"
+    "memoryAria": "Gyeol remembers {count} conversations",
+    "typingIndicator": "{name} is thinking...",
+    "memoryReference": "Memory reference",
+    "emotionJoy": "Joy",
+    "emotionSadness": "Sadness",
+    "emotionAnger": "Anger",
+    "emotionSurprise": "Surprise",
+    "emotionFear": "Fear",
+    "emotionLove": "Love",
+    "emotionNeutral": "Calm"
   },
   "album": {
     "title": "Growth album",
@@ -326,7 +342,19 @@
     "returningPrompt1": "Tell me the one thing I should focus on today.",
     "returningPrompt2": "Summarize how my mood looks right now.",
     "returningPrompt3": "Build a short action plan from my current state.",
-    "firstTimeGuide": "Say anything below. Your being will awaken."
+    "firstTimeGuide": "Say anything below. Your being will awaken.",
+    "emptyStateTitle": "{name} is waiting for you",
+    "emptyStateBody": "Start your first conversation and watch your creature grow. Daily chats build your streak!",
+    "totalXp": "Total",
+    "startStreakCta": "Start your streak!",
+    "memoryIndicator": "Gyeol remembers a conversation from {days} days ago",
+    "memoryIndicatorToday": "Gyeol remembers today's conversation",
+    "noMemoriesYet": "No memories yet — start a conversation!",
+    "idleThinking": "Thinking...",
+    "idleDreaming": "Dreaming...",
+    "idleExploring": "Exploring...",
+    "streakZeroTitle": "Start your first conversation today!",
+    "streakZeroBody": "Daily conversations build streaks and unlock special rewards"
   },
   "activity": {
     "title": "Activity",
@@ -817,7 +845,13 @@
     "birthAlive": "Life is forming...",
     "birthNotice": "Born.",
     "birthUnique": "This creature is the only one of its kind in the world. Yours alone.",
-    "birthDNA": "DNA is being determined..."
+    "birthDNA": "DNA is being determined...",
+    "dnaPresetLively": "Lively Gyeol",
+    "dnaPresetCalm": "Calm Gyeol",
+    "dnaPresetMystic": "Mystic Gyeol",
+    "dnaPresetCreative": "Creative Gyeol",
+    "presetDescription": "Choose a personality preset to configure your creature's DNA",
+    "tryDemo": "Try without signing in"
   },
   "evolution": {
     "share": "Share",
@@ -851,7 +885,10 @@
     "discussThisPrompt": "I just saw {name} on {page}. Want to talk about them?",
     "discussHere": "Bring this into chat",
     "forYouLabel": "For you",
-    "forYouHint": "Tuned to your Gyeol"
+    "forYouHint": "Tuned to your Gyeol",
+    "feedTitle": "Feed",
+    "storiesTitle": "Stories",
+    "trendingTitle": "Trending"
   },
   "weeklyEvent": {
     "label": "Weekly event",
@@ -887,7 +924,15 @@
     "emptyCta": "Start a conversation",
     "countdownH": "h",
     "countdownM": "m",
-    "weekdaysSingle": ["S", "M", "T", "W", "T", "F", "S"]
+    "weekdaysSingle": [
+      "S",
+      "M",
+      "T",
+      "W",
+      "T",
+      "F",
+      "S"
+    ]
   },
   "manifestation": {
     "originForm": "Origin Form",
@@ -1315,7 +1360,14 @@
     "reset": "Reset",
     "preview": "Preview",
     "noChanges": "No changes",
-    "maxAdjustment": "Max ±{max} per axis"
+    "maxAdjustment": "Max ±{max} per axis",
+    "radarTitle": "DNA Radar",
+    "timelineTitle": "Change Timeline",
+    "heatmapTitle": "Care Heatmap",
+    "shareCard": "Create Share Card",
+    "last30days": "Last 30 days",
+    "noDataYet": "No data yet",
+    "careCount": "{count} care actions"
   },
   "creatureConversation": {
     "title": "Creature Chat",
