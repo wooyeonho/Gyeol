@@ -322,6 +322,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Cache headers for cacheable GET API responses ──
+  if (request.method === "GET" && pathname.startsWith("/api/")) {
+    const cacheableApis = [
+      "/api/market",
+      "/api/league/current",
+      "/api/social/global-feed",
+      "/api/challenges",
+    ];
+    if (cacheableApis.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+      response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    }
+  }
+
   // ── Auth: skip for public paths and self-authed APIs ──
   if (isPublicPath(pathname) || isSelfAuthedApiPath(pathname)) {
     return response;
