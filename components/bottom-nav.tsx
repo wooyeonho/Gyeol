@@ -59,7 +59,6 @@ function NavIcon({ name }: { name: "home" | "chat" | "discover" | "social" | "pr
 
 const TABS = [
   { path: "/", labelKey: "nav.home", icon: "home" as const, tutorialId: "nav-home" },
-  { path: "/chat", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
   { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
   { path: "/social", labelKey: "nav.social", icon: "social" as const, tutorialId: "nav-social" },
   { path: "/settings", labelKey: "nav.profile", icon: "profile" as const, tutorialId: "nav-profile" },
@@ -89,9 +88,6 @@ const SOCIAL_PATHS = new Set([
 function isTabActive(pathname: string, tabPath: string) {
   if (tabPath === "/") {
     return pathname === "/";
-  }
-  if (tabPath === "/chat") {
-    return pathname === "/chat";
   }
   if (tabPath === "/discover") {
     return DISCOVER_PATHS.has(pathname);

@@ -769,7 +769,7 @@ export default function Home() {
         <StreakHero
           days={agentState?.streak_days ?? 0}
           level={engagement?.level ?? 1}
-          totalXp={engagement ? engagement.xpIntoLevel + (engagement.level - 1) * engagement.xpForNext : 0}
+          totalXp={engagement?.totalXp ?? 0}
           xpIntoLevel={engagement?.xpIntoLevel ?? 0}
           xpForNext={engagement?.xpForNext ?? 100}
           accentColor={appearance.palette.primary}
