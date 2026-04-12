@@ -144,6 +144,16 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [challengeCompleted, setChallengeCompleted] = useState(0);
   const challengeTotal = 3;
+  const [personalization, setPersonalization] = useState<{ profile?: Record<string, unknown>; config?: Record<string, unknown> } | null>(null);
+  const [serverChallenges, setServerChallenges] = useState<Array<{
+    id: string;
+    difficulty: string;
+    label: { ko: string; en: string };
+    description: { ko: string; en: string };
+    icon: string;
+    target: number;
+    reward: { coins: number; evolution_points?: number; emoji_dust?: number };
+  }>>([]);
 
   // Party system — placeholder data (will be replaced with real data from store)
   const placeholderParty = useMemo<PartyMember[]>(() => {
@@ -198,6 +208,26 @@ export default function DiscoverPage() {
     if (typeof window === "undefined") return;
     const state = initOrRefreshDailyChallenges();
     setChallengeCompleted(state.challenges.filter((c) => c.completed).length);
+  }, []);
+
+  // Fetch personalization config from server
+  useEffect(() => {
+    fetch("/api/personalization")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setPersonalization(data as { profile?: Record<string, unknown>; config?: Record<string, unknown> }); })
+      .catch(() => { /* personalization unavailable */ });
+  }, []);
+
+  // Fetch server-generated daily challenges
+  useEffect(() => {
+    fetch("/api/daily-challenges")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.challenges && Array.isArray(data.challenges)) {
+          setServerChallenges(data.challenges as typeof serverChallenges);
+        }
+      })
+      .catch(() => { /* daily-challenges unavailable */ });
   }, []);
 
   useEffect(() => {
@@ -332,6 +362,70 @@ export default function DiscoverPage() {
             isSilent={isSilentCreature}
           />
         </motion.div>
+
+        {/* Personalization insights — powered by /api/personalization */}
+        {personalization?.config && (
+          <motion.div variants={itemVariants} className="rounded-2xl border border-purple-400/15 bg-purple-500/5 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-base">🎯</span>
+              <span className="text-sm font-medium text-white/80">
+                {locale === "ko" ? "맞춤 추천" : "Personalized For You"}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {typeof personalization.config.greeting === "string" && (
+                <span className="rounded-full border border-purple-300/15 bg-purple-400/10 px-3 py-1 text-xs text-purple-200">
+                  {personalization.config.greeting}
+                </span>
+              )}
+              {Array.isArray(personalization.config.suggestedFeatures) && (
+                (personalization.config.suggestedFeatures as string[]).slice(0, 3).map((feature) => (
+                  <span key={feature} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                    {feature}
+                  </span>
+                ))
+              )}
+              {typeof personalization.config.challengeDifficulty === "string" && (
+                <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-3 py-1 text-xs text-amber-200">
+                  {locale === "ko" ? "난이도" : "Difficulty"}: {personalization.config.challengeDifficulty}
+                </span>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Server-generated daily challenges — from /api/daily-challenges */}
+        {serverChallenges.length > 0 && (
+          <motion.div variants={itemVariants} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">⚡</span>
+                <span className="text-sm font-medium text-white/80">
+                  {locale === "ko" ? "서버 챌린지" : "Server Challenges"}
+                </span>
+              </div>
+              <Link href="/challenges" className="text-xs text-cyan-400/70 hover:text-cyan-300">
+                {locale === "ko" ? "전체보기" : "View all"} →
+              </Link>
+            </div>
+            {serverChallenges.slice(0, 3).map((ch) => (
+              <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <span className="text-lg">{ch.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white/85">
+                    {locale === "ko" ? ch.label.ko : ch.label.en}
+                  </p>
+                  <p className="text-[10px] text-white/40">
+                    {locale === "ko" ? ch.description.ko : ch.description.en}
+                  </p>
+                </div>
+                <div className="text-right text-[10px] text-white/40">
+                  <span>🪙 {ch.reward.coins}</span>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
 
         {/* Quick-access story feed — horizontal scroll (Instagram Explore inspired) */}
         <motion.div variants={itemVariants} className="space-y-2">
