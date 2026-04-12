@@ -20,6 +20,42 @@ const PERSONALITY_MODES = [
   { key: "creative", emoji: "🎨" },
 ] as const;
 
+/** DNA presets — quick-start options for new users (Duolingo onboarding style) */
+const DNA_PRESETS = [
+  {
+    key: "lively",
+    labelKey: "onboarding.dnaPresetLively",
+    emoji: "⚡",
+    color: "#fbbf24",
+    traits: ["playfulness", "curiosity", "verbal"],
+    gradient: "from-amber-500/20 to-orange-500/10",
+  },
+  {
+    key: "calm",
+    labelKey: "onboarding.dnaPresetCalm",
+    emoji: "🌊",
+    color: "#60a5fa",
+    traits: ["stability", "empathy", "warmth"],
+    gradient: "from-blue-500/20 to-cyan-500/10",
+  },
+  {
+    key: "mystic",
+    labelKey: "onboarding.dnaPresetMystic",
+    emoji: "🔮",
+    color: "#a78bfa",
+    traits: ["intuitive", "openness", "independence"],
+    gradient: "from-purple-500/20 to-fuchsia-500/10",
+  },
+  {
+    key: "creative",
+    labelKey: "onboarding.dnaPresetCreative",
+    emoji: "🎨",
+    color: "#f472b6",
+    traits: ["creativity", "adaptability", "spatial"],
+    gradient: "from-pink-500/20 to-rose-500/10",
+  },
+] as const;
+
 const TOTAL_STEPS = 3; // Birth (auto) → Personality → Rewards
 
 const slideVariants = {
@@ -229,26 +265,82 @@ function StepPersonality({
       <p className="mt-3 text-base leading-7 text-white/80">
         {t("onboarding.step2Desc")}
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        {PERSONALITY_MODES.map((mode) => {
-          const isSelected = selectedMode === mode.key;
-          return (
-            <button
-              key={mode.key}
-              type="button"
-              onClick={() => onSelectMode(mode.key)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                isSelected
-                  ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
-                  : "border-white/10 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.08]"
-              }`}
-            >
-              <span className="text-lg">{mode.emoji}</span>
-              <span>{t(`onboarding.mode${mode.key.charAt(0).toUpperCase() + mode.key.slice(1)}`)}</span>
-            </button>
-          );
-        })}
+      {/* DNA Preset Cards — quick-start personality selection */}
+      <div className="mt-5 space-y-3">
+        <p className="text-xs text-white/50 text-center">
+          {t("onboarding.presetDescription") || "Choose a personality preset"}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {DNA_PRESETS.map((preset) => {
+            const isPresetSelected = selectedMode === preset.key;
+            return (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => onSelectMode(preset.key)}
+                className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all ${
+                  isPresetSelected
+                    ? "border-cyan-400/60 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-white/10 bg-white/[0.04] hover:border-white/25"
+                }`}
+              >
+                <span className="text-2xl">{preset.emoji}</span>
+                <span className="text-sm font-semibold text-white/90">{t(preset.labelKey)}</span>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {preset.traits.map((trait) => (
+                    <span
+                      key={trait}
+                      className="rounded-full px-1.5 py-0.5 text-[9px]"
+                      style={{ backgroundColor: `${preset.color}20`, color: preset.color }}
+                    >
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+                {isPresetSelected && (
+                  <motion.div
+                    layoutId="preset-check"
+                    className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <svg className="h-3 w-3 text-black" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="2 8 6 12 14 4" />
+                    </svg>
+                  </motion.div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Advanced personality modes */}
+      <details className="mt-4">
+        <summary className="cursor-pointer text-xs text-white/40 hover:text-white/60 transition-colors text-center">
+          {t("onboarding.advancedModes") || "Advanced personality modes"}
+        </summary>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {PERSONALITY_MODES.map((mode) => {
+            const isSelected = selectedMode === mode.key;
+            return (
+              <button
+                key={mode.key}
+                type="button"
+                onClick={() => onSelectMode(mode.key)}
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                  isSelected
+                    ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+                    : "border-white/10 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.08]"
+                }`}
+              >
+                <span className="text-lg">{mode.emoji}</span>
+                <span>{t(`onboarding.mode${mode.key.charAt(0).toUpperCase() + mode.key.slice(1)}`)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </details>
     </>
   );
 }

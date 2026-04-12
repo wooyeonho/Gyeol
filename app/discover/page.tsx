@@ -304,26 +304,32 @@ export default function DiscoverPage() {
         />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Link
-            href="/world-class"
-            onClick={() => haptic("tap")}
-            className="block rounded-3xl border border-indigo-400/30 bg-gradient-to-br from-indigo-500/15 via-fuchsia-500/10 to-amber-500/10 p-5 transition hover:border-indigo-400/60"
-          >
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-indigo-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 animate-pulse" />
-              NEW · World-Class Playbook
-            </div>
-            <div className="mt-1.5 text-lg font-bold leading-tight">
-              전 세계 최고의 앱 48개를{" "}
-              <span className="bg-gradient-to-r from-indigo-200 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
-                눈으로 직접 확인
-              </span>
-            </div>
-            <div className="mt-1 text-xs text-white/70">
-              디자인 · 수익 · 기능 · 보안 · AI 존재 — 인터랙티브 데모 →
-            </div>
-          </Link>
+        {/* Quick-access story feed — vertical scroll cards (Instagram Explore inspired) */}
+        <motion.div variants={itemVariants} className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-white/80">{t("discover.storiesTitle") || "Stories"}</h2>
+            <Link href="/feed" className="text-xs text-cyan-400/70 hover:text-cyan-300">{t("discover.feedTitle") || "Feed"} →</Link>
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+            {[
+              { emoji: "📖", label: locale === "ko" ? "일기" : "Diary", href: "/diary", gradient: "from-purple-500/25 to-fuchsia-500/10" },
+              { emoji: "🧬", label: locale === "ko" ? "진화 기록" : "Evolution", href: "/activity", gradient: "from-cyan-500/25 to-blue-500/10" },
+              { emoji: "🏆", label: locale === "ko" ? "업적" : "Achievements", href: "/challenges", gradient: "from-amber-500/25 to-orange-500/10" },
+              { emoji: "💬", label: locale === "ko" ? "커뮤니티" : "Community", href: "/community/spaces", gradient: "from-emerald-500/25 to-teal-500/10" },
+              { emoji: "🎁", label: locale === "ko" ? "연간 요약" : "Wrapped", href: "/wrapped", gradient: "from-rose-500/25 to-pink-500/10" },
+            ].map((story) => (
+              <Link
+                key={story.href}
+                href={story.href}
+                onClick={() => haptic("tap")}
+                className={`flex-shrink-0 flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-gradient-to-br ${story.gradient} px-4 py-3 transition-all hover:border-white/20 active:scale-95`}
+                style={{ width: 80 }}
+              >
+                <span className="text-2xl">{story.emoji}</span>
+                <span className="text-[10px] font-medium text-white/70 text-center leading-tight">{story.label}</span>
+              </Link>
+            ))}
+          </div>
         </motion.div>
 
         <WeeklyEventCard locale={locale} progress={weeklyEventProgress} />

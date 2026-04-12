@@ -77,6 +77,9 @@ import { GlobalFeedTicker } from "@/components/global-feed-ticker";
 import { WorldWeather } from "@/components/world-weather";
 const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
+import { StreakHero } from "@/components/home/streak-hero";
+import { EmptyStateHero } from "@/components/home/empty-state-hero";
+import { MemoryIndicator } from "@/components/home/memory-indicator";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
@@ -761,18 +764,40 @@ export default function Home() {
       </div>
       </CreatureTapReact>
 
+      {/* ===== STREAK HERO — Duolingo-style prominent streak + XP ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-2">
+        <StreakHero
+          days={agentState?.streak_days ?? 0}
+          level={engagement?.level ?? 1}
+          totalXp={engagement ? engagement.xpIntoLevel + (engagement.level - 1) * engagement.xpForNext : 0}
+          xpIntoLevel={engagement?.xpIntoLevel ?? 0}
+          xpForNext={engagement?.xpForNext ?? 100}
+          accentColor={appearance.palette.primary}
+        />
+      </div>
+
+      {/* ===== EMPTY STATE HERO — CTA when streak=0 ===== */}
+      {(agentState?.streak_days ?? 0) === 0 && (agentState?.total_messages ?? 0) === 0 && (
+        <div className="relative z-10 flex-shrink-0 px-4 mb-2">
+          <EmptyStateHero
+            creatureName={agentState?.self_name ?? "GYEOL"}
+            hasStreak={(agentState?.streak_days ?? 0) > 0}
+            accentColor={appearance.palette.primary}
+          />
+        </div>
+      )}
+
+      {/* ===== MEMORY INDICATOR — shows AI remembers past conversations ===== */}
+      <div className="relative z-10 flex-shrink-0 px-4 mb-2">
+        <MemoryIndicator
+          totalMessages={agentState?.total_messages ?? 0}
+          creatureName={agentState?.self_name ?? "GYEOL"}
+          accentColor={appearance.palette.secondary}
+        />
+      </div>
+
       {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
       <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-1">
-        {engagement && (
-          <div className="mb-2">
-            <LevelBar
-              level={engagement.level}
-              xpIntoLevel={engagement.xpIntoLevel}
-              xpForNext={engagement.xpForNext}
-              compact
-            />
-          </div>
-        )}
         <QuickCareButtons
           vitality={vitality}
           onCareComplete={() => fetchAgentState({ silent: true })}
@@ -896,7 +921,7 @@ export default function Home() {
               className="absolute -top-8 right-0 text-white/40 hover:text-white/70 text-sm"
               onClick={() => setShowDailyBonus(false)}
             >
-              닫기
+              {t("common.close") || "닫기"}
             </button>
             <DailyLoginBonus
               currentDayIndex={bonusDayIndex}

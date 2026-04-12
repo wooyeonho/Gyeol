@@ -15,9 +15,16 @@ const NotificationCenter = dynamic(() => import("@/components/notification-cente
   loading: () => null,
 });
 
-function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
+function NavIcon({ name }: { name: "home" | "chat" | "discover" | "social" | "profile" }) {
   const common = "h-4 w-4";
   switch (name) {
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5Z" />
+          <path d="M9 21V14h6v7" />
+        </svg>
+      );
     case "chat":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -27,33 +34,41 @@ function NavIcon({ name }: { name: "chat" | "discover" | "settings" }) {
     case "discover":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="4" y="5" width="7" height="7" rx="1.5" />
-          <rect x="13" y="5" width="7" height="7" rx="1.5" />
-          <rect x="4" y="14" width="7" height="7" rx="1.5" />
-          <rect x="13" y="14" width="7" height="7" rx="1.5" />
+          <circle cx="12" cy="12" r="9" />
+          <path d="m10 14 5-5-2 6-6 2 3-3Z" />
         </svg>
       );
-    case "settings":
+    case "social":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="3.5" />
-          <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.2 1.2a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.6a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0l-1.2-1.2a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1 1 0 0 1-1-1v-1.6a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.2-1.2a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h1.6a1 1 0 0 1 1 1v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.2 1.2a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.6Z" opacity=".35" />
+          <circle cx="8" cy="9" r="3" />
+          <circle cx="16" cy="9" r="3" />
+          <path d="M3 20c1-3 3-5 5-5s4 2 5 5" opacity=".6" />
+          <path d="M11 20c1-3 3-5 5-5s4 2 5 5" opacity=".6" />
+        </svg>
+      );
+    case "profile":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
         </svg>
       );
   }
 }
 
 const TABS = [
-  { path: "/", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
+  { path: "/", labelKey: "nav.home", icon: "home" as const, tutorialId: "nav-home" },
+  { path: "/chat", labelKey: "nav.chat", icon: "chat" as const, tutorialId: "nav-chat" },
   { path: "/discover", labelKey: "nav.discover", icon: "discover" as const, tutorialId: "nav-discover" },
-  { path: "/settings", labelKey: "nav.settings", icon: "settings" as const, tutorialId: "nav-settings" },
+  { path: "/social", labelKey: "nav.social", icon: "social" as const, tutorialId: "nav-social" },
+  { path: "/settings", labelKey: "nav.profile", icon: "profile" as const, tutorialId: "nav-profile" },
 ];
 
 const DISCOVER_PATHS = new Set([
   "/discover",
   "/activity",
   "/album",
-  "/social",
   "/explore",
   "/leaderboard",
   "/compare",
@@ -62,15 +77,27 @@ const DISCOVER_PATHS = new Set([
   "/room",
   "/constellation",
   "/features",
-  "/world-class",
+]);
+
+const SOCIAL_PATHS = new Set([
+  "/social",
+  "/community",
+  "/feed",
+  "/invite",
 ]);
 
 function isTabActive(pathname: string, tabPath: string) {
   if (tabPath === "/") {
     return pathname === "/";
   }
+  if (tabPath === "/chat") {
+    return pathname === "/chat";
+  }
   if (tabPath === "/discover") {
     return DISCOVER_PATHS.has(pathname);
+  }
+  if (tabPath === "/social") {
+    return SOCIAL_PATHS.has(pathname) || pathname.startsWith("/social") || pathname.startsWith("/community");
   }
   return pathname === tabPath || pathname.startsWith(`${tabPath}/`);
 }
