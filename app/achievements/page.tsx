@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
 import { ACHIEVEMENTS, getAchievement, type AchievementRarity } from "@/lib/engagement/achievements";
 import { LevelUnlockPreview } from "@/components/engagement/level-unlock-preview";
 import { useCelebrationStore } from "@/store/celebration-store";
+import { AchievementCard } from "@/components/gamification/achievement-card";
 
 const RARITY_CONFIG: Record<AchievementRarity, { label: string; glow: string; border: string; text: string }> = {
   common:    { label: "Common",    glow: "",                              border: "border-white/15",        text: "text-white/60" },
@@ -137,41 +137,15 @@ export default function AchievementsPage() {
         </div>
 
         {/* Badge grid */}
-        <div className="grid grid-cols-3 gap-3">
-          {filtered.map((ach, i) => {
+        <div className="space-y-3">
+          {filtered.map((ach) => {
             const unlocked = unlockedIds.has(ach.id);
-            const cfg = RARITY_CONFIG[ach.rarity];
             return (
-              <motion.div
+              <AchievementCard
                 key={ach.id}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.03, duration: 0.3 }}
-                className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all ${cfg.border} ${unlocked ? `shadow-lg ${cfg.glow} bg-white/[0.06]` : "bg-white/[0.02] opacity-50 grayscale"}`}
-              >
-                {/* Rarity glow ring for legendary+ */}
-                {unlocked && (ach.rarity === "legendary" || ach.rarity === "mythic") && (
-                  <div className={`absolute inset-0 rounded-2xl opacity-20 ${ach.rarity === "mythic" ? "bg-fuchsia-400" : "bg-amber-400"} blur-sm`} />
-                )}
-                <span className="relative text-2xl">{ach.hidden && !unlocked ? "❓" : ach.icon}</span>
-                <p className={`relative text-[10px] font-semibold leading-tight ${unlocked ? "text-white" : "text-white/40"}`}>
-                  {ach.hidden && !unlocked ? "???" : ach.label[loc]}
-                </p>
-                <span className={`relative text-[9px] font-medium uppercase tracking-wide ${cfg.text}`}>
-                  {cfg.label}
-                </span>
-                {unlocked && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 flex items-center justify-center"
-                  >
-                    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-black" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M2 6l3 3 5-5" />
-                    </svg>
-                  </motion.div>
-                )}
-              </motion.div>
+                achievement={ach}
+                unlocked={unlocked}
+              />
             );
           })}
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
+import { SpringCard } from "@/components/ui/spring-card";
 
 type CollectiveStats = {
   total_agents: number;
@@ -86,16 +87,14 @@ export default function CommunityPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           {cards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group rounded-[1.5rem] border border-white/12 bg-white/[0.04] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 hover:bg-white/[0.06] hover:shadow-[0_0_50px_rgba(34,211,238,0.06)]"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{card.eyebrow}</p>
-              <h2 className="mt-3 font-medium text-white group-hover:text-cyan-100">{card.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-white/60">
-                {card.body}
-              </p>
+            <Link key={card.href} href={card.href}>
+              <SpringCard className="group h-full transition-all duration-200 hover:border-cyan-300/25 hover:bg-white/[0.06] hover:shadow-[0_0_50px_rgba(34,211,238,0.06)]">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{card.eyebrow}</p>
+                <h2 className="mt-3 font-medium text-white group-hover:text-cyan-100">{card.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-white/60">
+                  {card.body}
+                </p>
+              </SpringCard>
             </Link>
           ))}
         </div>

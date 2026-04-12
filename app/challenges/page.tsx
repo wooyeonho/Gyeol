@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useTranslations } from "@/components/i18n-provider";
-import { haptic } from "@/lib/micro-interactions";
+import { SpringButton } from "@/components/ui/spring-button";
 import {
   initOrRefreshDailyChallenges,
   writeDailyChallengeState,
@@ -249,10 +249,11 @@ export default function ChallengesPage() {
                   <span>🧬 +{perfectBonus.evolution_points}</span>
                   <span>✨ +{perfectBonus.emoji_dust}</span>
                 </div>
-                <button
-                  type="button"
+                <SpringButton
+                  variant="primary"
+                  size="lg"
+                  hapticPattern="success"
                   onClick={() => {
-                    haptic("success");
                     setShowPerfect(false);
                     recordPerfectDay();
                     if (state) {
@@ -262,10 +263,10 @@ export default function ChallengesPage() {
                       syncToServer(updated);
                     }
                   }}
-                  className="mt-6 rounded-full bg-amber-400 px-8 py-2.5 text-sm font-bold text-black hover:bg-amber-300 transition-colors"
+                  className="mt-6 !rounded-full !bg-amber-400 !px-8 !py-2.5 !text-sm !font-bold !text-black hover:!bg-amber-300"
                 >
                   {t("common.claim") || "받기"}
-                </button>
+                </SpringButton>
               </motion.div>
             </motion.div>
           )}
