@@ -19,6 +19,7 @@ import { GlobalKeyboardProvider } from "@/components/global-keyboard-provider";
 import { VitalsReporter } from "@/components/vitals-reporter";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { CommandPalette } from "@/components/command-palette";
+import { ToastProvider } from "@/components/ui/toast-provider";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -183,6 +184,7 @@ export default async function RootLayout({
           <CommandPalette locale={locale} />
           <VitalsReporter />
           <PwaInstallPrompt />
+          <ToastProvider />
           <NavigationHub />
           <AnalyticsProvider>
             <SwipeNavigation>
