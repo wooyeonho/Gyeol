@@ -357,7 +357,9 @@
     "idleDreaming": "夢見中...",
     "idleExploring": "探検中...",
     "streakZeroTitle": "今日、最初の会話を始めましょう!",
-    "streakZeroBody": "毎日の会話でストリークが積み上がり、特別な報酬が得られます"
+    "streakZeroBody": "毎日の会話でストリークが積み上がり、特別な報酬が得られます",
+    "firstRewardTitle": "初めての会話完了!",
+    "firstRewardBody": "ギョルが初めての記憶を刻みました ✨"
   },
   "activity": {
     "title": "Activity",
@@ -1390,5 +1392,50 @@
     "accept": "許可する",
     "decline": "拒否する",
     "learnMore": "詳しく見る"
+  },
+  "wrapped": {
+    "brandTag": "ギョルと過ごした1年",
+    "fallbackName": "ギョル",
+    "introSubtitle": "{year}年、あなたとギョルが紡いだ物語",
+    "conversationsLabel": "交わした会話",
+    "conversationsBody": "今年やり取りしたメッセージ",
+    "dailyAverage": "1日平均",
+    "memoriesLabel": "刻まれた記憶",
+    "memoriesBody": "ギョルが覚えている瞬間",
+    "coreMemoriesLabel": "コアメモリー",
+    "coreMemoriesHint": "ギョルが特に大切にしている物語",
+    "emotionsLabel": "感情の模様",
+    "emotionsBody": "今年最も多く感じた気持ち",
+    "noEmotionData": "まだデータが足りません",
+    "emotion": {
+      "joy": "喜び",
+      "happy": "幸せ",
+      "sad": "悲しみ",
+      "curious": "好奇心",
+      "excited": "わくわく",
+      "calm": "穏やか",
+      "love": "愛",
+      "fear": "恐れ",
+      "anger": "怒り",
+      "surprise": "驚き",
+      "neutral": "ニュートラル"
+    },
+    "growthLabel": "一緒に成長",
+    "currentLevel": "現在のレベル",
+    "peakStreak": "最長連続記録",
+    "evolutions": "進化回数",
+    "species": "種族",
+    "daysUnit": "日",
+    "timesUnit": "回",
+    "endThanks": "{year}年を一緒に過ごしてくれてありがとう",
+    "endTitle": "{name}との{year}",
+    "endSubtitle": "来年へ続く物語",
+    "errorTitle": "あなたの1年はまだ準備できていません",
+    "errorHint": "もう少しギョルと過ごしてからまた戻ってきてください",
+    "progressLabel": "進行状況",
+    "slideAria": "{n}番目のスライドへ移動",
+    "prevSlide": "前のスライド",
+    "nextSlide": "次のスライド",
+    "paused": "一時停止"
   }
 }

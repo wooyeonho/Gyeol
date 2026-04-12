@@ -354,7 +354,9 @@
     "idleDreaming": "Dreaming...",
     "idleExploring": "Exploring...",
     "streakZeroTitle": "Start your first conversation today!",
-    "streakZeroBody": "Daily conversations build streaks and unlock special rewards"
+    "streakZeroBody": "Daily conversations build streaks and unlock special rewards",
+    "firstRewardTitle": "First conversation complete!",
+    "firstRewardBody": "Gyeol just made its first memory ✨"
   },
   "activity": {
     "title": "Activity",
@@ -1387,5 +1389,50 @@
     "accept": "Accept",
     "decline": "Decline",
     "learnMore": "Learn more"
+  },
+  "wrapped": {
+    "brandTag": "Year with Gyeol",
+    "fallbackName": "Gyeol",
+    "introSubtitle": "The story you and Gyeol made in {year}",
+    "conversationsLabel": "Conversations",
+    "conversationsBody": "Messages we shared this year",
+    "dailyAverage": "Daily average",
+    "memoriesLabel": "Memories kept",
+    "memoriesBody": "Moments Gyeol remembers",
+    "coreMemoriesLabel": "Core memories",
+    "coreMemoriesHint": "The stories Gyeol treasures most",
+    "emotionsLabel": "Emotional palette",
+    "emotionsBody": "The feelings that appeared most this year",
+    "noEmotionData": "Not enough data yet",
+    "emotion": {
+      "joy": "Joy",
+      "happy": "Happy",
+      "sad": "Sad",
+      "curious": "Curious",
+      "excited": "Excited",
+      "calm": "Calm",
+      "love": "Love",
+      "fear": "Fear",
+      "anger": "Anger",
+      "surprise": "Surprise",
+      "neutral": "Neutral"
+    },
+    "growthLabel": "Growth together",
+    "currentLevel": "Current level",
+    "peakStreak": "Longest streak",
+    "evolutions": "Evolutions",
+    "species": "Species",
+    "daysUnit": "d",
+    "timesUnit": "x",
+    "endThanks": "Thank you for spending {year} with us",
+    "endTitle": "{year} with {name}",
+    "endSubtitle": "To the stories we'll make next year",
+    "errorTitle": "Your year isn't quite ready",
+    "errorHint": "Spend a little more time with Gyeol and come back later",
+    "progressLabel": "Progress",
+    "slideAria": "Go to slide {n}",
+    "prevSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "paused": "Paused"
   }
 }

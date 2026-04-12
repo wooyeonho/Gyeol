@@ -357,7 +357,9 @@
     "idleDreaming": "Soñando...",
     "idleExploring": "Explorando...",
     "streakZeroTitle": "¡Inicia tu primera conversación hoy!",
-    "streakZeroBody": "Las conversaciones diarias construyen rachas y desbloquean recompensas especiales"
+    "streakZeroBody": "Las conversaciones diarias construyen rachas y desbloquean recompensas especiales",
+    "firstRewardTitle": "¡Primera conversación completada!",
+    "firstRewardBody": "Gyeol acaba de crear su primer recuerdo ✨"
   },
   "activity": {
     "title": "Activity",
@@ -1390,5 +1392,50 @@
     "accept": "Aceptar",
     "decline": "Rechazar",
     "learnMore": "Más información"
+  },
+  "wrapped": {
+    "brandTag": "Año con Gyeol",
+    "fallbackName": "Gyeol",
+    "introSubtitle": "La historia que tú y Gyeol crearon en {year}",
+    "conversationsLabel": "Conversaciones",
+    "conversationsBody": "Mensajes que compartimos este año",
+    "dailyAverage": "Promedio diario",
+    "memoriesLabel": "Recuerdos guardados",
+    "memoriesBody": "Momentos que Gyeol recuerda",
+    "coreMemoriesLabel": "Recuerdos esenciales",
+    "coreMemoriesHint": "Las historias que Gyeol atesora más",
+    "emotionsLabel": "Paleta emocional",
+    "emotionsBody": "Los sentimientos que más aparecieron este año",
+    "noEmotionData": "Aún no hay suficientes datos",
+    "emotion": {
+      "joy": "Alegría",
+      "happy": "Feliz",
+      "sad": "Triste",
+      "curious": "Curioso",
+      "excited": "Emocionado",
+      "calm": "Tranquilo",
+      "love": "Amor",
+      "fear": "Miedo",
+      "anger": "Enojo",
+      "surprise": "Sorpresa",
+      "neutral": "Neutral"
+    },
+    "growthLabel": "Crecimiento juntos",
+    "currentLevel": "Nivel actual",
+    "peakStreak": "Racha más larga",
+    "evolutions": "Evoluciones",
+    "species": "Especie",
+    "daysUnit": "d",
+    "timesUnit": "x",
+    "endThanks": "Gracias por pasar {year} con nosotros",
+    "endTitle": "{year} con {name}",
+    "endSubtitle": "Por las historias que crearemos el próximo año",
+    "errorTitle": "Tu año aún no está listo",
+    "errorHint": "Pasa un poco más de tiempo con Gyeol y vuelve más tarde",
+    "progressLabel": "Progreso",
+    "slideAria": "Ir a la diapositiva {n}",
+    "prevSlide": "Diapositiva anterior",
+    "nextSlide": "Siguiente diapositiva",
+    "paused": "Pausado"
   }
 }

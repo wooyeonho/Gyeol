@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useAgentStore } from "@/store/agent-store";
 import { useWorldStore } from "@/store/world-store";
 import { useChatStore } from "@/store/chat-store";
+import { useCelebrationStore } from "@/store/celebration-store";
 import { useTranslations } from "@/components/i18n-provider";
 const Soundscape = dynamic(() => import("@/components/soundscape"), { ssr: false, loading: () => null });
 import { RewardToast } from "@/components/reward-toast";
@@ -419,6 +420,11 @@ export default function Home() {
   const handleOnboardingComplete = useCallback(
     async (personalityMode?: string) => {
       localStorage.setItem("gyeol_onboarded", "1");
+      // Arm the first-conversation celebration — fires once the user sends
+      // their very first message (tracked in the useEffect below).
+      try {
+        localStorage.setItem("gyeol_awaiting_first_reward", "1");
+      } catch { /* quota */ }
       setShowOnboarding(false);
       if (personalityMode) {
         try {
@@ -435,6 +441,37 @@ export default function Home() {
     },
     [fetchAgentState],
   );
+
+  // First-conversation magic moment — the onboarding→reward linkage that the
+  // v3 benchmark analysis flagged as missing. When a user finishes onboarding
+  // (or returns after completing it in a previous session) and then crosses
+  // the 0→1 message threshold, fire the global celebration overlay with an
+  // XP reward so they immediately feel the game loop kick in.
+  const celebrate = useCelebrationStore((s) => s.celebrate);
+  const firstRewardFiredRef = useRef(false);
+  useEffect(() => {
+    if (firstRewardFiredRef.current) return;
+    if (loading || showOnboarding) return;
+    const totalMessages = agentState?.total_messages ?? 0;
+    if (totalMessages < 1) return;
+    let pending = false;
+    try {
+      pending = localStorage.getItem("gyeol_awaiting_first_reward") === "1";
+    } catch { /* private mode */ }
+    if (!pending) return;
+    firstRewardFiredRef.current = true;
+    try {
+      localStorage.removeItem("gyeol_awaiting_first_reward");
+    } catch { /* ignore */ }
+    haptic("success");
+    celebrate({
+      title: t("home.firstRewardTitle") || "첫 대화 완료!",
+      subtitle: t("home.firstRewardBody") || "결이 첫 기억을 새겼어요 ✨",
+      reward: { type: "xp", amount: 50, icon: "⚡" },
+      variant: "firework",
+      autoDismissMs: 4000,
+    });
+  }, [agentState?.total_messages, loading, showOnboarding, celebrate, t]);
 
   const handleAgeGateComplete = useCallback(
     async ({ ageGroup, guardianConsent }: { ageGroup: "under_13" | "teen" | "adult"; guardianConsent: boolean }) => {
