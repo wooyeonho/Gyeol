@@ -4,6 +4,16 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
+import {
+  selectMemoriesForContext,
+  scoreMemory,
+  paramsForEmotion,
+  personalityClauses,
+  buildSystemPrompt as buildOrchestratorPrompt,
+  type MemoryCandidate,
+  type EmotionTone,
+  type Big5,
+} from "@/lib/ai/world-class-orchestrator";
 
 // ─── Chat Freedom: conversation style → creature mood shift ───
 
@@ -433,6 +443,30 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     parts.push(L.personality[s.config.personality_mode]);
   }
 
+  // 2a. Big-Five personality clauses from orchestrator — converts DNA axes to natural-language
+  // personality directives. Uses the orchestrator's personalityClauses to inject traits derived
+  // from the creature's Big-5 vector (mapped from DNA) so the prompt reflects personality.
+  if (s.genome?.dna) {
+    const dna = s.genome.dna;
+    // Map 16-dim DNA to Big-5:
+    //   openness       ← curiosity + openness (DNA emotional axis)
+    //   conscientiousness ← stability + persistence
+    //   extraversion     ← assertiveness + playfulness
+    //   agreeableness    ← empathy + warmth
+    //   neuroticism      ← intensity (inverted stability)
+    const big5: Big5 = {
+      openness: Math.min(1, ((dna.curiosity ?? 0.5) + (dna.openness ?? 0.5)) / 2),
+      conscientiousness: Math.min(1, ((dna.stability ?? 0.5) + (dna.persistence ?? 0.5)) / 2),
+      extraversion: Math.min(1, ((dna.assertiveness ?? 0.5) + (dna.playfulness ?? 0.5)) / 2),
+      agreeableness: Math.min(1, ((dna.empathy ?? 0.5) + (dna.warmth ?? 0.5)) / 2),
+      neuroticism: Math.min(1, (dna.intensity ?? 0.5)),
+    };
+    const clauses = personalityClauses(big5);
+    if (clauses.length > 0) {
+      parts.push(`[성격 특성] ${clauses.join(", ")}.`);
+    }
+  }
+
   // 2b. DNA-driven trait personality fragments
   if (s.genome?.dna) {
     const traitLocale = (p.locale === "ko" || p.locale === "ko-KR") ? "ko" : "en";
@@ -461,11 +495,28 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   else if (intimacy < 80) parts.push(L.intimacy[2]);
   else parts.push(L.intimacy[3]);
 
-  // 5. memories — sanitized before insertion to prevent 2nd-order prompt injection
+  // 5. memories — ranked via orchestrator's selectMemoriesForContext (greedy knapsack by score)
   if (p.memories.length > 0) {
+    const now = Date.now();
+    // Build MemoryCandidate array for the orchestrator's token-budget-aware selector
+    const candidates: MemoryCandidate[] = p.memories
+      .filter((m): m is { content: string } => !!m.content)
+      .map((m, idx) => ({
+        id: `mem_${idx}`,
+        content: m.content,
+        createdAt: now, // fallback — real timestamp unavailable at this layer
+        similarity: 0.5,
+        emotionalWeight: 0.5,
+        linkedToMilestone: false,
+        tokenCount: Math.ceil(m.content.length / 4),
+      }));
+    // Use ~500 token budget for memory injection — the orchestrator's selectMemoriesForContext
+    // picks the highest-scored memories that fit within this budget using greedy knapsack.
+    const memoryTokenBudget = 500;
+    const selected = selectMemoriesForContext(candidates, memoryTokenBudget, now);
     parts.push(L.memories);
-    p.memories.forEach((m) => {
-      if (m.content) parts.push(`- ${sanitizeForPrompt(m.content)}`);
+    selected.forEach((m) => {
+      parts.push(`- ${sanitizeForPrompt(m.content)}`);
     });
   }
 
@@ -494,8 +545,28 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // 8. self_name
   if (s.self_name) parts.push(L.selfName(s.self_name));
 
-  // 9. mood
-  if (s.mood) parts.push(L.mood(s.mood));
+  // 9. mood — enhanced with orchestrator emotion-aware generation hints
+  if (s.mood) {
+    parts.push(L.mood(s.mood));
+    // Map mood to orchestrator EmotionTone for generation parameter hints.
+    // This injects a tonal directive so the prompt itself reflects the emotion.
+    const toneMap: Record<string, EmotionTone> = {
+      calm: "calm", joyful: "joyful", happy: "joyful", melancholic: "melancholic",
+      sad: "melancholic", anxious: "anxious", curious: "curious", tender: "tender",
+      warm: "tender", playful: "joyful", dreamy: "calm",
+    };
+    const emotionTone = toneMap[s.mood.toLowerCase()] as EmotionTone | undefined;
+    if (emotionTone) {
+      const genParams = paramsForEmotion(emotionTone);
+      const isKo = p.locale === "ko" || p.locale === "ko-KR";
+      // Inject a subtle expressive directive derived from generation parameters
+      if (genParams.temperature >= 0.75) {
+        parts.push(isKo ? "[감정 표현] 지금은 표현력이 풍부한 상태야. 자유롭고 다채롭게 말해도 돼." : "[Emotion Expression] You are in an expressive state. Feel free to be vivid and varied.");
+      } else if (genParams.temperature <= 0.5) {
+        parts.push(isKo ? "[감정 표현] 지금은 차분하고 절제된 상태야. 말을 아끼되 깊이 있게." : "[Emotion Expression] You are in a restrained state. Speak sparingly but with depth.");
+      }
+    }
+  }
 
   // 10. hidden_emotions
   if (s.hidden_emotions?.real) {

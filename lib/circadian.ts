@@ -1,7 +1,16 @@
 /**
  * Circadian rhythm — shifts background color temperature based on local time.
  * Returns subtle tint overlays that blend with the existing identity background.
+ *
+ * Enhanced with ambient-sky gradients from the world-class design playbook
+ * (Apple Weather-style time-of-day background tints).
  */
+
+import {
+  ambientSkyTint,
+  timeOfDayFromDate,
+  type TimeOfDay,
+} from "@/lib/design/world-class-playbook";
 
 type CircadianPhase = "dawn" | "morning" | "afternoon" | "dusk" | "night" | "late-night";
 
@@ -44,5 +53,8 @@ const PHASE_TINTS: Record<CircadianPhase, { overlay: string; warmth: number }> =
 export function getCircadianTint(date: Date = new Date()) {
   const hour = date.getHours();
   const phase = getPhase(hour);
-  return { phase, ...PHASE_TINTS[phase] };
+  // Compute the Apple Weather-style ambient sky gradient from the playbook
+  const tod: TimeOfDay = timeOfDayFromDate(date);
+  const skyGradient = ambientSkyTint(tod);
+  return { phase, ...PHASE_TINTS[phase], skyGradient, timeOfDay: tod };
 }

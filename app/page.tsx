@@ -605,6 +605,11 @@ export default function Home() {
         className="relative overflow-hidden"
         style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
       >
+        {/* Ambient sky gradient (Apple Weather-style) — subtle full-gradient base layer */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07] transition-all duration-[5000ms]"
+          style={{ backgroundImage: circadian.skyGradient }}
+        />
         {/* Circadian time-of-day tint overlay */}
         <div
           className="pointer-events-none absolute inset-0 transition-all duration-[3000ms]"

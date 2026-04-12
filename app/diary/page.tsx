@@ -7,6 +7,9 @@ import { DiaryReactions } from "@/components/diary-reactions";
 import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import type { DiaryEntry } from "@/lib/diary/creature-diary";
+import { estimateReadingMinutes, extractTldr, wordCount } from "@/lib/reader/world-class-reader";
+import { reviewCard, dueNow, updateStreakWithFreeze, type SrsCard, type StreakState } from "@/lib/learning/world-class-learning";
+import { parseNaturalDate, cycleView } from "@/lib/productivity/world-class-productivity";
 
 export default function DiaryPage() {
   const { t, locale } = useTranslations();
@@ -196,6 +199,17 @@ export default function DiaryPage() {
                 <p className="text-sm text-white/80 leading-relaxed italic">
                   &ldquo;{selectedEntry.summary}&rdquo;
                 </p>
+                {/* Reading time & TL;DR from world-class-reader */}
+                {selectedEntry.summary && (
+                  <div className="mt-2 flex items-center gap-3 text-[10px] text-white/30">
+                    <span>{estimateReadingMinutes(wordCount(selectedEntry.summary))} min read</span>
+                    {wordCount(selectedEntry.summary) > 20 && (
+                      <span className="italic truncate max-w-[200px]">
+                        TL;DR: {extractTldr(selectedEntry.summary, 1)}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <DiaryReactions key={selectedEntry.id} entryId={selectedEntry.id} />
               </motion.div>
             )}
@@ -217,12 +231,56 @@ export default function DiaryPage() {
                     <span className="text-xl">{entry.moodEmoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white/70 line-clamp-1">{entry.summary}</p>
-                      <p className="text-xs text-white/25">{entry.date}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-white/25">{entry.date}</p>
+                        <span className="text-[10px] text-white/20">{estimateReadingMinutes(wordCount(entry.summary))} min</span>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
             )}
+
+            {/* Diary streak & spaced repetition — from learning module */}
+            {(() => {
+              const todayDay = Math.floor(Date.now() / (24 * 3600 * 1000));
+              const lastActivityDay = entries.length > 0
+                ? Math.floor(new Date(entries[0].date).getTime() / (24 * 3600 * 1000))
+                : todayDay;
+              const streakState: StreakState = { count: entries.length, freezes: 1, lastActivityDay };
+              const updated = updateStreakWithFreeze(streakState, todayDay);
+              // Build SRS cards from diary entries for potential review
+              const srsCards: SrsCard[] = entries.slice(0, 10).map((e, i) => ({
+                id: e.id,
+                intervalDays: 1,
+                ease: 2.5,
+                repetitions: 0,
+                dueAt: new Date(e.date).getTime() + i * 24 * 3600 * 1000,
+              }));
+              const dueCards = dueNow(srsCards, Date.now());
+              return (
+                <div className="rounded-2xl border border-indigo-400/15 bg-indigo-500/[0.04] p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🔥</span>
+                      <span className="text-sm font-semibold text-white/80">
+                        {locale === "ko" ? `${updated.count}일 연속` : `${updated.count}-day streak`}
+                      </span>
+                    </div>
+                    {updated.freezes > 0 && (
+                      <span className="text-[10px] text-indigo-300/60">🧊 {updated.freezes} freeze</span>
+                    )}
+                  </div>
+                  {dueCards.length > 0 && (
+                    <p className="mt-1.5 text-xs text-white/40">
+                      {locale === "ko"
+                        ? `복습할 일기 ${dueCards.length}개`
+                        : `${dueCards.length} diary entries due for review`}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {entries.length === 0 && (
               <p className="text-center text-sm text-white/30 py-8">

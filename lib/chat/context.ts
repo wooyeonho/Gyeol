@@ -4,6 +4,10 @@ import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import type { UserPreferences } from "@/lib/creature/preference-memory";
 import type { FeatureBehaviorProfile } from "@/lib/ai/system-prompt";
+import {
+  selectMemoriesForContext,
+  type MemoryCandidate,
+} from "@/lib/ai/world-class-orchestrator";
 
 type DbReader = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
 type DbWriter = Pick<ReturnType<typeof createServiceClient>, "from" | "rpc">;
@@ -140,13 +144,41 @@ export async function buildChatPromptContext(params: {
   const resolvedEmbedding = await embeddingPromise;
 
   // Memory loading: embedding was already started, just await the RPC result now
-  const { memories, memoryMoment } = await loadPromptMemories({
+  const { memories: rawMemories, memoryMoment } = await loadPromptMemories({
     agentId: params.agentId,
     embeddingPromise: Promise.resolve(resolvedEmbedding),
     reader: params.reader,
     recallCount,
     writer: params.writer,
   });
+
+  // Use orchestrator's selectMemoriesForContext for smarter memory ranking
+  // when we have enough memories to benefit from priority scoring.
+  let memories: PromptMemory[];
+  if (rawMemories.length > 3) {
+    const candidates: MemoryCandidate[] = rawMemories.map((m) => ({
+      id: m.id,
+      content: m.content,
+      createdAt: Date.now(), // approximate — exact timestamp unavailable here
+      similarity: 0.7, // base similarity (already pre-filtered by match_memories)
+      emotionalWeight: 0.5,
+      linkedToMilestone: m.referenceCount > 3, // frequently referenced = milestone-linked
+      tokenCount: Math.ceil(m.content.length / 4),
+    }));
+    // Token budget: ~800 tokens for memory context injection
+    const ranked = selectMemoriesForContext(candidates, 800);
+    const rankedIds = new Set(ranked.map((r) => r.id));
+    // Preserve original PromptMemory shape, ordered by orchestrator score
+    memories = ranked
+      .map((r) => rawMemories.find((m) => m.id === r.id))
+      .filter((m): m is PromptMemory => m !== undefined);
+    // Append any that didn't fit the budget at the end (preserves all data)
+    for (const m of rawMemories) {
+      if (!rankedIds.has(m.id)) memories.push(m);
+    }
+  } else {
+    memories = rawMemories;
+  }
 
   const recentChatRows = (recentChats ?? []) as ChatRow[];
   const logRows = (logs ?? []) as LogRow[];

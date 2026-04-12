@@ -6,6 +6,8 @@ import { getDemoAgentState } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 import { logger } from "@/lib/logger";
+import { hnScore } from "@/lib/community/world-class-community";
+import { scoreFeedItem, FEED_RECIPES } from "@/lib/social/world-class-social";
 
 type AgentSnapshot = {
   agent_id: string;
@@ -49,6 +51,11 @@ type FeedScope = "all" | "following" | "friends";
 function resolveFeedScope(request?: Request): FeedScope {
   const raw = request ? new URL(request.url).searchParams.get("scope") : null;
   return raw === "following" || raw === "friends" ? raw : "all";
+}
+
+function resolveSortMode(request?: Request): "hot" | "new" | "top" {
+  const raw = request ? new URL(request.url).searchParams.get("sort") : null;
+  return raw === "new" || raw === "top" ? raw : "hot";
 }
 
 function getRelationLabel(agentId: string, followingSet: Set<string>, followerSet: Set<string>) {
@@ -190,6 +197,13 @@ export async function GET(request?: Request) {
         return true;
       })
       .sort((a, b) => {
+        // Use world-class HN score as primary ranking signal (upvotes=0 proxy; full reaction-weighted sort happens client-side)
+        const now = Date.now();
+        const ageA = (now - new Date(a.created_at ?? 0).getTime()) / 3_600_000;
+        const ageB = (now - new Date(b.created_at ?? 0).getTime()) / 3_600_000;
+        const scoreDiff = hnScore(0, ageB) - hnScore(0, ageA);
+        if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
+        // Tiebreak by relation priority
         const relationDiff =
           (getRelationLabel(b.agent_id, followingSet, followerSet) === "friend" ? 2 : getRelationLabel(b.agent_id, followingSet, followerSet) === "following" ? 1 : 0) -
           (getRelationLabel(a.agent_id, followingSet, followerSet) === "friend" ? 2 : getRelationLabel(a.agent_id, followingSet, followerSet) === "following" ? 1 : 0);
@@ -411,6 +425,7 @@ export async function GET(request?: Request) {
 
     const payload = {
       feedScope,
+      sortMode: resolveSortMode(request),
       feedCounts: {
         all: rawTopPostRows.length,
         following: rawTopPostRows.filter((post) => post.agent_id === myAgentId || followingSet.has(post.agent_id)).length,

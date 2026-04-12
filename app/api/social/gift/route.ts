@@ -7,6 +7,7 @@ import { sanitizeUserInput } from "@/lib/sanitize";
 import { socialGiftBodySchema, parseBody } from "@/lib/validation/schemas";
 import { verifyCsrfOrigin } from "@/lib/security/csrf";
 import { checkElectricFence } from "@/lib/security/electric-fence";
+import { tryGratitudeRelay } from "@/lib/social/gratitude";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/social/gift" });

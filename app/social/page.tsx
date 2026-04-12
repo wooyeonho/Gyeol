@@ -17,6 +17,9 @@ import BreedingCard from "@/components/breeding-card";
 import type { Visual } from "@/components/breeding-card";
 import dynamic from "next/dynamic";
 import { DEFAULT_CHANNELS } from "@/lib/social/channel-system";
+import { hnScore, reputationTier } from "@/lib/community/world-class-community";
+import { scoreFeedItem, FEED_RECIPES, TAPBACK_REACTIONS, type FeedItem } from "@/lib/social/world-class-social";
+import { fitToAspect, collapseGap, SOCIAL_ASPECT_RATIOS, type AspectKey } from "@/lib/creative/world-class-creative";
 
 const PullToRefresh = dynamic(() => import("@/components/pull-to-refresh").then(m => ({ default: m.PullToRefresh })), { ssr: false });
 const ChannelList = dynamic(() => import("@/components/channel-list").then(m => ({ default: m.ChannelList })), { ssr: false });
@@ -123,6 +126,12 @@ export default function SocialPage() {
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<"hot" | "new" | "top">("hot");
 
+  /** Resolve reputation tier for display. Uses reactionCount as proxy for reputation. */
+  function getReputationBadge(reactionCount: number) {
+    const tier = reputationTier(reactionCount);
+    return tier;
+  }
+
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem("gyeol-hidden-social-posts");
@@ -211,29 +220,26 @@ export default function SocialPage() {
   const isMinor = selfAgent?.config?.age_group === "under_13" || selfAgent?.config?.age_group === "teen";
   const visiblePostsUnfiltered = posts.filter((post) => !hiddenPostIds.includes(post.id));
 
-  // Apply vote-based sort (Hot/New/Top) to the visible posts
+  // Apply vote-based sort (Hot/New/Top) to the visible posts using world-class hnScore
   const visiblePosts = useMemo(() => {
     if (visiblePostsUnfiltered.length === 0) return visiblePostsUnfiltered;
     const now = new Date();
-    const scored = visiblePostsUnfiltered.map((post) => ({
-      ...post,
-      upvotes: post.reactionCount,
-      createdAt: new Date(post.created_at),
-    }));
     switch (sortMode) {
       case "hot": {
-        return scored.sort((a, b) => {
-          const scoreA = a.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - a.createdAt.getTime()) / 3_600_000);
-          const scoreB = b.upvotes - 1.8 * Math.log2(1 + Math.max(0, now.getTime() - b.createdAt.getTime()) / 3_600_000);
-          return scoreB - scoreA;
+        return [...visiblePostsUnfiltered].sort((a, b) => {
+          const ageA = (now.getTime() - new Date(a.created_at).getTime()) / 3_600_000;
+          const ageB = (now.getTime() - new Date(b.created_at).getTime()) / 3_600_000;
+          return hnScore(b.reactionCount, ageB) - hnScore(a.reactionCount, ageA);
         });
       }
       case "new":
-        return scored.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return [...visiblePostsUnfiltered].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
       case "top":
-        return scored.sort((a, b) => b.upvotes - a.upvotes);
+        return [...visiblePostsUnfiltered].sort((a, b) => b.reactionCount - a.reactionCount);
       default:
-        return scored;
+        return visiblePostsUnfiltered;
     }
   }, [visiblePostsUnfiltered, sortMode]);
   const mutualAgents = otherAgents.filter((agent) => agent.is_mutual);
@@ -872,6 +878,9 @@ export default function SocialPage() {
                       <p className="text-sm font-medium text-white">
                         {post.author.self_name || t("adoptPage.nameless")}
                       </p>
+                      <span className="ml-1.5 rounded-full border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/50">
+                        {reputationTier(post.reactionCount).label}
+                      </span>
                       <span className="text-xs" style={{ color: `${postAppearance.palette.primary}99` }}>
                         Gen {post.author.gen_level ?? 1}
                       </span>

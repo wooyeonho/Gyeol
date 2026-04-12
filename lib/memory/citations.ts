@@ -13,6 +13,11 @@
  *   - Support both verbatim quotes and paraphrased recall (citation `mode`).
  */
 
+import {
+  linkCitations as linkAINativeCitations,
+  type Citation as AINativeCitation,
+} from "@/lib/ai-native/world-class-ai-native";
+
 export type CitationMode = "verbatim" | "paraphrased" | "semantic_match";
 
 export type MemoryCitation = {
@@ -115,6 +120,26 @@ export function injectCitationMarkers(
   const markers = numbered.map((c) => `[${c.number}]`).join(" ");
   paragraphs[0] = paragraphs[0].trimEnd() + " " + markers;
   return paragraphs.join("\n\n");
+}
+
+/**
+ * Convert MemoryCitations to accessible markdown links using the AI-native
+ * linkCitations utility. This produces `[[n]](url "title")` formatted text
+ * suitable for markdown renderers, complementing the inline chip-based
+ * rendering in CitedReply.
+ */
+export function linkCitationsAsMarkdown(
+  reply: string,
+  citations: MemoryCitation[],
+): string {
+  if (citations.length === 0) return reply;
+  // Convert MemoryCitation[] to AINativeCitation[] for the linkCitations utility
+  const aiNativeCitations: AINativeCitation[] = citations.map((c, i) => ({
+    id: i + 1,
+    title: c.label,
+    url: `#memory-${c.memoryId}`,
+  }));
+  return linkAINativeCitations(reply, aiNativeCitations);
 }
 
 /**

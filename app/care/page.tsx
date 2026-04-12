@@ -7,6 +7,15 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import { haptic } from "@/lib/micro-interactions";
 import type { CareState } from "@/lib/creature/care-loop";
+import {
+  BREATH_CADENCES,
+  recoveryScore,
+  recoveryBand,
+  ringCompletion,
+  breathCycleMs,
+  type RingGoal,
+  type BreathMode,
+} from "@/lib/wellness/world-class-wellness";
 import dynamic from "next/dynamic";
 import { logCareActivity } from "@/components/care-heatmap";
 const CareHeatmap = dynamic(() => import("@/components/care-heatmap").then(m => ({ default: m.CareHeatmap })), {
@@ -186,6 +195,87 @@ export default function CarePage() {
               </p>
               <CareHeatmap />
             </div>
+            {/* Wellness rings — three-ring goal progress */}
+            {(() => {
+              const rings: RingGoal[] = [
+                { id: "move", target: 100, progress: care.hunger },
+                { id: "exercise", target: 100, progress: care.energy },
+                { id: "mind", target: 100, progress: care.happiness },
+              ];
+              return (
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
+                    {t("care.wellnessRings") || "웰니스 링"}
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {rings.map((ring) => {
+                      const pct = Math.round(ringCompletion(ring) * 100);
+                      const closed = pct >= 100;
+                      return (
+                        <div key={ring.id} className="flex flex-col items-center gap-1.5">
+                          <div className={`relative h-14 w-14 rounded-full border-[3px] flex items-center justify-center ${closed ? "border-emerald-400" : "border-white/15"}`}>
+                            <span className="text-xs font-bold text-white/80">{pct}%</span>
+                          </div>
+                          <span className="text-[10px] text-white/40 capitalize">{ring.id}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Recovery score — Whoop-style */}
+            {(() => {
+              const score = recoveryScore({ hrvMs: 55, restingHr: 62, sleepHours: 7, stress: 0.3 });
+              const band = recoveryBand(score);
+              const bandColor = band === "green" ? "text-emerald-400" : band === "yellow" ? "text-amber-400" : "text-red-400";
+              return (
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
+                    {t("care.recoveryScore") || "회복 점수"}
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-3xl font-bold ${bandColor}`}>{score}</span>
+                    <div>
+                      <p className={`text-sm font-semibold capitalize ${bandColor}`}>{band}</p>
+                      <p className="text-xs text-white/40">
+                        {band === "green" ? (t("care.recoveryGreen") || "컨디션 좋음") : band === "yellow" ? (t("care.recoveryYellow") || "보통") : (t("care.recoveryRed") || "휴식 필요")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Breathing guide — cadence selector */}
+            {(() => {
+              const modes: BreathMode[] = ["calm", "focus", "sleep", "energize"];
+              return (
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
+                    {t("care.breathing") || "호흡 가이드"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {modes.map((mode) => {
+                      const cadence = BREATH_CADENCES[mode];
+                      const cycleMs = breathCycleMs(mode);
+                      return (
+                        <div key={mode} className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
+                          <p className="text-sm font-medium text-white/80 capitalize">{mode}</p>
+                          <p className="text-[10px] text-white/40 mt-1">
+                            {cadence.inhaleMs / 1000}s / {cadence.holdMs / 1000}s / {cadence.exhaleMs / 1000}s
+                          </p>
+                          <p className="text-[10px] text-cyan-400/60 mt-0.5">
+                            {(cycleMs / 1000).toFixed(0)}s cycle
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </>
         ) : (
           <p className="text-center text-sm text-white/50 py-16">

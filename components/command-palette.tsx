@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  SLASH_COMMANDS,
+  SHORTCUTS,
+  formatShortcut,
+  type SlashCommand,
+} from "@/lib/features/world-class-patterns";
+import { rankCommands, previewUrl, type CommandEntry } from "@/lib/devtools/world-class-dx";
 
 interface Command {
   id: string;
@@ -53,9 +60,69 @@ export function CommandPalette({ locale = "ko", onThemeToggle }: CommandPaletteP
     { id: "toggle-theme",     icon: "🎨", label: isKo ? "테마 전환"     : "Toggle Theme",   action: () => { onThemeToggle?.(); setOpen(false); }, group: isKo ? "액션" : "Actions", shortcut: "T" },
   ];
 
-  const filtered = query.trim()
-    ? COMMANDS.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()))
-    : COMMANDS;
+  // Merge world-class slash commands from the patterns module
+  const slashCommandIcons: Record<string, string> = {
+    memory: "💾", chat: "💬", action: "⚡", navigation: "🧭",
+  };
+  const slashCommands: Command[] = SLASH_COMMANDS.map((sc: SlashCommand) => ({
+    id: sc.id,
+    icon: slashCommandIcons[sc.kind] ?? "✦",
+    label: sc.label,
+    shortcut: `/${sc.trigger}`,
+    action: () => {
+      // Slash commands dispatch by kind — navigation commands use router,
+      // others close the palette (actual slash command execution happens in the chat input)
+      if (sc.trigger === "room") router.push("/room");
+      else if (sc.trigger === "help") { /* keep palette open for help */ }
+      setOpen(false);
+    },
+    group: isKo ? "슬래시 명령" : "Slash Commands",
+  }));
+
+  // Merge keyboard shortcuts as reference entries
+  const shortcutCommands: Command[] = SHORTCUTS
+    .filter((s) => s.group === "navigation")
+    .map((s) => ({
+      id: s.id,
+      icon: "⌨️",
+      label: s.label,
+      shortcut: formatShortcut(s.keys, typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent)),
+      action: () => {
+        if (s.id === "nav.home") router.push("/");
+        else if (s.id === "nav.room") router.push("/room");
+        else if (s.id === "nav.memories") router.push("/memories");
+        else if (s.id === "nav.journey") router.push("/journey");
+        setOpen(false);
+      },
+      group: isKo ? "단축키" : "Shortcuts",
+    }));
+
+  const ALL_COMMANDS = [...COMMANDS, ...slashCommands, ...shortcutCommands];
+
+  // Build DX command entries for fuzzy ranking
+  const dxEntries: CommandEntry[] = useMemo(() => ALL_COMMANDS.map((c) => ({
+    id: c.id,
+    label: c.label,
+    keywords: c.shortcut ? [c.shortcut] : [],
+    group: c.group.includes("이동") || c.group === "Navigate" ? "nav"
+      : c.group.includes("액션") || c.group === "Actions" ? "action"
+      : c.group.includes("슬래시") || c.group === "Slash Commands" ? "action"
+      : "nav",
+    shortcut: c.shortcut,
+  })), [ALL_COMMANDS]);
+
+  // Use rankCommands from world-class-dx for fuzzy ranking
+  const filtered = useMemo(() => {
+    if (!query.trim()) return ALL_COMMANDS;
+    const ranked = rankCommands(query, dxEntries);
+    const rankedIds = new Set(ranked.map((r) => r.id));
+    return ALL_COMMANDS.filter((c) => rankedIds.has(c.id))
+      .sort((a, b) => {
+        const aIdx = ranked.findIndex((r) => r.id === a.id);
+        const bIdx = ranked.findIndex((r) => r.id === b.id);
+        return aIdx - bIdx;
+      });
+  }, [query, ALL_COMMANDS, dxEntries]);
 
   // Group commands
   const grouped = filtered.reduce<Record<string, Command[]>>((acc, cmd) => {
