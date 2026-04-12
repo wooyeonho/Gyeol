@@ -38,7 +38,7 @@ export function TypingIndicator({
       className="flex items-center gap-2.5"
       role="status"
       aria-live="polite"
-      aria-label={`${displayName}이 생각하는 중...`}
+      aria-label={`${displayName} thinking...`}
     >
       <div
         className="flex items-center gap-1.5 rounded-2xl border border-white/[0.08] bg-white/5 px-4 py-3 backdrop-blur-md"
@@ -61,7 +61,7 @@ export function TypingIndicator({
         ))}
       </div>
       <span className="text-xs text-white/30">
-        {displayName}이 생각하는 중...
+        {displayName} ...
       </span>
     </div>
   );
