@@ -1,0 +1,63 @@
+# CODEOWNERS — 충돌 방지 핫스팟 잠금
+#
+# 이 파일에 명시된 경로의 수정은 오너 리뷰 필수.
+# Devin 은 이 파일들 건드리면 안 됨 (DEVIN_INSTRUCTIONS.md 참조).
+# 이 경계가 2026-04 Devin 폭주 사건 이후 도입됨.
+
+# --- 글로벌 구조 (건드리면 모든 페이지 영향) ---
+/app/layout.tsx                         @wooyeonho
+/app/page.tsx                           @wooyeonho
+/middleware.ts                          @wooyeonho
+/next.config.ts                         @wooyeonho
+/package.json                           @wooyeonho
+/package-lock.json                      @wooyeonho
+/tsconfig.json                          @wooyeonho
+/eslint.config.mjs                      @wooyeonho
+
+# --- 핫스팟 페이지 (24h 동안 여러 번 수정됨) ---
+/app/feed/page.tsx                      @wooyeonho
+/app/discover/page.tsx                  @wooyeonho
+/app/achievements/page.tsx              @wooyeonho
+/app/social/page.tsx                    @wooyeonho
+/app/community/page.tsx                 @wooyeonho
+/app/challenges/page.tsx                @wooyeonho
+/app/settings/security/page.tsx         @wooyeonho
+/app/explore/page.tsx                   @wooyeonho
+
+# --- 핵심 컴포넌트 (결의 영혼) ---
+/components/chat-panel.tsx              @wooyeonho
+/components/soundscape.tsx              @wooyeonho
+/components/battle-arena.tsx            @wooyeonho
+/components/living-presence-beacon.tsx  @wooyeonho
+/components/bottom-nav.tsx              @wooyeonho
+/components/command-palette.tsx         @wooyeonho
+/components/conversation-starter.tsx    @wooyeonho
+/components/home/bento-dashboard.tsx    @wooyeonho
+/components/onboarding.tsx              @wooyeonho
+/components/tutorial-overlay.tsx        @wooyeonho
+
+# --- 디자인 시스템 (전역 파급) ---
+/lib/design/**                          @wooyeonho
+/lib/motion/**                          @wooyeonho
+/lib/theme/**                           @wooyeonho
+/lib/identity/**                        @wooyeonho
+/components/ui/**                       @wooyeonho
+
+# --- AI 오케스트레이션 (결의 두뇌) ---
+/lib/ai/**                              @wooyeonho
+/lib/ai-native/**                       @wooyeonho
+/openclaw/**                            @wooyeonho
+
+# --- 보안 / 인프라 ---
+/lib/security/**                        @wooyeonho
+/supabase/migrations/**                 @wooyeonho
+/.github/**                             @wooyeonho
+/sentry.*.config.ts                     @wooyeonho
+/instrumentation.ts                     @wooyeonho
+
+# --- 벤치마크 플랜 문서 ---
+/BENCHMARK_INTEGRATION_PLAN.md          @wooyeonho
+/EXECUTION_PLAN.md                      @wooyeonho
+/DEVIN_INSTRUCTIONS.md                  @wooyeonho
+/CLEANUP_REPORT.md                      @wooyeonho
+/INTEGRATION_STATUS.md                  @wooyeonho

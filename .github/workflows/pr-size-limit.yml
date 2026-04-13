@@ -1,0 +1,74 @@
+name: PR Size Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-size-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute PR size
+        id: size
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          FILES=$(git diff --name-only "$BASE" "$HEAD" | wc -l)
+          LINES=$(git diff --shortstat "$BASE" "$HEAD" | \
+            grep -oE '[0-9]+ insertion|[0-9]+ deletion' | \
+            awk '{sum+=$1} END {print sum}')
+          LINES=${LINES:-0}
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "lines=$LINES" >> $GITHUB_OUTPUT
+          echo "PR size: $FILES files, $LINES lines"
+
+      - name: Check limits
+        run: |
+          FILES=${{ steps.size.outputs.files }}
+          LINES=${{ steps.size.outputs.lines }}
+          MAX_FILES=8
+          MAX_LINES=500
+
+          # 문서 전용 PR 은 예외
+          IS_DOCS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} \
+            ${{ github.event.pull_request.head.sha }} | \
+            grep -v "\.md$" | grep -v "\.github/" | wc -l)
+
+          if [ "$IS_DOCS" -eq "0" ]; then
+            echo "::notice::Docs-only PR, skipping size limit"
+            exit 0
+          fi
+
+          if [ "$FILES" -gt "$MAX_FILES" ] || [ "$LINES" -gt "$MAX_LINES" ]; then
+            echo "::error::PR 사이즈 초과: $FILES files ($MAX_FILES 이하) / $LINES lines ($MAX_LINES 이하)"
+            echo "::error::한 PR = 한 작업 원칙. EXECUTION_PLAN.md 참조해서 쪼개세요."
+            exit 1
+          fi
+          echo "::notice::PR size OK: $FILES files, $LINES lines"
+
+      - name: Comment on PR if oversized
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚨 **PR 사이즈 초과 — 머지 차단**
+
+이 PR은 변경이 너무 큽니다 (파일 ${{ steps.size.outputs.files }}개, 라인 ${{ steps.size.outputs.lines }}개).
+
+**한 PR = 한 작업 = 한 숙주 파일** 원칙을 지켜주세요.
+
+- 파일 8개 이하
+- 라인 500개 이하
+- \`feat: Sprint X remaining Y items\` 같은 거대 배치 금지
+
+\`EXECUTION_PLAN.md\`를 참조해서 작업을 쪼개 각각 별도 PR로 올리세요.
+이 PR은 닫고 쪼갠 PR을 다시 만드는 것을 권장합니다.`
+            })
