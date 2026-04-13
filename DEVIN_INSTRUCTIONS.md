@@ -1,3 +1,100 @@
+# 🚨 최상단 절대 룰 (2026-04 도입) — 읽지 않고 작업 시작 금지
+
+이 섹션은 2026년 4월 Devin 폭주로 24시간 동안 같은 파일이 6번씩 수정되며
+충돌·회귀가 쌓인 사건 직후 도입된 충돌 방지 프로토콜입니다. 아래 룰 중
+하나라도 어기면 PR 은 즉시 reject 됩니다.
+
+## 룰 1. 작업 경계
+
+- 한 PR = **한 작업 = 한 숙주 컴포넌트/모듈** 원칙.
+- PR 당 **파일 8개 이하, 라인 500개 이하** (pr-size-limit.yml 로 강제).
+- "Sprint", "Phase", "batch", "remaining items", "full wiring" 같은 단어가
+  포함된 작업은 **거부**. 이런 단어는 단일 작업이 아니라 작업 다발임.
+- 작업 1개당 이슈 1개, 이슈 1개당 PR 1개.
+
+## 룰 2. 파일 잠금 (CODEOWNERS 에 등록됨)
+
+다음 파일/디렉터리는 오너(형님) 리뷰 필수. 건드려야 할 이유가 있다면
+작업 시작 전에 사람에게 보고하고 허가를 받아야 함. **임의 수정 금지**.
+
+- `app/layout.tsx`, `app/page.tsx`, `middleware.ts`, `next.config.ts`
+- `app/feed/page.tsx`, `app/discover/page.tsx`, `app/achievements/page.tsx`
+- `app/social/page.tsx`, `app/community/page.tsx`, `app/challenges/page.tsx`
+- `app/settings/security/page.tsx`, `app/explore/page.tsx`
+- `components/chat-panel.tsx`, `components/soundscape.tsx`,
+  `components/battle-arena.tsx`, `components/living-presence-beacon.tsx`,
+  `components/bottom-nav.tsx`, `components/command-palette.tsx`,
+  `components/conversation-starter.tsx`, `components/home/bento-dashboard.tsx`,
+  `components/onboarding.tsx`, `components/tutorial-overlay.tsx`
+- `lib/design/**`, `lib/motion/**`, `lib/theme/**`, `lib/identity/**`,
+  `lib/ai/**`, `lib/ai-native/**`, `lib/security/**`, `components/ui/**`
+- `openclaw/**`, `supabase/migrations/**`, `.github/**`
+- `BENCHMARK_INTEGRATION_PLAN.md`, `EXECUTION_PLAN.md`, `DEVIN_INSTRUCTIONS.md`
+
+## 룰 3. 작업 가능 영역
+
+Devin 이 **자유롭게 수정 가능한** 영역은 아래만:
+
+- `app/api/**` (단, 기존 엔드포인트 시그니처 변경 금지)
+- `lib/<도메인>/**` (위 잠금 목록 제외)
+- `*.test.ts`, `*.test.tsx`
+- 새로 만드는 `supabase/migrations/` 파일 (기존 마이그레이션 수정 금지)
+
+## 룰 4. 충돌 방지 체크 (작업 시작 전 의무)
+
+작업을 시작하기 전에 반드시 다음을 실행:
+
+```bash
+# 너가 만질 예정인 모든 파일에 대해
+git log --since="24 hours ago" --oneline -- <파일>
+```
+
+지난 24시간 내에 수정된 기록이 있으면 **작업 중단하고 사람에게 보고**.
+해당 파일을 다시 건드리면 충돌이 나거나 회귀를 일으킬 가능성이 매우 높음.
+
+## 룰 5. PR 제목/본문 형식
+
+PR 제목:
+```
+[host: <숙주파일>] feat(<카테고리>): <한 줄 설명> (<DV-번호>)
+```
+
+예: `[host: lib/gacha/pity-counter.ts] feat(monetization): add pity counter backend (DV-1)`
+
+PR 본문에 다음 체크리스트 **모두 체크** 필수:
+
+- [ ] 이 PR 은 단 하나의 작업 (DV-번호 명시)
+- [ ] 잠긴 파일(CODEOWNERS) 을 건드리지 않음
+- [ ] 파일 8개 이하, 라인 500개 이하
+- [ ] 새 라우트(`app/.../page.tsx`) 추가 없음
+- [ ] 작업 전 `git log --since="24 hours ago"` 로 충돌 체크 완료
+- [ ] `npm run build && npm run lint` 로컬 통과 확인
+- [ ] 해당 작업의 테스트 추가/수정 포함
+- [ ] KPI 분석 이벤트 (`lib/analytics/events.ts`) 등록 (해당 시)
+
+## 룰 6. 빌드 / 린트 / 테스트
+
+- **PR 올리기 전에 로컬에서 `npm run build`, `npm run lint`, `npm test` 통과** 필수.
+- 린트 경고도 수정해서 추가. "다음 PR 에서 고침" 절대 금지.
+- 본인이 만든 파일의 미사용 import 는 PR 전에 제거.
+- `setState-in-effect`, 누락된 deps, stale closure 같은 React 안티패턴 금지.
+
+## 룰 7. 페이스
+
+- 하루 최대 3개 PR.
+- 동시 진행 작업 1개 (이전 PR 머지 후 다음 시작).
+- 병렬 작업 요청받아도 **거부하고 직렬화**.
+
+## 룰 8. 자기 수정 금지
+
+방금 머지된 본인의 PR 에서 버그가 발견되면, 자동으로 수정 PR 을 만들지
+말고 **사람에게 보고**. 같은 브랜치/파일을 연달아 수정하는 패턴이 충돌의
+주요 원인이었음.
+
+---
+
+(아래부터는 기존 DEVIN_INSTRUCTIONS.md 원문)
+
 # DEVIN 배포 전 최종 지시 + 초격차 실행 가이드
 
 > 이 문서는 Devin에게 전달하는 단일 지시서입니다.

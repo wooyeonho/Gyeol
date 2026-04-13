@@ -1,0 +1,56 @@
+name: No New Routes
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  no-new-routes-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect new route folders
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          # Find new directories under app/ that contain page.tsx
+          NEW_ROUTES=$(git diff --name-only --diff-filter=A "$BASE" "$HEAD" | \
+            grep -E "^app/[^/]+.*/page\.tsx$" | \
+            grep -v "^app/api/" | \
+            grep -v "^app/\(auth\)" | \
+            grep -v "^app/\(marketing\)" || true)
+
+          if [ -n "$NEW_ROUTES" ]; then
+            echo "::error::새 라우트 감지됨:"
+            echo "$NEW_ROUTES"
+            echo "::error::새 페이지 생성 금지. 기존 화면에 녹여넣는 방식만 허용."
+            echo "::error::BENCHMARK_INTEGRATION_PLAN.md 의 '숙주 컴포넌트' 원칙 참조."
+            exit 1
+          fi
+          echo "::notice::새 라우트 없음 ✓"
+
+      - name: Comment on PR if new routes
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚨 **새 라우트 감지 — 머지 차단**
+
+이 PR은 \`app/\` 아래 새로운 \`page.tsx\`를 생성합니다.
+
+결의 핵심 원칙은 **새 페이지를 만들지 않고 기존 화면에 녹여넣는 것**입니다.
+
+잘 나가는 앱들의 메커니즘은 별도 쇼케이스 페이지가 아니라, 결의 기존
+화면(홈/채팅/피드/다이어리/케어/진화 등)에 자연스럽게 섞여야 합니다.
+
+\`BENCHMARK_INTEGRATION_PLAN.md\`의 "4가지 융합 법칙 → 숙주 우선" 섹션을
+참조해서 어느 기존 컴포넌트에 녹일지 재설계하세요.`
+            })
