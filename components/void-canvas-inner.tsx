@@ -22,6 +22,7 @@ import {
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { SCENE_CONFIG } from "@/lib/visual-config";
+import { calculateVisualParams } from "@/lib/genome/visual-params";
 
 export interface InnerProps {
   shape: string;
@@ -467,6 +468,10 @@ function Scene({
   // which would defeat React.memo on ProceduralCreature and rebuild geometry each frame.
   const species = useMemo(() => dna ? deriveSpecies(dna) : null, [dna]);
 
+  // DNA-driven scene parameters: lighting color and bloom intensity emerge from
+  // the same 16-axis vector that drives morphology and personality.
+  const sceneVisualParams = useMemo(() => dna ? calculateVisualParams(dna) : null, [dna]);
+
   // Derive secondary color from DNA for dual-color particles
   const secondaryParticleColor = useMemo(() => {
     if (!dna || !species) return undefined;
@@ -498,13 +503,28 @@ function Scene({
 
   return (
     <>
-      {/* Character-designer staging — 3-point lighting + rim light silhouette */}
-      <ambientLight intensity={0.2 * activityDim} />
-      {/* Key light: warm, upper-right — the dominant shaper */}
-      <directionalLight position={[3, 4, 5]} intensity={0.9 * activityDim} color="#fff4e0" />
-      {/* Fill light: cool, lower-left — softens shadows */}
-      <directionalLight position={[-3, 1, 2]} intensity={0.35 * activityDim} color="#8aa8ff" />
-      {/* Rim light: behind creature — carves silhouette from background */}
+      {/* 3-point lighting — colors and intensities emerge from DNA visual params.
+          warmthBias drives cool-to-warm ambient; keyLightIntensity from DNA intensity+assertiveness */}
+      <ambientLight
+        intensity={0.2 * activityDim}
+        color={sceneVisualParams
+          ? `rgb(${Math.round(sceneVisualParams.ambientLightColor.r * 255)},${Math.round(sceneVisualParams.ambientLightColor.g * 255)},${Math.round(sceneVisualParams.ambientLightColor.b * 255)})`
+          : "#ffffff"
+        }
+      />
+      {/* Key light: intensity driven by DNA assertiveness+intensity */}
+      <directionalLight
+        position={[3, 4, 5]}
+        intensity={(sceneVisualParams ? sceneVisualParams.keyLightIntensity : 0.9) * activityDim}
+        color={sceneVisualParams && sceneVisualParams.warmthBias > 0.5 ? "#fff4e0" : "#e8f0ff"}
+      />
+      {/* Fill light: cool fill, softens shadows; analytical creatures get stronger fill */}
+      <directionalLight
+        position={[-3, 1, 2]}
+        intensity={(sceneVisualParams ? 0.25 + (1 - sceneVisualParams.warmthBias) * 0.18 : 0.35) * activityDim}
+        color="#8aa8ff"
+      />
+      {/* Rim light: behind creature — carves silhouette */}
       <directionalLight position={[-2, 2, -4]} intensity={0.8 * activityDim} color={color} />
       <pointLight color={color} intensity={tapGlow} />
 
@@ -564,12 +584,19 @@ function Scene({
         <meshBasicMaterial color={SCENE_CONFIG.hudRing2Color} transparent opacity={SCENE_CONFIG.hudRing2Opacity * activityDim} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
 
-      {/* Bloom: archetype base + rarity boost — rarer creatures glow more intensely */}
+      {/* Bloom: DNA visual params primary source + rarity boost.
+          sceneVisualParams.bloomIntensity replaces the archetype-bucket lookup —
+          openness/intensity/creativity drive glow directly from raw DNA values. */}
       <EffectComposer>
         <Bloom
           luminanceThreshold={SCENE_CONFIG.bloomLuminanceThreshold}
           luminanceSmoothing={SCENE_CONFIG.bloomLuminanceSmoothing}
           intensity={Math.min(SCENE_CONFIG.bloomMaxIntensity, (() => {
+            if (sceneVisualParams) {
+              // DNA-driven bloom + rarity bonus for high-rarity creatures
+              return sceneVisualParams.bloomIntensity + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.35;
+            }
+            // Fallback: archetype bucket (used when no DNA is present)
             const arch = species?.archetype;
             const base = (() => {
               switch (arch) {

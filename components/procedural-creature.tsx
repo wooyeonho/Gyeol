@@ -7,6 +7,7 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import type { SpeciesProfile } from "@/lib/genome/species";
 import { deriveMorphWeights, computeVertexDisplacements } from "@/lib/genome/morph";
 import { deriveDNAAppearance, applyVitalityRegression } from "@/lib/genome/appearance";
+import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import { deriveBodyStructure } from "@/lib/genome/body-plan";
 import { Outlines } from "@react-three/drei";
@@ -651,7 +652,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const activityDimTarget = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
   const activityMultTarget = creatureActivity === "sleeping" ? 0.3 : creatureActivity === "drowsy" ? 0.6 : 1;
   const activityDim = activityDimTarget; // static fallback for JSX outside useFrame
-  // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more
+
+  // DNA-to-geometry visual params — drives material, surface, and particle overrides.
+  // Computed once per DNA change via useMemo; propagated to CreatureBodyPlan.
+  const visualParams = useMemo(() => calculateVisualParams(dna), [dna]);
+
+  // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more.
+  // visualParams.emissiveBoost is applied inside CreatureBodyPlan directly.
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
 
   // Dispose previous geometry on change or unmount to prevent GPU memory leak
@@ -1251,6 +1258,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           vitality={vitality}
           toonGradient={toonGradient}
           archetype={species.archetype}
+          visualParams={visualParams}
         />
       )}
 

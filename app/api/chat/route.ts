@@ -34,6 +34,7 @@ import {
   decideRoute,
   type Big5,
 } from "@/lib/ai/world-class-orchestrator";
+import { generateDnaPrompt } from "@/lib/ai/dna-prompt";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/chat" });
@@ -269,25 +270,29 @@ export async function POST(req: NextRequest) {
       ? `[CRITICAL LANGUAGE RULE] The user wrote in ${userLang}. You MUST respond in ${userLang} only. Never mix languages.`
       : "";
 
-    // --- World-class personality conditioning (Big-Five → natural clauses) ---
-    // Map the creature's 16-axis DNA onto a Big-Five vector, then lift to
-    // short Korean clauses. This is additive — existing systemPrompt still
-    // supplies the base persona, fragments, memories, etc.
-    const dnaForBig5 = (context.agentState?.genome as { dna?: CreatureDNA } | null | undefined)?.dna;
+    // --- DNA-Driven Personality Conditioning ---
+    // Two complementary layers:
+    //   1. generateDnaPrompt — injects the full 16-axis spectrum with emergence instructions.
+    //      The model reads the raw numbers and self-assembles a unique voice from them.
+    //   2. personalityClauses (Big-Five) — short natural-language fallback clauses that
+    //      reinforce the Big-Five shape derived from the same DNA, acting as a secondary
+    //      signal so older-style models also benefit even if they miss the DNA block.
+    const dnaForPrompt = (context.agentState?.genome as { dna?: CreatureDNA } | null | undefined)?.dna;
+    const dnaSpectrumBlock = dnaForPrompt ? generateDnaPrompt(dnaForPrompt) : "";
     const big5Clauses: string[] = (() => {
-      if (!dnaForBig5) return [];
+      if (!dnaForPrompt) return [];
       const b5: Big5 = {
-        openness: dnaForBig5.openness ?? 0.5,
-        conscientiousness: (dnaForBig5.persistence + dnaForBig5.stability) / 2,
-        extraversion: (dnaForBig5.assertiveness + dnaForBig5.playfulness) / 2,
-        agreeableness: (dnaForBig5.warmth + dnaForBig5.empathy) / 2,
-        neuroticism: Math.max(0, Math.min(1, dnaForBig5.intensity + (1 - dnaForBig5.stability) * 0.5)),
+        openness: dnaForPrompt.openness ?? 0.5,
+        conscientiousness: (dnaForPrompt.persistence + dnaForPrompt.stability) / 2,
+        extraversion: (dnaForPrompt.assertiveness + dnaForPrompt.playfulness) / 2,
+        agreeableness: (dnaForPrompt.warmth + dnaForPrompt.empathy) / 2,
+        neuroticism: Math.max(0, Math.min(1, dnaForPrompt.intensity + (1 - dnaForPrompt.stability) * 0.5)),
       };
       return personalityClauses(b5);
     })();
     const personalityLine =
       big5Clauses.length > 0
-        ? `PERSONALITY (Big-Five from DNA): ${big5Clauses.join(", ")}. 이 결이 자연스럽게 문장에 묻어나야 한다.`
+        ? `PERSONALITY (Big-Five reinforcement): ${big5Clauses.join(", ")}.`
         : "";
 
     // --- Safety warning injection (warn → inline care instruction) ---
@@ -300,6 +305,7 @@ export async function POST(req: NextRequest) {
 
     const finalSystemPrompt = [
       context.systemPrompt,
+      dnaSpectrumBlock,
       personalityLine,
       "RESPONSE RULES (override everything above if conflict):",
       "- React to the SPECIFIC thing they said. Quote or reference their exact words.",
