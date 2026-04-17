@@ -21,6 +21,7 @@ import {
 } from "@/lib/creature/touch-physics";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
+import { SCENE_CONFIG } from "@/lib/visual-config";
 
 export interface InnerProps {
   shape: string;
@@ -386,6 +387,9 @@ function Scene({
   const [physicsScale, setPhysicsScale] = useState(1);
   const [physicsFlash, setPhysicsFlash] = useState(0);
 
+  const hudRing1Ref = useRef<THREE.Mesh>(null);
+  const hudRing2Ref = useRef<THREE.Mesh>(null);
+
   useFrame((_, delta) => {
     if (tapDecay.current > 0) {
       tapDecay.current = Math.max(0, tapDecay.current - delta * 4);
@@ -397,6 +401,12 @@ function Scene({
       physicsStateRef.current = tickPhysicsState(ps, delta * 1000);
       setPhysicsScale(physicsStateRef.current.scaleMult);
       setPhysicsFlash(physicsStateRef.current.flash);
+    }
+    // HUD ring slow rotation
+    if (hudRing1Ref.current) hudRing1Ref.current.rotation.z += SCENE_CONFIG.hudRing1RotSpeed;
+    if (hudRing2Ref.current) {
+      hudRing2Ref.current.rotation.z -= SCENE_CONFIG.hudRing2RotSpeed;
+      hudRing2Ref.current.rotation.x += SCENE_CONFIG.hudRing2RotSpeed * 0.5;
     }
   });
 
@@ -543,23 +553,37 @@ function Scene({
       {particles > 0 && (
         <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} conversationEnergy={conversationEnergy} />
       )}
-      {/* Bloom: intensity varies by archetype — only ethereal/spectral should look truly glowy */}
+
+      {/* HUD rings — slowly rotating thin rings around creature for high-end look */}
+      <mesh ref={hudRing1Ref}>
+        <ringGeometry args={[SCENE_CONFIG.hudRing1InnerRadius, SCENE_CONFIG.hudRing1OuterRadius, 64]} />
+        <meshBasicMaterial color={SCENE_CONFIG.hudRing1Color} transparent opacity={SCENE_CONFIG.hudRing1Opacity * activityDim} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh ref={hudRing2Ref} rotation={[Math.PI / 3, 0, 0]}>
+        <ringGeometry args={[SCENE_CONFIG.hudRing2InnerRadius, SCENE_CONFIG.hudRing2OuterRadius, 64]} />
+        <meshBasicMaterial color={SCENE_CONFIG.hudRing2Color} transparent opacity={SCENE_CONFIG.hudRing2Opacity * activityDim} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+
+      {/* Bloom: archetype base + rarity boost — rarer creatures glow more intensely */}
       <EffectComposer>
         <Bloom
-          luminanceThreshold={0.3}
-          luminanceSmoothing={0.9}
-          intensity={(() => {
+          luminanceThreshold={SCENE_CONFIG.bloomLuminanceThreshold}
+          luminanceSmoothing={SCENE_CONFIG.bloomLuminanceSmoothing}
+          intensity={Math.min(SCENE_CONFIG.bloomMaxIntensity, (() => {
             const arch = species?.archetype;
-            switch (arch) {
-              case "ethereal": case "spectral": return 1.0;
-              case "volcanic": return 0.6;
-              case "crystalline": return 0.5;
-              case "fluid": return 0.4;
-              case "organic": case "verdant": return 0.3;
-              case "mechanical": return 0.2;
-              default: return 0.5;
-            }
-          })()}
+            const base = (() => {
+              switch (arch) {
+                case "ethereal": case "spectral": return 1.0;
+                case "volcanic": return 0.6;
+                case "crystalline": return 0.5;
+                case "fluid": return 0.4;
+                case "organic": case "verdant": return 0.3;
+                case "mechanical": return 0.2;
+                default: return 0.5;
+              }
+            })();
+            return base + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.4;
+          })())}
           mipmapBlur
         />
       </EffectComposer>
