@@ -1,4 +1,4 @@
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import type { AutonomyIntervalRule } from "@/lib/autonomy/interval-rule";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
@@ -41,7 +41,7 @@ export async function planHeartbeatAutonomy(input: {
 }) {
   const locale = resolveGenerationLocale({ config: input.config, explicitLocale: input.locale });
   const language = getLanguageName(locale);
-  const response = await generateJSON<HeartbeatPlan>(
+  const response = await generateCognitiveJSON<HeartbeatPlan>(
     "You are an autonomous planning layer for an evolving AI being. Respond ONLY valid JSON.",
     `Context:
 - active_goal: ${input.activeGoal ?? "none"}

@@ -125,6 +125,48 @@ async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
+// ── Cognitive Layer: Claude Haiku ─────────────────────────────────────────────
+// High-identity tasks (dreams, self-reflection, naming, hidden emotions) route
+// here first. Groq acts as fallback — never the primary voice for the creature's
+// inner life.
+const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
+const CLAUDE_COGNITIVE_MODEL = "claude-haiku-4-5-20251001";
+
+async function callClaude(
+  system: string,
+  messages: Msg[],
+  maxTokens = 300,
+  temp = 0.7,
+): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30_000);
+  try {
+    const res = await fetch(CLAUDE_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: CLAUDE_COGNITIVE_MODEL,
+        max_tokens: maxTokens,
+        temperature: temp,
+        system,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`Claude ${res.status}`);
+    const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+    return data.content?.find((b) => b.type === "text")?.text ?? "";
+  } catch (e) { clearTimeout(timer); throw e; }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function fallbackStream(text: string): ReadableStream {
   return new ReadableStream({
     start(ctrl) {
@@ -306,4 +348,49 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
 
   logger.error("[JSON] All retries exhausted, returning null");
   return null;
+}
+
+/**
+ * Cognitive layer: Claude Haiku → Groq fallback.
+ * Use for high-identity tasks where persona fidelity matters:
+ * dreams, self-reflection, naming, hidden emotions, self-theory, contradiction detection.
+ */
+export async function generateCognitiveJSON<T extends Record<string, unknown> = Record<string, unknown>>(
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<T | null> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  try {
+    const text = await callClaude(systemPrompt, messages, 300, 0.3);
+    if (text) {
+      const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(cleaned) as unknown;
+      if (isRecord(parsed)) return parsed as T;
+    }
+  } catch (e) {
+    logger.warn("[Cognitive] Claude unavailable, falling back to Groq", e instanceof Error ? { msg: e.message } : { error: e });
+  }
+  return generateJSON<T>(systemPrompt, userPrompt);
+}
+
+/**
+ * Cognitive layer: Claude Haiku → Groq fallback (non-streaming text).
+ * Use for autonomous self-expression: heartbeat reflections, proactive messages,
+ * time-capsule letters — any text that carries the creature's genuine voice.
+ */
+export async function generateCognitiveTextOnce(
+  systemPrompt: string,
+  userPrompt: string,
+  opts?: { max_tokens?: number; temperature?: number },
+): Promise<string> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  const maxTokens = opts?.max_tokens ?? 500;
+  const temp = opts?.temperature ?? 0.7;
+  try {
+    const text = await callClaude(systemPrompt, messages, maxTokens, temp);
+    if (text) return text;
+  } catch (e) {
+    logger.warn("[Cognitive] Claude unavailable, falling back to Groq", e instanceof Error ? { msg: e.message } : { error: e });
+  }
+  return generateTextOnce(systemPrompt, userPrompt, opts);
 }

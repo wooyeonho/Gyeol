@@ -1,4 +1,4 @@
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
@@ -23,7 +23,7 @@ export async function processHiddenEmotions(agentId: string, userMsg: string, ai
   // Higher intimacy = more honest (less hiding)
   const hideThreshold = intimacy > 60 ? 0.7 : intimacy > 30 ? 0.5 : 0.3;
 
-  const result = await generateJSON<{
+  const result = await generateCognitiveJSON<{
     surface?: string;
     real?: string;
     hiding?: boolean;

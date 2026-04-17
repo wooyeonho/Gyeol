@@ -1,4 +1,4 @@
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
@@ -26,7 +26,7 @@ export async function updateSelfModel(agentId: string) {
   const language = getLanguageName(locale);
 
   const logText = logs.map((l) => `[${l.action_type}] ${l.summary}`).join("\n");
-  const result = await generateJSON<SelfTheoryResult>(
+  const result = await generateCognitiveJSON<SelfTheoryResult>(
     "Self-analysis. Respond ONLY valid JSON.",
     `Your recent activities:\n${logText}\n\nJSON: {"observations":["${language} observation 1","${language} observation 2"],"behavior_change":"${language} suggestion or null","current_role":"${language} role or null","identity_statement":"${language} identity sentence or null"}`
   );
