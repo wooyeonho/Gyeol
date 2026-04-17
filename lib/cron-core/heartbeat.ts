@@ -3,9 +3,8 @@
 
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateText } from "@/lib/ai/router";
+import { generateCognitiveTextOnce } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
-import { readSseAssistantText } from "@/lib/ai/sse-parser";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { getCircadianProfile } from "@/lib/autonomy/circadian";
 import { logger } from "@/lib/logger";
@@ -192,13 +191,11 @@ export async function executeHeartbeat(): Promise<CronResult> {
           subjectiveTime: Number(state.subjective_time ?? 0),
         });
 
-        const stream = await generateText(systemPrompt, [
-          {
-            role: "user",
-            content: `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\nWorld weather: ${weatherName}\nCircadian phase: ${circadian.phase} (${circadianLabel}), tone hint: ${toneHint}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in ${language}. Avoid repeating exact previous phrasing.`,
-          }
-        ]);
-        let response = await readSseAssistantText(stream);
+        let response = await generateCognitiveTextOnce(
+          systemPrompt,
+          `Your memories:\n${memText}\nRecent autonomous notes:\n${recentSummaries.join("\n")}\nWorld weather: ${weatherName}\nCircadian phase: ${circadian.phase} (${circadianLabel}), tone hint: ${toneHint}\n${cue}\nYou are alone now. What are you doing? What do you feel? 2-3 sentences in ${language}. Avoid repeating exact previous phrasing.`,
+          { max_tokens: 420, temperature: 0.75 },
+        );
         response = capText(response, 420);
 
         const nowIso = new Date().toISOString();
@@ -452,11 +449,11 @@ export async function executeHeartbeat(): Promise<CronResult> {
             "hope you had a good", "just checking in", "wanted to check",
             "hope your day", "hope you're having", "I was worried",
           ].join('", "');
-          const proactiveStream = await generateText(systemPrompt, [{
-            role: "user",
-            content: proactiveTemplates[templateIdx] + ` NEVER say any of: "${bannedPhrases}". Be original and surprising.`,
-          }]);
-          let proMsg = await readSseAssistantText(proactiveStream);
+          let proMsg = await generateCognitiveTextOnce(
+            systemPrompt,
+            proactiveTemplates[templateIdx] + ` NEVER say any of: "${bannedPhrases}". Be original and surprising.`,
+            { max_tokens: 180, temperature: 0.8 },
+          );
           proMsg = capText(proMsg, 180);
           if (proMsg) {
             const { data: recentAssistants } = await db

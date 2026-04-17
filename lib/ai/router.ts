@@ -14,9 +14,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // processes per request so module-level state is useless for global rate limiting.
 // Groq 429 responses are already caught and trigger the Gemini/CF fallback chain.
 
-const MODELS = [
-  { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 15000 },
-  { name: "llama-3.1-8b-instant", timeout: 10000 },
+// ── Reflexive Layer: fast, cheap, high-volume tasks ──────────────────────────
+// Crawling, status checks, social NPC posts — latency matters, identity doesn't.
+const REFLEXIVE_MODELS = [
+  { name: "llama-3.1-8b-instant",                        timeout: 8_000 },
+  { name: "meta-llama/llama-4-scout-17b-16e-instruct",   timeout: 12_000 },
+];
+
+// ── Cognitive Layer: high-parameter models, still free on Groq ───────────────
+// Dreams, self-reflection, naming, hidden emotions, main chat — identity matters.
+// llama-3.3-70b-versatile: 70B params, Groq free tier, strong instruction following.
+// deepseek-r1-distill-llama-70b: DeepSeek R1 distilled on 70B, excellent reasoning.
+const COGNITIVE_MODELS = [
+  { name: "llama-3.3-70b-versatile",           timeout: 25_000 },
+  { name: "deepseek-r1-distill-llama-70b",      timeout: 25_000 },
+  { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 12_000 },
 ];
 
 async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {
@@ -125,6 +137,39 @@ async function callGeminiStream(system: string, messages: Msg[], maxTokens = 700
   } catch (e) { clearTimeout(timer); throw e; }
 }
 
+// ── Optional: DeepSeek direct API (ultra-cheap, OpenAI-compatible) ───────────
+// Only used if DEEPSEEK_API_KEY is set. Falls into cognitive chain as a bridge
+// between Groq 70b and Gemini when Groq rate-limits.
+async function callDeepSeek(
+  system: string,
+  messages: Msg[],
+  maxTokens = 300,
+  temp = 0.3,
+): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error("DEEPSEEK_API_KEY not configured");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25_000);
+  try {
+    const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [{ role: "system", content: system }, ...messages],
+        max_tokens: maxTokens,
+        temperature: temp,
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`DeepSeek ${res.status}`);
+    const data = await res.json() as GroqCompletionResponse;
+    return data.choices?.[0]?.message?.content ?? "";
+  } catch (e) { clearTimeout(timer); throw e; }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function fallbackStream(text: string): ReadableStream {
   return new ReadableStream({
     start(ctrl) {
@@ -186,46 +231,49 @@ export async function generateText(systemPrompt: string, messages: Msg[], maxTok
   const effectiveMaxTokens = verbalTokens !== 700 ? verbalTokens : maxTokens;
   const temperature = getArchetypeTemperature(systemPrompt);
 
-  // OPT-C: Hedged request — start Groq primary, fire Gemini in parallel after 1.5s.
-  // Groq Llama 4 Scout typically begins streaming in 200-500ms.
-  // Hedge at 1.5s captures Groq timeouts quickly while avoiding wasted Gemini calls.
-  let groqSettled = false;
-  let geminiSettled = false;
+  // Cognitive-first hedged streaming:
+  //   Primary  → COGNITIVE_MODELS (70b) — better persona fidelity for main chat.
+  //   Hedge    → REFLEXIVE_MODELS (8b) fires at 2500ms if 70b is slow/rate-limited.
+  //   Fallback → Gemini Flash if both Groq tiers fail.
+  // 70b streaming starts in ~500-800ms on Groq; 2500ms hedge gives it full runway
+  // while protecting p95 latency with the instant 8b fallback.
+  let cognitiveSettled = false;
+  let reflexiveSettled = false;
 
-  const groqPromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
-    for (const m of MODELS) {
+  const cognitivePromise = (async (): Promise<{ source: string; stream: ReadableStream }> => {
+    for (const m of COGNITIVE_MODELS) {
       try {
         const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
-        groqSettled = true;
-        // Debug log removed — model selection is transparent to caller
+        cognitiveSettled = true;
         return { source: m.name, stream: res.body! };
-      } catch (e) { logger.error(`[AI] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
+      } catch (e) { logger.error(`[AI:cognitive] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
     }
-    throw new Error("All Groq models failed");
+    throw new Error("All cognitive models failed");
   })();
 
-  // Start Gemini hedge after 1.5s
-  const HEDGE_DELAY_MS = 1500;
-  const geminiHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
+  const HEDGE_DELAY_MS = 2500;
+  const reflexiveHedge = new Promise<{ source: string; stream: ReadableStream }>((resolve, reject) => {
     const hedgeTimer = setTimeout(async () => {
-      if (groqSettled) return reject(new Error("Groq already won"));
-      try {
-        const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
-        geminiSettled = true;
-        // Debug log removed — hedge race outcome is implicit
-        resolve({ source: "gemini-hedge", stream });
-      } catch (e) { reject(e); }
+      if (cognitiveSettled) return reject(new Error("cognitive already won"));
+      for (const m of REFLEXIVE_MODELS) {
+        try {
+          const res = await callGroq(m.name, systemPrompt, messages, true, m.timeout, effectiveMaxTokens, temperature);
+          reflexiveSettled = true;
+          resolve({ source: `reflexive:${m.name}`, stream: res.body! });
+          return;
+        } catch (e) { logger.error(`[AI:reflexive-hedge] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
+      }
+      reject(new Error("reflexive hedge exhausted"));
     }, HEDGE_DELAY_MS);
-    // If Groq wins before the timer, cancel the hedge
-    groqPromise.then(() => { clearTimeout(hedgeTimer); reject(new Error("Groq won")); }).catch(() => {});
+    cognitivePromise.then(() => { clearTimeout(hedgeTimer); reject(new Error("cognitive won")); }).catch(() => {});
   });
 
   try {
-    const winner = await Promise.race([groqPromise, geminiHedge]);
+    const winner = await Promise.race([cognitivePromise, reflexiveHedge]);
     return winner.stream;
   } catch {
-    // Both raced paths failed — try Gemini directly as final fallback
-    if (!geminiSettled) {
+    // Both Groq tiers failed — Gemini Flash as last resort
+    if (!reflexiveSettled) {
       try {
         const stream = await callGeminiStream(systemPrompt, messages, effectiveMaxTokens, temperature);
         logger.warn("[AI] Using Gemini Flash streaming fallback");
@@ -241,7 +289,7 @@ export async function generateTextOnce(systemPrompt: string, userPrompt: string,
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
   const maxTokens = opts?.max_tokens ?? 500;
   const temp = opts?.temperature ?? 0.7;
-  for (const m of MODELS) {
+  for (const m of REFLEXIVE_MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
       const data = (await res.json()) as GroqCompletionResponse;
@@ -266,8 +314,8 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
 ): Promise<T | null> {
   const messages: Msg[] = [{ role: "user", content: userPrompt }];
 
-  // Attempt 1: try all models
-  for (const m of MODELS) {
+  // Reflexive layer: 8b for JSON parsing tasks (fast, sufficient accuracy)
+  for (const m of REFLEXIVE_MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
       const data = (await res.json()) as GroqCompletionResponse;
@@ -278,9 +326,9 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
     } catch (e) { logger.error(`[JSON] ${m.name} attempt 1 failed`, e instanceof Error ? e : { error: e }); }
   }
 
-  // Retry once after 500ms backoff (all models again)
+  // Retry once after 500ms backoff
   await new Promise((resolve) => setTimeout(resolve, 500));
-  for (const m of MODELS) {
+  for (const m of REFLEXIVE_MODELS) {
     try {
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 300, 0.3);
       const data = (await res.json()) as GroqCompletionResponse;
@@ -306,4 +354,92 @@ export async function generateJSON<T extends Record<string, unknown> = Record<st
 
   logger.error("[JSON] All retries exhausted, returning null");
   return null;
+}
+
+/**
+ * Cognitive layer: Groq 70b → DeepSeek (if key set) → Reflexive fallback.
+ *
+ * Routes identity-critical JSON generation through high-parameter models.
+ * 70B models have vastly better instruction following and persona lock-in
+ * compared to 8B — at zero extra cost on Groq's free tier.
+ *
+ * Use for: dreams, self-reflection, naming, hidden emotions, self-theory,
+ *          contradiction detection, heartbeat planning.
+ */
+export async function generateCognitiveJSON<T extends Record<string, unknown> = Record<string, unknown>>(
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<T | null> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+
+  // Primary: cognitive Groq models (70b)
+  for (const m of COGNITIVE_MODELS) {
+    try {
+      const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 400, 0.3);
+      const data = (await res.json()) as GroqCompletionResponse;
+      const raw = data.choices?.[0]?.message?.content ?? "";
+      // DeepSeek R1 wraps output in <think>...</think> — strip it before parsing
+      const stripped = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(cleaned) as unknown;
+      if (isRecord(parsed)) return parsed as T;
+    } catch (e) { logger.error(`[Cognitive:JSON] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
+  }
+
+  // Bridge: DeepSeek direct API (ultra-cheap, ~$0.27/M tokens) if key is set
+  if (process.env.DEEPSEEK_API_KEY) {
+    try {
+      const text = await callDeepSeek(systemPrompt, messages, 400, 0.3);
+      if (text) {
+        const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+        const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const parsed = JSON.parse(cleaned) as unknown;
+        if (isRecord(parsed)) return parsed as T;
+      }
+    } catch (e) { logger.error("[Cognitive:JSON] DeepSeek failed", e instanceof Error ? e : { error: e }); }
+  }
+
+  // Final fallback: reflexive layer (never the primary cognitive voice)
+  logger.warn("[Cognitive:JSON] All cognitive models failed — falling back to reflexive");
+  return generateJSON<T>(systemPrompt, userPrompt);
+}
+
+/**
+ * Cognitive layer: Groq 70b → DeepSeek → Reflexive fallback (non-streaming).
+ *
+ * Use for autonomous self-expression where the creature's voice must be
+ * consistent: heartbeat reflections, proactive messages, time-capsule letters.
+ */
+export async function generateCognitiveTextOnce(
+  systemPrompt: string,
+  userPrompt: string,
+  opts?: { max_tokens?: number; temperature?: number },
+): Promise<string> {
+  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  const maxTokens = opts?.max_tokens ?? 500;
+  const temp = opts?.temperature ?? 0.7;
+
+  // Primary: cognitive Groq models (70b)
+  for (const m of COGNITIVE_MODELS) {
+    try {
+      const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, maxTokens, temp);
+      const data = (await res.json()) as GroqCompletionResponse;
+      const raw = data.choices?.[0]?.message?.content ?? "";
+      const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      if (text) return text;
+    } catch (e) { logger.error(`[Cognitive:Text] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
+  }
+
+  // Bridge: DeepSeek direct API
+  if (process.env.DEEPSEEK_API_KEY) {
+    try {
+      const text = await callDeepSeek(systemPrompt, messages, maxTokens, temp);
+      const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      if (stripped) return stripped;
+    } catch (e) { logger.error("[Cognitive:Text] DeepSeek failed", e instanceof Error ? e : { error: e }); }
+  }
+
+  // Final fallback: reflexive layer
+  logger.warn("[Cognitive:Text] All cognitive models failed — falling back to reflexive");
+  return generateTextOnce(systemPrompt, userPrompt, opts);
 }

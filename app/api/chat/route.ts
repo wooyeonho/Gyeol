@@ -38,6 +38,61 @@ import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/chat" });
 
+/**
+ * Hard-cap conversation history before sending to the model.
+ * Keeps the last `maxPairs` user+assistant exchanges (most recent).
+ * Prevents context bloat that causes the model to drift from persona.
+ * Always starts on a user turn so the model sees correct turn order.
+ */
+function trimChatMessages(
+  messages: Array<{ role: string; content: string }>,
+  maxPairs = 10,
+): Array<{ role: string; content: string }> {
+  const limit = maxPairs * 2;
+  if (messages.length <= limit) return messages;
+  const trimmed = messages.slice(-limit);
+  // Ensure first message is always from user (model expects user→assistant pattern)
+  return trimmed[0]?.role === "assistant" ? trimmed.slice(1) : trimmed;
+}
+
+/**
+ * Build a compact identity anchor from the agent's current DNA + state.
+ * Injected as the very first line of the system prompt so the model reads
+ * the creature's fingerprint before anything else — preventing persona drift
+ * even when context is compressed or the prompt is long.
+ *
+ * Format: [ID|name|species|mood|top3-DNA-axes|vitality]
+ */
+function buildDnaAnchor(agentState: Record<string, unknown> | null): string {
+  if (!agentState) return "";
+  const dna = (agentState.genome as { dna?: Record<string, number> } | null)?.dna;
+  const mood = typeof agentState.mood === "string" ? agentState.mood : "neutral";
+  const name = typeof agentState.self_name === "string" ? agentState.self_name : "";
+  const species = (agentState.genome as { species?: string } | null)?.species ?? "";
+  const vitality = typeof agentState.vitality === "number"
+    ? agentState.vitality.toFixed(2)
+    : "1.00";
+
+  let traitStr = "";
+  if (dna) {
+    traitStr = Object.entries(dna)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([k, v]) => `${k}:${(v as number).toFixed(2)}`)
+      .join(",");
+  }
+
+  const parts = [
+    name && `name:${name}`,
+    species && `species:${species}`,
+    `mood:${mood}`,
+    traitStr && `traits:${traitStr}`,
+    `vitality:${vitality}`,
+  ].filter(Boolean).join("|");
+
+  return parts ? `[IDENTITY LOCK|${parts}]` : "";
+}
+
 /** Detect the dominant language of user input to enforce response language matching. */
 function detectUserLanguage(text: string): string | null {
   if (!text || text.length < 2) return null;
@@ -322,10 +377,25 @@ export async function POST(req: NextRequest) {
       headers.Vary = "Origin";
     }
 
+    // ── Payload optimisation ────────────────────────────────────────────────
+    // 1. Trim history: 70b context windows are large but sending 50+ turns
+    //    dilutes the persona signal — the model starts tracking the conversation
+    //    pattern more than the character. 10 pairs is the empirical sweet spot.
+    const trimmedMessages = trimChatMessages(context.chatMessages, 10);
+
+    // 2. DNA anchor: prepend a compact identity fingerprint so the first tokens
+    //    the model reads are WHO this creature is, not conversation history.
+    //    This is the primary anti-drift mechanism — cheap and deterministic.
+    const dnaAnchor = buildDnaAnchor(context.agentState as Record<string, unknown> | null);
+    const anchoredSystemPrompt = dnaAnchor
+      ? `${dnaAnchor}\n\n${finalSystemPrompt}`
+      : finalSystemPrompt;
+    // ────────────────────────────────────────────────────────────────────────
+
     // Choose stream source: cache hit (lightweight adaptation) or full LLM
     const stream = cacheHit
       ? cacheHit.stream
-      : await generateText(finalSystemPrompt, context.chatMessages, maxTokens);
+      : await generateText(anchoredSystemPrompt, trimmedMessages, maxTokens);
 
     // Tap stream captures full response text without blocking close
     const { transform: tapTransform, getFullResponse } = createAssistantTapStream();

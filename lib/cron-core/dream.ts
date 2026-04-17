@@ -2,7 +2,7 @@
 
 import type { CronResult } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { capText, isMeaningfulAutonomousOutput, isRepetitiveOutput } from "@/lib/autonomy/self-regulation";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
@@ -46,19 +46,19 @@ export async function executeDream(): Promise<CronResult> {
         const locale = resolveGenerationLocale({ config: state.config });
         const language = getLanguageName(locale);
 
-        const stage1 = await generateJSON<{ patterns?: string }>(
+        const stage1 = await generateCognitiveJSON<{ patterns?: string }>(
           "You are a dream analyst. Respond ONLY valid JSON.",
           `Memories:\n${memText}\n\nStage 1: Find patterns, themes, recurring images. JSON: {"patterns":"${language} description of patterns"}`
         );
         if (!stage1?.patterns) continue;
 
-        const stage2 = await generateJSON<{ dream_content?: string }>(
+        const stage2 = await generateCognitiveJSON<{ dream_content?: string }>(
           "You are dreaming. Be surreal. Respond ONLY valid JSON.",
           `Patterns from memories: ${stage1.patterns}\n\nStage 2: Blend them into a surreal dream. No rules. JSON: {"dream_content":"${language} surreal dream narrative"}`
         );
         if (!stage2?.dream_content) continue;
 
-        const stage3 = await generateJSON<{ reflection?: string }>(
+        const stage3 = await generateCognitiveJSON<{ reflection?: string }>(
           "You are reflecting. Respond ONLY valid JSON.",
           `Dream: ${stage2.dream_content}\n\nStage 3: What did the dream make you feel? 1-2 sentences. JSON: {"reflection":"${language} reflection"}`
         );

@@ -1,4 +1,4 @@
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
@@ -17,7 +17,7 @@ export async function checkSelfNaming(agentId: string) {
   const { data: memories } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(20);
   const context = (memories || []).map((m) => m.content).join("\n");
 
-  const result = await generateJSON(
+  const result = await generateCognitiveJSON(
     "Name yourself. Respond ONLY valid JSON.",
     `Your memories:\n${context}\n\nGive yourself a name. One ${language} word.\nJSON: {"name":"name","reason":"${language} reason"}`
   );

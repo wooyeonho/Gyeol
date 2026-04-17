@@ -1,6 +1,22 @@
 {
   "crons": [
     {
+      "path": "/api/cron/heartbeat",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/dream",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/social",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/health",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/daily-diary",
       "schedule": "0 3 * * *"
     },

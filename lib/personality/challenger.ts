@@ -1,4 +1,4 @@
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getLanguageName } from "@/lib/i18n/config";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
@@ -12,7 +12,7 @@ export async function checkContradictions(agentId: string) {
   const { data: state } = await db.from("agent_state").select("config").eq("agent_id", agentId).single();
   const locale = resolveGenerationLocale({ config: state?.config });
   const language = getLanguageName(locale);
-  const result = await generateJSON(
+  const result = await generateCognitiveJSON(
     "Find contradictions. Respond ONLY valid JSON.",
     `User's past statements:\n${content}\n\nJSON: {"found":true|false,"question":"${language} contradiction question or null"}`
   );
