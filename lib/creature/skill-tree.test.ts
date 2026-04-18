@@ -48,7 +48,7 @@ describe("Skill Tree System (via lib/game/skill-tree)", () => {
   });
 
   it("getSkillsByBranch returns skills for each branch", () => {
-    expect(getSkillsByBranch("analytical").length).toBeGreaterThan(0);
+    expect(getSkillsByBranch("cognitive").length).toBeGreaterThan(0);
     expect(getSkillsByBranch("emotional").length).toBeGreaterThan(0);
   });
 

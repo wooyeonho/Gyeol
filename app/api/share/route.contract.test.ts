@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() =>
@@ -37,7 +38,7 @@ vi.mock("@/lib/rate-limit", () => ({
 describe("/api/share contract", () => {
   it("returns url and slug on POST", async () => {
     const { POST } = await import("./route");
-    const res = await POST();
+    const res = await POST(new NextRequest("http://localhost/api/share", { method: "POST" }));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(typeof body.url).toBe("string");

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -39,7 +40,7 @@ describe("/api/analytics/track contract", () => {
       },
     });
 
-    const request = new Request("http://localhost/api/analytics/track", {
+    const request = new NextRequest("http://localhost/api/analytics/track", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +73,7 @@ describe("/api/analytics/track contract", () => {
       from: () => ({ insert }),
     });
 
-    const request = new Request("http://localhost/api/analytics/track", {
+    const request = new NextRequest("http://localhost/api/analytics/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event_name: "totally_unknown_event" }),
