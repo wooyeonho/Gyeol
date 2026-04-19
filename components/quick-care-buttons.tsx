@@ -8,6 +8,10 @@ import { useTranslations } from "@/components/i18n-provider";
 interface QuickCareButtonsProps {
   vitality: number;
   onCareComplete?: (action: string) => void;
+  /** Called instead of fetch when the device is offline */
+  onOfflineAction?: (action: string) => Promise<void>;
+  /** Number of pending offline actions awaiting server sync */
+  pendingCount?: number;
 }
 
 const CARE_ACTIONS = [
@@ -20,7 +24,7 @@ const CARE_ACTIONS = [
  * Tamagotchi-style 3-button quick-care bar.
  * Compact enough to place on the home page for instant creature care.
  */
-export function QuickCareButtons({ vitality, onCareComplete }: QuickCareButtonsProps) {
+export function QuickCareButtons({ vitality, onCareComplete, onOfflineAction, pendingCount = 0 }: QuickCareButtonsProps) {
   const { locale, t } = useTranslations();
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<Record<string, boolean>>({});
@@ -33,15 +37,21 @@ export function QuickCareButtons({ vitality, onCareComplete }: QuickCareButtonsP
     setCooldowns((prev) => ({ ...prev, [action]: true }));
 
     try {
-      const res = await fetch("/api/care", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-
-      if (res.ok) {
+      if (!navigator.onLine && onOfflineAction) {
+        // Offline path: apply locally and queue for later sync
+        await onOfflineAction(action);
         haptic("success");
         onCareComplete?.(action);
+      } else {
+        const res = await fetch("/api/care", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        });
+        if (res.ok) {
+          haptic("success");
+          onCareComplete?.(action);
+        }
       }
     } catch {
       // Network error — silent fail
@@ -52,11 +62,21 @@ export function QuickCareButtons({ vitality, onCareComplete }: QuickCareButtonsP
         setCooldowns((prev) => ({ ...prev, [action]: false }));
       }, 30_000);
     }
-  }, [cooldowns, onCareComplete]);
+  }, [cooldowns, onCareComplete, onOfflineAction]);
 
   const isLow = vitality < 0.3;
 
   return (
+    <div className="flex flex-col items-center gap-2">
+      {pendingCount > 0 && (
+        <motion.p
+          className="text-[10px] text-amber-400/80 font-medium"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {locale === "ko" ? `⏳ ${pendingCount}개 동기화 대기 중` : `⏳ ${pendingCount} pending sync`}
+        </motion.p>
+      )}
     <div className="flex items-center justify-center gap-3">
       {CARE_ACTIONS.map((action) => {
         const isActive = activeAction === action.key;
@@ -112,6 +132,7 @@ export function QuickCareButtons({ vitality, onCareComplete }: QuickCareButtonsP
           </motion.button>
         );
       })}
+    </div>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export function createDefaultCareState(): CareState {
 }
 
 /**
- * Decay rates per hour.
+ * Base decay rates per hour.
  * Hunger decays fastest (need to feed), energy moderate, happiness slowest.
  */
 const DECAY_RATES = {
@@ -36,20 +36,50 @@ const DECAY_RATES = {
 } as const;
 
 /**
- * Apply time-based decay to care state.
+ * DNA axes that influence decay speed.
+ * Kept separate from CreatureDNAPartial so offline-care.ts can reuse the type.
+ */
+export type DecayDNA = {
+  independence?: number;  // high → happiness decays slower (self-sufficient)
+  intensity?: number;     // high → energy decays faster (burns bright)
+  playfulness?: number;   // high → hunger decays faster (active lifestyle)
+  stability?: number;     // high → all gauges decay slower (resilient)
+};
+
+/**
+ * Compute DNA-driven multipliers for each decay rate.
+ * All multipliers are in ~0.4..1.6 range so extremes are meaningful but not absurd.
+ */
+function getDNADecayMultipliers(dna?: DecayDNA): { hunger: number; energy: number; happiness: number } {
+  if (!dna) return { hunger: 1, energy: 1, happiness: 1 };
+  const ind  = dna.independence ?? 0.5;
+  const int_ = dna.intensity    ?? 0.5;
+  const play = dna.playfulness  ?? 0.5;
+  const stab = dna.stability    ?? 0.5;
+  const stabilityMod = 0.7 + (1 - stab) * 0.6; // stab=1 → 0.7×, stab=0 → 1.3×
+  return {
+    hunger:    (0.7 + play * 0.6) * stabilityMod,   // playful burn food faster
+    energy:    (0.7 + int_ * 0.8) * stabilityMod,   // intense creatures tire faster
+    happiness: (0.4 + (1 - ind) * 0.6) * stabilityMod, // independent → needs less validation
+  };
+}
+
+/**
+ * Apply time-based decay to care state, optionally modulated by creature DNA.
  * Should be called when loading agent state or during heartbeat.
  */
-export function applyCareDecay(state: CareState): CareState {
+export function applyCareDecay(state: CareState, dna?: DecayDNA): CareState {
   const now = new Date();
   const lastUpdated = new Date(state.lastUpdatedAt);
   const hoursPassed = (now.getTime() - lastUpdated.getTime()) / 3600000;
 
   if (hoursPassed < 0.05) return state; // < 3 minutes, skip
 
+  const mults = getDNADecayMultipliers(dna);
   const next: CareState = {
-    hunger: Math.max(0, state.hunger - DECAY_RATES.hunger * hoursPassed),
-    energy: Math.max(0, state.energy - DECAY_RATES.energy * hoursPassed),
-    happiness: Math.max(0, state.happiness - DECAY_RATES.happiness * hoursPassed),
+    hunger: Math.max(0, state.hunger - DECAY_RATES.hunger * mults.hunger * hoursPassed),
+    energy: Math.max(0, state.energy - DECAY_RATES.energy * mults.energy * hoursPassed),
+    happiness: Math.max(0, state.happiness - DECAY_RATES.happiness * mults.happiness * hoursPassed),
     lastUpdatedAt: now.toISOString(),
     sickSince: state.sickSince,
   };
@@ -191,6 +221,27 @@ export function getCriticalGauge(state: CareState): "hunger" | "energy" | "happi
   if (state.hunger <= state.energy && state.hunger <= state.happiness) return "hunger";
   if (state.energy <= state.happiness) return "energy";
   return "happiness";
+}
+
+/**
+ * DNA-driven petting reaction profile.
+ * Determines emoji feedback, haptic strength, and vocal emotion on touch.
+ * Priority: playfulness → independence → warmth → intensity → default.
+ */
+export type PetReactionProfile = {
+  emoji: string;
+  hapticStrength: "light" | "medium" | "heavy";
+  vocalEmotion: string;
+};
+
+export function getPetReactionProfile(dna?: CreatureDNAPartial): PetReactionProfile {
+  if (!dna) return { emoji: "✨", hapticStrength: "medium", vocalEmotion: "happy" };
+  const { playfulness = 0.5, independence = 0.5, warmth = 0.5, intensity = 0.5 } = dna;
+  if (playfulness > 0.7)    return { emoji: "🎉", hapticStrength: "heavy",  vocalEmotion: "playful" };
+  if (independence > 0.7)   return { emoji: "😏", hapticStrength: "light",  vocalEmotion: "indifferent" };
+  if (warmth > 0.7)         return { emoji: "💝", hapticStrength: "medium", vocalEmotion: "happy" };
+  if (intensity > 0.7)      return { emoji: "💥", hapticStrength: "heavy",  vocalEmotion: "excited" };
+  return { emoji: "✨", hapticStrength: "medium", vocalEmotion: "happy" };
 }
 
 /**

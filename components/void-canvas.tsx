@@ -1,12 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
+import type { PetReactionProfile } from "@/lib/creature/care-loop";
+import { useSpatialAudio } from "@/hooks/use-spatial-audio";
 
 interface VoidCanvasProps {
   shape?: "dot" | "sphere" | "polygon" | "complex" | "transcendent" | "creature" | "humanoid" | "beast" | "amorphous" | "seraph";
@@ -22,8 +24,8 @@ interface VoidCanvasProps {
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
   onTap?: () => void;
-  /** Called when creature is touched with affinity delta */
-  onCreatureTouch?: (affinityDelta: number) => void;
+  /** Called when creature is touched — receives affinity delta and DNA-driven reaction profile */
+  onCreatureTouch?: (affinityDelta: number, reaction?: PetReactionProfile) => void;
   enableThree?: boolean;
   /** Render in contained mode (absolute) instead of full-screen fixed */
   contained?: boolean;
@@ -238,6 +240,15 @@ export function VoidCanvas({
 }: VoidCanvasProps) {
   void mood;
   const { isMobile, reducedVisualMode } = useDevicePerformance();
+  const { init: initAudio, playSound } = useSpatialAudio();
+
+  // Wrap onCreatureTouch to init AudioContext (user gesture) and play spatial sound
+  const handleCreatureTouch = useCallback((affinityDelta: number, reaction?: PetReactionProfile) => {
+    initAudio();
+    const pos = forceState?.position ?? { x: 0, y: 0 };
+    playSound(reaction?.vocalEmotion ?? "happy", pos, dna ? (dna as Record<string, number>) : undefined);
+    onCreatureTouch?.(affinityDelta, reaction);
+  }, [initAudio, playSound, forceState, dna, onCreatureTouch]);
   const particleCount = reducedVisualMode ? 0 : isMobile ? Math.floor(particles / 2) : particles;
   const effectiveGlow = reducedVisualMode ? Math.min(glow, 35) : glow;
   const effectiveSize = reducedVisualMode ? Math.min(size, 24) : size;
@@ -271,7 +282,7 @@ export function VoidCanvas({
           restoring3dLabel={restoring3dLabel}
           dna={dna}
           mood={mood}
-          onCreatureTouch={onCreatureTouch}
+          onCreatureTouch={handleCreatureTouch}
           conversationEnergy={conversationEnergy}
           genLevel={genLevel}
           forceState={forceState}

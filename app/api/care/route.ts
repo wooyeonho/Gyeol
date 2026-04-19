@@ -55,7 +55,9 @@ export async function GET(req: Request) {
 
   const config = (data.config ?? {}) as Record<string, unknown>;
   const careState = (config.care_state as CareState | undefined) ?? createDefaultCareState();
-  const updated = applyCareDecay(careState);
+  const genome = (config.genome ?? {}) as Record<string, unknown>;
+  const creatureDna = (genome.dna ?? {}) as Record<string, number>;
+  const updated = applyCareDecay(careState, creatureDna);
 
   // Persist decayed state
   if (updated.lastUpdatedAt !== careState.lastUpdatedAt) {
@@ -102,7 +104,10 @@ export async function POST(req: NextRequest) {
 
     const config = (data.config ?? {}) as Record<string, unknown>;
     const careState = (config.care_state as CareState | undefined) ?? createDefaultCareState();
-    const decayed = applyCareDecay(careState);
+    // Extract DNA early so decay and care responses both use the same creature profile
+    const genome = (config.genome ?? {}) as Record<string, unknown>;
+    const creatureDna = (genome.dna ?? {}) as Record<string, number>;
+    const decayed = applyCareDecay(careState, creatureDna);
 
     const cost = action === "feed" ? FEED_COST : REST_COST;
 
@@ -111,10 +116,6 @@ export async function POST(req: NextRequest) {
     if (!spent) {
       return NextResponse.json({ error: "Not enough coins", required: cost }, { status: 402 });
     }
-
-    // Extract creature DNA for DNA-aware care responses
-    const genome = (config.genome ?? {}) as Record<string, unknown>;
-    const creatureDna = (genome.dna ?? {}) as Record<string, number>;
 
     let newCareState: CareState;
     let dnaNudge: { axis: string; delta: number } | null = null;
@@ -132,8 +133,7 @@ export async function POST(req: NextRequest) {
 
     // Persist DNA nudge if present
     if (dnaNudge) {
-      const genome = (config.genome ?? {}) as Record<string, unknown>;
-      const dna = { ...((genome.dna ?? {}) as Record<string, number>) };
+      const dna = { ...creatureDna };
       dna[dnaNudge.axis] = Math.max(0, Math.min(1, (dna[dnaNudge.axis] ?? 0.5) + dnaNudge.delta));
       updatedConfig.genome = { ...genome, dna };
     }

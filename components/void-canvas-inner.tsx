@@ -23,6 +23,7 @@ import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { SCENE_CONFIG } from "@/lib/visual-config";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
+import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
 
 export interface InnerProps {
   shape: string;
@@ -38,8 +39,8 @@ export interface InnerProps {
   motionBias?: "gentle" | "kinetic" | "mystic";
   pulseScale?: number;
   onTap?: () => void;
-  /** Called when creature is touched with affinity delta */
-  onCreatureTouch?: (affinityDelta: number) => void;
+  /** Called when creature is touched with affinity delta and DNA-driven reaction profile */
+  onCreatureTouch?: (affinityDelta: number, reaction?: PetReactionProfile) => void;
   /** Creature breathing phase 0..1 */
   breathPhase?: number;
   /** Creature activity state */
@@ -108,6 +109,17 @@ function CoreShape({ shape, color, size, opacity, pointerNorm, breathScale = 1 }
     if (groupRef.current) {
       const s = THREE.MathUtils.lerp(groupRef.current.scale.x, breathScale, 0.06);
       groupRef.current.scale.setScalar(s);
+      // Head lookAt: smooth pointer tracking for non-DNA CoreShape creatures
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        (pointerNorm?.x ?? 0) * 0.35,
+        0.04,
+      );
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(
+        groupRef.current.rotation.x,
+        -(pointerNorm?.y ?? 0) * 0.25,
+        0.04,
+      );
     }
   });
 
@@ -367,6 +379,64 @@ function OrganicParticles({ count, color, secondaryColor, size, motionBias = "ge
   );
 }
 
+const HEART_COUNT = 8;
+
+/** Emissive heart-toned particles that burst upward on head-zone tap, caught by Bloom. */
+function HeartParticles({ trigger, color }: { trigger: number; color: string }) {
+  type Particle = { x: number; y: number; vx: number; vy: number; life: number };
+  const particlesRef = useRef<Particle[]>([]);
+  const meshRefs = useRef<(THREE.Mesh | null)[]>(Array(HEART_COUNT).fill(null));
+  const prevTrigger = useRef(0);
+
+  useFrame((_, delta) => {
+    if (trigger !== prevTrigger.current) {
+      prevTrigger.current = trigger;
+      // Skip if user prefers reduced motion
+      if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const rng = mulberry32(trigger);
+      particlesRef.current = Array.from({ length: HEART_COUNT }, () => ({
+        x: (rng() - 0.5) * 0.4,
+        y: 0.3 + rng() * 0.2,
+        vx: (rng() - 0.5) * 0.8,
+        vy: 0.6 + rng() * 0.8,
+        life: 1.0,
+      }));
+    }
+
+    particlesRef.current.forEach((p, i) => {
+      p.life = Math.max(0, p.life - delta / 1.2);
+      p.x += p.vx * delta * 0.4;
+      p.y += p.vy * delta * 0.4;
+      p.vy -= delta * 0.5; // gravity
+      const mesh = meshRefs.current[i];
+      if (mesh) {
+        mesh.position.set(p.x, p.y, 0.1);
+        const s = p.life * 0.06;
+        mesh.scale.setScalar(s);
+        (mesh.material as THREE.MeshStandardMaterial).opacity = p.life * 0.9;
+      }
+    });
+  });
+
+  return (
+    <>
+      {Array.from({ length: HEART_COUNT }, (_, i) => (
+        <mesh key={i} ref={(el) => { meshRefs.current[i] = el; }} position={[0, 0, 0.1]}>
+          <sphereGeometry args={[1, 8, 8]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={1.8}
+            transparent
+            opacity={0}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
 function Scene({
   shape, color, size, glow, animation, particles, vitality, isListening,
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
@@ -377,6 +447,7 @@ function Scene({
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
   const [tapBounce, setTapBounce] = useState(0);
+  const [heartBurst, setHeartBurst] = useState(0);
   const tapDecay = useRef(0);
 
   // Zelda-like touch physics engine — full gesture classification + physics response
@@ -448,10 +519,16 @@ function Scene({
     setPhysicsScale(physicsStateRef.current.scaleMult);
     setPhysicsFlash(response.flashIntensity);
 
-    // Report affinity delta to parent
-    onCreatureTouch?.(response.affinityDelta);
+    // Head zone tap → heart particle burst (caught by existing Bloom)
+    if (bodyPart === "head") {
+      setHeartBurst(now);
+    }
+
+    // Report affinity delta + DNA-driven reaction profile to parent
+    const reaction = getPetReactionProfile(dna ?? undefined);
+    onCreatureTouch?.(response.affinityDelta, reaction);
     pointerStartRef.current = null;
-  }, [onCreatureTouch]);
+  }, [onCreatureTouch, dna]);
 
   const handlePointerMove = useCallback((e: { point?: { x: number; y: number; z: number } }) => {
     if (!pointerStartRef.current) return;
@@ -573,6 +650,9 @@ function Scene({
       {particles > 0 && (
         <OrganicParticles count={particles} color={color} secondaryColor={secondaryParticleColor} size={size} motionBias={motionBias} activity={creatureActivity} dna={dna} mood={mood} conversationEnergy={conversationEnergy} />
       )}
+
+      {/* Heart particles — emissive burst on head zone tap, caught by Bloom */}
+      <HeartParticles trigger={heartBurst} color="#ff6eb4" />
 
       {/* HUD rings — slowly rotating thin rings around creature for high-end look */}
       <mesh ref={hudRing1Ref}>
