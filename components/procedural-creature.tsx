@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CreatureDNA } from "@/lib/genome/dna";
@@ -11,7 +11,7 @@ import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import { deriveBodyStructure } from "@/lib/genome/body-plan";
 import { Outlines } from "@react-three/drei";
-import { damp3 } from "maath/easing";
+import { damp, damp3 } from "maath/easing";
 import { VISUAL_CONFIG } from "@/lib/visual-config";
 import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
@@ -20,6 +20,28 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { getExpression, lerpExpression, type ExpressionState } from "@/lib/creature/expression-system";
 import { playEmotionSound, getCreatureVoiceVolume } from "@/lib/creature/emotion-sounds";
 import { getExpressedTraits, getTraitTier } from "@/lib/genome/traits";
+
+// ── Module-scope constants — allocated once, never GC'd ──────────────────────
+const _MOUTH_COLOR    = new THREE.Color(0x221111);
+const _MOUTH_EMISSIVE = new THREE.Color(0x110808);
+const _TEAR_COLOR     = new THREE.Color(0x4488dd);
+const _FOOD_COLOR     = new THREE.Color(0xddaa44);
+
+// ── GPU wave shader — patches MeshToonMaterial vertex shader via onBeforeCompile
+// Moves per-vertex sin/cos wave computation from CPU loop to GPU.
+// Called once per material instance; uniforms updated every frame via userData.shader.
+function patchWaveShader(shader: THREE.WebGLProgramParametersWithUniforms): void {
+  shader.uniforms.uTime    = { value: 0 };
+  shader.uniforms.uWaveAmp = { value: 0.008 };
+  shader.vertexShader = shader.vertexShader.replace(
+    "#include <begin_vertex>",
+    `#include <begin_vertex>
+     float _wv = sin(transformed.x * 8.0 + uTime * 2.0)
+               * cos(transformed.y * 6.0 + uTime * 1.5)
+               * uWaveAmp;
+     transformed += transformed * _wv;`,
+  );
+}
 
 interface ProceduralCreatureProps {
   dna: CreatureDNA;
@@ -215,6 +237,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const eyelidRRef = useRef<THREE.Mesh>(null);
   const eyelidCyclopsRef = useRef<THREE.Mesh>(null);
 
+  // ── Scratch objects — allocated once, reused every frame (no GC pressure) ──
+  const _scaleVec       = useRef(new THREE.Vector3());
+  const _rotTargetQuat  = useRef(new THREE.Quaternion());
+  const _rotTargetEuler = useRef(new THREE.Euler(0, 0, 0, "YXZ"));
+  // MeshToonMaterial ref for GPU wave shader uniform updates
+  const meshMatRef = useRef<THREE.MeshToonMaterial>(null!);
+
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
   const blinkPhaseRef = useRef(0);
@@ -264,6 +293,16 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       vocalizingUntilRef.current = performance.now() + durationMs;
     }
   }, [mood, dna?.warmth]);
+
+  // ── GPU wave shader: stable onBeforeCompile callback (no inline fn — prevents shader recompile)
+  const handleBeforeCompile = useCallback(
+    (shader: THREE.WebGLProgramParametersWithUniforms) => {
+      patchWaveShader(shader);
+      // Standard Three.js pattern: store on userData so useFrame can update uniforms
+      if (meshMatRef.current) meshMatRef.current.userData.shader = shader;
+    },
+    [], // meshMatRef is a stable ref — no deps needed
+  );
 
   // Idle behavior lerp refs — smooth transitions between idle states (rate 0.03/frame)
   const idleRotationSpeedRef = useRef(1);
@@ -486,10 +525,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
   // [UPGRADE 4] Geometry with surface pattern vertex colors + blended params
   const geometry = useMemo(() => {
-    // Use blended geometry radius and select geometry based on faceting level
-    const base = blendedGeo.faceting > 0.5
-      ? createArchetypeGeometry(species.archetype, blendedGeo.radius)
-      : createArchetypeGeometry(species.archetype, blendedGeo.radius);
+    const base = createArchetypeGeometry(species.archetype, blendedGeo.radius);
     const positions = base.attributes.position.array as Float32Array;
 
     const displacements = computeVertexDisplacements(positions, morphWeights);
@@ -729,50 +765,51 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   }, [dna.intensity, dna.playfulness, mood]);
 
   // Animation loop
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
 
     const t = state.clock.elapsedTime;
-    const dt = state.clock.getDelta();
+    const dt = delta; // R3F provides accurate per-frame delta as 2nd arg — never call getDelta() here
 
-    // Smoothly lerp activity parameters toward target (no discrete jumps between states)
-    activityDimRef.current += (activityDimTarget - activityDimRef.current) * 0.04;
-    activityMultRef.current += (activityMultTarget - activityMultRef.current) * 0.04;
+    // Smoothly damp activity parameters toward target — frame-rate independent (λ=2.5 ≈ 0.04/frame@60fps)
+    activityDimRef.current = damp(activityDimRef.current, activityDimTarget, 2.5, dt);
+    activityMultRef.current = damp(activityMultRef.current, activityMultTarget, 2.5, dt);
     const activityMult = activityMultRef.current;
     const smoothActivityDim = activityDimRef.current;
 
-    // Lerp idle behavior params toward targets (rate 0.03/frame for smooth transitions)
+    // Damp idle behavior params toward targets — λ=1.8 ≈ 0.03/frame@60fps
     if (idleBehaviorParams) {
-      const rate = 0.03;
-      idleRotationSpeedRef.current += (idleBehaviorParams.rotationSpeed - idleRotationSpeedRef.current) * rate;
-      idleBodyTiltRef.current += (idleBehaviorParams.bodyTilt - idleBodyTiltRef.current) * rate;
-      idleScaleOscRef.current += (idleBehaviorParams.scaleOscillation - idleScaleOscRef.current) * rate;
-      idleEyeOpennessRef.current += (idleBehaviorParams.eyeOpenness - idleEyeOpennessRef.current) * rate;
-      idleEmissiveMultRef.current += (idleBehaviorParams.emissiveMult - idleEmissiveMultRef.current) * rate;
-      idleAppendageSpeedRef.current += (idleBehaviorParams.appendageSpeed - idleAppendageSpeedRef.current) * rate;
-      idleBobAmplitudeRef.current += (idleBehaviorParams.bobAmplitude - idleBobAmplitudeRef.current) * rate;
-      idleDreamParticlesRef.current += ((idleBehaviorParams.showDreamParticles ? 1 : 0) - idleDreamParticlesRef.current) * rate;
+      idleRotationSpeedRef.current  = damp(idleRotationSpeedRef.current,  idleBehaviorParams.rotationSpeed,               1.8, dt);
+      idleBodyTiltRef.current       = damp(idleBodyTiltRef.current,       idleBehaviorParams.bodyTilt,                    1.8, dt);
+      idleScaleOscRef.current       = damp(idleScaleOscRef.current,       idleBehaviorParams.scaleOscillation,            1.8, dt);
+      idleEyeOpennessRef.current    = damp(idleEyeOpennessRef.current,    idleBehaviorParams.eyeOpenness,                 1.8, dt);
+      idleEmissiveMultRef.current   = damp(idleEmissiveMultRef.current,   idleBehaviorParams.emissiveMult,                1.8, dt);
+      idleAppendageSpeedRef.current = damp(idleAppendageSpeedRef.current, idleBehaviorParams.appendageSpeed,              1.8, dt);
+      idleBobAmplitudeRef.current   = damp(idleBobAmplitudeRef.current,   idleBehaviorParams.bobAmplitude,                1.8, dt);
+      idleDreamParticlesRef.current = damp(idleDreamParticlesRef.current, idleBehaviorParams.showDreamParticles ? 1 : 0,  1.8, dt);
     }
 
     // Grooming animation — 2Hz head-scratch when behavior = "grooming"
     const groomingTarget = idleBehavior === "grooming" ? 1 : 0;
-    groomingIntensityRef.current += (groomingTarget - groomingIntensityRef.current) * 0.03;
+    groomingIntensityRef.current = damp(groomingIntensityRef.current, groomingTarget, 1.8, dt);
     if (groomingIntensityRef.current > 0.01) {
       groomingPhaseRef.current += dt * 2.0 * Math.PI * 2; // 2 Hz
     }
 
-    // Vocal mouth sync — lerp toward open when vocalizing
+    // Vocal mouth sync — λ=7.7 ≈ 0.12/frame@60fps
     const isVocalizing = performance.now() < vocalizingUntilRef.current;
-    vocalMouthRef.current += ((isVocalizing ? 1 : 0) - vocalMouthRef.current) * 0.12;
+    vocalMouthRef.current = damp(vocalMouthRef.current, isVocalizing ? 1 : 0, 7.7, dt);
 
     // Wire: expression-system → smooth facial expression lerp each frame
-    expressionRef.current = lerpExpression(expressionRef.current, expressionTargetRef.current, 0.04);
+    // Expression lerp — convert alpha to frame-independent: α=1-exp(-λ·dt), λ=2.5≈0.04/frame@60fps
+    const exprAlpha = 1 - Math.exp(-2.5 * dt);
+    expressionRef.current = lerpExpression(expressionRef.current, expressionTargetRef.current, exprAlpha);
     const expr = expressionRef.current;
 
     const leanTarget = isListening ? 0.12 : 0;
-    listeningLeanRef.current += (leanTarget - listeningLeanRef.current) * 0.06;
+    listeningLeanRef.current = damp(listeningLeanRef.current, leanTarget, 3.7, dt); // λ=3.7≈0.06/frame@60fps
     const eyeScaleTarget = isListening ? 1.25 : 1;
-    eyeScaleRef.current += (eyeScaleTarget - eyeScaleRef.current) * 0.08;
+    eyeScaleRef.current = damp(eyeScaleRef.current, eyeScaleTarget, 5.0, dt); // λ=5.0≈0.08/frame@60fps
 
     if (blinkTimerRef.current < 0) blinkTimerRef.current = 2 + Math.random() * 3;
     if (lookTimerRef.current < 0) lookTimerRef.current = 4 + Math.random() * 6;
@@ -802,8 +839,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       lookTargetRef.current = { x: (Math.random() - 0.5) * 1.2, y: (Math.random() - 0.5) * 0.5 };
     }
     if (lookActiveRef.current) {
-      lookCurrentRef.current.x = THREE.MathUtils.lerp(lookCurrentRef.current.x, lookTargetRef.current.x, 0.04);
-      lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, lookTargetRef.current.y, 0.04);
+      lookCurrentRef.current.x = damp(lookCurrentRef.current.x, lookTargetRef.current.x, 2.5, dt);
+      lookCurrentRef.current.y = damp(lookCurrentRef.current.y, lookTargetRef.current.y, 2.5, dt);
       lookReturnTimerRef.current -= dt;
       if (lookReturnTimerRef.current <= 0) {
         lookActiveRef.current = false;
@@ -811,8 +848,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         lookTargetRef.current = { x: 0, y: 0 };
       }
     } else {
-      lookCurrentRef.current.x = THREE.MathUtils.lerp(lookCurrentRef.current.x, 0, 0.06);
-      lookCurrentRef.current.y = THREE.MathUtils.lerp(lookCurrentRef.current.y, 0, 0.06);
+      lookCurrentRef.current.x = damp(lookCurrentRef.current.x, 0, 3.7, dt);
+      lookCurrentRef.current.y = damp(lookCurrentRef.current.y, 0, 3.7, dt);
     }
 
     const energyMult = 1 + energy * 0.5;
@@ -830,7 +867,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // XZ squash inversely proportional to Y stretch for volume-preserving elasticity
     const stretchY  = scBase * breathScale;
     const squashXZ  = scBase / Math.sqrt(Math.max(0.5, breathScale)) * (1 + (breathScale - 1) * VISUAL_CONFIG.squashStretchAmount * 0.5);
-    groupRef.current.scale.lerp(new THREE.Vector3(squashXZ, stretchY, squashXZ), 0.08);
+    _scaleVec.current.set(squashXZ, stretchY, squashXZ);
+    damp3(groupRef.current.scale, _scaleVec.current, 5.0, dt);
 
     // Position: spring physics — damp3 gives frame-rate-independent damped spring
     // lambda drives convergence speed: sad mood → slow/droopy, excited → bouncy
@@ -854,40 +892,43 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       const pauseRange = 4 / (0.5 + lookSpeed * 2); // faster lookSpeed → shorter pauses
       nextLookAtRef.current = t + 2 + seededRandom(appearance.markingsSeed ?? 1, Math.floor(t * 11.7)) * pauseRange;
     }
-    const yawLerpRate = 0.02 + lookSpeed * 0.03; // blend rate toward target (used later in gaze section)
+    const yawLerpRate = 0.02 + lookSpeed * 0.03;
     const groomingScratch = Math.sin(groomingPhaseRef.current) * groomingIntensityRef.current * 0.12;
-    // rotation.x is also set below in gaze section (pointer head tilt); store base offset here
     const baseRotX = Math.sin(t * 0.3 * activityMult) * 0.05 + moodMod.tiltBias + idleBodyTiltRef.current + groomingScratch;
-    groupRef.current.rotation.x = baseRotX;
-    groupRef.current.rotation.z = THREE.MathUtils.lerp(
-      groupRef.current.rotation.z,
-      listeningLeanRef.current + forceRotation * 0.3 + Math.cos(groomingPhaseRef.current * 0.5) * groomingIntensityRef.current * 0.05,
-      0.06,
-    );
+
+    // Pointer influence — computed early so quaternion and eye-tracking share the same pn values
+    const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });
+    const pn = { x: rawPn.x + lookCurrentRef.current.x, y: rawPn.y + lookCurrentRef.current.y };
+
+    // ── Quaternion rotation (replaces dual Euler lerp + rotation.x double-set)
+    // All three axes unified in one slerp → no gimbal artifact, shortest-path interpolation.
+    {
+      const targetRotX = baseRotX - rawPn.y * VISUAL_CONFIG.headTiltX;
+      const targetRotY = lookTargetYawRef.current + forceRotation * 0.5 + rawPn.x * VISUAL_CONFIG.headTiltY;
+      const targetRotZ = listeningLeanRef.current + forceRotation * 0.3
+                       + Math.cos(groomingPhaseRef.current * 0.5) * groomingIntensityRef.current * 0.05;
+      _rotTargetEuler.current.set(targetRotX, targetRotY, targetRotZ, "YXZ");
+      _rotTargetQuat.current.setFromEuler(_rotTargetEuler.current);
+      // Convert yawLerpRate (per-frame alpha) to lambda for frame-independent slerp
+      const slerpLambda = Math.max(1, -Math.log(1 - Math.min(0.99, yawLerpRate)) * 60);
+      groupRef.current.quaternion.slerp(_rotTargetQuat.current, 1 - Math.exp(-slerpLambda * dt));
+    }
 
     if (meshRef.current) {
       const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? 1 - excitePulse * 0.15 : 1);
       const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? 1 + excitePulse * 0.12 : 1);
-      meshRef.current.scale.x = THREE.MathUtils.lerp(meshRef.current.scale.x, squashTarget, 0.06);
-      meshRef.current.scale.z = THREE.MathUtils.lerp(meshRef.current.scale.z, squashTarget, 0.06);
-      meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, stretchTarget, 0.06);
+      meshRef.current.scale.x = damp(meshRef.current.scale.x, squashTarget, 3.7, dt);
+      meshRef.current.scale.z = damp(meshRef.current.scale.z, squashTarget, 3.7, dt);
+      meshRef.current.scale.y = damp(meshRef.current.scale.y, stretchTarget, 3.7, dt);
     }
 
-    if (meshRef.current) {
-      const positions = meshRef.current.geometry.attributes.position;
-      if (positions && (positions as THREE.BufferAttribute & { _basePositions?: Float32Array })._basePositions) {
-        const base = (positions as THREE.BufferAttribute & { _basePositions: Float32Array })._basePositions;
-        const arr = positions.array as Float32Array;
-        const waveAmp = 0.008 * activityMult * moodMod.speedMult * energyMult;
-        for (let i = 0; i < arr.length; i += 3) {
-          const bx = base[i], by = base[i + 1], bz = base[i + 2];
-          const wave = Math.sin(bx * 8 + t * 2) * Math.cos(by * 6 + t * 1.5) * waveAmp;
-          arr[i] = bx + bx * wave;
-          arr[i + 1] = by + by * wave;
-          arr[i + 2] = bz + bz * wave;
-        }
-        positions.needsUpdate = true;
-      }
+    // ── GPU wave shader uniform update (replaces CPU vertex loop)
+    // sin/cos wave computation now runs entirely on GPU via patchWaveShader / onBeforeCompile.
+    // early-exit when amplitude is negligible avoids unnecessary uniform writes.
+    const waveAmp = 0.008 * activityMult * moodMod.speedMult * energyMult;
+    if (waveAmp >= 0.001 && meshMatRef.current?.userData.shader) {
+      meshMatRef.current.userData.shader.uniforms.uTime.value    = t;
+      meshMatRef.current.userData.shader.uniforms.uWaveAmp.value = waveAmp;
     }
 
     if (haloRef.current) {
@@ -897,25 +938,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         (moodMod.auraOpacity + appearance.glowIntensity * 0.12 + moodMod.emissiveBoost * 0.04 + energy * 0.06) * smoothActivityDim * idleEmissiveMultRef.current * 0.35;
     }
 
-    const rawPn = creatureActivity === "sleeping" ? { x: 0, y: 0 } : (pointerNorm ?? { x: 0, y: 0 });
-    const pn = { x: rawPn.x + lookCurrentRef.current.x, y: rawPn.y + lookCurrentRef.current.y };
+    // pn/rawPn computed above in quaternion section — reused here for eye tracking
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
-        eyeRef.current.position.x = THREE.MathUtils.lerp(eyeRef.current.position.x, pn.x * eyeSize * 0.3, 0.08);
-        eyeRef.current.position.y = THREE.MathUtils.lerp(eyeRef.current.position.y, -pn.y * eyeSize * 0.3, 0.08);
+        eyeRef.current.position.x = damp(eyeRef.current.position.x, pn.x * eyeSize * 0.3, 5.0, dt);
+        eyeRef.current.position.y = damp(eyeRef.current.position.y, -pn.y * eyeSize * 0.3, 5.0, dt);
       }
     }
-    // Head tilt — add pointer influence on top of base body rotation for "eye contact" feel
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(
-      groupRef.current.rotation.x,
-      baseRotX - rawPn.y * VISUAL_CONFIG.headTiltX,
-      0.04,
-    );
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(
-      groupRef.current.rotation.y,
-      lookTargetYawRef.current + forceRotation * 0.5 + rawPn.x * VISUAL_CONFIG.headTiltY,
-      yawLerpRate,
-    );
 
     const es = eyeScaleRef.current;
     const ps = moodMod.pupilScale;
@@ -923,24 +952,24 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     if (eyeGroupLRef.current) eyeGroupLRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
     if (eyeGroupRRef.current) eyeGroupRRef.current.scale.set(es, es * eyeOpenY * wr, es * ps);
 
-    // Pupil dilation — expression-driven iris scaling
+    // Pupil dilation — expression-driven iris scaling (λ=5.0≈0.08/frame@60fps)
     const pupilDilation = expr.pupilScale;
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
         const irisScale = pupilDilation;
         eyeRef.current.scale.set(
-          THREE.MathUtils.lerp(eyeRef.current.scale.x, irisScale, 0.08),
-          THREE.MathUtils.lerp(eyeRef.current.scale.y, irisScale, 0.08),
-          THREE.MathUtils.lerp(eyeRef.current.scale.z, irisScale, 0.08),
+          damp(eyeRef.current.scale.x, irisScale, 5.0, dt),
+          damp(eyeRef.current.scale.y, irisScale, 5.0, dt),
+          damp(eyeRef.current.scale.z, irisScale, 5.0, dt),
         );
       }
     }
 
-    // Eyelid droop — expression-driven eyelid coverage
+    // Eyelid droop — expression-driven eyelid coverage (λ=3.7≈0.06/frame@60fps)
     const eyelidScale = Math.max(0.01, expr.eyelidDroop);
     for (const lidRef of [eyelidLRef, eyelidRRef, eyelidCyclopsRef]) {
       if (lidRef.current) {
-        lidRef.current.scale.y = THREE.MathUtils.lerp(lidRef.current.scale.y, eyelidScale, 0.06);
+        lidRef.current.scale.y = damp(lidRef.current.scale.y, eyelidScale, 3.7, dt);
       }
     }
 
@@ -1002,7 +1031,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       tailRef.current.rotation.y = Math.cos(tailPhase * 0.7) * tailAmp * 0.5;
       // Sad moods droop the tail downward
       const droopTarget = (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely") ? -0.3 : 0;
-      tailRef.current.rotation.z = THREE.MathUtils.lerp(tailRef.current.rotation.z, droopTarget, 0.04);
+      tailRef.current.rotation.z = damp(tailRef.current.rotation.z, droopTarget, 2.5, dt);
       tailRef.current.scale.y = 1 + breathSin * 0.03;
     }
     // Apply mood-driven speed to side appendages (wings/fins)
@@ -1033,15 +1062,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       // Expression mouthOpen scales Y (open mouth); vocalization adds extra opening
       const exprMouthOpen = expr.mouthOpen;
       const mouthOpenTarget = 0.3 + (mouthConfig.open + exprMouthOpen) * 0.5 * 0.7 + vocalMouthRef.current * 0.4;
-      mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, mouthConfig.width, 0.08);
-      mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, mouthOpenTarget, 0.08);
+      mouthRef.current.scale.x = damp(mouthRef.current.scale.x, mouthConfig.width, 5.0, dt);
+      mouthRef.current.scale.y = damp(mouthRef.current.scale.y, mouthOpenTarget, 5.0, dt);
       // Expression mouthCurve: positive = smile (rotate up), negative = frown (rotate down)
       const exprCurve = expr.mouthCurve;
       const combinedCurve = (mouthConfig.curve + exprCurve) * 0.5;
-      mouthRef.current.rotation.z = THREE.MathUtils.lerp(mouthRef.current.rotation.z, combinedCurve * 0.3, 0.06);
+      mouthRef.current.rotation.z = damp(mouthRef.current.rotation.z, combinedCurve * 0.3, 3.7, dt);
       // Flip mouth arc for frown vs smile: rotate X to arc downward when negative
       const arcFlip = combinedCurve < 0 ? Math.PI : 0;
-      mouthRef.current.rotation.x = THREE.MathUtils.lerp(mouthRef.current.rotation.x, arcFlip, 0.06);
+      mouthRef.current.rotation.x = damp(mouthRef.current.rotation.x, arcFlip, 3.7, dt);
     }
 
     // Dream particles — orbit around creature when dreaming/daydreaming
@@ -1065,7 +1094,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const isTearMood = tearMoods.includes(moodLower);
     const emotionIntensity = expr.intensity;
     const tearTarget = (isTearMood && emotionIntensity > 0.6) ? 1 : 0;
-    tearActiveRef.current += (tearTarget - tearActiveRef.current) * 0.04;
+    tearActiveRef.current = damp(tearActiveRef.current, tearTarget, 2.5, dt);
     const tearVisibility = tearActiveRef.current;
 
     const eyeHeight = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
@@ -1137,8 +1166,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         // Phase 1: Mouth opens wide, food approaches
         if (mouthRef.current) {
           const openTarget = 0.8 + eatElapsed * 0.5; // ramp to wide open
-          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, openTarget, 0.15);
-          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.4, 0.08);
+          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, openTarget, 10.0, dt);
+          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.4, 5.0, dt);
         }
         // Food particles approach mouth from spawn positions
         const approachT = eatElapsed / 0.4; // 0..1 over the approach phase
@@ -1159,8 +1188,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           const chewTime = eatElapsed - 0.4; // 0..1.2 seconds of chewing
           const chompPhase = Math.sin(chewTime * Math.PI * 2 * 3); // ~3 chew cycles
           const chompOpen = 0.4 + Math.abs(chompPhase) * 0.5; // 0.4-0.9 range
-          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, chompOpen, 0.15);
-          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.3, 0.08);
+          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, chompOpen, 10.0, dt);
+          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.3, 5.0, dt);
         }
         // Food particles hidden during chewing (already in mouth)
         for (let fi = 0; fi < 3; fi++) {
@@ -1170,8 +1199,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       } else {
         // Phase 3: Satisfied expression — mouth closes into smile, eyes squint, growth pulse
         if (mouthRef.current) {
-          mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, 0.15, 0.08);
-          mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, 1.0, 0.06);
+          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, 0.15, 5.0, dt);
+          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.0, 3.7, dt);
         }
         // Trigger satisfied pulse — decays in the block below
         eatingSatisfiedRef.current = Math.max(eatingSatisfiedRef.current, 1.0);
@@ -1191,7 +1220,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     // Post-eating satisfied expression: eyes squint + slight body growth pulse
     if (eatingSatisfiedRef.current > 0.01) {
-      eatingSatisfiedRef.current *= 0.97; // decay ~0.6s to near zero
+      eatingSatisfiedRef.current *= Math.exp(-1.83 * dt); // frame-independent decay (0.97/frame@60fps)
       const sat = eatingSatisfiedRef.current;
       // Eye squint: reduce eye openness for content look
       if (eyeGroupLRef.current) eyeGroupLRef.current.scale.y *= (1 - sat * 0.4);
@@ -1235,6 +1264,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       ) : (
         <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
           <meshToonMaterial
+            ref={meshMatRef}
+            onBeforeCompile={handleBeforeCompile}
+            customProgramCacheKey={() => "creature-wave-v1"}
             color={primaryColor}
             emissive={primaryColor}
             emissiveIntensity={emissiveIntensity}
@@ -1398,7 +1430,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       {/* MOUTH: mood-driven expression — enlarged for visibility */}
       <mesh ref={mouthRef} position={mouthPos}>
         <torusGeometry args={[0.055, 0.012, 8, 16, Math.PI]} />
-        <meshToonMaterial color={new THREE.Color(0x221111)} emissive={new THREE.Color(0x110808)} emissiveIntensity={0.3} gradientMap={toonGradient} />
+        <meshToonMaterial color={_MOUTH_COLOR} emissive={_MOUTH_EMISSIVE} emissiveIntensity={0.3} gradientMap={toonGradient} />
       </mesh>
 
       {/* HORNS: continuous presence — gated by appendageVariety (threshold 0.8) */}
@@ -1598,7 +1630,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         >
           <sphereGeometry args={[0.012, 6, 6]} />
           <meshBasicMaterial
-            color={new THREE.Color(0x4488dd)}
+            color={_TEAR_COLOR}
             transparent
             opacity={0}
             depthWrite={false}
@@ -1615,7 +1647,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         >
           <sphereGeometry args={[0.015, 4, 4]} />
           <meshBasicMaterial
-            color={new THREE.Color(0xddaa44)}
+            color={_FOOD_COLOR}
             transparent
             opacity={0}
             depthWrite={false}
