@@ -1437,5 +1437,35 @@
     "prevSlide": "前のスライド",
     "nextSlide": "次のスライド",
     "paused": "一時停止"
+  },
+  "paywall": {
+    "exclusive": "専用",
+    "billingMonthly": "月払い",
+    "billingAnnual": "年払い",
+    "freeMonths": "2ヶ月無料",
+    "cancelAnytime": "いつでもキャンセル可。解約後もメモリはそのまま残ります。",
+    "ctaStart": "{name}を始める",
+    "ctaLater": "あとで — もう少し試してみます",
+    "perMonth": "/月",
+    "perYear": "/年",
+    "plans": {
+      "pro": {
+        "features": [
+          "Unlimited memory storage",
+          "Deep semantic search & time travel",
+          "Streak shield & evolution ritual",
+          "Monthly recap email & data export"
+        ]
+      },
+      "premium": {
+        "features": [
+          "Everything in Pro",
+          "Mood-modulation voice mode",
+          "AI artifact image generation",
+          "Proactive outreach conversations",
+          "Priority responses & advanced model"
+        ]
+      }
+    }
   }
 }

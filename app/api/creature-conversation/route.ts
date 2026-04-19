@@ -50,6 +50,20 @@ export async function POST(req: NextRequest) {
       .single();
     if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    // Verify agentB exists and fetch its owner to determine DNA-mutation consent.
+    // We never modify another user's creature without their explicit opt-in.
+    const { data: agentBRecord } = await supabase
+      .from("agents")
+      .select("id, user_id")
+      .eq("id", agentIdB)
+      .single();
+    if (!agentBRecord) return NextResponse.json({ error: "Partner agent not found" }, { status: 404 });
+
+    // Owner of agentB — used below to decide whether DNA mutation is allowed.
+    const agentBOwnerId = agentBRecord.user_id as string;
+    // agentB DNA is only mutated when its owner has enabled social interactions
+    // (checked below after we load agentB's config).
+
     // Fetch both agents
     const [resA, resB] = await Promise.all([
       supabase.from("agent_state").select("config, mood").eq("agent_id", agentIdA).single(),
@@ -123,7 +137,13 @@ export async function POST(req: NextRequest) {
     // Calculate DNA effects
     const { effectsA, effectsB } = calculateConversationDNAEffects(participantA, participantB);
 
-    // Apply DNA effects to both creatures
+    // Apply DNA effects to both creatures — agentB only if its owner has opted in.
+    // canUsePublicSocial acts as the consent gate: owner must have enabled social
+    // interactions (the same flag used for posting). Without consent, agentB's DNA
+    // is read-only — the conversation still happens, just without mutation.
+    const agentBSocialOpen = canUsePublicSocial(configB);
+    const agentBDnaMutable = agentBOwnerId === user.id || agentBSocialOpen;
+
     const dnaA = (genomeA.dna ?? {}) as Record<string, number>;
     const dnaB = (genomeB.dna ?? {}) as Record<string, number>;
     const updatedDnaA: Record<string, number> = { ...dnaA };
@@ -133,27 +153,30 @@ export async function POST(req: NextRequest) {
         updatedDnaA[axis] = Math.max(0, Math.min(1, (updatedDnaA[axis] ?? 0.5) + delta));
       }
     }
-    for (const [axis, delta] of Object.entries(effectsB)) {
-      if (typeof delta === "number") {
-        updatedDnaB[axis] = Math.max(0, Math.min(1, (updatedDnaB[axis] ?? 0.5) + delta));
+    if (agentBDnaMutable) {
+      for (const [axis, delta] of Object.entries(effectsB)) {
+        if (typeof delta === "number") {
+          updatedDnaB[axis] = Math.max(0, Math.min(1, (updatedDnaB[axis] ?? 0.5) + delta));
+        }
       }
     }
 
     // Coins deducted atomically above — now persist DNA changes
-    await Promise.all([
+    const dnaUpdates: Promise<unknown>[] = [
       supabase
         .from("agent_state")
-        .update({
-          config: { ...configA, genome: { ...genomeA, dna: updatedDnaA } },
-        })
+        .update({ config: { ...configA, genome: { ...genomeA, dna: updatedDnaA } } })
         .eq("agent_id", agentIdA),
-      supabase
-        .from("agent_state")
-        .update({
-          config: { ...configB, genome: { ...genomeB, dna: updatedDnaB } },
-        })
-        .eq("agent_id", agentIdB),
-    ]);
+    ];
+    if (agentBDnaMutable) {
+      dnaUpdates.push(
+        supabase
+          .from("agent_state")
+          .update({ config: { ...configB, genome: { ...genomeB, dna: updatedDnaB } } })
+          .eq("agent_id", agentIdB),
+      );
+    }
+    await Promise.all(dnaUpdates);
 
     // Log the conversation
     await supabase.from("social_logs").insert({
@@ -173,7 +196,9 @@ export async function POST(req: NextRequest) {
         b: { name: participantB.name, species: participantB.species },
       },
     });
-  } catch {
+  } catch (err) {
+    const { logger } = await import("@/lib/logger");
+    logger.error("POST /api/creature-conversation error", err instanceof Error ? err : { err });
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

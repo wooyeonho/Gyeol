@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { hapticWithFallback } from "@/lib/micro-interactions";
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -25,9 +26,11 @@ export function VoiceInput({ onTranscript, disabled = false, locale = "ko" }: Vo
 
   const isSupported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const startRecording = useCallback(() => {
     if (!isSupported || disabled) return;
+    hapticWithFallback("tap", btnRef.current);
 
     setError(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,6 +73,7 @@ export function VoiceInput({ onTranscript, disabled = false, locale = "ko" }: Vo
   }, [isSupported, disabled, locale, isKo, onTranscript]);
 
   const stopRecording = useCallback(() => {
+    hapticWithFallback("tap", btnRef.current);
     recognitionRef.current?.stop();
     setState("idle");
   }, []);
@@ -79,6 +83,7 @@ export function VoiceInput({ onTranscript, disabled = false, locale = "ko" }: Vo
   return (
     <div className="relative flex items-center">
       <motion.button
+        ref={btnRef}
         type="button"
         className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
           state === "recording"

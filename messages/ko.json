@@ -1434,5 +1434,35 @@
     "prevSlide": "이전 슬라이드",
     "nextSlide": "다음 슬라이드",
     "paused": "일시정지"
+  },
+  "paywall": {
+    "exclusive": "전용",
+    "billingMonthly": "월간",
+    "billingAnnual": "연간",
+    "freeMonths": "2개월 무료",
+    "cancelAnytime": "언제든 해지. 해지 후에도 기억은 그대로 남습니다.",
+    "ctaStart": "{name} 시작하기",
+    "ctaLater": "나중에 — 먼저 더 써볼게요",
+    "perMonth": "/월",
+    "perYear": "/년",
+    "plans": {
+      "pro": {
+        "features": [
+          "무제한 기억 저장",
+          "깊은 의미 검색 & 시간 여행",
+          "스트릭 보호 & 진화 의식",
+          "월간 리캡 이메일 & 데이터 내보내기"
+        ]
+      },
+      "premium": {
+        "features": [
+          "Pro의 모든 기능",
+          "무드 모듈레이션 보이스 모드",
+          "AI 아티팩트 이미지 생성",
+          "프로액티브 선제 대화",
+          "우선 응답 & 고급 모델"
+        ]
+      }
+    }
   }
 }

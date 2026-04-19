@@ -25,6 +25,27 @@ function getMaxPerWindow(tier?: string | null): number {
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 /**
+ * System-internal rate-limit key prefixes that are exempt from the UUID
+ * requirement. These are trusted callers (CRON_SECRET-gated or internal
+ * analytics) that have no per-user UUID but still need limiting.
+ *
+ * IMPORTANT: add a prefix here only for server-internal callers. Never add
+ * prefixes reachable from unauthenticated public requests.
+ */
+const SYSTEM_KEY_PREFIXES = new Set([
+  "analytics-track",
+  "push-send",
+  "push-subscribe",
+  "cron",
+]);
+
+/** Return true if this key belongs to a trusted server-internal caller. */
+function isSystemKey(key: string): boolean {
+  const prefix = key.split(":")[0];
+  return SYSTEM_KEY_PREFIXES.has(prefix ?? "");
+}
+
+/**
  * Compute the start of the current 1-minute window, truncated to the minute.
  * This aligns with the `window_start` NOT NULL column in `rate_limits`.
  */
@@ -36,21 +57,26 @@ function currentWindowStart(): string {
 
 /**
  * Extract a user UUID from the rate-limit key pattern "action:uuid".
- * Falls back to the nil UUID for non-user callers.
+ * Returns null for system keys (they use an internal sentinel).
  */
 function extractUserId(key: string): string | null {
   const match = key.match(UUID_RE);
   return match ? match[0] : null;
 }
 
+/** Nil UUID used as the user_id sentinel for system-internal rate-limit keys. */
+const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
+
 export async function checkRateLimit(key: string, tier?: string | null): Promise<boolean> {
   try {
     const service = createServiceClient();
     const expiry = new Date(Date.now() - WINDOW_MS).toISOString();
     const windowStart = currentWindowStart();
-    const userId = extractUserId(key);
+
+    const system = isSystemKey(key);
+    const userId = system ? SYSTEM_USER_ID : extractUserId(key);
     if (!userId) {
-      // Reject requests without a valid user UUID to prevent shared-bucket bypass
+      // Reject non-system requests without a valid user UUID to prevent shared-bucket bypass
       logger.warn("[RateLimit] no UUID in key, denying", { key });
       return false;
     }

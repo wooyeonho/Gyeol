@@ -260,7 +260,9 @@ export async function middleware(request: NextRequest) {
 
   // ── CORS: allow external callers for v1 API ──
   if (pathname.startsWith("/api/v1")) {
-    const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "*")
+    // Default to empty (deny-all) when CORS_ALLOWED_ORIGINS is not set.
+    // Explicitly set this env var in production to the list of allowed origins.
+    const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
       .split(",")
       .map((o) => o.trim())
       .filter(Boolean);

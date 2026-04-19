@@ -1437,5 +1437,35 @@
     "prevSlide": "上一张",
     "nextSlide": "下一张",
     "paused": "已暂停"
+  },
+  "paywall": {
+    "exclusive": "专属",
+    "billingMonthly": "月付",
+    "billingAnnual": "年付",
+    "freeMonths": "赠2个月",
+    "cancelAnytime": "随时取消。取消后记忆依然保留。",
+    "ctaStart": "开始{name}",
+    "ctaLater": "稍后 — 再用用看",
+    "perMonth": "/月",
+    "perYear": "/年",
+    "plans": {
+      "pro": {
+        "features": [
+          "Unlimited memory storage",
+          "Deep semantic search & time travel",
+          "Streak shield & evolution ritual",
+          "Monthly recap email & data export"
+        ]
+      },
+      "premium": {
+        "features": [
+          "Everything in Pro",
+          "Mood-modulation voice mode",
+          "AI artifact image generation",
+          "Proactive outreach conversations",
+          "Priority responses & advanced model"
+        ]
+      }
+    }
   }
 }

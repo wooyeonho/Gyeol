@@ -1437,5 +1437,35 @@
     "prevSlide": "Diapositiva anterior",
     "nextSlide": "Siguiente diapositiva",
     "paused": "Pausado"
+  },
+  "paywall": {
+    "exclusive": "Exclusivo",
+    "billingMonthly": "Mensual",
+    "billingAnnual": "Anual",
+    "freeMonths": "2 meses gratis",
+    "cancelAnytime": "Cancela cuando quieras. Tus memorias permanecen.",
+    "ctaStart": "Empezar {name}",
+    "ctaLater": "Después — déjame probar un poco más",
+    "perMonth": "/mes",
+    "perYear": "/año",
+    "plans": {
+      "pro": {
+        "features": [
+          "Unlimited memory storage",
+          "Deep semantic search & time travel",
+          "Streak shield & evolution ritual",
+          "Monthly recap email & data export"
+        ]
+      },
+      "premium": {
+        "features": [
+          "Everything in Pro",
+          "Mood-modulation voice mode",
+          "AI artifact image generation",
+          "Proactive outreach conversations",
+          "Priority responses & advanced model"
+        ]
+      }
+    }
   }
 }

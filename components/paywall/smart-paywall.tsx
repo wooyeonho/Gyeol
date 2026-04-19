@@ -15,7 +15,7 @@
  * a flow. Dismissible, remembers cooldowns via paywall-triggers.ts.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Check, X, ShieldCheck, Zap, Star } from "lucide-react";
 import {
   canShowTrigger,
@@ -25,6 +25,7 @@ import {
   type PaywallTriggerId,
 } from "@/lib/revenue/paywall-triggers";
 import { haptic, playSound } from "@/lib/micro-interactions";
+import { getPaywallMessages } from "@/lib/i18n/paywall-messages";
 
 type Plan = "pro" | "premium";
 
@@ -34,8 +35,6 @@ const PLAN_META: Record<
     name: string;
     priceKrw: string;
     priceAnnualKrw: string;
-    annualDiscount: string;
-    features: string[];
     gradient: string;
     icon: React.ReactNode;
   }
@@ -44,13 +43,6 @@ const PLAN_META: Record<
     name: "Pro",
     priceKrw: "₩19,900",
     priceAnnualKrw: "₩199,000",
-    annualDiscount: "2개월 무료",
-    features: [
-      "무제한 기억 저장",
-      "깊은 의미 검색 & 시간 여행",
-      "스트릭 보호 & 진화 의식",
-      "월간 리캡 이메일 & 데이터 내보내기",
-    ],
     gradient: "from-indigo-500/30 via-purple-500/20 to-transparent",
     icon: <Zap className="h-5 w-5" />,
   },
@@ -58,14 +50,6 @@ const PLAN_META: Record<
     name: "Premium",
     priceKrw: "₩39,900",
     priceAnnualKrw: "₩399,000",
-    annualDiscount: "2개월 무료",
-    features: [
-      "Pro의 모든 기능",
-      "무드 모듈레이션 보이스 모드",
-      "AI 아티팩트 이미지 생성",
-      "프로액티브 선제 대화",
-      "우선 응답 & 고급 모델",
-    ],
     gradient: "from-fuchsia-500/30 via-rose-500/20 to-transparent",
     icon: <Star className="h-5 w-5" />,
   },
@@ -75,24 +59,45 @@ export function SmartPaywall({
   triggerId,
   onClose,
   onCheckout,
+  locale = "ko",
 }: {
   triggerId: PaywallTriggerId;
   onClose: () => void;
   onCheckout: (plan: Plan) => void;
+  locale?: string;
 }) {
   const trigger = useMemo(() => getTrigger(triggerId), [triggerId]);
   const [socialProof] = useState(() => pickSocialProof(triggerId));
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const t = useMemo(() => getPaywallMessages(locale), [locale]);
+  // Sound is deferred until the user's first deliberate interaction (CTA click).
+  // This satisfies browser autoplay policies and avoids jarring noise on mount.
+  const soundFiredRef = useRef(false);
 
   useEffect(() => {
     markTriggerShown(triggerId);
-    playSound("receive");
+    // Do NOT call playSound here — fire it only on first user action (see handleCheckout).
   }, [triggerId]);
+
+  const handleCheckout = useCallback(
+    (plan: Plan) => {
+      haptic("send");
+      // Activate the AudioContext on the first real user gesture so subsequent
+      // sounds (level-up, streak, etc.) play without a suspended context.
+      if (!soundFiredRef.current) {
+        soundFiredRef.current = true;
+        playSound("levelUp");
+      }
+      onCheckout(plan);
+    },
+    [onCheckout],
+  );
 
   if (!trigger) return null;
   const plan = PLAN_META[trigger.plan];
+  const planFeatures = t.plans[trigger.plan]?.features ?? [];
   const price = billing === "annual" ? plan.priceAnnualKrw : plan.priceKrw;
-  const priceSuffix = billing === "annual" ? "/년" : "/월";
+  const priceSuffix = billing === "annual" ? t.perYear : t.perMonth;
 
   return (
     <div
@@ -123,7 +128,7 @@ export function SmartPaywall({
         <div className="px-6 pb-4 pt-8">
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white backdrop-blur">
             {plan.icon}
-            <span>{plan.name} 전용</span>
+            <span>{plan.name} {t.exclusive}</span>
           </div>
           <h2
             id="paywall-headline"
@@ -136,9 +141,9 @@ export function SmartPaywall({
           </p>
         </div>
 
-        {/* Feature list */}
+        {/* Feature list — sourced from locale JSON */}
         <ul className="space-y-2 px-6 py-3">
-          {plan.features.map((f) => (
+          {planFeatures.map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-sm text-neutral-200">
               <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-300" />
               <span>{f}</span>
@@ -155,7 +160,7 @@ export function SmartPaywall({
               billing === "monthly" ? "bg-white text-black" : "text-neutral-400"
             }`}
           >
-            월간
+            {t.billingMonthly}
           </button>
           <button
             type="button"
@@ -164,9 +169,9 @@ export function SmartPaywall({
               billing === "annual" ? "bg-white text-black" : "text-neutral-400"
             }`}
           >
-            연간
+            {t.billingAnnual}
             <span className="rounded-full bg-green-500/30 px-1.5 py-0.5 text-[10px] text-green-200">
-              {plan.annualDiscount}
+              {t.freeMonths}
             </span>
           </button>
         </div>
@@ -179,33 +184,25 @@ export function SmartPaywall({
             </span>
             <span className="text-sm text-neutral-400">{priceSuffix}</span>
           </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            언제든 해지. 해지 후에도 기억은 그대로 남습니다.
-          </p>
+          <p className="mt-1 text-[11px] text-neutral-500">{t.cancelAnytime}</p>
         </div>
 
         {/* CTA */}
         <div className="px-6 pb-5 pt-4">
           <button
             type="button"
-            onClick={() => {
-              haptic("send");
-              onCheckout(trigger.plan);
-            }}
+            onClick={() => handleCheckout(trigger.plan)}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3.5 text-sm font-semibold text-black shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <Sparkles className="h-4 w-4" />
-            {plan.name} 시작하기
+            {t.ctaStart.replace("{name}", plan.name)}
           </button>
           <button
             type="button"
-            onClick={() => {
-              haptic("tap");
-              onClose();
-            }}
+            onClick={() => { haptic("tap"); onClose(); }}
             className="mt-2 w-full py-2 text-xs text-neutral-500 hover:text-neutral-300"
           >
-            나중에 — 먼저 더 써볼게요
+            {t.ctaLater}
           </button>
         </div>
 
@@ -231,11 +228,13 @@ export function MaybeSmartPaywall({
   open,
   onClose,
   onCheckout,
+  locale,
 }: {
   triggerId: PaywallTriggerId;
   open: boolean;
   onClose: () => void;
   onCheckout: (plan: Plan) => void;
+  locale?: string;
 }) {
   // Re-evaluate only when `open` or `triggerId` changes — canShowTrigger
   // reads localStorage synchronously, so it's cheap and safe to memoize.
@@ -250,6 +249,7 @@ export function MaybeSmartPaywall({
       triggerId={triggerId}
       onClose={onClose}
       onCheckout={onCheckout}
+      locale={locale}
     />
   );
 }

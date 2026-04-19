@@ -9,7 +9,7 @@
 type HapticPattern =
   | "tap" | "success" | "warning" | "send" | "receive" | "jackpot"
   | "scroll_end" | "toggle" | "slider" | "delete" | "evolve"
-  | "level_up" | "care" | "swipe" | "error";
+  | "level_up" | "care" | "swipe" | "error" | "heartbeat" | "nom";
 
 const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   tap: 10,
@@ -18,7 +18,6 @@ const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   send: [8, 15, 8],
   receive: [5, 10, 15],
   jackpot: [20, 40, 30, 40, 50, 30, 70],
-  // New patterns — Apple Taptic Engine inspired
   scroll_end: 5,
   toggle: [8, 20, 12],
   slider: 3,
@@ -28,15 +27,57 @@ const HAPTIC_PATTERNS: Record<HapticPattern, number | number[]> = {
   care: [5, 15, 10],
   swipe: [6, 12],
   error: [40, 20, 40],
+  // Petting / affection — dual-thump mimicking a heartbeat
+  heartbeat: [30, 60, 30, 200, 30, 60, 30],
+  // Feeding "nom nom" — quick triple tap
+  nom: [10, 40, 10, 40, 10],
 };
 
+/** Returns true if the Web Vibration API is available in this environment. */
+export function isHapticSupported(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+}
+
 export function haptic(pattern: HapticPattern = "tap") {
-  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  if (!isHapticSupported()) return;
   try {
     navigator.vibrate(HAPTIC_PATTERNS[pattern]);
   } catch {
-    // Vibration API not supported or blocked — silently ignore
+    // Vibration API blocked (e.g. sandboxed iframe) — silently ignore
   }
+}
+
+/**
+ * Haptic with visual-scale fallback for desktop / non-vibration environments.
+ *
+ * When vibration is unavailable, the `element` briefly scales up then returns
+ * to normal — giving tactile-equivalent visual feedback.
+ *
+ * @param pattern  Haptic pattern to play when supported
+ * @param element  DOM element to animate when vibration is unavailable
+ * @param scaleUp  Peak scale value (default 1.06)
+ */
+export function hapticWithFallback(
+  pattern: HapticPattern = "tap",
+  element?: HTMLElement | null,
+  scaleUp = 1.06,
+): void {
+  if (isHapticSupported()) {
+    haptic(pattern);
+    return;
+  }
+  if (!element) return;
+  // CSS transition-based bounce — no external dependency
+  const original = element.style.transform;
+  const originalTransition = element.style.transition;
+  element.style.transition = "transform 0.12s cubic-bezier(0.16,1,0.3,1)";
+  element.style.transform = `scale(${scaleUp})`;
+  setTimeout(() => {
+    element.style.transform = original;
+    setTimeout(() => {
+      element.style.transition = originalTransition;
+    }, 150);
+  }, 120);
 }
 
 /* ── Sound effects via Web Audio API ── */
