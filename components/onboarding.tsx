@@ -456,6 +456,20 @@ const DNA_AXES_DISPLAY = [
  * Dark void → spark → orb expansion → particle explosion → DNA 16축 결정 → creature forms.
  * No skip. This is THE emotional hook.
  */
+/** Particle burst — 24 radiating particles that fire on the spark→expand transition.
+ *  Deterministic angles so the burst has even radial coverage without per-frame jitter. */
+const BIRTH_PARTICLES = Array.from({ length: 24 }, (_, i) => {
+  const angle = (i / 24) * Math.PI * 2;
+  return {
+    id: i,
+    dx: Math.cos(angle),
+    dy: Math.sin(angle),
+    // Stagger distances so the cloud feels organic, not clockwork.
+    distance: 90 + ((i * 37) % 60),
+    size: 2 + (i % 3),
+  };
+});
+
 function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => void }) {
   const [phase, setPhase] = useState<"void" | "spark" | "expand" | "dna" | "born">("void");
   const [dnaRevealed, setDnaRevealed] = useState(0);
@@ -477,10 +491,45 @@ function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => 
     return () => timers.forEach(clearTimeout);
   }, [onReady]);
 
+  const showParticles = phase === "expand" || phase === "dna" || phase === "born";
+
   return (
     <div className="flex flex-col items-center justify-center py-4" role="status" aria-label={t("onboarding.birthLabel")}>
       {/* Orb — living creature preview with breathing animation after birth */}
       <div className="relative flex items-center justify-center" style={{ height: 120 }}>
+        {/* Particle burst — radiates outward at spark→expand transition.
+            Framer-motion tweens each particle from center to its radial target
+            while fading; rendered inside the orb's relative container so they
+            stay centered on the creature. */}
+        {showParticles && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            {BIRTH_PARTICLES.map((p) => (
+              <motion.span
+                key={p.id}
+                className="absolute rounded-full"
+                style={{
+                  width: p.size,
+                  height: p.size,
+                  background: phase === "dna" ? "rgba(196,181,253,0.9)" : "rgba(125,211,252,0.95)",
+                  boxShadow: "0 0 8px currentColor",
+                  color: phase === "dna" ? "rgba(168,85,247,0.7)" : "rgba(34,211,238,0.7)",
+                }}
+                initial={{ x: 0, y: 0, opacity: 0, scale: 0.4 }}
+                animate={{
+                  x: p.dx * p.distance,
+                  y: p.dy * p.distance,
+                  opacity: phase === "born" ? 0 : [0, 1, 0.6, 0],
+                  scale: [0.4, 1, 0.8, 0.2],
+                }}
+                transition={{
+                  duration: 1.6,
+                  ease: [0.22, 1, 0.36, 1],
+                  delay: (p.id % 6) * 0.03,
+                }}
+              />
+            ))}
+          </div>
+        )}
         <motion.div
           className="rounded-full"
           animate={{
