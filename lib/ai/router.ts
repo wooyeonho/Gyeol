@@ -189,14 +189,15 @@ function getFallbackText(systemPrompt: string) {
 }
 
 /** Derive max_tokens from verbal axis value embedded in the system prompt.
- *  Values aligned with chat/route.ts verbal axis thresholds. */
+ *  Values aligned with PLAN.md §4-1 — SILENT/MINIMAL/BRIEF are deliberately
+ *  tight to force the creature to withhold language when the axis demands it. */
 function getMaxTokensFromVerbal(systemPrompt: string): number {
   const match = systemPrompt.match(/EXPRESSION MODE — (SILENT|MINIMAL|BRIEF|ELOQUENT|)/);
   if (!match) return 700;
   switch (match[1]) {
-    case "SILENT":   return 30;
-    case "MINIMAL":  return 60;
-    case "BRIEF":    return 180;
+    case "SILENT":   return 15;
+    case "MINIMAL":  return 20;
+    case "BRIEF":    return 40;
     case "ELOQUENT": return 700;
     default:         return 700;
   }
