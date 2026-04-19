@@ -4,12 +4,12 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 
 function makeDNA(overrides: Partial<CreatureDNA> = {}): CreatureDNA {
   return {
-    warmth: 0.5, analytical: 0.5, creativity: 0.5, empathy: 0.5,
-    playfulness: 0.5, stability: 0.5, curiosity: 0.5, intensity: 0.5,
-    independence: 0.5, resilience: 0.5, openness: 0.5, intuitive: 0.5,
-    verbal: 0.5, adaptability: 0.5, expressiveness: 0.5, sensitivity: 0.5,
+    analytical: 0.5, intuitive: 0.5, verbal: 0.5, spatial: 0.5,
+    warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
+    assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
+    curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
     ...overrides,
-  } as CreatureDNA;
+  };
 }
 
 describe("Creature Stats System", () => {
@@ -33,7 +33,7 @@ describe("Creature Stats System", () => {
 
   it("reflects DNA specialization", () => {
     const analytical = deriveStats(makeDNA({ analytical: 1.0, curiosity: 1.0, intuitive: 1.0 }));
-    const physical = deriveStats(makeDNA({ stability: 1.0, resilience: 1.0, intensity: 1.0 }));
+    const physical = deriveStats(makeDNA({ stability: 1.0, persistence: 1.0, intensity: 1.0 }));
 
     expect(analytical.int).toBeGreaterThan(physical.int);
     expect(physical.hp).toBeGreaterThan(analytical.hp);

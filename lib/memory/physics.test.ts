@@ -6,26 +6,26 @@ vi.mock("@/lib/supabase/service", () => ({
 
 import { createServiceClient } from "@/lib/supabase/service";
 
-function makeDb() {
-  const eqFn = vi.fn().mockReturnThis();
-  const ltFn = vi.fn().mockResolvedValue({});
-  const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
-  const selectFn = vi.fn().mockReturnValue({
-    eq: vi.fn().mockReturnValue({
-      single: vi.fn().mockResolvedValue({ data: { reference_count: 3 } }),
-    }),
-  });
+function makeDb(memories: Array<Record<string, unknown>> = []) {
+  // select().eq().eq().eq().order().limit() → memories
+  const limitFn = vi.fn().mockResolvedValue({ data: memories, error: null });
+  const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
+  const selectEq3 = vi.fn().mockReturnValue({ order: orderFn });
+  const selectEq2 = vi.fn().mockReturnValue({ eq: selectEq3 });
+  const selectEq1 = vi.fn().mockReturnValue({ eq: selectEq2 });
+  const selectFn = vi.fn().mockReturnValue({ eq: selectEq1 });
 
-  // Chain: update().eq().eq().lt()
-  const chainedEq1 = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ lt: ltFn }) });
-  const chainedUpdate = vi.fn().mockReturnValue({ eq: chainedEq1 });
+  // update().in() for archive, update().eq() for weight
+  const inFn = vi.fn().mockResolvedValue({});
+  const eqFn = vi.fn().mockResolvedValue({});
+  const updateFn = vi.fn().mockReturnValue({ in: inFn, eq: eqFn });
 
   const from = vi.fn().mockImplementation(() => ({
-    update: chainedUpdate,
     select: selectFn,
+    update: updateFn,
   }));
 
-  return { db: { from }, updateFn: chainedUpdate, ltFn, selectFn };
+  return { db: { from }, updateFn, inFn, selectFn };
 }
 
 describe("runMemoryPhysics", () => {
@@ -45,11 +45,14 @@ describe("runMemoryPhysics", () => {
   });
 
   it("does not throw on error", async () => {
-    const from = vi.fn().mockImplementation(() => ({
-      update: vi.fn().mockImplementation(() => {
-        throw new Error("column not found");
-      }),
-    }));
+    // select returns an error — function should bail out quietly
+    const limitFn = vi.fn().mockResolvedValue({ data: null, error: { message: "column not found" } });
+    const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
+    const selectEq3 = vi.fn().mockReturnValue({ order: orderFn });
+    const selectEq2 = vi.fn().mockReturnValue({ eq: selectEq3 });
+    const selectEq1 = vi.fn().mockReturnValue({ eq: selectEq2 });
+    const selectFn = vi.fn().mockReturnValue({ eq: selectEq1 });
+    const from = vi.fn().mockImplementation(() => ({ select: selectFn }));
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from });
 
     const { runMemoryPhysics } = await import("./physics");

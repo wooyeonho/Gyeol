@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -28,11 +28,15 @@ describe("loadConfig", () => {
     });
   });
 
-  it("throws when required env is missing", async () => {
+  it("warns and returns empty string when required env is missing", async () => {
     delete process.env.GYEOL_APP_URL;
     process.env.CRON_SECRET = "cron-secret";
 
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { loadConfig } = await import("./config");
-    expect(() => loadConfig()).toThrow("Missing required env: GYEOL_APP_URL");
+    const cfg = loadConfig();
+    expect(cfg.appUrl).toBe("");
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("GYEOL_APP_URL"));
+    warnSpy.mockRestore();
   });
 });

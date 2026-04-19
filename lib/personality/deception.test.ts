@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 
 vi.mock("@/lib/ai/router", () => ({
-  generateJSON: vi.fn(),
+  generateCognitiveJSON: vi.fn(),
 }));
 
 vi.mock("@/lib/i18n/config", () => ({
@@ -17,7 +17,7 @@ vi.mock("@/lib/i18n/generation", () => ({
 }));
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 
 function mockDbWithState(
   stateData: Record<string, unknown> | null,
@@ -52,17 +52,17 @@ describe("processHiddenEmotions", () => {
   it("does nothing when agent_state is null", async () => {
     const updateFn = vi.fn();
     mockDbWithState(null, updateFn);
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
     const { processHiddenEmotions } = await import("./deception");
     await processHiddenEmotions("agent-1", "Hello", "Hi there!");
 
-    expect(generateJSON).not.toHaveBeenCalled();
+    expect(generateCognitiveJSON).not.toHaveBeenCalled();
     expect(updateFn).not.toHaveBeenCalled();
   });
 
-  it("does nothing when generateJSON returns null", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+  it("does nothing when generateCognitiveJSON returns null", async () => {
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     const updateFn = vi.fn();
     mockDbWithState(
       { hidden_emotions: null, intimacy_score: 20, config: {} },
@@ -76,7 +76,7 @@ describe("processHiddenEmotions", () => {
   });
 
   it("does nothing when hiding is false", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       surface: "happy",
       real: "happy",
       hiding: false,
@@ -94,7 +94,7 @@ describe("processHiddenEmotions", () => {
   });
 
   it("updates hidden_emotions when hiding is true and intensity exceeds threshold", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       surface: "calm",
       real: "anxious",
       hiding: true,
@@ -125,7 +125,7 @@ describe("processHiddenEmotions", () => {
   });
 
   it("skips update when intensity is below intimacy-based threshold", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       surface: "calm",
       real: "anxious",
       hiding: true,
@@ -145,7 +145,7 @@ describe("processHiddenEmotions", () => {
   });
 
   it("creates suppression memory when intensity > 0.8", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       surface: "calm",
       real: "furious",
       hiding: true,
@@ -173,8 +173,8 @@ describe("processHiddenEmotions", () => {
     );
   });
 
-  it("calls generateJSON with user message and AI response", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ hiding: false });
+  it("calls generateCognitiveJSON with user message and AI response", async () => {
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ hiding: false });
     const updateFn = vi.fn();
     mockDbWithState(
       { hidden_emotions: null, intimacy_score: 20, config: {} },
@@ -184,19 +184,19 @@ describe("processHiddenEmotions", () => {
     const { processHiddenEmotions } = await import("./deception");
     await processHiddenEmotions("agent-1", "user said this", "ai replied this");
 
-    expect(generateJSON).toHaveBeenCalledWith(
+    expect(generateCognitiveJSON).toHaveBeenCalledWith(
       expect.any(String),
       expect.stringContaining("user said this")
     );
-    expect(generateJSON).toHaveBeenCalledWith(
+    expect(generateCognitiveJSON).toHaveBeenCalledWith(
       expect.any(String),
       expect.stringContaining("ai replied this")
     );
   });
 
-  it("handles null fields in generateJSON response gracefully", async () => {
-    // Downstream test: generateJSON returns partial/null fields
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+  it("handles null fields in generateCognitiveJSON response gracefully", async () => {
+    // Downstream test: generateCognitiveJSON returns partial/null fields
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       surface: null,
       real: null,
       hiding: true,

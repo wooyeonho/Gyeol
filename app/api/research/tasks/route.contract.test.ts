@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -98,7 +99,7 @@ describe("/api/research/tasks contract", () => {
     });
 
     const res = await PATCH(
-      new Request("http://localhost/api/research/tasks", {
+      new NextRequest("http://localhost/api/research/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task_id: taskUuid, action: "cancel" }),

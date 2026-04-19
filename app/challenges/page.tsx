@@ -76,6 +76,33 @@ export default function ChallengesPage() {
   const perfectBonus = getPerfectDayBonus();
   const completedCount = state?.challenges.filter((c) => c.completed).length ?? 0;
 
+  // Daily reward calendar claim state. The single claimable cell is "today",
+  // backed by /api/home/daily-bonus (already used by the home widget).
+  const [dailyClaimedDays, setDailyClaimedDays] = useState<number[]>([]);
+  const [dailyClaiming, setDailyClaiming] = useState(false);
+  useEffect(() => {
+    fetch("/api/home/daily-bonus")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.alreadyClaimed) setDailyClaimedDays([new Date().getDate()]);
+      })
+      .catch(() => {});
+  }, []);
+  const handleDailyClaim = useCallback(async (day: number) => {
+    if (dailyClaiming || dailyClaimedDays.includes(day)) return;
+    setDailyClaiming(true);
+    try {
+      const res = await fetch("/api/home/daily-bonus", { method: "POST" });
+      if (res.ok || res.status === 409) {
+        setDailyClaimedDays((prev) => (prev.includes(day) ? prev : [...prev, day]));
+      }
+    } catch {
+      // best-effort; UI will recover on next mount via GET
+    } finally {
+      setDailyClaiming(false);
+    }
+  }, [dailyClaiming, dailyClaimedDays]);
+
   return (
     <div className="min-h-screen bg-black px-4 pb-28 pt-16">
       <div className="mx-auto max-w-lg space-y-4">
@@ -130,8 +157,8 @@ export default function ChallengesPage() {
             <DailyRewardCalendar
               streakDays={state.challenges.filter((c) => c.completed).length}
               currentDay={new Date().getDate()}
-              claimedDays={state.challenges.filter((c) => c.completed).map((c) => c.id).map(() => new Date().getDate())}
-              onClaim={(day) => { /* claim handler placeholder */ }}
+              claimedDays={dailyClaimedDays}
+              onClaim={handleDailyClaim}
             />
           </div>
         )}

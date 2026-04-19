@@ -4,11 +4,11 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 
 function makeDNA(): CreatureDNA {
   return {
-    warmth: 0.5, analytical: 0.5, creativity: 0.5, empathy: 0.5,
-    playfulness: 0.5, stability: 0.5, curiosity: 0.5, intensity: 0.5,
-    independence: 0.5, resilience: 0.5, openness: 0.5, intuitive: 0.5,
-    verbal: 0.5, adaptability: 0.5, expressiveness: 0.5, sensitivity: 0.5,
-  } as CreatureDNA;
+    analytical: 0.5, intuitive: 0.5, verbal: 0.5, spatial: 0.5,
+    warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
+    assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
+    curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+  };
 }
 
 describe("Quest System", () => {

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
-vi.mock("@/lib/ai/router", () => ({ generateJSON: vi.fn() }));
+vi.mock("@/lib/ai/router", () => ({ generateCognitiveJSON: vi.fn() }));
 vi.mock("@/lib/i18n/config", () => ({ getLanguageName: vi.fn().mockReturnValue("Korean") }));
 vi.mock("@/lib/i18n/generation", () => ({ resolveGenerationLocale: vi.fn().mockReturnValue("ko") }));
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 
 describe("updateSelfModel", () => {
   beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
@@ -27,7 +27,7 @@ describe("updateSelfModel", () => {
 
   it("returns early when observations are not an array", async () => {
     const logs = Array(6).fill({ action_type: "evolution", summary: "test" });
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ observations: null });
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ observations: null });
     const updateFn = vi.fn();
 
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -45,7 +45,7 @@ describe("updateSelfModel", () => {
 
   it("updates self_model with new observations", async () => {
     const logs = Array(6).fill({ action_type: "evolution", summary: "evolved" });
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       observations: ["나는 성장을 즐기는 존재다", "호기심이 많다"],
       behavior_change: "더 깊이 생각하기",
       current_role: "안내자",
@@ -84,7 +84,7 @@ describe("updateSelfModel", () => {
 
   it("keeps only last 10 observations", async () => {
     const logs = Array(6).fill({ action_type: "test", summary: "s" });
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({
       observations: ["obs11", "obs12"],
     });
 

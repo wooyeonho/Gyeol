@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
-vi.mock("@/lib/ai/router", () => ({ generateJSON: vi.fn() }));
+vi.mock("@/lib/ai/router", () => ({ generateCognitiveJSON: vi.fn() }));
 vi.mock("@/lib/i18n/config", () => ({ getLanguageName: vi.fn().mockReturnValue("Korean") }));
 vi.mock("@/lib/i18n/generation", () => ({ resolveGenerationLocale: vi.fn().mockReturnValue("ko") }));
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 
 describe("checkSelfNaming", () => {
   beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
@@ -23,11 +23,11 @@ describe("checkSelfNaming", () => {
     const { checkSelfNaming } = await import("./naming");
     await checkSelfNaming("agent-1");
     expect(updateFn).not.toHaveBeenCalled();
-    expect(generateJSON).not.toHaveBeenCalled();
+    expect(generateCognitiveJSON).not.toHaveBeenCalled();
   });
 
   it("treats default name 'GYEOL' as unnamed and triggers rename", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "소울", reason: "It means soul" });
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "소울", reason: "It means soul" });
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
     const insertFn = vi.fn().mockResolvedValue({});
 
@@ -65,7 +65,7 @@ describe("checkSelfNaming", () => {
   });
 
   it("sets self_name when conditions met and AI returns name", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "소울", reason: "It means soul" });
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "소울", reason: "It means soul" });
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
     const insertFn = vi.fn().mockResolvedValue({});
 
@@ -91,7 +91,7 @@ describe("checkSelfNaming", () => {
   });
 
   it("does nothing when AI returns a sentinel name like '결'", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "결", reason: "It means texture" });
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "결", reason: "It means texture" });
     const updateFn = vi.fn();
 
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -109,7 +109,7 @@ describe("checkSelfNaming", () => {
   });
 
   it("does nothing when AI returns no name", async () => {
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: null });
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue({ name: null });
     const updateFn = vi.fn();
 
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({

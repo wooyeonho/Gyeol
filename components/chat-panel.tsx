@@ -392,27 +392,32 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         )}
 
         <div className="shrink-0 pt-3">
-          <MessageInput
-            input={input}
-            setInput={handleInputChange}
-            isStreaming={isStreaming}
-            placeholder={placeholder}
-            appearance={appearance}
-            onSubmit={handleSubmit}
-            voiceState={voiceInput.state}
-            voiceError={voiceInput.error}
-            onVoiceToggle={voiceInput.toggle}
-            onStopStreaming={stopStreaming}
-            creatureDna={(agentState?.genome as { dna?: Record<string, number> } | undefined)?.dna as import("@/lib/genome/dna").CreatureDNA | undefined}
-            creatureName={agentState?.self_name ?? "결"}
-            locale={locale}
-            onStickerSelect={(sticker) => {
-              if (!isStreaming) {
-                void sendMessage(`[${sticker.emoji} ${sticker.label.ko}]`, { source: "input", locale, totalMessages });
-              }
-            }}
-            t={t}
-          />
+          {/* In SILENT mode (verbal < 0.15) the creature cannot speak — the
+              touch-action panel above is the sole channel, so hiding the text
+              input makes the constraint legible rather than decorative. */}
+          {!isSilentMode && (
+            <MessageInput
+              input={input}
+              setInput={handleInputChange}
+              isStreaming={isStreaming}
+              placeholder={placeholder}
+              appearance={appearance}
+              onSubmit={handleSubmit}
+              voiceState={voiceInput.state}
+              voiceError={voiceInput.error}
+              onVoiceToggle={voiceInput.toggle}
+              onStopStreaming={stopStreaming}
+              creatureDna={(agentState?.genome as { dna?: Record<string, number> } | undefined)?.dna as import("@/lib/genome/dna").CreatureDNA | undefined}
+              creatureName={agentState?.self_name ?? "결"}
+              locale={locale}
+              onStickerSelect={(sticker) => {
+                if (!isStreaming) {
+                  void sendMessage(`[${sticker.emoji} ${sticker.label.ko}]`, { source: "input", locale, totalMessages });
+                }
+              }}
+              t={t}
+            />
+          )}
 
           <p className="mt-2 text-center text-sm text-white/78">
             {isFirstSession
