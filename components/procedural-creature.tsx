@@ -20,6 +20,7 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { getExpression, lerpExpression, type ExpressionState } from "@/lib/creature/expression-system";
 import { playEmotionSound, getCreatureVoiceVolume } from "@/lib/creature/emotion-sounds";
 import { getExpressedTraits, getTraitTier } from "@/lib/genome/traits";
+import { computeDNAMaterialTargets, dampDNAMaterial, type DNAMaterialTargets } from "./creature/custom-shader-material";
 
 // ── Module-scope constants — allocated once, never GC'd ──────────────────────
 const _MOUTH_COLOR    = new THREE.Color(0x221111);
@@ -241,8 +242,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   const _scaleVec       = useRef(new THREE.Vector3());
   const _rotTargetQuat  = useRef(new THREE.Quaternion());
   const _rotTargetEuler = useRef(new THREE.Euler(0, 0, 0, "YXZ"));
-  // MeshToonMaterial ref for GPU wave shader uniform updates
-  const meshMatRef = useRef<THREE.MeshToonMaterial>(null!);
+  // MeshPhysicalMaterial ref — DNA-driven iridescence/sheen/Fresnel + GPU wave shader
+  const meshMatRef = useRef<THREE.MeshPhysicalMaterial>(null!);
 
   const listeningLeanRef = useRef(0);
   const eyeScaleRef = useRef(1);
@@ -693,6 +694,18 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Computed once per DNA change via useMemo; propagated to CreatureBodyPlan.
   const visualParams = useMemo(() => calculateVisualParams(dna), [dna]);
 
+  // DNA physical material targets — computed once on mount for JSX initialisation;
+  // updated via dnaMaterialTargetsRef in useEffect so useFrame can damp smoothly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initMatTargets: DNAMaterialTargets = useMemo(() => computeDNAMaterialTargets(dna), []);
+  const dnaMaterialTargetsRef = useRef<DNAMaterialTargets>(initMatTargets);
+  useEffect(() => { dnaMaterialTargetsRef.current = computeDNAMaterialTargets(dna); }, [dna]);
+  const initMatSheenColor = useMemo(
+    () => new THREE.Color(initMatTargets.sheenColorR, initMatTargets.sheenColorG, initMatTargets.sheenColorB),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   // dnaExpressionRange scales overall emissive intensity — high-gen creatures glow more.
   // visualParams.emissiveBoost is applied inside CreatureBodyPlan directly.
   const emissiveIntensity = Math.max(0.1, (appearance.glowIntensity * 0.45 + moodMod.emissiveBoost) * activityDim * (0.85 + surfaceProps.expression * 0.15));
@@ -929,6 +942,10 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     if (waveAmp >= 0.001 && meshMatRef.current?.userData.shader) {
       meshMatRef.current.userData.shader.uniforms.uTime.value    = t;
       meshMatRef.current.userData.shader.uniforms.uWaveAmp.value = waveAmp;
+    }
+    // DNA physical material smooth morphing — frame-rate independent
+    if (meshMatRef.current) {
+      dampDNAMaterial(meshMatRef.current, dnaMaterialTargetsRef.current, dt);
     }
 
     if (haloRef.current) {
@@ -1263,17 +1280,27 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         </mesh>
       ) : (
         <mesh ref={meshRef} geometry={geometry} scale={hasStructure ? 0.4 : 1}>
-          <meshToonMaterial
+          <meshPhysicalMaterial
             ref={meshMatRef}
             onBeforeCompile={handleBeforeCompile}
-            customProgramCacheKey={() => "creature-wave-v1"}
+            customProgramCacheKey={() => "creature-dna-phys-v1"}
             color={primaryColor}
             emissive={primaryColor}
             emissiveIntensity={emissiveIntensity}
             transparent
             opacity={Math.max(0.4, activityDim * 0.9 * Math.max(0.5, vitality ?? 1)) * (hasStructure ? 0.5 : 1)}
-            gradientMap={toonGradient}
             vertexColors={hasVertexColors}
+            envMapIntensity={0}
+            iridescence={initMatTargets.iridescence}
+            iridescenceIOR={initMatTargets.iridescenceIOR}
+            iridescenceThicknessRange={[100, initMatTargets.iridescenceThicknessMax] as [number, number]}
+            sheen={initMatTargets.sheen}
+            sheenRoughness={initMatTargets.sheenRoughness}
+            sheenColor={initMatSheenColor}
+            transmission={initMatTargets.transmission}
+            ior={initMatTargets.ior}
+            roughness={initMatTargets.roughness}
+            metalness={initMatTargets.metalness}
           />
           <Outlines thickness={VISUAL_CONFIG.outlineThicknessBody} color={VISUAL_CONFIG.outlineColor} />
         </mesh>
