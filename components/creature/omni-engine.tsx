@@ -10,13 +10,15 @@ import {
   type VesselPlugin,
 } from "@/lib/creature/vessel-system";
 import { morphogenesisVesselPlugin } from "@/components/creature/vessels/morphogenesis-vessel";
+import { particleVesselPlugin } from "@/components/creature/vessels/particle-vessel";
 import type { CreatureDNA } from "@/lib/genome/dna";
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 // Adding a new vessel = push a VesselPlugin to this array. No switch/if ever added.
 const VESSEL_REGISTRY: VesselPlugin[] = [
   morphogenesisVesselPlugin,
-  // Future: particleVesselPlugin, abstractVesselPlugin
+  particleVesselPlugin,
+  // Future: abstractVesselPlugin
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────

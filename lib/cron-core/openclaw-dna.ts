@@ -100,6 +100,11 @@ Output ONLY a valid JSON object with these fields:
 - "_memory": optional — a 1-2 sentence summary of any concrete personal event,
   emotion, preference, or fact the user shared. Use the SAME LANGUAGE as the
   user's messages. Set to null if nothing personally notable was shared.
+- "_memory_valence": float -1.0 to +1.0 — emotional tone of the event
+  (-1.0 = deeply negative, 0.0 = neutral, +1.0 = clearly positive).
+  Required when _memory is non-null; omit or set null otherwise.
+- "_memory_axes": comma-separated list of 2-4 DNA axes most activated in this
+  conversation (e.g. "warmth,empathy,openness"). Omit or set null if _memory is null.
 
 Rules:
 - Include only axes that should change (omit unchanged axes).
@@ -110,13 +115,22 @@ Valid axes: analytical, intuitive, verbal, spatial, warmth, intensity,
 stability, openness, assertiveness, empathy, playfulness, independence,
 curiosity, persistence, adaptability, creativity
 
-Example output:
-{"warmth": 0.03, "curiosity": 0.02, "verbal": -0.01, "_memory": "유저가 내일 중요한 면접이 있다고 함"}
+Example output (with memory):
+{"warmth": 0.03, "curiosity": 0.02, "_memory": "유저가 내일 중요한 면접이 있다고 함", "_memory_valence": 0.4, "_memory_axes": "persistence,stability"}
+
+Example output (no notable event):
+{"warmth": 0.03, "curiosity": 0.02, "verbal": -0.01, "_memory": null}
 `.trim();
 
-// AnalysisOutput extends DnaDeltas with an optional episodic memory field
+// AnalysisOutput extends DnaDeltas with episodic memory fields
 type DnaDeltas = Partial<Record<typeof DNA_AXES[number], number>>;
-type AnalysisOutput = DnaDeltas & { _memory?: string | null };
+type AnalysisOutput = DnaDeltas & {
+  _memory?:         string | null;
+  /** Emotional polarity of the episode: -1.0..+1.0 */
+  _memory_valence?: number | null;
+  /** Comma-separated DNA axis names most activated during this conversation */
+  _memory_axes?:    string | null;
+};
 
 /** Apply diminishing-returns lerp toward delta target. Matches applySoftMutation's math. */
 function applyDelta(current: number, delta: number): number {
@@ -129,11 +143,12 @@ function applyDelta(current: number, delta: number): number {
 
 function isAnalysisOutput(value: unknown): value is AnalysisOutput {
   if (typeof value !== "object" || value === null) return false;
-  return Object.entries(value).every(
-    ([k, v]) => k === "_memory"
-      ? (typeof v === "string" || v === null || v === undefined)
-      : typeof v === "number",
-  );
+  return Object.entries(value).every(([k, v]) => {
+    if (k === "_memory")         return typeof v === "string" || v === null || v === undefined;
+    if (k === "_memory_valence") return typeof v === "number" || v === null || v === undefined;
+    if (k === "_memory_axes")    return typeof v === "string" || v === null || v === undefined;
+    return typeof v === "number";
+  });
 }
 
 async function analyseAgent(
@@ -251,30 +266,35 @@ async function analyseAgent(
     return;
   }
 
-  // ── 8.5. Episodic memory extraction — save before hard delete ─────────────
-  // The LLM already extracted a 1-2 sentence summary of notable user events.
-  // Store it in the memories table so the creature retains long-term recall
-  // even after the raw interaction_logs are deleted.
-  const episodicSummary = typeof rawOutput._memory === "string" && rawOutput._memory.length > 0
+  // ── 8.5. Episodic memory extraction — persist to episodes table ───────────
+  // The LLM extracted a 1-2 sentence summary of any notable personal event,
+  // along with the emotional valence and the DNA axes most activated.
+  // Stored in `episodes` (phase67) before raw interaction_logs are deleted —
+  // the creature retains long-term recall even after conversation data is gone.
+  const episodicContent = typeof rawOutput._memory === "string" && rawOutput._memory.length > 0
     ? rawOutput._memory
     : null;
-  if (episodicSummary) {
-    const { error: memErr } = await service
-      .from("memories")
+  if (episodicContent) {
+    const valence = typeof rawOutput._memory_valence === "number"
+      ? Math.max(-1.0, Math.min(1.0, rawOutput._memory_valence))
+      : 0.0;
+
+    const { error: epErr } = await service
+      .from("episodes")
       .insert({
         agent_id:   agentId,
-        content:    episodicSummary,
-        type:       "episodic",
-        is_active:  true,
+        content:    episodicContent,
+        valence,
+        axes:       currentDna,  // full DNA snapshot at formation time
         weight:     1.0,
-        archived:   false,
-        // embedding: null — async embedding worker will fill this later
+        // embedding: null — async embedding worker (separate cron) will fill this
       });
-    if (memErr) {
+    if (epErr) {
       // Non-fatal: log and continue — memory loss is preferable to blocking delete
-      logger.warn(`[OpenclawDNA] agent ${agentId}: memory insert failed`, memErr);
+      logger.warn(`[OpenclawDNA] agent ${agentId}: episode insert failed`, epErr);
     } else {
-      logger.info(`[OpenclawDNA] agent ${agentId}: episodic memory saved`);
+      const axesLabel = rawOutput._memory_axes ?? "—";
+      logger.info(`[OpenclawDNA] agent ${agentId}: episode saved (valence=${valence.toFixed(2)}, axes=${axesLabel})`);
     }
   }
 
