@@ -9,7 +9,8 @@ import type { CreatureActivity } from "@/hooks/use-creature-state";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
-import { ProceduralCreature } from "@/components/procedural-creature";
+import { OmniEngine } from "@/components/creature/omni-engine";
+import type { VesselContext } from "@/lib/creature/vessel-system";
 import { AnimatePresence } from "framer-motion";
 import { ViralShareCard } from "@/components/creature/viral-share-card";
 import type { RareMutation, RarityTier } from "@/lib/cron-core/openclaw-dna";
@@ -550,9 +551,19 @@ function Scene({
     lastHitPointRef.current = { x: px, y: py, z: e.point?.z ?? 0 };
   }, []);
 
-  // Memoize deriveSpecies to avoid creating new object refs every render (~15fps),
-  // which would defeat React.memo on ProceduralCreature and rebuild geometry each frame.
+  // Memoize deriveSpecies — still needed for dual-color particle derivation below.
   const species = useMemo(() => dna ? deriveSpecies(dna) : null, [dna]);
+
+  // VesselContext bundles the runtime state OmniEngine passes to every vessel plugin.
+  const vesselContext = useMemo<VesselContext>(
+    () => ({
+      mood: mood ?? null,
+      conversationEnergy: conversationEnergy ?? 0,
+      activity: creatureActivity ?? "awake",
+      forceState: forceState ?? null,
+    }),
+    [mood, conversationEnergy, creatureActivity, forceState],
+  );
 
   // DNA-driven scene parameters: lighting color and bloom intensity emerge from
   // the same 16-axis vector that drives morphology and personality.
@@ -626,23 +637,11 @@ function Scene({
         floatIntensity={floatIntensity * sleepFloatMult}
       >
         <group scale={pulseScale} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove}>
-          {dna && species ? (
-            <ProceduralCreature
+          {dna ? (
+            <OmniEngine
               dna={dna}
-              species={species}
+              context={vesselContext}
               scale={size / 30}
-              breathPhase={breathPhase}
-              creatureActivity={creatureActivity}
-              excitePulse={excitePulse}
-              pointerNorm={creatureActivity !== "sleeping" ? pointerNorm : undefined}
-              isListening={isListening}
-              mood={mood}
-              vitality={vitality}
-              conversationEnergy={conversationEnergy}
-              genLevel={genLevel}
-              forceState={forceState}
-              idleBehaviorParams={idleBehaviorParams}
-              idleBehavior={idleBehavior}
             />
           ) : (
             <CoreShape
