@@ -84,10 +84,51 @@ function computeRarityTier(speciesRarity: number, hasMutation: boolean): RarityT
   return "Common";
 }
 
-// System prompt: instructs the LLM to reason in numbers only, never adjectives.
-// This enforces the emergent-personality constraint — the model infers axis
-// direction from raw behaviour patterns, not from labelling traits.
-const ANALYSIS_SYSTEM_PROMPT = `
+/**
+ * Build a DNA-aware analysis prompt.
+ *
+ * The _memory instruction adapts to the creature's dominant axis so that
+ * memories emerge organically — a playful creature writes something throwaway,
+ * an analytical one writes a dry observation, a high-empathy creature under
+ * emotional load writes something warm. No tone is forced externally.
+ */
+function buildAnalysisSystemPrompt(dna: CreatureDNA): string {
+  // Find the highest-value axis to shape the memory persona
+  const sorted = DNA_AXES.map(a => ({ axis: a, value: dna[a] })).sort((a, b) => b.value - a.value);
+  const top = sorted[0];
+
+  let memoryInstruction: string;
+
+  if (top.axis === "playfulness" && top.value > 0.62) {
+    memoryInstruction =
+      `Write a single off-hand line this creature would mutter — light, irreverent, maybe chaotic. ` +
+      `No gravity required. Could even be funny or self-deprecating.`;
+  } else if (top.axis === "analytical" && top.value > 0.62) {
+    memoryInstruction =
+      `Write a dry, minimal observation-log entry. Precise. Few words. ` +
+      `Like a scientist jotting a data point, no embellishment.`;
+  } else if (top.axis === "creativity" && top.value > 0.62) {
+    memoryInstruction =
+      `Write a single image-driven or slightly surreal line. ` +
+      `Unexpected metaphor allowed. Keep it short.`;
+  } else if (top.axis === "independence" && top.value > 0.62) {
+    memoryInstruction =
+      `Write a terse, self-contained line. No sentiment. ` +
+      `Just what happened, seen through detached eyes.`;
+  } else if (top.axis === "assertiveness" && top.value > 0.65) {
+    memoryInstruction =
+      `Write a direct, declarative statement. Confident. No hedging.`;
+  } else if ((dna.empathy > 0.60 || dna.warmth > 0.60) && dna.intensity > 0.45) {
+    memoryInstruction =
+      `Write a single line that holds warmth without being saccharine. ` +
+      `Something that would feel true at 2am.`;
+  } else {
+    memoryInstruction =
+      `Write a single honest line that captures what this conversation meant. ` +
+      `No forced tone — just what fits the moment.`;
+  }
+
+  return `
 You are a behavioral signal processor. You receive:
 1. A creature's current 16-axis DNA vector (each axis 0.0–1.0).
 2. A batch of conversation turns (user messages and assistant responses).
@@ -97,18 +138,18 @@ on the observable behavioral patterns in the conversations.
 
 Output ONLY a valid JSON object with these fields:
 - DNA deltas: axis names mapped to delta values (range −0.05 to +0.05)
-- "_memory": optional — a 1-2 sentence summary of any concrete personal event,
-  emotion, preference, or fact the user shared. Use the SAME LANGUAGE as the
-  user's messages. Set to null if nothing personally notable was shared.
-- "_memory_valence": float -1.0 to +1.0 — emotional tone of the event
-  (-1.0 = deeply negative, 0.0 = neutral, +1.0 = clearly positive).
+- "_memory": optional — a single-line monologue this creature keeps from this conversation.
+  You are a creature with these DNA values: ${DNA_AXES.map(a => `${a}=${dna[a].toFixed(2)}`).join(", ")}.
+  ${memoryInstruction}
+  Write in the SAME LANGUAGE as the user's messages. Set to null if nothing personally notable was shared.
+- "_memory_valence": float -1.0 to +1.0 — emotional tone (-1.0 = deeply negative, +1.0 = clearly positive).
   Required when _memory is non-null; omit or set null otherwise.
-- "_memory_axes": comma-separated list of 2-4 DNA axes most activated in this
-  conversation (e.g. "warmth,empathy,openness"). Omit or set null if _memory is null.
+- "_memory_axes": comma-separated list of 2-4 DNA axes most activated in this conversation.
+  Omit or set null if _memory is null.
 
 Rules:
 - Include only axes that should change (omit unchanged axes).
-- Do NOT include explanations, prose, or adjectives — numbers only for deltas.
+- Do NOT include explanations or prose outside the JSON — numbers only for deltas.
 - Do NOT invent axis names. Use exactly the provided axis list.
 
 Valid axes: analytical, intuitive, verbal, spatial, warmth, intensity,
@@ -116,11 +157,12 @@ stability, openness, assertiveness, empathy, playfulness, independence,
 curiosity, persistence, adaptability, creativity
 
 Example output (with memory):
-{"warmth": 0.03, "curiosity": 0.02, "_memory": "유저가 내일 중요한 면접이 있다고 함", "_memory_valence": 0.4, "_memory_axes": "persistence,stability"}
+{"warmth": 0.03, "curiosity": 0.02, "_memory": "유저가 내일 면접이 있다고 했다. 조금 두근거렸다.", "_memory_valence": 0.4, "_memory_axes": "persistence,stability"}
 
 Example output (no notable event):
 {"warmth": 0.03, "curiosity": 0.02, "verbal": -0.01, "_memory": null}
 `.trim();
+}
 
 // AnalysisOutput extends DnaDeltas with episodic memory fields
 type DnaDeltas = Partial<Record<typeof DNA_AXES[number], number>>;
@@ -198,7 +240,7 @@ async function analyseAgent(
   const userPrompt = `Current DNA: { ${dnaBlock} }\n\nConversations:\n${conversationBlock}`;
 
   // ── 4. Call LLM — reflexive layer (8b), JSON output ──────────────────────
-  const rawOutput = await generateJSON<AnalysisOutput>(ANALYSIS_SYSTEM_PROMPT, userPrompt);
+  const rawOutput = await generateJSON<AnalysisOutput>(buildAnalysisSystemPrompt(currentDna), userPrompt);
   if (!rawOutput || !isAnalysisOutput(rawOutput)) {
     logger.warn(`[OpenclawDNA] agent ${agentId}: LLM returned unparseable output`);
     return;
