@@ -28,6 +28,7 @@ import {
   executeRedemption,
   executeWar,
   executeProactivePush,
+  executeOpenclawDna,
 } from "../../lib/cron-core";
 
 // ── Job Definitions ─────────────────────────────────────
@@ -133,6 +134,13 @@ const GYEOL_JOBS: GyeolJob[] = [
     description: "Send proactive push notifications to users",
     schedule: "0 18 * * *",
     execute: executeProactivePush,
+  },
+  {
+    name: "gyeol_openclaw",
+    label: "Gyeol OpenClaw DNA Analyzer",
+    description: "Batch-analyze interaction logs and apply weighted DNA axis mutations via LLM",
+    schedule: "0 */4 * * *",
+    execute: executeOpenclawDna,
   },
 ];
 

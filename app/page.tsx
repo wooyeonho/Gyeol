@@ -12,6 +12,7 @@ const Soundscape = dynamic(() => import("@/components/soundscape"), { ssr: false
 import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
+import { useCreatureDna } from "@/hooks/use-creature-dna";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
 import { deriveDNATheme, applyDNAThemeToRoot } from "@/lib/theme/dna-theme";
@@ -90,6 +91,8 @@ export default function Home() {
   const { locale, t } = useTranslations();
   const showTutorial = useShouldShowTutorial();
   const { agentState, engagement, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
+  const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | null ?? null;
+  useCreatureDna(agentId);
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
