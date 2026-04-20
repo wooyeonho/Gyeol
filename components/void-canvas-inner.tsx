@@ -12,7 +12,7 @@ import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { OmniEngine } from "@/components/creature/omni-engine";
 import type { VesselContext } from "@/lib/creature/vessel-system";
 import { AnimatePresence } from "framer-motion";
-import { ViralShareCard } from "@/components/creature/viral-share-card";
+import { ShareCardGenerator, RARITY_COLOR } from "@/components/ui/share-card-generator";
 import type { RareMutation, RarityTier } from "@/lib/cron-core/openclaw-dna";
 import {
   classifyTouch,
@@ -71,8 +71,12 @@ export interface InnerProps {
   idleBehavior?: IdleBehavior;
   /** Rare mutation to display viral share card for — triggers TCG card overlay */
   rareMutation?: RareMutation | null;
-  /** Rarity tier for the share card badge */
+  /** Rarity tier for the share card badge and rarity aura */
   rarityTier?: RarityTier;
+  /** Latest episodes.content for this agent — shown as a memory quote on the share card */
+  memoryText?: string;
+  /** UI locale passed to the share card ("ko" | "en") */
+  locale?: string;
   /** Called once the WebGL canvas DOM element is available — use to expose canvas for capture */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
@@ -447,12 +451,70 @@ function HeartParticles({ trigger, color }: { trigger: number; color: string }) 
   );
 }
 
+// ── Rarity aura — orbiting emissive ring particles for Rare/Epic/Legendary ────
+// These are caught by the existing EffectComposer Bloom, amplifying visual impact.
+
+const AURA_CFG: Partial<Record<RarityTier, { count: number; radius: number; speed: number; emissiveInt: number }>> = {
+  Rare:      { count: 8,  radius: 0.94, speed: 0.08, emissiveInt: 1.2 },
+  Epic:      { count: 16, radius: 1.06, speed: 0.11, emissiveInt: 1.9 },
+  Legendary: { count: 24, radius: 1.30, speed: 0.15, emissiveInt: 3.0 },
+};
+
+function RarityAura({ rarityTier }: { rarityTier: RarityTier }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const dummy   = useMemo(() => new THREE.Object3D(), []);
+  const accent  = RARITY_COLOR[rarityTier];
+  const color   = useMemo(() => new THREE.Color(accent), [accent]);
+  const cfg     = AURA_CFG[rarityTier] ?? AURA_CFG.Rare!;
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (meshRef.current) {
+      for (let i = 0; i < cfg.count; i++) {
+        const angle = (i / cfg.count) * Math.PI * 2 + t * cfg.speed;
+        const yOff  = Math.sin(t * 0.7 + i * 0.42) * 0.22;
+        dummy.position.set(cfg.radius * Math.cos(angle), yOff, cfg.radius * Math.sin(angle));
+        dummy.scale.setScalar(0.028 + Math.sin(t * 1.3 + i) * 0.007);
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+      }
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (ringRef.current) {
+      ringRef.current.rotation.y = t * cfg.speed * 0.4;
+      ringRef.current.rotation.x = Math.sin(t * 0.28) * 0.12;
+    }
+  });
+
+  return (
+    <>
+      <instancedMesh ref={meshRef} args={[undefined, undefined, cfg.count]}>
+        <sphereGeometry args={[1, 6, 6]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={cfg.emissiveInt}
+          transparent
+          opacity={0.85}
+          depthWrite={false}
+        />
+      </instancedMesh>
+      <mesh ref={ringRef}>
+        <torusGeometry args={[cfg.radius + 0.09, 0.007, 8, 64]} />
+        <meshBasicMaterial color={color} transparent opacity={0.30} depthWrite={false} />
+      </mesh>
+    </>
+  );
+}
+
 function Scene({
   shape, color, size, glow, animation, particles, vitality, isListening,
   opacity: propOpacity, motionBias = "gentle", pulseScale: pulseScaleOverride = 1, onTap,
   onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
   dna, mood, conversationEnergy = 0, genLevel, forceState, idleBehaviorParams, idleBehavior,
+  rarityTier,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -662,6 +724,11 @@ function Scene({
       {/* Heart particles — emissive burst on head zone tap, caught by Bloom */}
       <HeartParticles trigger={heartBurst} color="#ff6eb4" />
 
+      {/* Rarity aura — orbiting emissive particles for Rare/Epic/Legendary tiers */}
+      {rarityTier && rarityTier !== "Common" && (
+        <RarityAura rarityTier={rarityTier} />
+      )}
+
       {/* HUD rings — slowly rotating thin rings around creature for high-end look */}
       <mesh ref={hudRing1Ref}>
         <ringGeometry args={[SCENE_CONFIG.hudRing1InnerRadius, SCENE_CONFIG.hudRing1OuterRadius, 64]} />
@@ -769,7 +836,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
           preserveDrawingBuffer: true, // required for toDataURL() capture without black screen
         }}
       >
-        <Scene {...props} />
+        <Scene {...props} rarityTier={rarityTier} />
       </Canvas>
       {contextLost && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white/40 text-sm">
@@ -778,12 +845,14 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
       )}
       <AnimatePresence>
         {shareCardOpen && rareMutation && props.dna && (
-          <ViralShareCard
+          <ShareCardGenerator
             dna={props.dna}
             speciesName={deriveSpecies(props.dna).name}
             mutation={rareMutation}
             rarityTier={rarityTier ?? "Legendary"}
             genLevel={props.genLevel ?? 1}
+            memoryText={props.memoryText}
+            locale={props.locale}
             getCanvas={getCanvas}
             onClose={() => setShareCardOpen(false)}
           />
