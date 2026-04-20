@@ -15,3 +15,4 @@ export { executeRecap } from "./recap";
 export { executeRedemption } from "./redemption";
 export { executeWar } from "./war";
 export { executeProactivePush } from "./proactive-push";
+export { executeOpenclawDna } from "./openclaw-dna";
