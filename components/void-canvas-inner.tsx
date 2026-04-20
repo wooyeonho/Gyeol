@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useMemo } from "react";
+import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -10,6 +10,9 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { ProceduralCreature } from "@/components/procedural-creature";
+import { AnimatePresence } from "framer-motion";
+import { ViralShareCard } from "@/components/creature/viral-share-card";
+import type { RareMutation, RarityTier } from "@/lib/cron-core/openclaw-dna";
 import {
   classifyTouch,
   detectBodyPart,
@@ -65,6 +68,12 @@ export interface InnerProps {
   idleBehaviorParams?: IdleBehaviorParams;
   /** Current idle behavior identifier — drives behavior-specific animations */
   idleBehavior?: IdleBehavior;
+  /** Rare mutation to display viral share card for — triggers TCG card overlay */
+  rareMutation?: RareMutation | null;
+  /** Rarity tier for the share card badge */
+  rarityTier?: RarityTier;
+  /** Called once the WebGL canvas DOM element is available — use to expose canvas for capture */
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -728,18 +737,38 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
-export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
+export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
+
+  // Expose the WebGL canvas element to the parent and store it for ViralShareCard
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = wrapperRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
+    canvasRef.current = canvas;
+    onCanvasReady?.(canvas);
+  });
+
+  const getCanvas = useCallback(
+    () => canvasRef.current ?? (wrapperRef.current?.querySelector("canvas") as HTMLCanvasElement | null),
+    [wrapperRef],
+  );
 
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, powerPreference: "default", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+        gl={{
+          antialias: true,
+          powerPreference: "default",
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
+          preserveDrawingBuffer: true, // required for toDataURL() capture without black screen
+        }}
       >
         <Scene {...props} />
       </Canvas>
@@ -748,6 +777,19 @@ export function VoidCanvasInner({ restoring3dLabel, ...props }: InnerProps) {
           <span className="animate-pulse">{restoring3dLabel || "Restoring 3D..."}</span>
         </div>
       )}
+      <AnimatePresence>
+        {shareCardOpen && rareMutation && props.dna && (
+          <ViralShareCard
+            dna={props.dna}
+            speciesName={deriveSpecies(props.dna).name}
+            mutation={rareMutation}
+            rarityTier={rarityTier ?? "Legendary"}
+            genLevel={props.genLevel ?? 1}
+            getCanvas={getCanvas}
+            onClose={() => setShareCardOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
