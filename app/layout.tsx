@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -28,6 +29,14 @@ const pretendard = localFont({
   display: "swap",
   variable: "--font-pretendard",
   weight: "100 900",
+});
+
+const notoSerifKr = Noto_Serif_KR({
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  display: "swap",
+  variable: "--font-serif-kr",
+  preload: false,
 });
 
 const METADATA_BY_LOCALE: Partial<Record<Locale, Pick<Metadata, "title" | "description">>> = {
@@ -155,7 +164,7 @@ export default async function RootLayout({
   const jsonLd = buildJsonLd(locale);
 
   return (
-    <html lang={locale} className={pretendard.variable}>
+    <html lang={locale} className={`${pretendard.variable} ${notoSerifKr.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.groq.com" />
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" />

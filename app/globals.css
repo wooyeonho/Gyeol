@@ -71,6 +71,23 @@
   --duration-fast: 150ms;
   --duration-normal: 300ms;
   --duration-slow: 500ms;
+
+  /* ── Editorial Typography (Phase 1: Korean serif display) ── */
+  --font-serif-display: var(--font-serif-kr), "Noto Serif KR", "KoPub Batang",
+                        "Nanum Myeongjo", Georgia, "Times New Roman", serif;
+
+  /* ── Living Organism: Mesh palette ── */
+  --mesh-plum:    rgba(140, 100, 220, 0.22);
+  --mesh-indigo:  rgba(99, 102, 241, 0.18);
+  --mesh-teal:    rgba(56, 189, 178, 0.12);
+  --mesh-amber:   rgba(251, 146, 60, 0.08);
+  --mesh-rose:    rgba(244, 114, 182, 0.10);
+
+  /* ── Motion curves (organic) ── */
+  --ease-organic: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-breathe: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --duration-cinema: 900ms;
+  --duration-breathe: 8s;
 }
 
 :root[data-theme="light"] {
@@ -152,7 +169,7 @@
   --radius-full: var(--radius-full);
 
   --font-sans: var(--font-pretendard), 'Pretendard Variable', Pretendard, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: var(--font-serif-display);
 }
 
 body {
@@ -500,25 +517,34 @@ select {
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-/* ── 2026 Design System: Exaggerated Minimalism Typography (G4) ─────────── */
+/* ── 2026 Design System: Editorial Serif Typography (Phase 1) ──────────────
+ * Headings adopt Noto Serif KR via --font-serif. Tailwind font-* / tracking-*
+ * utilities still win via specificity, so existing callsites remain intact. */
 .text-display {
+  font-family: var(--font-serif);
   font-size: clamp(3rem, 8vw, 7rem);
   font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+  letter-spacing: -0.035em;
+  line-height: 0.96;
 }
 
 .text-hero {
+  font-family: var(--font-serif);
   font-size: clamp(2rem, 5vw, 4rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
 }
 
 .text-section {
+  font-family: var(--font-serif);
   font-size: clamp(1.5rem, 3vw, 2.5rem);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.018em;
+}
+
+.font-display-serif {
+  font-family: var(--font-serif);
 }
 
 /* ── 2026 Design System: Bento Grid Layout (C2) ─────────────────────────── */
@@ -569,6 +595,73 @@ select {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+/* ── Living Organism: Organic mesh gradient (Phase 1) ─────────────────────
+ * Five overlapping radial gradients that slowly drift in different directions,
+ * creating a breathing, living-tissue quality behind hero & auth surfaces. */
+@keyframes meshMorph {
+  0%, 100% { background-position: 0% 50%, 100% 20%, 50% 80%, 20% 10%, 80% 90%; }
+  33%      { background-position: 50% 30%, 20% 60%, 80% 40%, 60% 80%, 30% 20%; }
+  66%      { background-position: 100% 70%, 60% 30%, 20% 90%, 90% 40%, 10% 60%; }
+}
+
+.mesh-organic {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 25%, var(--mesh-plum),   transparent 60%),
+    radial-gradient(ellipse 55% 45% at 85% 30%, var(--mesh-indigo), transparent 65%),
+    radial-gradient(ellipse 70% 50% at 50% 90%, var(--mesh-teal),   transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, var(--mesh-amber),  transparent 70%),
+    radial-gradient(ellipse 35% 25% at 20% 75%, var(--mesh-rose),   transparent 65%);
+  background-size: 200% 200%, 180% 180%, 200% 200%, 150% 150%, 140% 140%;
+  animation: meshMorph var(--duration-breathe) var(--ease-breathe) infinite alternate;
+}
+
+/* ── Strengthened grain overlay (hero / auth only) ─────────────────────────
+ * Layered on top of the global body::before fractal noise. Requires parent
+ * to be position: relative and overflow: hidden. */
+.noise-strong::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+}
+
+/* ── Breathing glow (for prominent CTA / active nodes) ─────────────────────*/
+@keyframes breatheGlow {
+  0%, 100% { box-shadow: 0 0 30px var(--mesh-indigo), inset 0 1px 0 rgba(255,255,255,0.06); }
+  50%      { box-shadow: 0 0 60px var(--mesh-plum),   inset 0 1px 0 rgba(255,255,255,0.12); }
+}
+
+.breathe-glow {
+  animation: breatheGlow 6s var(--ease-breathe) infinite;
+}
+
+/* ── Glassmorphism v3: deeper, layered frosted panel ───────────────────────*/
+.glass-card-deep {
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)),
+    rgba(10, 8, 20, 0.55);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="light"] .glass-card-deep {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72)),
+    rgba(255, 255, 255, 0.55);
+  border-color: rgba(17, 24, 39, 0.08);
+  box-shadow: 0 20px 60px rgba(17, 24, 39, 0.08), inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 /* ── 2026 Design System: 3D Micro-interactions (C4) ─────────────────────── */
@@ -676,7 +769,9 @@ select {
 
   .aurora-flow,
   .aurora-bg,
-  .aurora-accent {
+  .aurora-accent,
+  .mesh-organic,
+  .breathe-glow {
     animation: none;
   }
 }
