@@ -20,7 +20,7 @@ export function ChannelList({
       aria-label="Channel list"
       className="w-full overflow-y-auto rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl"
     >
-      <ul role="list" className="divide-y divide-white/[0.06]">
+      <ul className="divide-y divide-white/[0.06]">
         {channels.map((channel) => {
           const isActive = channel.id === activeChannelId;
           return (

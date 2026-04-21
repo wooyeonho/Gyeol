@@ -748,14 +748,6 @@ export default function SettingsPage() {
     setDraftMission("");
   }
 
-  if (loading) {
-    return (
-      <div className="theme-page min-h-screen flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-      </div>
-    );
-  }
-
   const config: AgentConfig = state?.config || {};
   const preferredTheme: ThemeMode = isThemeMode(config.preferred_theme) ? config.preferred_theme : "dark";
   const highContrastEnabled = Boolean(config.high_contrast_enabled);
@@ -781,6 +773,14 @@ export default function SettingsPage() {
     }
     return dates;
   }, [state?.total_messages]);
+
+  if (loading) {
+    return (
+      <div className="theme-page min-h-screen flex items-center justify-center">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+      </div>
+    );
+  }
   const accentColor = "#22d3ee"; // cyan-400
 
   const summaryCards = [
