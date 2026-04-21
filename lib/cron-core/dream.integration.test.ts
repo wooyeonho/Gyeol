@@ -58,7 +58,8 @@ describe("dream integration", () => {
     (generateEmbedding as ReturnType<typeof vi.fn>).mockResolvedValue([0.1, 0.2]);
 
     let jsonCallCount = 0;
-    (generateJSON as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+    const mockRouter = await import("@/lib/ai/router");
+    (mockRouter as any).generateCognitiveJSON = vi.fn().mockImplementation(async () => {
       jsonCallCount++;
       if (jsonCallCount === 1) return { patterns: "recurring themes of light and water" };
       if (jsonCallCount === 2) return { dream_content: "A river of light flows through the darkness." };
@@ -145,7 +146,8 @@ describe("dream integration", () => {
 
   it("skips agent when generateJSON stage 1 returns null", async () => {
     (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    const mockRouter = await import("@/lib/ai/router");
+    (mockRouter as any).generateCognitiveJSON = vi.fn().mockResolvedValue(null);
 
     const insertFn = vi.fn().mockResolvedValue({});
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
