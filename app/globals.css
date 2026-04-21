@@ -890,7 +890,8 @@ body::before {
 }
 
 /* ── World-Class 2026: GPU Perf Hints for Heavy Sections ─────────────────── */
-/* gpu-layer: safe for containers with fixed-position children (no contain/transform) */
+/* gpu-layer: GPU compositing hint — will-change:transform creates a containing block,
+   so do NOT use on parents of fixed-position modals/overlays */
 .gpu-layer {
   will-change: transform;
 }
