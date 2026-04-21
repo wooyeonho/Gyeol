@@ -303,21 +303,21 @@ export default function DataDashboardPage() {
           <div className="space-y-2">
             <a
               href="/api/gdpr/export"
-              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.12] transition-colors"
             >
               <span className="text-base">📦</span>
               <span>{copy.exportCta}</span>
             </a>
             <a
               href="/api/export/conversations?format=markdown"
-              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.12] transition-colors"
             >
               <span className="text-base">💬</span>
               <span>{loc === "ko" ? "대화 내역 내보내기 (Markdown)" : "Export Conversations (Markdown)"}</span>
             </a>
             <a
               href="/api/export/conversations?format=json"
-              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.08] transition-colors"
+              className="flex items-center gap-2 glass-card rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/[0.12] transition-colors"
             >
               <span className="text-base">📄</span>
               <span>{loc === "ko" ? "대화 내역 내보내기 (JSON)" : "Export Conversations (JSON)"}</span>
