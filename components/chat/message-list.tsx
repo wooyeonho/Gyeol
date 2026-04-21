@@ -144,18 +144,18 @@ export function MessageList({
   // Verbal-based bubble style
   const v = verbal ?? 0.5;
   const assistantBubbleExtra = v < 0.15
-    ? "max-w-[50%] px-3 py-2 font-mono text-xs tracking-widest text-center opacity-80 italic"
+    ? "max-w-[70%] font-mono text-sm tracking-widest opacity-80 italic pb-6"
     : v < 0.35
-      ? "max-w-[60%] px-3 py-2 text-sm tracking-wide text-center opacity-90"
+      ? "max-w-[80%] text-base tracking-wide opacity-90 pb-6"
       : v < 0.55
-        ? "max-w-[70%] px-4 py-3 text-sm leading-6"
+        ? "max-w-[90%] text-lg leading-7 pb-8"
         : v >= 0.75
-          ? "max-w-[90%] px-5 py-4 text-base leading-8 font-light tracking-wide"
-          : "max-w-[80%] px-4 py-3 text-base leading-7";
+          ? "max-w-full text-xl leading-8 font-light tracking-wide pb-10"
+          : "max-w-[90%] text-lg leading-7 pb-8";
 
   return (
     <div
-      className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 pr-1"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto py-8 px-2 space-y-12"
       style={{ contain: "layout style" }}
       role="log"
       aria-live="polite"
@@ -185,7 +185,7 @@ export function MessageList({
         return (
         <motion.div
           key={m.id ?? `${m.role}-${i}`}
-          className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"}`}
           variants={messageVariants}
           initial="hidden"
           animate="visible"
@@ -193,7 +193,7 @@ export function MessageList({
         >
           {m.role === "user" ? (
             <motion.div
-              className={`max-w-[80%] break-words rounded-2xl px-4 py-3 text-base leading-7 text-white ${m.error ? "bg-red-400/10 border border-red-400/20" : "bg-white/12"}`}
+              className={`max-w-[75%] break-words px-4 py-1 text-base leading-7 text-white font-sans opacity-90 ${m.error ? "text-red-400" : ""}`}
               whileTap={{ scale: 0.98 }}
             >
               {m.content}
@@ -262,12 +262,9 @@ export function MessageList({
             </motion.div>
           ) : (
             <motion.div
-              className={`rounded-2xl border bg-black/40 ${assistantBubbleExtra}`}
-              style={{
-                borderColor: `${appearance.palette.primary}35`,
-                boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
-              }}
+              className={`text-section ${assistantBubbleExtra}`}
               initial={{ opacity: 0, x: -8 }}
+              style={{ color: "rgba(255, 255, 255, 0.95)" }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35 }}
             >
@@ -399,21 +396,21 @@ export function MessageList({
                 </div>
               )}
               {!isStreaming && m.content && !m.error && (
-                <div className="mt-2 flex justify-end gap-2">
+                <div className="mt-3 flex justify-start gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     onClick={() => {
                       if (isPlaying) onStop();
                       else onSpeak(m.content);
                     }}
-                    className="min-h-10 rounded-xl px-3 text-sm text-white/78 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    className="text-[10px] uppercase tracking-widest font-mono text-white/30 hover:text-white/80 transition-colors"
                   >
                     {isPlaying ? t("chat.stop") : t("chat.listen")}
                   </button>
                   <button
                     type="button"
                     onClick={() => onCopy(i, m.content)}
-                    className="min-h-10 rounded-xl px-3 text-sm text-white/78 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    className="text-[10px] uppercase tracking-widest font-mono text-white/30 hover:text-white/80 transition-colors"
                   >
                     {copiedIndex === i ? t("chat.copied") : t("chat.copy")}
                   </button>
