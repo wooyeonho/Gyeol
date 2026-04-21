@@ -72,101 +72,105 @@ export default function LandingPage() {
     <div className="relative overflow-hidden">
 
       {/* ── Hero: Creature First ─────────────────────────────────────────── */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center gap-10 px-6 py-16 sm:py-20">
+      <section className="noise-strong relative flex min-h-screen items-center overflow-hidden px-6 py-16 sm:py-20">
 
-        {/* Background aurora */}
-        <div className="aurora-flow pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
+        {/* Living-organism mesh background */}
+        <div className="mesh-organic pointer-events-none absolute inset-0" aria-hidden="true" />
 
-        {/* The creature — takes center stage, no text competing with it */}
-        <motion.div
-          className="relative flex-shrink-0"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {/* Creature canvas */}
-          <div
-            className="relative h-[300px] w-[300px] sm:h-[380px] sm:w-[380px] cursor-pointer"
-            onClick={handleCreatureTap}
-            role="button"
-            aria-label="Tap the creature"
+        {/* Asymmetric 2-column container (mobile: stack, creature first) */}
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-20">
+
+          {/* Creature — order 1 on mobile, right column on desktop */}
+          <motion.div
+            className="order-1 flex flex-shrink-0 justify-center lg:order-2 lg:justify-end"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <VoidCanvas
-              shape="sphere"
-              color="#818cf8"
-              size={1}
-              glow={55}
-              vitality={0.88}
-              mood={currentMood}
-              animation="breathe-slow"
-              particles={10}
-              contained
-              enableThree
-              dna={DEMO_DNA}
-              genLevel={2}
-              excitePulse={tapped ? 1 : 0}
-            />
-          </div>
+            {/* Creature canvas */}
+            <div
+              className="relative h-[300px] w-[300px] cursor-pointer sm:h-[380px] sm:w-[380px]"
+              onClick={handleCreatureTap}
+              role="button"
+              aria-label="Tap the creature"
+            >
+              <VoidCanvas
+                shape="sphere"
+                color="#818cf8"
+                size={1}
+                glow={55}
+                vitality={0.88}
+                mood={currentMood}
+                animation="breathe-slow"
+                particles={10}
+                contained
+                enableThree
+                dna={DEMO_DNA}
+                genLevel={2}
+                excitePulse={tapped ? 1 : 0}
+              />
 
-          {/* Tap hint — fades out after 4s or on first tap */}
-          <AnimatePresence>
-            {showHint && (
-              <motion.p
-                key="hint"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 1.2, duration: 0.4 }}
-                className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] tracking-widest text-white/30"
+              {/* Tap hint — fades out after 4s or on first tap */}
+              <AnimatePresence>
+                {showHint && (
+                  <motion.p
+                    key="hint"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ delay: 1.2, duration: 0.4 }}
+                    className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] tracking-widest text-white/30"
+                  >
+                    tap
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* Editorial copy — order 2 on mobile, left column on desktop */}
+          <motion.div
+            className="order-2 text-center lg:order-1 lg:text-left"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="text-[11px] uppercase tracking-[0.35em] text-accent/70">
+              {t("landing.eyebrow")}
+            </p>
+
+            <h1 className="text-display mt-6">
+              {t("landing.heroTitle")}
+            </h1>
+
+            <p className="mx-auto mt-6 max-w-sm text-sm leading-7 theme-text-subtle lg:mx-0 lg:max-w-md lg:text-base lg:leading-8">
+              {t("landing.heroSubtitle")}
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <Link
+                href="/demo"
+                className="rounded-full bg-accent px-7 py-3 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95"
               >
-                tap
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                Meet your creature →
+              </Link>
+              <Link
+                href="/login"
+                className="glass-card-deep rounded-full px-7 py-3 text-sm font-medium theme-text-muted transition-all hover:brightness-110 active:scale-95"
+              >
+                {t("landing.ctaSecondary")}
+              </Link>
+            </div>
 
-        {/* Minimal copy — creature talks first, words follow */}
-        <motion.div
-          className="relative z-10 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
-        >
-          <p className="text-[11px] uppercase tracking-[0.35em] text-accent/70">
-            {t("landing.eyebrow")}
-          </p>
-
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">
-            {t("landing.heroTitle")}
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-sm text-sm leading-6 theme-text-subtle">
-            {t("landing.heroSubtitle")}
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/demo"
-              className="rounded-full bg-accent px-7 py-3 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-95"
-            >
-              Meet your creature →
-            </Link>
-            <Link
-              href="/login"
-              className="glass-card rounded-full px-7 py-3 text-sm font-medium theme-text-muted transition-all hover:brightness-110 active:scale-95"
-            >
-              {t("landing.ctaSecondary")}
-            </Link>
-          </div>
-
-          <p className="mt-4 text-[11px] theme-text-faint">
-            No account needed. 3 messages. Watch it emerge.
-          </p>
-        </motion.div>
+            <p className="mt-4 text-[11px] theme-text-faint">
+              No account needed. 3 messages. Watch it emerge.
+            </p>
+          </motion.div>
+        </div>
 
         {/* Scroll indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
           aria-hidden="true"
@@ -206,7 +210,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: i * 0.07 }}
-                className="glass-card rounded-2xl p-5"
+                className="glass-card-deep rounded-2xl p-5"
               >
                 <h3 className="text-sm font-semibold">
                   {t(`landing.feature_${key}_title`)}

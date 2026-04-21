@@ -67,9 +67,14 @@ export default function SignupPage() {
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: prefersReducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-card-strong w-full max-w-md rounded-3xl p-6 text-left shadow-[0_0_80px_rgba(80,128,255,0.15)] relative z-10"
+      transition={{ duration: prefersReducedMotion ? 0 : 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="glass-card-deep w-full max-w-md rounded-3xl p-6 text-left relative z-10"
     >
+      {/* Gradient hairline — luminous edge along the top of the card */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
+      />
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">{t("auth.signupEyebrow")}</p>
         <h1 className="mt-3 text-section">{t("auth.signupTitle")}</h1>

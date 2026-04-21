@@ -142,7 +142,7 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className="glass-card-strong fixed bottom-0 left-0 right-0 z-20 border-t pb-[env(safe-area-inset-bottom)]"
+        className="glass-card-deep fixed bottom-0 left-0 right-0 z-20 border-t pb-[env(safe-area-inset-bottom)]"
         style={{ borderColor: `${appearance.palette.primary}25` }}
         aria-label="Bottom navigation"
       >
@@ -159,7 +159,7 @@ export function BottomNav() {
               animate={{
                 left: `calc((100% - 48px) * ${activeIndex / TABS.length})`,
               }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
             />
           )}
           {TABS.map((tab) => {
@@ -181,7 +181,7 @@ export function BottomNav() {
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   className={
                     prominent
-                      ? "flex h-7 w-7 items-center justify-center rounded-full"
+                      ? `flex h-7 w-7 items-center justify-center rounded-full${isActive ? " breathe-glow" : ""}`
                       : undefined
                   }
                   style={
