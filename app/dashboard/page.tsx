@@ -39,7 +39,7 @@ export default function DashboardPage() {
         <p className="text-white/50">{t("dashboard.loading")}</p>
       ) : data ? (
         <div className="grid max-w-3xl gap-4">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="glass-card rounded-3xl p-5">
             <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">{t("dashboard.eyebrow")}</p>
             <h2 className="mt-3 text-xl font-semibold">
               {t("dashboard.heroTitle")}
@@ -50,26 +50,26 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="bg-white/5 rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">{t("dashboard.agentCount")}</p>
               <p className="mt-2 text-3xl font-semibold">{data.agent_count ?? 0}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">{t("dashboard.socialCount")}</p>
               <p className="mt-2 text-3xl font-semibold">{data.social_count ?? 0}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">{t("dashboard.artifacts")}</p>
               <p className="mt-2 text-3xl font-semibold">{data.artifact_count ?? 0}</p>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
-            <div className="bg-white/5 rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider">{t("dashboard.weather")}</p>
               <p className="mt-2 text-2xl font-semibold">{data.weather_name ?? "-"}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4">
               <p className="text-white/50 text-xs uppercase tracking-wider mb-3">{t("dashboard.emotion")}</p>
               {data.collective_emotion && Object.keys(data.collective_emotion).length > 0 ? (
                 <div className="flex flex-wrap gap-2">

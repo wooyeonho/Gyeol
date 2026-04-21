@@ -833,3 +833,68 @@ body::before {
   opacity: 0.65;
   pointer-events: none;
 }
+
+/* ── World-Class 2026: Diamond Border ────────────────────────────────────── */
+.diamond-border {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  background-origin: border-box;
+}
+.diamond-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.28) 0%,
+    rgba(255,255,255,0.05) 40%,
+    rgba(168,139,255,0.2) 60%,
+    rgba(255,255,255,0.18) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── World-Class 2026: Aurora Gradient Background ────────────────────────── */
+@keyframes aurora-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.aurora-bg-hero {
+  background: linear-gradient(
+    -45deg,
+    rgba(99,102,241,0.12),
+    rgba(168,85,247,0.08),
+    rgba(59,130,246,0.1),
+    rgba(16,185,129,0.06)
+  );
+  background-size: 400% 400%;
+  animation: aurora-shift 20s ease infinite;
+}
+:root[data-theme="light"] .aurora-bg-hero {
+  background: linear-gradient(
+    -45deg,
+    rgba(99,102,241,0.06),
+    rgba(168,85,247,0.04),
+    rgba(59,130,246,0.05),
+    rgba(16,185,129,0.03)
+  );
+  background-size: 400% 400%;
+}
+
+/* ── World-Class 2026: GPU Perf Hints for Heavy Sections ─────────────────── */
+.gpu-layer {
+  will-change: transform;
+  contain: layout style;
+  transform: translateZ(0);
+}
+.contain-strict {
+  contain: strict;
+}

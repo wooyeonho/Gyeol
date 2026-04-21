@@ -194,7 +194,7 @@ export default function OpsPage() {
 
         {!loading && data && (
           <>
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="glass-card rounded-2xl p-4">
               <p className="text-xs text-white/50 uppercase tracking-wider">{t("ops.autonomyHealthScore")}</p>
               <div className="mt-2 flex items-end justify-between">
                 <p className="text-4xl font-semibold">{data.autonomy_health.score}</p>
@@ -238,7 +238,7 @@ export default function OpsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="glass-card rounded-2xl p-4">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.alertTrend24h")}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg border border-white/10 px-3 py-2">
@@ -260,7 +260,7 @@ export default function OpsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="glass-card rounded-2xl p-4">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-2">{t("ops.envStatus")}</p>
               <div className="space-y-2 text-sm">
                 {data.env_status.map((env) => (
@@ -274,7 +274,7 @@ export default function OpsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="glass-card rounded-2xl p-4">
               <p className="text-xs text-white/50 uppercase tracking-wider mb-2">{t("ops.recommendations")}</p>
               {data.recommendations.length > 0 ? (
                 <ul className="list-disc pl-5 text-sm text-white/80 space-y-1">
@@ -287,7 +287,7 @@ export default function OpsPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <section className="glass-card rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-white/50 uppercase tracking-wider">{t("ops.recentAlerts")}</p>
                 <span className="text-xs text-white/40">{formatLocalizedDateTime(data.checked_at, locale)}</span>
@@ -314,7 +314,7 @@ export default function OpsPage() {
 
             {productData && (
               <>
-                <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <section className="glass-card rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-white/50 uppercase tracking-wider">{t("ops.productActivation7d")}</p>
                     <span className="text-xs text-white/40">{formatLocalizedDateTime(productData.checked_at, locale)}</span>
@@ -336,7 +336,7 @@ export default function OpsPage() {
                 </section>
 
                 <section className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="glass-card rounded-2xl p-4">
                     <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.authFunnel7d")}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between"><span>{t("ops.signupStarted")}</span><span>{productData.auth_funnel_7d.signup_started}</span></div>
@@ -349,7 +349,7 @@ export default function OpsPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="glass-card rounded-2xl p-4">
                     <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.engagementSignals7d")}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between"><span>{t("ops.activityOpened")}</span><span>{productData.engagement_7d.activity_opened}</span></div>
@@ -361,7 +361,7 @@ export default function OpsPage() {
                 </section>
 
                 <section className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="glass-card rounded-2xl p-4">
                     <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.valueLoop24h")}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between"><span>{t("ops.pageViews")}</span><span>{productData.value_loop_24h.page_views}</span></div>
@@ -372,7 +372,7 @@ export default function OpsPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="glass-card rounded-2xl p-4">
                     <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.upgradeInterest7d")}</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between"><span>{t("ops.planPageOpened")}</span><span>{productData.upgrade_interest_7d.plans_opened}</span></div>
@@ -382,7 +382,7 @@ export default function OpsPage() {
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <section className="glass-card rounded-2xl p-4">
                   <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.onboardingExperiment7d")}</p>
                   <div className="space-y-2">
                     {productData.onboarding_experiment_7d.map((item) => (
@@ -396,7 +396,7 @@ export default function OpsPage() {
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <section className="glass-card rounded-2xl p-4">
                   <p className="text-xs text-white/50 uppercase tracking-wider mb-3">{t("ops.topPaths7d")}</p>
                   <div className="space-y-2">
                     {productData.top_paths_7d.length === 0 ? (
@@ -415,7 +415,7 @@ export default function OpsPage() {
             )}
 
             {socialData && (
-              <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <section className="glass-card rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs text-white/50 uppercase tracking-wider">{t("ops.socialModeration")}</p>
                   <span className="text-xs text-white/40">

@@ -88,7 +88,7 @@ export default function MoltBookPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-8 text-center"
+            className="glass-card rounded-2xl p-8 text-center"
           >
             <p className="text-sm text-white/50">{t("moltbook.empty")}</p>
           </motion.div>

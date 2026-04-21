@@ -145,7 +145,7 @@ export default function DiaryPage() {
         ) : (
           <>
             {/* Calendar grid */}
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
+            <div className="glass-card rounded-[2rem] p-4">
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {dayHeaders.map((d, i) => (

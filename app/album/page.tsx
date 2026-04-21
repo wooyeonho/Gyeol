@@ -157,7 +157,7 @@ export default function AlbumPage() {
         ) : (
           <>
           {/* Collection completeness bar */}
-          <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-5 glass-card rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                 {t("album.collectionEyebrow")}
@@ -182,7 +182,7 @@ export default function AlbumPage() {
           <div className="mb-6">
             <ManifestationTimeline />
           </div>
-          <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-5 glass-card rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
               {t("album.timelineEyebrow")}
             </p>

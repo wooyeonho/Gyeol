@@ -101,7 +101,7 @@ export default function AchievementsPage() {
       <div className="mx-auto max-w-lg space-y-4">
 
         {/* Header */}
-        <header className="text-center">
+        <header className="diamond-border rounded-2xl p-6 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-purple-300">Achievements</p>
           <h1 className="mt-1 text-2xl font-semibold text-white">
             {t("achievements.title") || "업적"}

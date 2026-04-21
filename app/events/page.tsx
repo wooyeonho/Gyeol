@@ -131,7 +131,7 @@ export default function EventsPage() {
               {activeEvent.rewards.map((reward) => (
                 <div
                   key={reward.tier}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                  className="flex items-center gap-3 glass-card rounded-xl px-4 py-3"
                 >
                   <div
                     className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"

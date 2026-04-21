@@ -72,7 +72,7 @@ export default function ResearchPage() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                      className="flex items-center gap-3 glass-card rounded-xl p-3"
                     >
                       <span className="text-2xl">{s.icon}</span>
                       <div className="flex-1 min-w-0">
@@ -100,7 +100,7 @@ export default function ResearchPage() {
                   {tasks.map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                      className="flex items-center gap-3 glass-card rounded-xl p-3"
                     >
                       <div
                         className={`h-2 w-2 rounded-full ${

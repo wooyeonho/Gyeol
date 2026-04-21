@@ -402,7 +402,7 @@ export default function DiscoverPage() {
 
         {/* Server-generated daily challenges — from /api/daily-challenges */}
         {serverChallenges.length > 0 && (
-          <motion.div variants={itemVariants} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+          <motion.div variants={itemVariants} className="glass-card rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-base">⚡</span>
@@ -504,7 +504,7 @@ export default function DiscoverPage() {
             legendary: "bg-purple-500/20 text-purple-300",
           };
           return (
-            <motion.div variants={itemVariants} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white/80">
                   {locale === "ko" ? "오늘의 퀘스트" : "Daily Quests"}
@@ -548,7 +548,7 @@ export default function DiscoverPage() {
           const resetH = Math.floor(resetSecs / 3600);
           const resetM = Math.floor((resetSecs % 3600) / 60);
           return (
-            <motion.div variants={itemVariants} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+            <motion.div variants={itemVariants} className="flex items-center justify-between glass-card rounded-2xl px-4 py-3">
               <div className="text-xs text-white/60">
                 <span className="font-semibold text-white/80">Lv. {level}</span> ({xp} XP)
               </div>

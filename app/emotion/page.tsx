@@ -114,7 +114,7 @@ export default function EmotionDashboardPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+            className="glass-card rounded-3xl p-5"
           >
             <header className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">2주 감정 흐름</h2>
@@ -140,7 +140,7 @@ export default function EmotionDashboardPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+            className="glass-card rounded-3xl p-5"
           >
             <header className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">친밀도</h2>
@@ -166,7 +166,7 @@ export default function EmotionDashboardPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+            className="glass-card rounded-3xl p-5"
           >
             <h2 className="mb-3 text-sm font-semibold text-white">나의 레벨</h2>
             <LevelBar
@@ -188,7 +188,7 @@ export default function EmotionDashboardPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+            className="glass-card rounded-3xl p-5"
           >
             <h2 className="mb-3 text-sm font-semibold text-white">가장 자주 느낀 감정</h2>
             <div className="flex flex-wrap gap-2">

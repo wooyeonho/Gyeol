@@ -283,7 +283,7 @@ function EarningsRedeemSection({ locale }: { locale: string }) {
           onChange={(e) => setRedeemCoins(e.target.value)}
           placeholder={isKo ? "환전할 코인 수" : "Coins to redeem"}
           min={100}
-          className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-300/40 focus:outline-none"
+          className="flex-1 glass-card rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-300/40 focus:outline-none"
         />
         <button
           type="button"

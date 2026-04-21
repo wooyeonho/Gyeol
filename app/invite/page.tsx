@@ -30,7 +30,7 @@ export default function InviteHubPage() {
   return (
     <div className="min-h-screen bg-black px-6 py-12 text-white">
       <div className="mx-auto max-w-3xl">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_90px_rgba(56,189,248,0.08)] sm:p-8">
+        <div className="glass-card rounded-[2rem] p-6 shadow-[0_0_90px_rgba(56,189,248,0.08)] sm:p-8">
           <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">
             {t("inviteHubPage.eyebrow")}
           </p>

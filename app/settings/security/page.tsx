@@ -229,7 +229,7 @@ export default function SecurityCenterPage() {
       </section>
 
       {/* ── Lockdown mode (Apple-inspired) ── */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="glass-card rounded-2xl p-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-white">Lockdown Mode</h2>
@@ -262,7 +262,7 @@ export default function SecurityCenterPage() {
       </section>
 
       {/* ── Account health audit (Bitwarden Vault Health) ── */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="glass-card rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400">
@@ -332,7 +332,7 @@ export default function SecurityCenterPage() {
       )}
 
       {/* ── Data rights ── */}
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="glass-card rounded-2xl p-4">
         <div className="flex items-start gap-3">
           <Download className="mt-0.5 h-5 w-5 text-neutral-300" />
           <div className="flex-1">
@@ -409,7 +409,7 @@ export default function SecurityCenterPage() {
             vault unlocks will appear here.
           </p>
         ) : (
-          <ul className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+          <ul className="divide-y divide-white/5 overflow-hidden glass-card rounded-2xl">
             {events.map((e) => (
               <li key={e.id} className="flex items-center justify-between px-4 py-3">
                 <div>
@@ -456,7 +456,7 @@ function SecurityRow({
       type="button"
       onClick={onToggle}
       disabled={disabled}
-      className="group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-left transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+      className="group flex w-full items-center gap-4 glass-card rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <div
         className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${

@@ -120,7 +120,7 @@ export default function ChallengesPage() {
 
         {/* Progress summary */}
         {state && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="glass-card rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-white/70">
                 {t("challenges.progress") || "오늘 진행"}
@@ -153,7 +153,7 @@ export default function ChallengesPage() {
 
         {/* Daily Reward Calendar — 7-day login streak rewards */}
         {state && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="glass-card rounded-2xl p-4">
             <DailyRewardCalendar
               streakDays={state.challenges.filter((c) => c.completed).length}
               currentDay={new Date().getDate()}

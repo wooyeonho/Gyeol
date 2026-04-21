@@ -824,7 +824,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
   );
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full">
+    <div ref={wrapperRef} className="gpu-layer relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
         dpr={[1, 1.5]}
