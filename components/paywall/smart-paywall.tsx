@@ -96,15 +96,21 @@ export function SmartPaywall({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-8"
+      className="fixed inset-0 z-[90] flex items-end justify-center px-4 pb-4 pt-10 sm:items-center sm:p-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="paywall-headline"
-      onClick={onClose}
     >
       <div
-        className={`relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${plan.gradient} bg-neutral-950 shadow-2xl`}
-        onClick={(e) => e.stopPropagation()}
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm -z-10"
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        role="button"
+        tabIndex={-1}
+        aria-label="Close dialog overlay"
+      />
+      <div
+        className={`relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${plan.gradient} bg-neutral-950 shadow-2xl z-10`}
       >
         {/* Close */}
         <button

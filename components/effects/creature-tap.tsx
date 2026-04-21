@@ -82,9 +82,9 @@ export function CreatureTapReact({
             handleClick({
               clientX: rect.left + rect.width / 2,
               clientY: rect.top + rect.height / 2,
-            } as any);
+            } as unknown as React.MouseEvent);
           } else {
-            handleClick({ clientX: 0, clientY: 0 } as any);
+            handleClick({ clientX: 0, clientY: 0 } as unknown as React.MouseEvent);
           }
         }
       }}
