@@ -139,14 +139,21 @@ export function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 px-4 pt-[14vh] backdrop-blur-sm"
-      onClick={close}
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
     >
+      {/* Backdrop click target */}
       <div
-        className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="absolute inset-0 z-0"
+        onClick={close}
+        onKeyDown={(e) => e.key === "Escape" && close()}
+        role="button"
+        tabIndex={-1}
+        aria-label="Close command palette"
+      />
+      <div
+        className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl relative z-10"
       >
         {/* Search bar */}
         <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3.5">
