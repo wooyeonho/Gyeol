@@ -71,7 +71,7 @@ export default function RoomScene({
   }
 
   return (
-    <div className="gpu-layer w-full h-full min-h-[400px]">
+    <div className="gpu-layer-contained w-full h-full min-h-[400px]">
       <ThreeErrorBoundary>
         <Canvas camera={{ position: [0, 2, 5], fov: 50 }} gl={{ antialias: true }}>
           <color attach="background" args={[backgroundColor]} />
