@@ -66,9 +66,14 @@ export default function LoginPage() {
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: prefersReducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/40 p-7 text-left backdrop-blur-2xl relative z-10"
+      transition={{ duration: prefersReducedMotion ? 0 : 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="glass-card-deep w-full max-w-sm rounded-2xl p-7 text-left relative z-10"
     >
+      {/* Gradient hairline — luminous edge along the top of the card */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
+      />
       <motion.div
         initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,7 +96,7 @@ export default function LoginPage() {
           />
           {t("auth.loginEyebrow")}
         </div>
-        <h1 className="mt-3 text-[22px] font-semibold leading-tight tracking-tight text-white">
+        <h1 className="text-section mt-3 text-white">
           {t("auth.loginTitle")}
         </h1>
         <p className="mt-2 text-[13px] leading-[1.55] text-white/55">
