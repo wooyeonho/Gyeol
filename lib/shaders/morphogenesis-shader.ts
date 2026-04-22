@@ -4,6 +4,7 @@ import type { CreatureDNA } from "@/lib/genome/dna";
 // ─── TypeScript Uniform Interface ─────────────────────────────────────────────
 
 export interface MorphogenesisUniforms {
+  [key: string]: { value: number | THREE.Color };
   uTime:          { value: number };
   // Cognitive group → topology
   uAnalytical:    { value: number };
