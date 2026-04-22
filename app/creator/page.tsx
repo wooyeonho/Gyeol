@@ -203,7 +203,7 @@ export default function CreatorPage() {
             className="space-y-3"
           >
             {/* Tier Progress */}
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+            <div className="glass-card rounded-xl p-4 space-y-2">
               <h3 className="text-xs font-semibold text-white/70">
                 {isKo ? "티어 진행도" : "Tier Progress"}
               </h3>
@@ -225,7 +225,7 @@ export default function CreatorPage() {
             </div>
 
             {/* Content type breakdown */}
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+            <div className="glass-card rounded-xl p-4 space-y-2">
               <h3 className="text-xs font-semibold text-white/70">
                 {isKo ? "콘텐츠 유형" : "Content Types"}
               </h3>
@@ -255,7 +255,7 @@ export default function CreatorPage() {
             className="space-y-2"
           >
             {contents.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
+              <div className="glass-card rounded-xl p-8 text-center">
                 <p className="text-2xl">📦</p>
                 <p className="mt-2 text-sm text-white/50">
                   {isKo ? "아직 콘텐츠가 없습니다" : "No content yet"}
@@ -279,7 +279,7 @@ export default function CreatorPage() {
                   rejected: "text-red-300 bg-red-500/10",
                 };
                 return (
-                  <div key={content.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                  <div key={content.id} className="glass-card rounded-xl p-3">
                     <div className="flex items-start gap-3">
                       <span className="text-xl">{typeInfo.icon}</span>
                       <div className="flex-1 min-w-0">
@@ -327,7 +327,7 @@ export default function CreatorPage() {
               </div>
             )}
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+            <div className="glass-card rounded-xl p-4 space-y-3">
               {/* Content type selector */}
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-white/40">

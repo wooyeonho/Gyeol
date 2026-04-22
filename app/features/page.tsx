@@ -123,15 +123,15 @@ export default function FeaturesPage() {
         </header>
 
         <section className="mb-8 grid gap-3 md:grid-cols-3">
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <article className="glass-card rounded-2xl p-4">
             <p className="text-sm font-medium">{t("featuresPage.pillar1Title")}</p>
             <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar1Body")}</p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <article className="glass-card rounded-2xl p-4">
             <p className="text-sm font-medium">{t("featuresPage.pillar2Title")}</p>
             <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar2Body")}</p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <article className="glass-card rounded-2xl p-4">
             <p className="text-sm font-medium">{t("featuresPage.pillar3Title")}</p>
             <p className="mt-2 text-sm leading-6 text-white/65">{t("featuresPage.pillar3Body")}</p>
           </article>
@@ -165,14 +165,14 @@ export default function FeaturesPage() {
 
         <section className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
           {(Object.keys(CATEGORY_ORDER) as FeatureCategory[]).map((category) => (
-            <article key={category} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <article key={category} className="glass-card rounded-2xl p-4">
               <p className="text-xs text-white/45">{categoryLabels[category]}</p>
               <p className="mt-2 text-sm leading-6 text-white/72">{categoryDescriptions[category]}</p>
             </article>
           ))}
         </section>
 
-        <section className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-3">
+        <section className="mb-5 glass-card rounded-2xl p-3">
           <label htmlFor="feature-search" className="sr-only">
             {t("featuresPage.searchPlaceholder")}
           </label>
@@ -212,7 +212,7 @@ export default function FeaturesPage() {
 
         <section className="space-y-3">
           {filtered.map((feature) => (
-            <article key={feature.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <article key={feature.id} className="glass-card rounded-2xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-white/50">{categoryLabels[feature.category]}</p>
@@ -234,7 +234,7 @@ export default function FeaturesPage() {
             </article>
           ))}
           {filtered.length === 0 && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
+            <div className="glass-card rounded-2xl p-6 text-center text-sm text-white/55">
               {t("featuresPage.empty")}
             </div>
           )}

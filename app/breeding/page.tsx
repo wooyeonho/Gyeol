@@ -91,7 +91,7 @@ export default function BreedingPage() {
           {incoming.map((rec) => (
             <div
               key={rec.id}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+              className="glass-card rounded-2xl p-4"
             >
               <p className="text-sm text-white/70">
                 {t("breeding.requestFrom").replace("{name}", rec.partner_name || t("breeding.fallbackPartner"))}
@@ -131,7 +131,7 @@ export default function BreedingPage() {
           {outgoing.map((rec) => (
             <div
               key={rec.id}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+              className="glass-card rounded-2xl p-4"
             >
               <p className="text-sm text-white/70">
                 {t("breeding.partner")}: {rec.partner_name || t("breeding.fallbackPartner")}
@@ -153,7 +153,7 @@ export default function BreedingPage() {
           {completed.slice(0, 10).map((rec) => (
             <div
               key={rec.id}
-              className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 opacity-70"
+              className="glass-card rounded-2xl p-4 opacity-70"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-white/60">
@@ -179,7 +179,7 @@ export default function BreedingPage() {
 
       {records.length === 0 && !error && (
         <motion.div variants={itemVariants}>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center">
+          <div className="glass-card rounded-2xl p-8 text-center">
             <span className="text-4xl">🧬</span>
             <p className="mt-3 text-sm text-white/50">{t("breeding.sectionDesc")}</p>
           </div>

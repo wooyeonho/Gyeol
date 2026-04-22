@@ -257,7 +257,7 @@ export default function DnaEditPage() {
             </div>
 
             {/* ===== DNA Radar Chart — 16-axis visual ===== */}
-            <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex flex-col items-center glass-card rounded-2xl p-4">
               <h3 className="mb-2 text-sm font-medium text-white/70">
                 {t("dnaEditor.radarTitle") || "DNA Radar"}
               </h3>
@@ -270,7 +270,7 @@ export default function DnaEditPage() {
             </div>
 
             {/* Cost display */}
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex items-center justify-between glass-card rounded-2xl p-4">
               <div>
                 <p className="text-xs text-white/40">{t("dnaEdit.cost") || "편집 비용"}</p>
                 <p className={`text-lg font-bold ${canAfford ? "text-amber-300" : "text-red-400"}`}>

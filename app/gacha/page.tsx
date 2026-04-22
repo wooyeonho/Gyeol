@@ -21,7 +21,7 @@ export default function GachaPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#0a0a0f] px-4 pt-8 pb-24">
+    <main className="min-h-screen bg-[#0a0a0f] aurora-bg-hero px-4 pt-8 pb-24">
       <div className="mx-auto max-w-sm">
         {/* Header */}
         <div className="mb-6 text-center">
@@ -30,7 +30,7 @@ export default function GachaPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex rounded-xl bg-white/[0.05] border border-white/10 p-1 mb-6">
+        <div className="flex glass-card rounded-xl p-1 mb-6">
           {(["scratch", "spin"] as const).map((t) => (
             <button
               key={t}

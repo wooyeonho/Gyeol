@@ -130,7 +130,7 @@ export default function CarePage() {
               </motion.div>
             )}
 
-            <div className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+            <div className="space-y-4 glass-card rounded-[2rem] p-6">
               <GaugeBar
                 label={t("care.hunger") || "배고픔"}
                 value={care.hunger}
@@ -189,7 +189,7 @@ export default function CarePage() {
             </p>
 
             {/* Care activity heatmap */}
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <div className="glass-card rounded-[2rem] p-5">
               <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
                 {t("care.activityLog") || "돌봄 기록"}
               </p>
@@ -203,7 +203,7 @@ export default function CarePage() {
                 { id: "mind", target: 100, progress: care.happiness },
               ];
               return (
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                <div className="glass-card rounded-[2rem] p-5">
                   <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
                     {t("care.wellnessRings") || "웰니스 링"}
                   </p>
@@ -231,7 +231,7 @@ export default function CarePage() {
               const band = recoveryBand(score);
               const bandColor = band === "green" ? "text-emerald-400" : band === "yellow" ? "text-amber-400" : "text-red-400";
               return (
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                <div className="glass-card rounded-[2rem] p-5">
                   <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
                     {t("care.recoveryScore") || "회복 점수"}
                   </p>
@@ -252,7 +252,7 @@ export default function CarePage() {
             {(() => {
               const modes: BreathMode[] = ["calm", "focus", "sleep", "energize"];
               return (
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                <div className="glass-card rounded-[2rem] p-5">
                   <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/50">
                     {t("care.breathing") || "호흡 가이드"}
                   </p>

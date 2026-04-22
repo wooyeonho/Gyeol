@@ -72,7 +72,7 @@ export default function TimeTravelPage() {
           </div>
         )}
         {/* Time Capsule: leave a message for your future self */}
-        <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="mt-8 glass-card rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-medium text-white/80">{t("timeTravel.capsuleTitle") || "타임 캡슐"}</h2>
           <p className="text-xs text-white/50">{t("timeTravel.capsuleDesc") || "미래의 나에게 메시지를 보내세요"}</p>
           <textarea

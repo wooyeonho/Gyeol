@@ -150,7 +150,7 @@ export default function WorldEventsPage() {
                 })}
               </div>
             ) : (
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center">
+              <div className="glass-card rounded-[2rem] p-8 text-center">
                 <span className="text-4xl">🌙</span>
                 <p className="mt-3 text-sm text-white/50">
                   {t("worldEvents.noActive") || "현재 진행 중인 이벤트가 없습니다"}

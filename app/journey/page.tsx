@@ -153,7 +153,7 @@ export default function JourneyPage() {
                 { label: t("journey.memories") || "기억", value: data.stats.totalMemories, icon: "🧠" },
                 { label: t("journey.dreams") || "꿈", value: data.stats.totalDreams, icon: "🌙" },
               ].map((s) => (
-                <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
+                <div key={s.label} className="glass-card rounded-2xl p-3 text-center">
                   <span className="text-lg">{s.icon}</span>
                   <p className="mt-1 text-xl font-bold text-white">{s.value}</p>
                   <p className="text-xs text-white/40">{s.label}</p>

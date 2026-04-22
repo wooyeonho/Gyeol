@@ -199,7 +199,7 @@ export default function MarketPage() {
       </motion.div>
 
       {/* Inventory panel */}
-      <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mb-4 glass-card rounded-2xl p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-white/45 mb-3">{t("shop.inventory")}</p>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {([
@@ -226,7 +226,7 @@ export default function MarketPage() {
       )}
 
       {/* Plan comparison — monetization catalog */}
-      <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+      <div className="mb-4 glass-card rounded-2xl p-4 space-y-3">
         <p className="text-xs uppercase tracking-[0.2em] text-white/45">{locale === "ko" ? "플랜 비교" : "Plan Comparison"}</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(["free", "pro", "premium", "family"] as const).map((planId) => {
@@ -303,7 +303,7 @@ export default function MarketPage() {
                       .map(([k, v]) => `${v} ${k.replace(/_/g, " ")}`)
                       .join(" + ");
                     return (
-                      <div key={shopItem.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                      <div key={shopItem.id} className="flex items-center gap-3 glass-card rounded-2xl p-3">
                         <span className="text-2xl">{shopItem.icon}</span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium">{locale === "ko" ? shopItem.label.ko : shopItem.label.en}</p>
@@ -346,7 +346,7 @@ export default function MarketPage() {
       {activeTab === "market" && (
         <>
           {showPlansSurface && (
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-4 glass-card rounded-2xl p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-medium">{t("marketPage.plansTitle")}</p>

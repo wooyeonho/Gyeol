@@ -153,7 +153,7 @@ export default function ComparePage() {
             const oppPct = 100 - myPct;
 
             return (
-              <div key={axis.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div key={axis.key} className="glass-card rounded-2xl p-4">
                 <div className="mb-3 flex items-center justify-between text-xs text-white/50">
                   <span>{axis.label}</span>
                   <span>

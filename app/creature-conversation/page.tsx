@@ -131,7 +131,7 @@ export default function CreatureConversationPage() {
         </header>
 
         {/* Cost info */}
-        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="flex items-center justify-between glass-card rounded-2xl p-4">
           <div>
             <p className="text-xs text-white/40">{t("creatureConversation.cost") || "대화 비용"}</p>
             <p className="text-lg font-bold text-amber-300">🪙 {COST}</p>
@@ -253,7 +253,7 @@ export default function CreatureConversationPage() {
                     { label: t("creatureConversation.myCreature") || "내 생명체", effects: result.dnaEffectsA },
                     { label: t("creatureConversation.otherCreature") || "상대 생명체", effects: result.dnaEffectsB },
                   ].map((side) => (
-                    <div key={side.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <div key={side.label} className="glass-card rounded-2xl p-3">
                       <p className="text-xs text-white/50 mb-2">{side.label}</p>
                       {side.effects.length > 0 ? (
                         <div className="space-y-1">

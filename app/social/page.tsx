@@ -731,7 +731,7 @@ export default function SocialPage() {
 
       {/* Friends tab */}
       {activeTab === "friends" && (
-        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+        <section className="glass-card rounded-2xl p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.friendsTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -796,7 +796,7 @@ export default function SocialPage() {
 
       {/* Trending tab */}
       {activeTab === "trending" && (
-        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 space-y-3">
+        <section className="glass-card rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
               {locale === "ko" ? "트렌딩 토픽" : "Trending Topics"}
@@ -850,7 +850,7 @@ export default function SocialPage() {
 
       {/* DM tab */}
       {activeTab === "dm" && (
-        <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+        <section className="glass-card rounded-2xl p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t("social.dmTab")}</p>
           <p className="mt-2 text-sm text-white/60">{t("social.subtitle")}</p>
           {recentConversationLogs.length > 0 ? (
@@ -903,7 +903,7 @@ export default function SocialPage() {
 
       {/* Feed tab (existing content) */}
       {activeTab === "feed" && (<>
-      <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <section className="mb-4 glass-card rounded-2xl p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/45">
@@ -1227,7 +1227,7 @@ export default function SocialPage() {
         </div>
       </section>
       {otherAgents.length > 0 && (
-        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 glass-card rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.encounteredForms")}
           </p>
@@ -1324,7 +1324,7 @@ export default function SocialPage() {
       )}
 
       {curatedEncounterGroups.length > 0 && (
-        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 glass-card rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.speciesCuration")}
           </p>
@@ -1349,7 +1349,7 @@ export default function SocialPage() {
       )}
 
       {giftExchanges.length > 0 && (
-        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 glass-card rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("socialPage.giftEchoes")}
           </p>
@@ -1365,7 +1365,7 @@ export default function SocialPage() {
 
       {/* Breeding section */}
       {mutualAgents.length > 0 && (
-        <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <section className="mb-4 glass-card rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("breeding.sectionTitle")}
           </p>
