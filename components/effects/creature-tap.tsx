@@ -71,7 +71,7 @@ export function CreatureTapReact({
       ref={hostRef}
       className={`relative ${className} ${wiggling ? "creature-tap-react" : ""}`}
       onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(e as unknown as React.MouseEvent); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e as unknown as React.MouseEvent); } }}
       role="button"
       tabIndex={0}
     >
