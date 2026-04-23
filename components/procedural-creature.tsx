@@ -887,8 +887,13 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Position: spring physics — damp3 gives frame-rate-independent damped spring
     // lambda drives convergence speed: sad mood → slow/droopy, excited → bouncy
     const idleBob = Math.sin(t * 1.8) * idleBobAmplitudeRef.current;
-    const targetX = forceState ? forceState.position.x * 1.5 : 0;
-    const targetY = forceState ? forceState.position.y * 1.2 + idleBob : idleBob;
+    // Micro-movement layer — subtle weight-shift + organic tremor for alive feel
+    // Weight shift: slow lateral sway (0.13Hz) ±2px, tremor: high-freq jitter ±0.5px
+    const weightShift = Math.sin(t * 0.8) * 0.02 + Math.sin(t * 1.3) * 0.008;
+    const microTremorX = (Math.sin(t * 7.1 + 0.3) * 0.003 + Math.sin(t * 13.7) * 0.001) * activityMult;
+    const microTremorY = (Math.sin(t * 9.3 + 1.7) * 0.002 + Math.cos(t * 11.1) * 0.001) * activityMult;
+    const targetX = forceState ? forceState.position.x * 1.5 : weightShift + microTremorX;
+    const targetY = forceState ? forceState.position.y * 1.2 + idleBob : idleBob + microTremorY;
     damp3(groupRef.current.position, [targetX, targetY, groupRef.current.position.z], springLambda, dt);
 
     // Rotation: target-seeking look-around (not continuous spin).
