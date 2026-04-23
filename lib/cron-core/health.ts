@@ -10,7 +10,8 @@ export async function executeHealth(): Promise<CronResult> {
   try {
     const service = createServiceClient();
     const staleSince = new Date(Date.now() - 24 * 3600000).toISOString();
-    const staleSixHours = new Date(Date.now() - 6 * 3600000).toISOString();
+    // 26h threshold: heartbeat runs daily, so 26h = missed 1 cycle + 2h buffer
+    const staleSixHours = new Date(Date.now() - 26 * 3600000).toISOString();
     const { count: agentCount } = await service.from("agents").select("id", { count: "exact", head: true });
     const { data: configRows } = await service.from("agent_state").select("config");
     const autonomousEnabledCount = (configRows ?? []).filter(

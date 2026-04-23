@@ -333,7 +333,7 @@ async function analyseAgent(
       });
     if (epErr) {
       // Non-fatal: log and continue — memory loss is preferable to blocking delete
-      logger.warn(`[OpenclawDNA] agent ${agentId}: episode insert failed`, epErr);
+      logger.warn(`[OpenclawDNA] agent ${agentId}: episode insert failed`, { ...epErr });
     } else {
       const axesLabel = rawOutput._memory_axes ?? "—";
       logger.info(`[OpenclawDNA] agent ${agentId}: episode saved (valence=${valence.toFixed(2)}, axes=${axesLabel})`);

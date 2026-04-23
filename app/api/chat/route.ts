@@ -491,15 +491,16 @@ export async function POST(req: NextRequest) {
         // Fire-and-forget — failure must never surface to the user.
         const dnaSnapshot = (context.agentState?.genome as { dna?: Record<string, number> } | null)?.dna;
         if (dnaSnapshot) {
-          service
-            .from("interaction_logs")
-            .insert({
-              agent_id:    agentId,
-              chat_log:    { user: message, assistant: fullResponse },
-              current_dna: dnaSnapshot,
-            })
-            .then()
-            .catch(() => {});
+          // Wrap in Promise.resolve to convert PromiseLike → Promise (gains .catch)
+          Promise.resolve(
+            service
+              .from("interaction_logs")
+              .insert({
+                agent_id:    agentId,
+                chat_log:    { user: message, assistant: fullResponse },
+                current_dna: dnaSnapshot,
+              }),
+          ).catch(() => {});
         }
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
