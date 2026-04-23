@@ -121,7 +121,12 @@ export function dampDNAMaterial(
   targets: DNAMaterialTargets,
   dt: number,
 ): void {
-  mat.iridescence    = damp(mat.iridescence,    targets.iridescence,    LAMBDA, dt);
+  // @types/three@0.183 declares iridescence as boolean on the instance but
+  // Three.js treats it as a 0-1 float at runtime — cast to bypass the mismatch.
+  const m = mat as unknown as Omit<THREE.MeshPhysicalMaterial, "iridescence"> & {
+    iridescence: number;
+  };
+  m.iridescence      = damp(m.iridescence,      targets.iridescence,    LAMBDA, dt);
   mat.iridescenceIOR = damp(mat.iridescenceIOR, targets.iridescenceIOR, LAMBDA, dt);
   mat.sheen          = damp(mat.sheen,          targets.sheen,          LAMBDA, dt);
   mat.sheenRoughness = damp(mat.sheenRoughness, targets.sheenRoughness, LAMBDA, dt);
