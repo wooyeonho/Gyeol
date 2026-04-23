@@ -498,8 +498,7 @@ export async function POST(req: NextRequest) {
               chat_log:    { user: message, assistant: fullResponse },
               current_dna: dnaSnapshot,
             })
-            .then()
-            .catch(() => {});
+            .then(undefined, () => {});
         }
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
