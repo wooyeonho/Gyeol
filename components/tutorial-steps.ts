@@ -30,10 +30,4 @@ export const mainTutorialSteps: TutorialStep[] = [
     description: "크리처 DNA, 프로필, 앱 설정을 관리하세요.",
     placement: "top",
   },
-  {
-    target: '[data-tutorial="care-buttons"]',
-    title: "돌봄",
-    description: "크리처에게 먹이를 주고, 놀아주고, 재워주세요!",
-    placement: "bottom",
-  },
 ];
