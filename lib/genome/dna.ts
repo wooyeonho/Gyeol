@@ -312,7 +312,7 @@ export function dnaDistance(a: CreatureDNA, b: CreatureDNA): number {
  * Get the dominant traits (top N highest DNA values).
  */
 export function getDominantTraits(dna: CreatureDNA, n = 4): DNAAxis[] {
-  return [...DNA_AXES]
+  return [...PERSONALITY_AXES]
     .sort((a, b) => dna[b] - dna[a])
     .slice(0, n);
 }
@@ -321,7 +321,7 @@ export function getDominantTraits(dna: CreatureDNA, n = 4): DNAAxis[] {
  * Get the recessive traits (bottom N lowest DNA values).
  */
 export function getRecessiveTraits(dna: CreatureDNA, n = 3): DNAAxis[] {
-  return [...DNA_AXES]
+  return [...PERSONALITY_AXES]
     .sort((a, b) => dna[a] - dna[b])
     .slice(0, n);
 }

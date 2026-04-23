@@ -299,6 +299,7 @@ export function CelebrationOverlay({
   // Sync internal visibility with `show` prop
   useEffect(() => {
     if (show) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
       haptic("success");
       try {

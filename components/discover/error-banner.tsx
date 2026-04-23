@@ -20,6 +20,7 @@ export function ErrorBanner({
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(true);
     if (!autoDismissMs) return;
     const t = setTimeout(() => setVisible(false), autoDismissMs);

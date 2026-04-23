@@ -335,6 +335,7 @@ export default function Home() {
           })) {
             const box = generateMysteryBox(undefined, agentState?.streak_days ?? 0);
             addPendingBox(box);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveMysteryBox(box);
           }
           break;

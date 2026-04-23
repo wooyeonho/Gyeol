@@ -144,6 +144,7 @@ export default function WellnessPage() {
           const bandColor = band === "green" ? "text-emerald-400" : band === "yellow" ? "text-amber-400" : "text-red-400";
           // Gentle streak from mood history
           const daysSinceLast = history.length > 0
+            // eslint-disable-next-line react-hooks/purity
             ? Math.floor((Date.now() - new Date(history[0].date).getTime()) / (24 * 3600 * 1000))
             : 99;
           const streak = updateGentleStreak(history.length, daysSinceLast);

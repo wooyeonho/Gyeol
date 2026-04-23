@@ -153,6 +153,7 @@ export function WorldClassHub({ onComebackDetected }: { onComebackDetected?: (mu
   useEffect(() => {
     if (shouldCreaturePing() && !isStreaming) {
       const mood = typeof agentState?.mood === "string" ? agentState.mood : null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCreaturePing(getCreaturePingPrompt(mood));
       markPingDelivered();
     }

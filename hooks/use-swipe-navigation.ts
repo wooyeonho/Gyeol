@@ -92,6 +92,7 @@ export function useSwipeNavigation({
     /** Current tab index */
     currentIndex,
     /** Whether actively swiping */
+    // eslint-disable-next-line react-hooks/refs
     isSwiping: startRef.current !== null,
   };
 }

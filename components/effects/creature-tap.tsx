@@ -71,6 +71,9 @@ export function CreatureTapReact({
       ref={hostRef}
       className={`relative ${className} ${wiggling ? "creature-tap-react" : ""}`}
       onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e as unknown as React.MouseEvent); } }}
+      role="button"
+      tabIndex={0}
     >
       {children}
       <div className="pointer-events-none absolute inset-0">

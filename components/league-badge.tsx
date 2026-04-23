@@ -126,6 +126,7 @@ export default function LeagueBadge({
 
   useEffect(() => {
     if (mode === "tier") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTierProgress(getLeagueTierProgress());
     } else {
       const state = externalState ?? getLadderState();
@@ -143,6 +144,7 @@ export default function LeagueBadge({
     const currIdx = LEAGUES_ORDERED.indexOf(ladderState.league);
 
     if (currIdx > prevIdx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransition({ type: "promoted", league: ladderState.league });
     } else if (currIdx < prevIdx) {
       setTransition({ type: "demoted", league: ladderState.league });

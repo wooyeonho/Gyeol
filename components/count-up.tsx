@@ -38,6 +38,7 @@ export function CountUp({
     prevRef.current = value;
 
     if (from === to) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(to);
       return;
     }

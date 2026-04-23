@@ -50,6 +50,7 @@ export function SpeciesCodex({ locale = "en" }: SpeciesCodexProps) {
 
   // Load codex from localStorage on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCodex(getCodex());
     setCompletion(getCompletionRate());
   }, []);

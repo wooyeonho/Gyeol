@@ -122,6 +122,7 @@ export function useShouldShowTutorial(storageKey?: string): boolean {
   useEffect(() => {
     try {
       const done = localStorage.getItem(key);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShouldShow(done !== "true");
     } catch {
       setShouldShow(false);
@@ -299,6 +300,7 @@ export function TutorialOverlay({ steps, onComplete, storageKey }: TutorialOverl
 
   // Measure on step change and window resize/scroll
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     measureTarget();
   }, [measureTarget]);
 

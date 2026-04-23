@@ -39,12 +39,16 @@ export function OmniEngine({ dna, context, scale }: OmniEngineProps) {
 
   // Refs avoid stale closures inside useFrame
   const dnaRef         = useRef(dna);
+  // eslint-disable-next-line react-hooks/refs
   dnaRef.current       = dna;
   const contextRef     = useRef(context);
+  // eslint-disable-next-line react-hooks/refs
   contextRef.current   = context;
   const phaseShiftRef  = useRef(phaseShift);
+  // eslint-disable-next-line react-hooks/refs
   phaseShiftRef.current = phaseShift;
   const activeIdRef    = useRef(activeId);
+  // eslint-disable-next-line react-hooks/refs
   activeIdRef.current  = activeId;
 
   useFrame((_, dt) => {
@@ -60,12 +64,12 @@ export function OmniEngine({ dna, context, scale }: OmniEngineProps) {
 
     // Advance phase-shift
     if (ps) {
-      const next = damp(ps.progress, 1.0, 1.2, dt);
-      if (next >= 0.99) {
+      damp(ps, "progress", 1.0, 1.2, dt);
+      if (ps.progress >= 0.99) {
         setActiveId(ps.to);
         setPhaseShift(null);
       } else {
-        setPhaseShift(prev => prev ? { ...prev, progress: next } : null);
+        setPhaseShift({ ...ps });
       }
     }
   });

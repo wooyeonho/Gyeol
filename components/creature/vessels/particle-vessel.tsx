@@ -418,36 +418,36 @@ function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselP
     // High adaptability → fast morph (λ=3.2); low → slow, glacial transition (λ=0.8).
     const λ = 0.8 + dna.adaptability * 2.4;
 
-    u.uAnalytical.value    = damp(u.uAnalytical.value,    dna.analytical,    λ, dt);
-    u.uIntuitive.value     = damp(u.uIntuitive.value,     dna.intuitive,     λ, dt);
-    u.uVerbal.value        = damp(u.uVerbal.value,        dna.verbal,        λ, dt);
-    u.uSpatial.value       = damp(u.uSpatial.value,       dna.spatial,       λ, dt);
-    u.uWarmth.value        = damp(u.uWarmth.value,        dna.warmth,        λ, dt);
-    u.uIntensity.value     = damp(u.uIntensity.value,     dna.intensity,     λ, dt);
-    u.uStability.value     = damp(u.uStability.value,     dna.stability,     λ, dt);
-    u.uOpenness.value      = damp(u.uOpenness.value,      dna.openness,      λ, dt);
-    u.uAssertiveness.value = damp(u.uAssertiveness.value, dna.assertiveness, λ, dt);
-    u.uEmpathy.value       = damp(u.uEmpathy.value,       dna.empathy,       λ, dt);
-    u.uPlayfulness.value   = damp(u.uPlayfulness.value,   dna.playfulness,   λ, dt);
-    u.uIndependence.value  = damp(u.uIndependence.value,  dna.independence,  λ, dt);
-    u.uCuriosity.value     = damp(u.uCuriosity.value,     dna.curiosity,     λ, dt);
-    u.uPersistence.value   = damp(u.uPersistence.value,   dna.persistence,   λ, dt);
-    u.uAdaptability.value  = damp(u.uAdaptability.value,  dna.adaptability,  λ, dt);
-    u.uCreativity.value    = damp(u.uCreativity.value,    dna.creativity,    λ, dt);
+    damp(u.uAnalytical, "value", dna.analytical,    λ, dt);
+    damp(u.uIntuitive, "value", dna.intuitive,     λ, dt);
+    damp(u.uVerbal, "value", dna.verbal,        λ, dt);
+    damp(u.uSpatial, "value", dna.spatial,       λ, dt);
+    damp(u.uWarmth, "value", dna.warmth,        λ, dt);
+    damp(u.uIntensity, "value", dna.intensity,     λ, dt);
+    damp(u.uStability, "value", dna.stability,     λ, dt);
+    damp(u.uOpenness, "value", dna.openness,      λ, dt);
+    damp(u.uAssertiveness, "value", dna.assertiveness, λ, dt);
+    damp(u.uEmpathy, "value", dna.empathy,       λ, dt);
+    damp(u.uPlayfulness, "value", dna.playfulness,   λ, dt);
+    damp(u.uIndependence, "value", dna.independence,  λ, dt);
+    damp(u.uCuriosity, "value", dna.curiosity,     λ, dt);
+    damp(u.uPersistence, "value", dna.persistence,   λ, dt);
+    damp(u.uAdaptability, "value", dna.adaptability,  λ, dt);
+    damp(u.uCreativity, "value", dna.creativity,    λ, dt);
 
     // New 16 DNA axes
-    u.uBodyShape.value     = damp(u.uBodyShape.value,     dna.bodyShape,     λ, dt);
-    u.uBodyDensity.value   = damp(u.uBodyDensity.value,   dna.bodyDensity,   λ, dt);
-    u.uTransparency.value  = damp(u.uTransparency.value,  dna.transparency,  λ, dt);
-    u.uShininess.value     = damp(u.uShininess.value,     dna.shininess,     λ, dt);
-    u.uGlowReactivity.value = damp(u.uGlowReactivity.value, dna.glowReactivity, λ, dt);
-    u.uElementalAffinity.value = damp(u.uElementalAffinity.value, dna.elementalAffinity, λ, dt);
-    u.uSocialDistance.value = damp(u.uSocialDistance.value, dna.socialDistance, λ, dt);
+    damp(u.uBodyShape, "value", dna.bodyShape,     λ, dt);
+    damp(u.uBodyDensity, "value", dna.bodyDensity,   λ, dt);
+    damp(u.uTransparency, "value", dna.transparency,  λ, dt);
+    damp(u.uShininess, "value", dna.shininess,     λ, dt);
+    damp(u.uGlowReactivity, "value", dna.glowReactivity, λ, dt);
+    damp(u.uElementalAffinity, "value", dna.elementalAffinity, λ, dt);
+    damp(u.uSocialDistance, "value", dna.socialDistance, λ, dt);
 
     // Color damping — follow DNA hue changes smoothly
-    u.uBaseColor.value.r = damp(u.uBaseColor.value.r, baseColor.r, λ, dt);
-    u.uBaseColor.value.g = damp(u.uBaseColor.value.g, baseColor.g, λ, dt);
-    u.uBaseColor.value.b = damp(u.uBaseColor.value.b, baseColor.b, λ, dt);
+    damp(u.uBaseColor.value, "r", baseColor.r, λ, dt);
+    damp(u.uBaseColor.value, "g", baseColor.g, λ, dt);
+    damp(u.uBaseColor.value, "b", baseColor.b, λ, dt);
   });
 
   return (
@@ -463,7 +463,7 @@ function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselP
           ref={materialRef}
           vertexShader={particleVertexShader}
           fragmentShader={particleFragmentShader}
-          uniforms={uniforms}
+          uniforms={uniforms as unknown as Record<string, THREE.IUniform>}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}

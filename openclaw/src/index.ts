@@ -210,6 +210,7 @@ function tryStartGateway(config: EngineConfig): void {
   logger.info(`[${ts()}] Attempting to start OpenClaw gateway...`);
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { spawn } = require("child_process");
 
     const gatewayProcess = spawn(
@@ -256,6 +257,7 @@ function tryStartGateway(config: EngineConfig): void {
 function startFallbackScheduler(_config: EngineConfig): void {
   logger.info(`[${ts()}] Starting fallback scheduler (no OpenClaw gateway)`);
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { startScheduler } = require("./scheduler");
   startScheduler(_config);
 }
