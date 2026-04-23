@@ -41,6 +41,22 @@ export type DNAAppearance = {
   markingsSeed: number;
   /** Overall size modifier */
   scale: number;
+  // ── New 32-axis properties ──
+  /** Surface texture from DNA */
+  furDensity: number;
+  patternComplexity: number;
+  transparency: number;
+  shininess: number;
+  /** Expression */
+  eyeScale: number;
+  blushAmount: number;
+  glowReactivity: number;
+  /** Body morphology */
+  bodyElongation: number;
+  limbExtension: number;
+  headScale: number;
+  /** Elemental */
+  elementalHueShift: number;
 };
 
 /**
@@ -64,11 +80,14 @@ export function deriveDNAAppearance(
     dna.openness * 160 +      // open → cyan
     dna.empathy * 340 +       // empathic → pink
     dna.independence * 120 +  // independent → green
-    dna.intuitive * 260       // intuitive → indigo
-    ) / 8;
+    dna.intuitive * 260 +     // intuitive → indigo
+    dna.elementalAffinity * 200 + // elemental → teal/ethereal shift
+    dna.shininess * 50        // shiny → warm gold shift
+    ) / 10;
 
-  const saturation = 62 + dna.intensity * 22 + dna.playfulness * 10;
-  const lightness = 48 + dna.warmth * 14 + dna.openness * 10 - dna.independence * 6;
+  const saturation = 62 + dna.intensity * 22 + dna.playfulness * 10 + dna.shininess * 8;
+  const lightness = 48 + dna.warmth * 14 + dna.openness * 10 - dna.independence * 6
+    + dna.glowReactivity * 5 - dna.bodyDensity * 4;
 
   const secondaryHueShift = 30 + dna.creativity * 60 - dna.stability * 20;
 
@@ -86,13 +105,16 @@ export function deriveDNAAppearance(
   }
   const eyeHue = ((Math.atan2(sinSum, cosSum) / DEG2RAD) + 360) % 360;
 
-  // Body shape from cognitive/structural DNA
-  const bodyRatio = 0.3 + dna.verbal * 0.3 + dna.spatial * 0.2 - dna.stability * 0.15;
+  // Body shape from cognitive/structural DNA + new physical axes
+  const bodyRatio = 0.3 + dna.verbal * 0.3 + dna.spatial * 0.2 - dna.stability * 0.15
+    + dna.bodyShape * 0.25;
   const bodySymmetry = 0.3 + dna.stability * 0.3 + dna.analytical * 0.25 - dna.creativity * 0.15;
 
-  // Surface from DNA
-  const roughness = 0.1 + (1 - dna.stability) * 0.4 + dna.assertiveness * 0.2;
-  const metalness = dna.analytical * 0.3 + dna.spatial * 0.2;
+  // Surface from DNA + new surface axes
+  const roughness = 0.1 + (1 - dna.stability) * 0.4 + dna.assertiveness * 0.2
+    + dna.furDensity * 0.25;
+  const metalness = dna.analytical * 0.3 + dna.spatial * 0.2
+    + dna.shininess * 0.35;
 
   // Archetype glow modifier — continuous blend instead of discrete switch
   // Uses archetypeBlend when available, falls back to dominant archetype
@@ -108,9 +130,11 @@ export function deriveDNAAppearance(
        species.archetype === "volcanic" ? 1.4 :
        species.archetype === "spectral" ? 1.2 : 1.0);
 
-  const glowIntensity = (0.45 + dna.openness * 0.25 + dna.creativity * 0.2) * archetypeGlowMod
+  const glowIntensity = (0.45 + dna.openness * 0.25 + dna.creativity * 0.2
+    + dna.glowReactivity * 0.3) * archetypeGlowMod
     * (0.85 + evo.dnaExpressionRange * 0.15); // evolution capacity boosts glow
-  const glowPulseSpeed = 0.5 + dna.intensity * 0.8 + dna.playfulness * 0.4;
+  const glowPulseSpeed = 0.5 + dna.intensity * 0.8 + dna.playfulness * 0.4
+    + dna.glowReactivity * 0.3;
 
   // Particles — more generous counts for a lively feel, scaled by evolution
   const particleCount = Math.round((14 + dna.creativity * 22 + dna.openness * 14) * (0.7 + evo.morphComplexity * 0.3));
@@ -130,7 +154,21 @@ export function deriveDNAAppearance(
   }
 
   // Scale from gen-level would be applied externally, base from DNA
-  const scale = 0.85 + dna.assertiveness * 0.15 + dna.persistence * 0.1;
+  const scale = 0.85 + dna.assertiveness * 0.15 + dna.persistence * 0.1
+    + dna.bodyDensity * 0.1;
+
+  // ── New 32-axis derived properties ──
+  const furDensity = dna.furDensity;
+  const patternComplexity = dna.patternComplexity;
+  const transparency = dna.transparency;
+  const shininess = dna.shininess;
+  const eyeScale = 0.6 + dna.eyeSize * 0.8;
+  const blushAmount = dna.blushIntensity;
+  const glowReactivity = dna.glowReactivity;
+  const bodyElongation = dna.bodyShape;
+  const limbExtension = dna.limbLength;
+  const headScale = 0.8 + dna.headRatio * 0.5;
+  const elementalHueShift = dna.elementalAffinity * 40 - 20;
 
   // ── Open ranges: no artificial ceiling on expression ──
   // Only enforce physical minimums (no negative opacity, etc.)
@@ -155,6 +193,18 @@ export function deriveDNAAppearance(
     idleRotation: Math.max(0, idleRotation), // no upper cap
     markingsSeed: Math.abs(markingsSeed),
     scale: Math.max(0.2, scale), // prevent invisible, no upper cap
+    // New 32-axis properties
+    furDensity,
+    patternComplexity,
+    transparency,
+    shininess,
+    eyeScale: Math.max(0.3, eyeScale),
+    blushAmount: Math.max(0, blushAmount),
+    glowReactivity: Math.max(0, glowReactivity),
+    bodyElongation: Math.max(0, bodyElongation),
+    limbExtension: Math.max(0, limbExtension),
+    headScale: Math.max(0.4, headScale),
+    elementalHueShift,
   };
 }
 

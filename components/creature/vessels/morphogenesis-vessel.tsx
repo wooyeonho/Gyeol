@@ -68,6 +68,24 @@ function MorphogenesisVesselInner({ dna, context: _context, opacity, scale }: Ve
     u.uAdaptability.value  = damp(u.uAdaptability.value,  dna.adaptability,  DAMP_LAMBDA, dt);
     u.uCreativity.value    = damp(u.uCreativity.value,    dna.creativity,    DAMP_LAMBDA, dt);
 
+    // New 16 DNA axes (Physical Form, Surface, Expression, Behavior)
+    u.uBodyShape.value     = damp(u.uBodyShape.value,     dna.bodyShape,     DAMP_LAMBDA, dt);
+    u.uLimbLength.value    = damp(u.uLimbLength.value,    dna.limbLength,    DAMP_LAMBDA, dt);
+    u.uHeadRatio.value     = damp(u.uHeadRatio.value,     dna.headRatio,     DAMP_LAMBDA, dt);
+    u.uBodyDensity.value   = damp(u.uBodyDensity.value,   dna.bodyDensity,   DAMP_LAMBDA, dt);
+    u.uFurDensity.value    = damp(u.uFurDensity.value,    dna.furDensity,    DAMP_LAMBDA, dt);
+    u.uPatternComplexity.value = damp(u.uPatternComplexity.value, dna.patternComplexity, DAMP_LAMBDA, dt);
+    u.uTransparency.value  = damp(u.uTransparency.value,  dna.transparency,  DAMP_LAMBDA, dt);
+    u.uShininess.value     = damp(u.uShininess.value,     dna.shininess,     DAMP_LAMBDA, dt);
+    u.uEyeSize.value       = damp(u.uEyeSize.value,       dna.eyeSize,       DAMP_LAMBDA, dt);
+    u.uMouthExpressiveness.value = damp(u.uMouthExpressiveness.value, dna.mouthExpressiveness, DAMP_LAMBDA, dt);
+    u.uBlushIntensity.value = damp(u.uBlushIntensity.value, dna.blushIntensity, DAMP_LAMBDA, dt);
+    u.uGlowReactivity.value = damp(u.uGlowReactivity.value, dna.glowReactivity, DAMP_LAMBDA, dt);
+    u.uLocomotionStyle.value = damp(u.uLocomotionStyle.value, dna.locomotionStyle, DAMP_LAMBDA, dt);
+    u.uVoiceTimbre.value   = damp(u.uVoiceTimbre.value,   dna.voiceTimbre,   DAMP_LAMBDA, dt);
+    u.uSocialDistance.value = damp(u.uSocialDistance.value, dna.socialDistance, DAMP_LAMBDA, dt);
+    u.uElementalAffinity.value = damp(u.uElementalAffinity.value, dna.elementalAffinity, DAMP_LAMBDA, dt);
+
     // Color damping
     u.uBaseColor.value.r = damp(u.uBaseColor.value.r, baseColor.r, DAMP_LAMBDA, dt);
     u.uBaseColor.value.g = damp(u.uBaseColor.value.g, baseColor.g, DAMP_LAMBDA, dt);
@@ -90,7 +108,7 @@ function MorphogenesisVesselInner({ dna, context: _context, opacity, scale }: Ve
         uniforms={uniforms}
         transparent
         depthWrite={false}
-        customProgramCacheKey={() => "morphogenesis-v1"}
+        customProgramCacheKey={() => "morphogenesis-v2-32axis"}
       />
     </mesh>
   );

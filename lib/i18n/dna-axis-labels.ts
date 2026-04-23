@@ -30,6 +30,26 @@ const DNA_AXIS_LABELS: Record<DNAAxis, Record<Locale, string>> = {
   persistence: { ko: "끈기", en: "Persistence", ja: "粘り強さ", zh: "坚持", es: "Persistencia" },
   adaptability: { ko: "적응력", en: "Adaptability", ja: "適応力", zh: "适应力", es: "Adaptabilidad" },
   creativity: { ko: "창의성", en: "Creativity", ja: "創造性", zh: "创造力", es: "Creatividad" },
+  // Physical Form
+  bodyShape: { ko: "체형", en: "Body Shape", ja: "体型", zh: "体型", es: "Forma" },
+  limbLength: { ko: "사지길이", en: "Limb Length", ja: "四肢の長さ", zh: "肢体长度", es: "Extremidades" },
+  headRatio: { ko: "머리비율", en: "Head Ratio", ja: "頭の比率", zh: "头部比例", es: "Proporción" },
+  bodyDensity: { ko: "밀도", en: "Density", ja: "密度", zh: "密度", es: "Densidad" },
+  // Surface
+  furDensity: { ko: "털밀도", en: "Fur Density", ja: "毛の密度", zh: "毛发密度", es: "Pelaje" },
+  patternComplexity: { ko: "무늬", en: "Pattern", ja: "模様", zh: "纹理", es: "Patrón" },
+  transparency: { ko: "투명도", en: "Transparency", ja: "透明度", zh: "透明度", es: "Transparencia" },
+  shininess: { ko: "광택", en: "Shininess", ja: "光沢", zh: "光泽", es: "Brillo" },
+  // Expression
+  eyeSize: { ko: "눈크기", en: "Eye Size", ja: "目の大きさ", zh: "眼睛大小", es: "Ojos" },
+  mouthExpressiveness: { ko: "표정", en: "Expression", ja: "表情", zh: "表情", es: "Expresión" },
+  blushIntensity: { ko: "홍조", en: "Blush", ja: "赤面", zh: "红晕", es: "Rubor" },
+  glowReactivity: { ko: "발광", en: "Glow", ja: "発光", zh: "发光", es: "Brillo" },
+  // Behavior
+  locomotionStyle: { ko: "이동방식", en: "Movement", ja: "移動", zh: "移动", es: "Movimiento" },
+  voiceTimbre: { ko: "음색", en: "Voice", ja: "声色", zh: "音色", es: "Voz" },
+  socialDistance: { ko: "거리감", en: "Distance", ja: "距離感", zh: "距离感", es: "Distancia" },
+  elementalAffinity: { ko: "원소", en: "Element", ja: "属性", zh: "元素", es: "Elemento" },
 };
 
 function isDnaAxis(value: string): value is DNAAxis {

@@ -15,6 +15,7 @@ import {
   type EquippedItems,
 } from "./items";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { DEFAULT_NEW_DNA_AXES } from "@/lib/genome/dna";
 
 // Mock localStorage + window
 const store = new Map<string, string>();
@@ -32,6 +33,7 @@ const baseDNA: CreatureDNA = {
   warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
   assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
   curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+  ...DEFAULT_NEW_DNA_AXES,
 };
 
 describe("getRarityColor", () => {

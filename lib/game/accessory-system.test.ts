@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { DEFAULT_NEW_DNA_AXES } from "@/lib/genome/dna";
 import {
   ACCESSORY_CATALOG,
   ACCESSORY_SLOTS,
@@ -33,6 +34,23 @@ function uniformDNA(value: number): CreatureDNA {
     persistence: value,
     adaptability: value,
     creativity: value,
+    ...DEFAULT_NEW_DNA_AXES,
+    bodyShape: value,
+    limbLength: value,
+    headRatio: value,
+    bodyDensity: value,
+    furDensity: value,
+    patternComplexity: value,
+    transparency: value,
+    shininess: value,
+    eyeSize: value,
+    mouthExpressiveness: value,
+    blushIntensity: value,
+    glowReactivity: value,
+    locomotionStyle: value,
+    voiceTimbre: value,
+    socialDistance: value,
+    elementalAffinity: value,
   };
 }
 

@@ -7,12 +7,14 @@ import {
   getStickerForMood,
 } from "./sticker-system";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { DEFAULT_NEW_DNA_AXES } from "@/lib/genome/dna";
 
 const highDNA: CreatureDNA = {
   analytical: 0.9, intuitive: 0.9, verbal: 0.9, spatial: 0.9,
   warmth: 0.9, intensity: 0.9, stability: 0.9, openness: 0.9,
   assertiveness: 0.9, empathy: 0.9, playfulness: 0.95, independence: 0.9,
   curiosity: 0.9, persistence: 0.9, adaptability: 0.9, creativity: 0.9,
+  ...DEFAULT_NEW_DNA_AXES,
 };
 
 const lowDNA: CreatureDNA = {
@@ -20,6 +22,7 @@ const lowDNA: CreatureDNA = {
   warmth: 0.2, intensity: 0.2, stability: 0.2, openness: 0.2,
   assertiveness: 0.2, empathy: 0.2, playfulness: 0.2, independence: 0.2,
   curiosity: 0.2, persistence: 0.2, adaptability: 0.2, creativity: 0.2,
+  ...DEFAULT_NEW_DNA_AXES,
 };
 
 const midDNA: CreatureDNA = {
@@ -27,6 +30,7 @@ const midDNA: CreatureDNA = {
   warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
   assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
   curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+  ...DEFAULT_NEW_DNA_AXES,
 };
 
 describe("sticker-system", () => {

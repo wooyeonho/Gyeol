@@ -449,7 +449,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         : dna.analytical > 0.6
           ? 0.6 + (0.8 - dna.analytical) * 0.4
           : 1.0;
-    const sizeMultiplier = 0.8 + dna.warmth * 0.25 + dna.openness * 0.15;
+    const sizeMultiplier = 0.8 + dna.warmth * 0.25 + dna.openness * 0.15
+      + dna.eyeSize * 0.3; // New DNA axis: larger eyes for expressive creatures
     return { count, widthRatio, sizeMultiplier, thirdEyeOpacity };
   }, [dna, conMorph.eyeCount]);
 
@@ -471,8 +472,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       hasEarBumps: conMorph.earBumpSize > 0.15,
       hasSpikes: conMorph.spikeCount > 1,
       hornCurve: dna.creativity > 0.5 ? 0.3 : 0,
-      tailLength: 0.15 + dna.playfulness * 0.2,
-      antennaLength: 0.12 + dna.curiosity * 0.18,
+      tailLength: 0.15 + dna.playfulness * 0.2 + dna.limbLength * 0.1,
+      antennaLength: 0.12 + dna.curiosity * 0.18 + dna.limbLength * 0.08,
       spikeCount: Math.min(12, Math.round(Math.max(0, conMorph.spikeCount))),
     }),
     [dna, conMorph],

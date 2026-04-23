@@ -15,7 +15,7 @@
  * small nudges based on detected conversation patterns.
  */
 
-/** 16-dimensional DNA vector, each value 0..1 */
+/** 32-dimensional DNA vector, each value 0..1 */
 export type CreatureDNA = {
   // Cognitive
   analytical: number;
@@ -37,13 +37,64 @@ export type CreatureDNA = {
   persistence: number;
   adaptability: number;
   creativity: number;
+  // ── Physical Form (GPU-driven morphology) ──
+  bodyShape: number;        // 0=spherical → 1=elongated
+  limbLength: number;       // 0=stubby → 1=extended
+  headRatio: number;        // 0=small head → 1=large head
+  bodyDensity: number;      // 0=hollow/airy → 1=solid/dense
+  // ── Surface (GPU fragment shader) ──
+  furDensity: number;       // 0=bare → 1=thick fur/feathers
+  patternComplexity: number;// 0=plain → 1=intricate patterns
+  transparency: number;     // 0=opaque → 1=translucent
+  shininess: number;        // 0=matte → 1=metallic/glossy
+  // ── Expression (eye/face GPU params) ──
+  eyeSize: number;          // 0=tiny → 1=huge expressive eyes
+  mouthExpressiveness: number; // 0=stoic → 1=very expressive
+  blushIntensity: number;   // 0=none → 1=strong emotional flush
+  glowReactivity: number;   // 0=static → 1=highly reactive glow
+  // ── Behavior (animation GPU params) ──
+  locomotionStyle: number;  // 0=float/glide → 1=bounce/hop
+  voiceTimbre: number;      // 0=deep/rumble → 1=high/chirp
+  socialDistance: number;   // 0=clingy/close → 1=aloof/far
+  elementalAffinity: number;// 0=earth/solid → 1=air/ethereal
 };
 
+/** Default values for the new 16 physical/behavioral DNA axes (0.5 = neutral midpoint) */
+export const DEFAULT_NEW_DNA_AXES = {
+  bodyShape: 0.5,
+  limbLength: 0.5,
+  headRatio: 0.5,
+  bodyDensity: 0.5,
+  furDensity: 0.5,
+  patternComplexity: 0.5,
+  transparency: 0.5,
+  shininess: 0.5,
+  eyeSize: 0.5,
+  mouthExpressiveness: 0.5,
+  blushIntensity: 0.5,
+  glowReactivity: 0.5,
+  locomotionStyle: 0.5,
+  voiceTimbre: 0.5,
+  socialDistance: 0.5,
+  elementalAffinity: 0.5,
+} as const satisfies Pick<CreatureDNA, 
+  'bodyShape' | 'limbLength' | 'headRatio' | 'bodyDensity' |
+  'furDensity' | 'patternComplexity' | 'transparency' | 'shininess' |
+  'eyeSize' | 'mouthExpressiveness' | 'blushIntensity' | 'glowReactivity' |
+  'locomotionStyle' | 'voiceTimbre' | 'socialDistance' | 'elementalAffinity'
+>;
+
 export const DNA_AXES = [
+  // Original 16 (Cognitive, Emotional, Social, Meta)
   "analytical", "intuitive", "verbal", "spatial",
   "warmth", "intensity", "stability", "openness",
   "assertiveness", "empathy", "playfulness", "independence",
   "curiosity", "persistence", "adaptability", "creativity",
+  // New 16 (Physical Form, Surface, Expression, Behavior)
+  "bodyShape", "limbLength", "headRatio", "bodyDensity",
+  "furDensity", "patternComplexity", "transparency", "shininess",
+  "eyeSize", "mouthExpressiveness", "blushIntensity", "glowReactivity",
+  "locomotionStyle", "voiceTimbre", "socialDistance", "elementalAffinity",
 ] as const;
 
 export type DNAAxis = (typeof DNA_AXES)[number];
@@ -137,6 +188,47 @@ const CONVERSATION_SIGNALS: ConversationSignal[] = [
   {
     patterns: [/그래|okay|알겠|got it|바꿔|change|다르게|differently/i],
     nudges: { adaptability: 0.015, openness: 0.008 },
+  },
+  // ── New 16 axes: Physical/Surface/Expression/Behavior ──
+  // Physical descriptions
+  {
+    patterns: [/몸|body|크기|size|키|tall|작|small|뚱|fat|날씬|slim/i],
+    nudges: { bodyShape: 0.012, bodyDensity: 0.008 },
+  },
+  // Texture/surface
+  {
+    patterns: [/털|fur|깃털|feather|부드러|soft|거친|rough|반짝|shiny|빛나/i],
+    nudges: { furDensity: 0.015, shininess: 0.01 },
+  },
+  // Pattern/design
+  {
+    patterns: [/무늬|pattern|줄무늬|stripe|점|dot|별|star|복잡|complex/i],
+    nudges: { patternComplexity: 0.018, creativity: 0.005 },
+  },
+  // Eye/face
+  {
+    patterns: [/눈|eye|표정|expression|얼굴|face|커|big|귀여|cute/i],
+    nudges: { eyeSize: 0.015, mouthExpressiveness: 0.008 },
+  },
+  // Blushing/emotional reactions
+  {
+    patterns: [/부끄|shy|blush|얼굴빨개|embarrass|수줍/i],
+    nudges: { blushIntensity: 0.02, warmth: 0.005 },
+  },
+  // Movement style
+  {
+    patterns: [/뛰|jump|bounce|hop|걷|walk|날|fly|헤엄|swim|달려/i],
+    nudges: { locomotionStyle: 0.015, limbLength: 0.008 },
+  },
+  // Voice/sound
+  {
+    patterns: [/소리|sound|목소리|voice|노래|sing|울음|cry|웃음|laugh/i],
+    nudges: { voiceTimbre: 0.012, mouthExpressiveness: 0.006 },
+  },
+  // Element/nature
+  {
+    patterns: [/불|fire|물|water|바람|wind|흙|earth|빛|light|어둠|dark/i],
+    nudges: { elementalAffinity: 0.018, glowReactivity: 0.008 },
   },
 ];
 
