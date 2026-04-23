@@ -258,6 +258,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
   // Smoothly interpolated activity parameters — prevents discrete jumps between awake/drowsy/sleeping
   const activityDimRef = useRef(1);
   const activityMultRef = useRef(1);
+  // Post-touch "purring" — tracks last touch time for tremor amplitude boost
+  const lastTouchTimeRef = useRef(0);
+  const prevExcitePulseRef = useRef(0);
 
   // Expression system — smooth lerp between mood-driven facial expressions
   const expressionRef = useRef<ExpressionState>(getExpression(mood));
@@ -785,6 +788,12 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const t = state.clock.elapsedTime;
     const dt = delta; // R3F provides accurate per-frame delta as 2nd arg — never call getDelta() here
 
+    // Detect touch via excitePulse spike → record time for post-touch purring tremor
+    if (excitePulse > prevExcitePulseRef.current + 0.05) {
+      lastTouchTimeRef.current = t;
+    }
+    prevExcitePulseRef.current = excitePulse;
+
     // Smoothly damp activity parameters toward target — frame-rate independent (λ=2.5 ≈ 0.04/frame@60fps)
     activityDimRef.current = damp(activityDimRef.current, activityDimTarget, 2.5, dt);
     activityMultRef.current = damp(activityMultRef.current, activityMultTarget, 2.5, dt);
@@ -867,7 +876,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     }
 
     const energyMult = 1 + energy * 0.5;
-    const breathSin = Math.sin(breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult);
+    // Multi-harmonic biological breathing — primary + undertone + ultra-slow drift
+    const breathT = breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult;
+    const breathSin = Math.sin(breathT)
+      + Math.sin(breathT * 1.47 + 0.8) * 0.22   // secondary undertone — avoids mechanical repetition
+      + Math.sin(breathT * 0.31) * 0.14;          // ultra-slow drift — creature never fully still
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
 
     // ─── PHYSICS LOGIC ────────────────────────────────────────────────────
@@ -890,8 +903,11 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // Micro-movement layer — subtle weight-shift + organic tremor for alive feel
     // Weight shift: slow lateral sway (0.13Hz) ±2px, tremor: high-freq jitter ±0.5px
     const weightShift = Math.sin(t * 0.8) * 0.02 + Math.sin(t * 1.3) * 0.008;
-    const microTremorX = (Math.sin(t * 7.1 + 0.3) * 0.003 + Math.sin(t * 13.7) * 0.001) * activityMult;
-    const microTremorY = (Math.sin(t * 9.3 + 1.7) * 0.002 + Math.cos(t * 11.1) * 0.001) * activityMult;
+    // Post-touch "purring" tremor — amplitude increases 3× for 2s after recent touches
+    const touchRecency = Math.max(0, 1 - (t - lastTouchTimeRef.current) / 2);
+    const purringMult = 1 + touchRecency * 2; // 1× normal → 3× right after touch
+    const microTremorX = (Math.sin(t * 7.1 + 0.3) * 0.003 + Math.sin(t * 13.7) * 0.001) * activityMult * purringMult;
+    const microTremorY = (Math.sin(t * 9.3 + 1.7) * 0.002 + Math.cos(t * 11.1) * 0.001) * activityMult * purringMult;
     const targetX = forceState ? forceState.position.x * 1.5 : weightShift + microTremorX;
     const targetY = forceState ? forceState.position.y * 1.2 + idleBob : idleBob + microTremorY;
     damp3(groupRef.current.position, [targetX, targetY, groupRef.current.position.z], springLambda, dt);
