@@ -278,7 +278,8 @@ export default function Home() {
         if (messages[i] && messages[i].role === "user") {
           creature.boostConversationEnergy(0.25);
           sessionMsgCountRef.current += 1;
-          // Mystery box drop check
+          // Mystery box drop check — defer setState to avoid
+          // synchronous setState-in-effect lint error
           if (shouldDropMysteryBox({
             messageCount: agentState?.total_messages ?? 0,
             streakDays: agentState?.streak_days ?? 0,
@@ -286,7 +287,7 @@ export default function Home() {
           })) {
             const box = generateMysteryBox(undefined, agentState?.streak_days ?? 0);
             addPendingBox(box);
-            setActiveMysteryBox(box);
+            queueMicrotask(() => setActiveMysteryBox(box));
           }
           break;
         }

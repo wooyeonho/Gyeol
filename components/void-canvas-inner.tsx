@@ -23,6 +23,7 @@ import {
   applyPhysicsResponse,
   type TouchPhysicsState,
 } from "@/lib/creature/touch-physics";
+import { haptic } from "@/lib/micro-interactions";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { SCENE_CONFIG } from "@/lib/visual-config";
@@ -554,6 +555,15 @@ function Scene({
     }
   });
 
+  // Continuous haptic — gentle purring vibration while touching creature (stroke/hold)
+  const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearHapticInterval = useCallback(() => {
+    if (hapticIntervalRef.current) {
+      clearInterval(hapticIntervalRef.current);
+      hapticIntervalRef.current = null;
+    }
+  }, []);
+
   const handlePointerDown = useCallback((e: { point?: { x: number; y: number; z: number }; clientX?: number; clientY?: number }) => {
     pointerDownTimeRef.current = Date.now();
     const px = e.point?.x ?? 0;
@@ -564,10 +574,14 @@ function Scene({
     pointerMoveDistRef.current = 0;
     tapDecay.current = 1;
     setTapBounce(1);
+    // Start continuous gentle haptic — creature "purrs" while being held/stroked
+    clearHapticInterval();
+    hapticIntervalRef.current = setInterval(() => haptic("care"), 180);
     onTap?.();
-  }, [onTap]);
+  }, [onTap, clearHapticInterval]);
 
   const handlePointerUp = useCallback(() => {
+    clearHapticInterval(); // Stop continuous purring haptic
     const now = Date.now();
     const duration = now - pointerDownTimeRef.current;
     const dist = pointerMoveDistRef.current;
@@ -596,11 +610,14 @@ function Scene({
       setHeartBurst(now);
     }
 
+    // Release haptic — stronger feedback based on gesture type
+    haptic(response.hapticPattern);
+
     // Report affinity delta + DNA-driven reaction profile to parent
     const reaction = getPetReactionProfile(dna ?? undefined);
     onCreatureTouch?.(response.affinityDelta, reaction);
     pointerStartRef.current = null;
-  }, [onCreatureTouch, dna]);
+  }, [onCreatureTouch, dna, clearHapticInterval]);
 
   const handlePointerMove = useCallback((e: { point?: { x: number; y: number; z: number } }) => {
     if (!pointerStartRef.current) return;
@@ -641,10 +658,14 @@ function Scene({
     return `hsl(${h2}, ${s}%, ${l}%)`;
   }, [dna, species, genLevel]);
 
-  // Organic breathing: sin wave + heartbeat double-bump
-  const breathSin = Math.sin(breathPhase * Math.PI * 2);
+  // Organic breathing: multi-harmonic biological pulse for alive feel
+  // Primary breath (0.25Hz) + secondary undertone (0.37Hz) + heartbeat double-bump
+  const breathT = breathPhase * Math.PI * 2;
+  const breathSin = Math.sin(breathT) * 0.035
+    + Math.sin(breathT * 1.47 + 0.8) * 0.008  // secondary undertone — avoids mechanical repetition
+    + Math.sin(breathT * 0.31) * 0.005;         // ultra-slow drift — creature never fully still
   const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
-  const breathScale = 1 + breathSin * 0.04 + heartbeat + excitePulse * 0.12;
+  const breathScale = 1 + breathSin + heartbeat + excitePulse * 0.12;
 
   // Activity-based dimming
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;

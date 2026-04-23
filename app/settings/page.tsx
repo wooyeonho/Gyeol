@@ -748,6 +748,22 @@ export default function SettingsPage() {
     setDraftMission("");
   }
 
+  // Streak heatmap data — derive from total_messages as approximation
+  // In production, this would come from a server-side activity log
+  // NOTE: Must be before early return to satisfy rules-of-hooks
+  const streakDates = useMemo(() => {
+    const total = state?.total_messages ?? 0;
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < Math.min(total, 365); i++) {
+      const daysAgo = Math.floor(Math.random() * 365);
+      const d = new Date(today);
+      d.setDate(d.getDate() - daysAgo);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+    return dates;
+  }, [state?.total_messages]);
+
   if (loading) {
     return (
       <div className="theme-page min-h-screen flex items-center justify-center">
@@ -766,21 +782,6 @@ export default function SettingsPage() {
   const planLabel = formatPlanTierLabel(billing?.plan.tier, locale);
   const planStatusLabel = formatSubscriptionStatus(billing?.subscription.status, locale);
   const nextRenewalLabel = formatLocaleDate(billing?.subscription.current_period_end, locale);
-  // Streak heatmap data — derive from total_messages as approximation
-  // In production, this would come from a server-side activity log
-  const streakDates = useMemo(() => {
-    const total = state?.total_messages ?? 0;
-    const dates: string[] = [];
-    const today = new Date();
-    // Simulate activity distribution across last 365 days
-    for (let i = 0; i < Math.min(total, 365); i++) {
-      const daysAgo = Math.floor(Math.random() * 365);
-      const d = new Date(today);
-      d.setDate(d.getDate() - daysAgo);
-      dates.push(d.toISOString().slice(0, 10));
-    }
-    return dates;
-  }, [state?.total_messages]);
   const accentColor = "#22d3ee"; // cyan-400
 
   const summaryCards = [
