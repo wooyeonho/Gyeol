@@ -793,33 +793,33 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const dt = delta; // R3F provides accurate per-frame delta as 2nd arg — never call getDelta() here
 
     // Smoothly damp activity parameters toward target — frame-rate independent (λ=2.5 ≈ 0.04/frame@60fps)
-    activityDimRef.current = damp(activityDimRef.current, activityDimTarget, 2.5, dt);
-    activityMultRef.current = damp(activityMultRef.current, activityMultTarget, 2.5, dt);
+    damp(activityDimRef, "current", activityDimTarget, 2.5, dt);
+    damp(activityMultRef, "current", activityMultTarget, 2.5, dt);
     const activityMult = activityMultRef.current;
     const smoothActivityDim = activityDimRef.current;
 
     // Damp idle behavior params toward targets — λ=1.8 ≈ 0.03/frame@60fps
     if (idleBehaviorParams) {
-      idleRotationSpeedRef.current  = damp(idleRotationSpeedRef.current,  idleBehaviorParams.rotationSpeed,               1.8, dt);
-      idleBodyTiltRef.current       = damp(idleBodyTiltRef.current,       idleBehaviorParams.bodyTilt,                    1.8, dt);
-      idleScaleOscRef.current       = damp(idleScaleOscRef.current,       idleBehaviorParams.scaleOscillation,            1.8, dt);
-      idleEyeOpennessRef.current    = damp(idleEyeOpennessRef.current,    idleBehaviorParams.eyeOpenness,                 1.8, dt);
-      idleEmissiveMultRef.current   = damp(idleEmissiveMultRef.current,   idleBehaviorParams.emissiveMult,                1.8, dt);
-      idleAppendageSpeedRef.current = damp(idleAppendageSpeedRef.current, idleBehaviorParams.appendageSpeed,              1.8, dt);
-      idleBobAmplitudeRef.current   = damp(idleBobAmplitudeRef.current,   idleBehaviorParams.bobAmplitude,                1.8, dt);
-      idleDreamParticlesRef.current = damp(idleDreamParticlesRef.current, idleBehaviorParams.showDreamParticles ? 1 : 0,  1.8, dt);
+      damp(idleRotationSpeedRef, "current", idleBehaviorParams.rotationSpeed,               1.8, dt);
+      damp(idleBodyTiltRef, "current", idleBehaviorParams.bodyTilt,                    1.8, dt);
+      damp(idleScaleOscRef, "current", idleBehaviorParams.scaleOscillation,            1.8, dt);
+      damp(idleEyeOpennessRef, "current", idleBehaviorParams.eyeOpenness,                 1.8, dt);
+      damp(idleEmissiveMultRef, "current", idleBehaviorParams.emissiveMult,                1.8, dt);
+      damp(idleAppendageSpeedRef, "current", idleBehaviorParams.appendageSpeed,              1.8, dt);
+      damp(idleBobAmplitudeRef, "current", idleBehaviorParams.bobAmplitude,                1.8, dt);
+      damp(idleDreamParticlesRef, "current", idleBehaviorParams.showDreamParticles ? 1 : 0,  1.8, dt);
     }
 
     // Grooming animation — 2Hz head-scratch when behavior = "grooming"
     const groomingTarget = idleBehavior === "grooming" ? 1 : 0;
-    groomingIntensityRef.current = damp(groomingIntensityRef.current, groomingTarget, 1.8, dt);
+    damp(groomingIntensityRef, "current", groomingTarget, 1.8, dt);
     if (groomingIntensityRef.current > 0.01) {
       groomingPhaseRef.current += dt * 2.0 * Math.PI * 2; // 2 Hz
     }
 
     // Vocal mouth sync — λ=7.7 ≈ 0.12/frame@60fps
     const isVocalizing = performance.now() < vocalizingUntilRef.current;
-    vocalMouthRef.current = damp(vocalMouthRef.current, isVocalizing ? 1 : 0, 7.7, dt);
+    damp(vocalMouthRef, "current", isVocalizing ? 1 : 0, 7.7, dt);
 
     // Wire: expression-system → smooth facial expression lerp each frame
     // Expression lerp — convert alpha to frame-independent: α=1-exp(-λ·dt), λ=2.5≈0.04/frame@60fps
@@ -828,9 +828,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const expr = expressionRef.current;
 
     const leanTarget = isListening ? 0.12 : 0;
-    listeningLeanRef.current = damp(listeningLeanRef.current, leanTarget, 3.7, dt); // λ=3.7≈0.06/frame@60fps
+    damp(listeningLeanRef, "current", leanTarget, 3.7, dt); // λ=3.7≈0.06/frame@60fps
     const eyeScaleTarget = isListening ? 1.25 : 1;
-    eyeScaleRef.current = damp(eyeScaleRef.current, eyeScaleTarget, 5.0, dt); // λ=5.0≈0.08/frame@60fps
+    damp(eyeScaleRef, "current", eyeScaleTarget, 5.0, dt); // λ=5.0≈0.08/frame@60fps
 
     if (blinkTimerRef.current < 0) blinkTimerRef.current = 2 + Math.random() * 3;
     if (lookTimerRef.current < 0) lookTimerRef.current = 4 + Math.random() * 6;
@@ -860,8 +860,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       lookTargetRef.current = { x: (Math.random() - 0.5) * 1.2, y: (Math.random() - 0.5) * 0.5 };
     }
     if (lookActiveRef.current) {
-      lookCurrentRef.current.x = damp(lookCurrentRef.current.x, lookTargetRef.current.x, 2.5, dt);
-      lookCurrentRef.current.y = damp(lookCurrentRef.current.y, lookTargetRef.current.y, 2.5, dt);
+      damp(lookCurrentRef.current, "x", lookTargetRef.current.x, 2.5, dt);
+      damp(lookCurrentRef.current, "y", lookTargetRef.current.y, 2.5, dt);
       lookReturnTimerRef.current -= dt;
       if (lookReturnTimerRef.current <= 0) {
         lookActiveRef.current = false;
@@ -869,8 +869,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         lookTargetRef.current = { x: 0, y: 0 };
       }
     } else {
-      lookCurrentRef.current.x = damp(lookCurrentRef.current.x, 0, 3.7, dt);
-      lookCurrentRef.current.y = damp(lookCurrentRef.current.y, 0, 3.7, dt);
+      damp(lookCurrentRef.current, "x", 0, 3.7, dt);
+      damp(lookCurrentRef.current, "y", 0, 3.7, dt);
     }
 
     const energyMult = 1 + energy * 0.5;
@@ -938,9 +938,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     if (meshRef.current) {
       const squashTarget = moodMod.bodySquash * (excitePulse > 0.1 ? 1 - excitePulse * 0.15 : 1);
       const stretchTarget = moodMod.bodyStretch * (excitePulse > 0.1 ? 1 + excitePulse * 0.12 : 1);
-      meshRef.current.scale.x = damp(meshRef.current.scale.x, squashTarget, 3.7, dt);
-      meshRef.current.scale.z = damp(meshRef.current.scale.z, squashTarget, 3.7, dt);
-      meshRef.current.scale.y = damp(meshRef.current.scale.y, stretchTarget, 3.7, dt);
+      damp(meshRef.current.scale, "x", squashTarget, 3.7, dt);
+      damp(meshRef.current.scale, "z", squashTarget, 3.7, dt);
+      damp(meshRef.current.scale, "y", stretchTarget, 3.7, dt);
     }
 
     // ── GPU wave shader uniform update (replaces CPU vertex loop)
@@ -966,8 +966,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     // pn/rawPn computed above in quaternion section — reused here for eye tracking
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
-        eyeRef.current.position.x = damp(eyeRef.current.position.x, pn.x * eyeSize * 0.3, 5.0, dt);
-        eyeRef.current.position.y = damp(eyeRef.current.position.y, -pn.y * eyeSize * 0.3, 5.0, dt);
+        damp(eyeRef.current.position, "x", pn.x * eyeSize * 0.3, 5.0, dt);
+        damp(eyeRef.current.position, "y", -pn.y * eyeSize * 0.3, 5.0, dt);
       }
     }
 
@@ -982,11 +982,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     for (const eyeRef of [eyeLRef, eyeRRef]) {
       if (eyeRef.current) {
         const irisScale = pupilDilation;
-        eyeRef.current.scale.set(
-          damp(eyeRef.current.scale.x, irisScale, 5.0, dt),
-          damp(eyeRef.current.scale.y, irisScale, 5.0, dt),
-          damp(eyeRef.current.scale.z, irisScale, 5.0, dt),
-        );
+        damp3(eyeRef.current.scale, [irisScale, irisScale, irisScale], 5.0, dt);
       }
     }
 
@@ -994,7 +990,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const eyelidScale = Math.max(0.01, expr.eyelidDroop);
     for (const lidRef of [eyelidLRef, eyelidRRef, eyelidCyclopsRef]) {
       if (lidRef.current) {
-        lidRef.current.scale.y = damp(lidRef.current.scale.y, eyelidScale, 3.7, dt);
+        damp(lidRef.current.scale, "y", eyelidScale, 3.7, dt);
       }
     }
 
@@ -1056,7 +1052,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       tailRef.current.rotation.y = Math.cos(tailPhase * 0.7) * tailAmp * 0.5;
       // Sad moods droop the tail downward
       const droopTarget = (moodLower === "sad" || moodLower === "melancholy" || moodLower === "lonely") ? -0.3 : 0;
-      tailRef.current.rotation.z = damp(tailRef.current.rotation.z, droopTarget, 2.5, dt);
+      damp(tailRef.current.rotation, "z", droopTarget, 2.5, dt);
       tailRef.current.scale.y = 1 + breathSin * 0.03;
     }
     // Apply mood-driven speed to side appendages (wings/fins)
@@ -1087,15 +1083,15 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       // Expression mouthOpen scales Y (open mouth); vocalization adds extra opening
       const exprMouthOpen = expr.mouthOpen;
       const mouthOpenTarget = 0.3 + (mouthConfig.open + exprMouthOpen) * 0.5 * 0.7 + vocalMouthRef.current * 0.4;
-      mouthRef.current.scale.x = damp(mouthRef.current.scale.x, mouthConfig.width, 5.0, dt);
-      mouthRef.current.scale.y = damp(mouthRef.current.scale.y, mouthOpenTarget, 5.0, dt);
+      damp(mouthRef.current.scale, "x", mouthConfig.width, 5.0, dt);
+      damp(mouthRef.current.scale, "y", mouthOpenTarget, 5.0, dt);
       // Expression mouthCurve: positive = smile (rotate up), negative = frown (rotate down)
       const exprCurve = expr.mouthCurve;
       const combinedCurve = (mouthConfig.curve + exprCurve) * 0.5;
-      mouthRef.current.rotation.z = damp(mouthRef.current.rotation.z, combinedCurve * 0.3, 3.7, dt);
+      damp(mouthRef.current.rotation, "z", combinedCurve * 0.3, 3.7, dt);
       // Flip mouth arc for frown vs smile: rotate X to arc downward when negative
       const arcFlip = combinedCurve < 0 ? Math.PI : 0;
-      mouthRef.current.rotation.x = damp(mouthRef.current.rotation.x, arcFlip, 3.7, dt);
+      damp(mouthRef.current.rotation, "x", arcFlip, 3.7, dt);
     }
 
     // Dream particles — orbit around creature when dreaming/daydreaming
@@ -1119,7 +1115,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const isTearMood = tearMoods.includes(moodLower);
     const emotionIntensity = expr.intensity;
     const tearTarget = (isTearMood && emotionIntensity > 0.6) ? 1 : 0;
-    tearActiveRef.current = damp(tearActiveRef.current, tearTarget, 2.5, dt);
+    damp(tearActiveRef, "current", tearTarget, 2.5, dt);
     const tearVisibility = tearActiveRef.current;
 
     const eyeHeight = 0.2 * (1 + morphWeights.bodyStretch * 0.4 + morphWeights.crownGrowth * 0.3);
@@ -1191,8 +1187,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
         // Phase 1: Mouth opens wide, food approaches
         if (mouthRef.current) {
           const openTarget = 0.8 + eatElapsed * 0.5; // ramp to wide open
-          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, openTarget, 10.0, dt);
-          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.4, 5.0, dt);
+          damp(mouthRef.current.scale, "y", openTarget, 10.0, dt);
+          damp(mouthRef.current.scale, "x", 1.4, 5.0, dt);
         }
         // Food particles approach mouth from spawn positions
         const approachT = eatElapsed / 0.4; // 0..1 over the approach phase
@@ -1213,8 +1209,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
           const chewTime = eatElapsed - 0.4; // 0..1.2 seconds of chewing
           const chompPhase = Math.sin(chewTime * Math.PI * 2 * 3); // ~3 chew cycles
           const chompOpen = 0.4 + Math.abs(chompPhase) * 0.5; // 0.4-0.9 range
-          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, chompOpen, 10.0, dt);
-          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.3, 5.0, dt);
+          damp(mouthRef.current.scale, "y", chompOpen, 10.0, dt);
+          damp(mouthRef.current.scale, "x", 1.3, 5.0, dt);
         }
         // Food particles hidden during chewing (already in mouth)
         for (let fi = 0; fi < 3; fi++) {
@@ -1224,8 +1220,8 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
       } else {
         // Phase 3: Satisfied expression — mouth closes into smile, eyes squint, growth pulse
         if (mouthRef.current) {
-          mouthRef.current.scale.y = damp(mouthRef.current.scale.y, 0.15, 5.0, dt);
-          mouthRef.current.scale.x = damp(mouthRef.current.scale.x, 1.0, 3.7, dt);
+          damp(mouthRef.current.scale, "y", 0.15, 5.0, dt);
+          damp(mouthRef.current.scale, "x", 1.0, 3.7, dt);
         }
         // Trigger satisfied pulse — decays in the block below
         eatingSatisfiedRef.current = Math.max(eatingSatisfiedRef.current, 1.0);

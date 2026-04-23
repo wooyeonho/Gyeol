@@ -61,6 +61,10 @@ function makeDNA(base = 0.5, overrides: Partial<CreatureDNA> = {}): CreatureDNA 
     warmth: base, intensity: base, stability: base, openness: base,
     assertiveness: base, empathy: base, playfulness: base, independence: base,
     curiosity: base, persistence: base, adaptability: base, creativity: base,
+    bodyShape: base, limbLength: base, headRatio: base, bodyDensity: base,
+    furDensity: base, patternComplexity: base, transparency: base, shininess: base,
+    eyeSize: base, mouthExpressiveness: base, blushIntensity: base, glowReactivity: base,
+    locomotionStyle: base, voiceTimbre: base, socialDistance: base, elementalAffinity: base,
     ...overrides,
   };
 }

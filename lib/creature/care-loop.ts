@@ -108,6 +108,9 @@ type CreatureDNAPartial = {
   curiosity?: number;
   stability?: number;
   empathy?: number;
+  playfulness?: number;
+  independence?: number;
+  intensity?: number;
 };
 
 function getCareModifiers(dna?: CreatureDNAPartial) {

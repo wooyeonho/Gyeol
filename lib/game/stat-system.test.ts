@@ -14,6 +14,10 @@ const makeDNA = (overrides: Partial<CreatureDNA>): CreatureDNA => ({
   warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
   assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
   curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+    bodyShape: 0.5, limbLength: 0.5, headRatio: 0.5, bodyDensity: 0.5,
+    furDensity: 0.5, patternComplexity: 0.5, transparency: 0.5, shininess: 0.5,
+    eyeSize: 0.5, mouthExpressiveness: 0.5, blushIntensity: 0.5, glowReactivity: 0.5,
+    locomotionStyle: 0.5, voiceTimbre: 0.5, socialDistance: 0.5, elementalAffinity: 0.5,
   ...overrides,
 });
 

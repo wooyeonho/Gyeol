@@ -64,12 +64,12 @@ export function OmniEngine({ dna, context, scale }: OmniEngineProps) {
 
     // Advance phase-shift
     if (ps) {
-      const next = damp(ps.progress, 1.0, 1.2, dt);
-      if (next >= 0.99) {
+      damp(ps, "progress", 1.0, 1.2, dt);
+      if (ps.progress >= 0.99) {
         setActiveId(ps.to);
         setPhaseShift(null);
       } else {
-        setPhaseShift(prev => prev ? { ...prev, progress: next } : null);
+        setPhaseShift({ ...ps });
       }
     }
   });

@@ -51,45 +51,45 @@ function MorphogenesisVesselInner({ dna, context: _context, opacity, scale }: Ve
     u.uTime.value = clock.getElapsedTime();
 
     // Damp all 16 DNA axes toward current values — continuous morph, no snapshots
-    u.uAnalytical.value    = damp(u.uAnalytical.value,    dna.analytical,    DAMP_LAMBDA, dt);
-    u.uIntuitive.value     = damp(u.uIntuitive.value,     dna.intuitive,     DAMP_LAMBDA, dt);
-    u.uVerbal.value        = damp(u.uVerbal.value,        dna.verbal,        DAMP_LAMBDA, dt);
-    u.uSpatial.value       = damp(u.uSpatial.value,       dna.spatial,       DAMP_LAMBDA, dt);
-    u.uWarmth.value        = damp(u.uWarmth.value,        dna.warmth,        DAMP_LAMBDA, dt);
-    u.uIntensity.value     = damp(u.uIntensity.value,     dna.intensity,     DAMP_LAMBDA, dt);
-    u.uStability.value     = damp(u.uStability.value,     dna.stability,     DAMP_LAMBDA, dt);
-    u.uOpenness.value      = damp(u.uOpenness.value,      dna.openness,      DAMP_LAMBDA, dt);
-    u.uAssertiveness.value = damp(u.uAssertiveness.value, dna.assertiveness, DAMP_LAMBDA, dt);
-    u.uEmpathy.value       = damp(u.uEmpathy.value,       dna.empathy,       DAMP_LAMBDA, dt);
-    u.uPlayfulness.value   = damp(u.uPlayfulness.value,   dna.playfulness,   DAMP_LAMBDA, dt);
-    u.uIndependence.value  = damp(u.uIndependence.value,  dna.independence,  DAMP_LAMBDA, dt);
-    u.uCuriosity.value     = damp(u.uCuriosity.value,     dna.curiosity,     DAMP_LAMBDA, dt);
-    u.uPersistence.value   = damp(u.uPersistence.value,   dna.persistence,   DAMP_LAMBDA, dt);
-    u.uAdaptability.value  = damp(u.uAdaptability.value,  dna.adaptability,  DAMP_LAMBDA, dt);
-    u.uCreativity.value    = damp(u.uCreativity.value,    dna.creativity,    DAMP_LAMBDA, dt);
+    damp(u.uAnalytical, "value", dna.analytical,    DAMP_LAMBDA, dt);
+    damp(u.uIntuitive, "value", dna.intuitive,     DAMP_LAMBDA, dt);
+    damp(u.uVerbal, "value", dna.verbal,        DAMP_LAMBDA, dt);
+    damp(u.uSpatial, "value", dna.spatial,       DAMP_LAMBDA, dt);
+    damp(u.uWarmth, "value", dna.warmth,        DAMP_LAMBDA, dt);
+    damp(u.uIntensity, "value", dna.intensity,     DAMP_LAMBDA, dt);
+    damp(u.uStability, "value", dna.stability,     DAMP_LAMBDA, dt);
+    damp(u.uOpenness, "value", dna.openness,      DAMP_LAMBDA, dt);
+    damp(u.uAssertiveness, "value", dna.assertiveness, DAMP_LAMBDA, dt);
+    damp(u.uEmpathy, "value", dna.empathy,       DAMP_LAMBDA, dt);
+    damp(u.uPlayfulness, "value", dna.playfulness,   DAMP_LAMBDA, dt);
+    damp(u.uIndependence, "value", dna.independence,  DAMP_LAMBDA, dt);
+    damp(u.uCuriosity, "value", dna.curiosity,     DAMP_LAMBDA, dt);
+    damp(u.uPersistence, "value", dna.persistence,   DAMP_LAMBDA, dt);
+    damp(u.uAdaptability, "value", dna.adaptability,  DAMP_LAMBDA, dt);
+    damp(u.uCreativity, "value", dna.creativity,    DAMP_LAMBDA, dt);
 
     // New 16 DNA axes (Physical Form, Surface, Expression, Behavior)
-    u.uBodyShape.value     = damp(u.uBodyShape.value,     dna.bodyShape,     DAMP_LAMBDA, dt);
-    u.uLimbLength.value    = damp(u.uLimbLength.value,    dna.limbLength,    DAMP_LAMBDA, dt);
-    u.uHeadRatio.value     = damp(u.uHeadRatio.value,     dna.headRatio,     DAMP_LAMBDA, dt);
-    u.uBodyDensity.value   = damp(u.uBodyDensity.value,   dna.bodyDensity,   DAMP_LAMBDA, dt);
-    u.uFurDensity.value    = damp(u.uFurDensity.value,    dna.furDensity,    DAMP_LAMBDA, dt);
-    u.uPatternComplexity.value = damp(u.uPatternComplexity.value, dna.patternComplexity, DAMP_LAMBDA, dt);
-    u.uTransparency.value  = damp(u.uTransparency.value,  dna.transparency,  DAMP_LAMBDA, dt);
-    u.uShininess.value     = damp(u.uShininess.value,     dna.shininess,     DAMP_LAMBDA, dt);
-    u.uEyeSize.value       = damp(u.uEyeSize.value,       dna.eyeSize,       DAMP_LAMBDA, dt);
-    u.uMouthExpressiveness.value = damp(u.uMouthExpressiveness.value, dna.mouthExpressiveness, DAMP_LAMBDA, dt);
-    u.uBlushIntensity.value = damp(u.uBlushIntensity.value, dna.blushIntensity, DAMP_LAMBDA, dt);
-    u.uGlowReactivity.value = damp(u.uGlowReactivity.value, dna.glowReactivity, DAMP_LAMBDA, dt);
-    u.uLocomotionStyle.value = damp(u.uLocomotionStyle.value, dna.locomotionStyle, DAMP_LAMBDA, dt);
-    u.uVoiceTimbre.value   = damp(u.uVoiceTimbre.value,   dna.voiceTimbre,   DAMP_LAMBDA, dt);
-    u.uSocialDistance.value = damp(u.uSocialDistance.value, dna.socialDistance, DAMP_LAMBDA, dt);
-    u.uElementalAffinity.value = damp(u.uElementalAffinity.value, dna.elementalAffinity, DAMP_LAMBDA, dt);
+    damp(u.uBodyShape, "value", dna.bodyShape,     DAMP_LAMBDA, dt);
+    damp(u.uLimbLength, "value", dna.limbLength,    DAMP_LAMBDA, dt);
+    damp(u.uHeadRatio, "value", dna.headRatio,     DAMP_LAMBDA, dt);
+    damp(u.uBodyDensity, "value", dna.bodyDensity,   DAMP_LAMBDA, dt);
+    damp(u.uFurDensity, "value", dna.furDensity,    DAMP_LAMBDA, dt);
+    damp(u.uPatternComplexity, "value", dna.patternComplexity, DAMP_LAMBDA, dt);
+    damp(u.uTransparency, "value", dna.transparency,  DAMP_LAMBDA, dt);
+    damp(u.uShininess, "value", dna.shininess,     DAMP_LAMBDA, dt);
+    damp(u.uEyeSize, "value", dna.eyeSize,       DAMP_LAMBDA, dt);
+    damp(u.uMouthExpressiveness, "value", dna.mouthExpressiveness, DAMP_LAMBDA, dt);
+    damp(u.uBlushIntensity, "value", dna.blushIntensity, DAMP_LAMBDA, dt);
+    damp(u.uGlowReactivity, "value", dna.glowReactivity, DAMP_LAMBDA, dt);
+    damp(u.uLocomotionStyle, "value", dna.locomotionStyle, DAMP_LAMBDA, dt);
+    damp(u.uVoiceTimbre, "value", dna.voiceTimbre,   DAMP_LAMBDA, dt);
+    damp(u.uSocialDistance, "value", dna.socialDistance, DAMP_LAMBDA, dt);
+    damp(u.uElementalAffinity, "value", dna.elementalAffinity, DAMP_LAMBDA, dt);
 
     // Color damping
-    u.uBaseColor.value.r = damp(u.uBaseColor.value.r, baseColor.r, DAMP_LAMBDA, dt);
-    u.uBaseColor.value.g = damp(u.uBaseColor.value.g, baseColor.g, DAMP_LAMBDA, dt);
-    u.uBaseColor.value.b = damp(u.uBaseColor.value.b, baseColor.b, DAMP_LAMBDA, dt);
+    damp(u.uBaseColor.value, "r", baseColor.r, DAMP_LAMBDA, dt);
+    damp(u.uBaseColor.value, "g", baseColor.g, DAMP_LAMBDA, dt);
+    damp(u.uBaseColor.value, "b", baseColor.b, DAMP_LAMBDA, dt);
 
     // Opacity is driven directly by OmniEngine (snappy cross-fade, no damp)
     u.uOpacity.value = opacity;
@@ -105,7 +105,7 @@ function MorphogenesisVesselInner({ dna, context: _context, opacity, scale }: Ve
         ref={materialRef}
         vertexShader={morphogenesisVertexShader}
         fragmentShader={morphogenesisFragmentShader}
-        uniforms={uniforms}
+        uniforms={uniforms as unknown as Record<string, THREE.IUniform>}
         transparent
         depthWrite={false}
         customProgramCacheKey={() => "morphogenesis-v2-32axis"}
