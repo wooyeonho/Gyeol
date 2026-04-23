@@ -11,7 +11,7 @@ export const calculateAliveForm = (
   baseSize: number,
   volatility: number,
 ): number => {
-  const breath = Math.sin(time * 2) * (baseSize * 0.08);
+  const breath = Math.sin(time) * (baseSize * 0.08);
   const organicJitter = Math.cos(time * 3.5) * (baseSize * 0.02);
   // Deterministic noise substitute — avoids Math.random() to keep consistent per-frame
   const phase = Math.sin(time * 7.3) * Math.cos(time * 11.1);

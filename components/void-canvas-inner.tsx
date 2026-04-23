@@ -647,7 +647,8 @@ function Scene({
 
   // Organic breathing: Alive Math biological pulse replaces static sin wave.
   // volatility scales with excitePulse so excited creatures distort more.
-  const aliveScale = calculateAliveForm(breathPhase * Math.PI * 2, 1, excitePulse * 0.01);
+  // baseSize=0.5 so breath amplitude = 0.5*0.08 = 0.04 (matches old sin(t)*0.04); +0.5 centers at 1.0
+  const aliveScale = calculateAliveForm(breathPhase * Math.PI * 2, 0.5, excitePulse * 0.01) + 0.5;
   const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
   const breathScale = aliveScale + heartbeat + excitePulse * 0.12;
 
