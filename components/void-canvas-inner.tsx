@@ -28,6 +28,8 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { SCENE_CONFIG } from "@/lib/visual-config";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
+import { triggerEntityHaptic } from "@/lib/creature/haptic-engine";
+import { calculateAliveForm } from "@/lib/creature/alive-math";
 
 export interface InnerProps {
   shape: string;
@@ -555,6 +557,7 @@ function Scene({
   });
 
   const handlePointerDown = useCallback((e: { point?: { x: number; y: number; z: number }; clientX?: number; clientY?: number }) => {
+    triggerEntityHaptic("heartbeat");
     pointerDownTimeRef.current = Date.now();
     const px = e.point?.x ?? 0;
     const py = e.point?.y ?? 0;
@@ -591,8 +594,9 @@ function Scene({
     setPhysicsScale(physicsStateRef.current.scaleMult);
     setPhysicsFlash(response.flashIntensity);
 
-    // Head zone tap → heart particle burst (caught by existing Bloom)
+    // Head zone tap → heart particle burst (caught by existing Bloom) + shock haptic
     if (bodyPart === "head") {
+      triggerEntityHaptic("shock");
       setHeartBurst(now);
     }
 
@@ -641,10 +645,11 @@ function Scene({
     return `hsl(${h2}, ${s}%, ${l}%)`;
   }, [dna, species, genLevel]);
 
-  // Organic breathing: sin wave + heartbeat double-bump
-  const breathSin = Math.sin(breathPhase * Math.PI * 2);
+  // Organic breathing: Alive Math biological pulse replaces static sin wave.
+  // volatility scales with excitePulse so excited creatures distort more.
+  const aliveScale = calculateAliveForm(breathPhase * Math.PI * 2, 1, excitePulse * 0.01);
   const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
-  const breathScale = 1 + breathSin * 0.04 + heartbeat + excitePulse * 0.12;
+  const breathScale = aliveScale + heartbeat;
 
   // Activity-based dimming
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;

@@ -121,21 +121,22 @@ export function dampDNAMaterial(
   targets: DNAMaterialTargets,
   dt: number,
 ): void {
-  mat.iridescence    = damp(mat.iridescence,    targets.iridescence,    LAMBDA, dt);
-  mat.iridescenceIOR = damp(mat.iridescenceIOR, targets.iridescenceIOR, LAMBDA, dt);
-  mat.sheen          = damp(mat.sheen,          targets.sheen,          LAMBDA, dt);
-  mat.sheenRoughness = damp(mat.sheenRoughness, targets.sheenRoughness, LAMBDA, dt);
-  mat.transmission   = damp(mat.transmission,   targets.transmission,   LAMBDA, dt);
-  mat.ior            = damp(mat.ior,            targets.ior,            LAMBDA, dt);
-  mat.roughness      = damp(mat.roughness,      targets.roughness,      LAMBDA, dt);
-  mat.metalness      = damp(mat.metalness,      targets.metalness,      LAMBDA, dt);
+  // maath/easing damp(obj, prop, target, smoothTime, delta) — mutates obj[prop] in place
+  damp(mat, "iridescence",    targets.iridescence,    LAMBDA, dt);
+  damp(mat, "iridescenceIOR", targets.iridescenceIOR, LAMBDA, dt);
+  damp(mat, "sheen",          targets.sheen,          LAMBDA, dt);
+  damp(mat, "sheenRoughness", targets.sheenRoughness, LAMBDA, dt);
+  damp(mat, "transmission",   targets.transmission,   LAMBDA, dt);
+  damp(mat, "ior",            targets.ior,            LAMBDA, dt);
+  damp(mat, "roughness",      targets.roughness,      LAMBDA, dt);
+  damp(mat, "metalness",      targets.metalness,      LAMBDA, dt);
 
-  // Sheen color — damp each channel separately
-  mat.sheenColor.r = damp(mat.sheenColor.r, targets.sheenColorR, LAMBDA, dt);
-  mat.sheenColor.g = damp(mat.sheenColor.g, targets.sheenColorG, LAMBDA, dt);
-  mat.sheenColor.b = damp(mat.sheenColor.b, targets.sheenColorB, LAMBDA, dt);
+  // Sheen color — damp each channel via object-property pattern
+  damp(mat.sheenColor, "r", targets.sheenColorR, LAMBDA, dt);
+  damp(mat.sheenColor, "g", targets.sheenColorG, LAMBDA, dt);
+  damp(mat.sheenColor, "b", targets.sheenColorB, LAMBDA, dt);
 
   // Iridescence thickness upper bound (lower bound 100nm is constant)
   const range = mat.iridescenceThicknessRange as number[];
-  range[1] = damp(range[1], targets.iridescenceThicknessMax, LAMBDA, dt);
+  damp(range, "1", targets.iridescenceThicknessMax, LAMBDA, dt);
 }
