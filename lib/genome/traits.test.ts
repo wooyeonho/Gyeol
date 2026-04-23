@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateInitialDNA, type CreatureDNA } from "./dna";
+import { generateInitialDNA, DEFAULT_NEW_DNA_AXES, type CreatureDNA } from "./dna";
 import { getExpressedTraits, getTraitProfile, buildTraitPersonalityFragments, TRAIT_CATALOG } from "./traits";
 
 describe("Trait Expression System", () => {
@@ -47,6 +47,7 @@ describe("Trait Expression System", () => {
       warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
       assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
       curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+      ...DEFAULT_NEW_DNA_AXES,
     };
     const traits = getExpressedTraits(dna);
     // Vanilla DNA (all 0.5) should express very few traits since most need 0.6+

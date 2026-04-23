@@ -54,6 +54,17 @@ interface ParticleUniforms {
   uPersistence:   { value: number };
   uAdaptability:  { value: number };
   uCreativity:    { value: number };
+  // Physical Form
+  uBodyShape:     { value: number };
+  uBodyDensity:   { value: number };
+  // Surface
+  uTransparency:  { value: number };
+  uShininess:     { value: number };
+  // Expression
+  uGlowReactivity: { value: number };
+  // Behavior
+  uElementalAffinity: { value: number };
+  uSocialDistance: { value: number };
   // Visual
   uBaseColor:     { value: THREE.Color };
   uRimColor:      { value: THREE.Color };
@@ -135,11 +146,20 @@ uniform float uCuriosity;
 uniform float uPersistence;
 uniform float uAdaptability;
 uniform float uCreativity;
+// New DNA axes for particle behavior
+uniform float uBodyShape;
+uniform float uBodyDensity;
+uniform float uTransparency;
+uniform float uShininess;
+uniform float uGlowReactivity;
+uniform float uElementalAffinity;
+uniform float uSocialDistance;
 
 varying vec2  vUv;
 varying float vFade;
 varying float vSeed;
 varying float vEmissive;
+varying float vShininess;
 
 // ─── Deterministic hash functions (pure math, no RNG) ────────────────────────
 float h1(float n) { return fract(sin(n * 127.1) * 43758.5453123); }
@@ -211,6 +231,23 @@ void main() {
   float breath = sin(uTime * 0.3 + s * 6.28318) * uCuriosity * 0.12;
   orbitPos *= 1.0 + breath;
 
+  // BODY_SHAPE: elongate particle cloud along Y axis
+  orbitPos.y *= 1.0 + uBodyShape * 0.6;
+
+  // BODY_DENSITY: compress cloud toward center (dense) or expand (airy)
+  orbitPos *= 0.7 + (1.0 - uBodyDensity) * 0.6;
+
+  // SOCIAL_DISTANCE: expand cloud envelope (aloof) or compress (clingy)
+  orbitPos *= 0.8 + uSocialDistance * 0.5;
+
+  // ELEMENTAL_AFFINITY: swirl particles around Y axis
+  float swirl = uElementalAffinity * 0.8;
+  float swirlAngle = orbitPos.y * swirl * 3.14159 + uTime * 0.2;
+  float cs = cos(swirlAngle);
+  float ss = sin(swirlAngle);
+  orbitPos.xz = vec2(orbitPos.x * cs - orbitPos.z * ss,
+                     orbitPos.x * ss + orbitPos.z * cs);
+
   // INTUITIVE: concentric shells — quantize radius toward discrete shells
   float shellCount = 2.0 + uIntuitive * 5.0;
   float rawR       = length(orbitPos);
@@ -241,6 +278,7 @@ void main() {
 
   vUv   = uv;   // PlaneGeometry UVs: 0..1 on both axes
   vSeed = s;
+  vShininess = uShininess;
 
   gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(worldPos, 1.0);
 }
@@ -258,11 +296,14 @@ uniform float uOpacity;
 uniform float uCreativity;
 uniform float uIntensity;
 uniform float uTime;
+uniform float uTransparency;
+uniform float uGlowReactivity;
 
 varying vec2  vUv;
 varying float vFade;
 varying float vSeed;
 varying float vEmissive;
+varying float vShininess;
 
 void main() {
   // Circular soft glow — PlaneGeometry UVs are 0..1 so center is (0.5, 0.5)
@@ -279,10 +320,20 @@ void main() {
   // Emissive rim bleed — high intensity particles shift toward rim color
   color = mix(color, uRimColor, vEmissive * 0.5);
 
+  // SHININESS: metallic specular highlight on particles
+  float specHighlight = pow(soft, 2.0 + vShininess * 8.0) * vShininess * 0.6;
+  color += specHighlight * vec3(1.0, 0.95, 0.9);
+
+  // GLOW_REACTIVITY: pulsing brightness
+  float reactPulse = sin(uTime * 2.0 + vSeed * 6.28318) * 0.5 + 0.5;
+  color *= 1.0 + uGlowReactivity * reactPulse * 0.4;
+
   // Additive brightness boost — emissive particles punch through dark backgrounds
   color *= 1.0 + vEmissive * 0.8;
 
-  gl_FragColor = vec4(color, soft * vFade * uOpacity);
+  // TRANSPARENCY: modulate particle alpha
+  float alphaBase = 1.0 - uTransparency * 0.4;
+  gl_FragColor = vec4(color, soft * vFade * uOpacity * alphaBase);
 }
 `;
 
@@ -328,6 +379,14 @@ function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselP
       uPersistence:   { value: dna.persistence },
       uAdaptability:  { value: dna.adaptability },
       uCreativity:    { value: dna.creativity },
+      // New DNA axes for particle behavior
+      uBodyShape:     { value: dna.bodyShape },
+      uBodyDensity:   { value: dna.bodyDensity },
+      uTransparency:  { value: dna.transparency },
+      uShininess:     { value: dna.shininess },
+      uGlowReactivity: { value: dna.glowReactivity },
+      uElementalAffinity: { value: dna.elementalAffinity },
+      uSocialDistance: { value: dna.socialDistance },
       uBaseColor:     { value: baseColor.clone() },
       uRimColor:      { value: baseColor.clone().offsetHSL(0.1, 0.1, 0.2) },
     }),
@@ -376,6 +435,15 @@ function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselP
     u.uAdaptability.value  = damp(u.uAdaptability.value,  dna.adaptability,  λ, dt);
     u.uCreativity.value    = damp(u.uCreativity.value,    dna.creativity,    λ, dt);
 
+    // New 16 DNA axes
+    u.uBodyShape.value     = damp(u.uBodyShape.value,     dna.bodyShape,     λ, dt);
+    u.uBodyDensity.value   = damp(u.uBodyDensity.value,   dna.bodyDensity,   λ, dt);
+    u.uTransparency.value  = damp(u.uTransparency.value,  dna.transparency,  λ, dt);
+    u.uShininess.value     = damp(u.uShininess.value,     dna.shininess,     λ, dt);
+    u.uGlowReactivity.value = damp(u.uGlowReactivity.value, dna.glowReactivity, λ, dt);
+    u.uElementalAffinity.value = damp(u.uElementalAffinity.value, dna.elementalAffinity, λ, dt);
+    u.uSocialDistance.value = damp(u.uSocialDistance.value, dna.socialDistance, λ, dt);
+
     // Color damping — follow DNA hue changes smoothly
     u.uBaseColor.value.r = damp(u.uBaseColor.value.r, baseColor.r, λ, dt);
     u.uBaseColor.value.g = damp(u.uBaseColor.value.g, baseColor.g, λ, dt);
@@ -399,7 +467,7 @@ function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselP
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}
-          customProgramCacheKey={() => "particle-vessel-v1"}
+          customProgramCacheKey={() => "particle-vessel-v2-32axis"}
         />
       </instancedMesh>
     </group>

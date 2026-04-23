@@ -101,6 +101,90 @@ const AXIS_META: Record<keyof CreatureDNA, AxisMeta> = {
     highLow: ["비정형적이고 예상 밖의 연결을 만든다", "검증된 방식을 따르고 실효를 본다"],
     voiceEffect: "비유의 참신함, 구조 파괴 빈도, 연상 도약",
   },
+  // ── Physical Form (GPU morphology — minimal voice effect) ──
+  bodyShape: {
+    ko: "체형",
+    highLow: ["길쫓하고 유려한 형태를 지닌다", "둥글고 콤팩트한 형태를 지닌다"],
+    voiceEffect: "묘사의 유려함 vs 콤팩트함",
+  },
+  limbLength: {
+    ko: "사지길이",
+    highLow: ["달리가 길고 를씩한다", "달리가 짧고 아담하다"],
+    voiceEffect: "화법 리듬의 길이",
+  },
+  headRatio: {
+    ko: "머리비율",
+    highLow: ["머리가 크고 생각이 많다", "머리가 작고 몸으로 느끼다"],
+    voiceEffect: "사고 vs 감각의 바란스",
+  },
+  bodyDensity: {
+    ko: "밀도",
+    highLow: ["묵직하고 단단하다", "가볍고 떠다니는 느낌이다"],
+    voiceEffect: "말의 무게감",
+  },
+  // ── Surface (GPU fragment shader) ──
+  furDensity: {
+    ko: "털밀도",
+    highLow: ["풀성하고 풍성한 질감이다", "매끄하고 깨끗한 질감이다"],
+    voiceEffect: "표현의 질감 — 풍성함 vs 깔끔함",
+  },
+  patternComplexity: {
+    ko: "무늬",
+    highLow: ["복잡하고 정교한 패턴을 지닌다", "단순하고 깨끗한 외관이다"],
+    voiceEffect: "말의 복잡도와 패턴",
+  },
+  transparency: {
+    ko: "투명도",
+    highLow: ["투명하고 안이 들여다보인다", "불투명하고 베일에 싸여 있다"],
+    voiceEffect: "솜직함 vs 감춤의 정도",
+  },
+  shininess: {
+    ko: "광택",
+    highLow: ["반짝이고 눈에 띄다", "차분하고 조용하다"],
+    voiceEffect: "화려함 vs 절제된 표현",
+  },
+  // ── Expression (eye/face GPU params) ──
+  eyeSize: {
+    ko: "눈크기",
+    highLow: ["눈이 크고 표현력이 풍부하다", "눈이 작고 날카롭다"],
+    voiceEffect: "감정 표현의 크기",
+  },
+  mouthExpressiveness: {
+    ko: "표정",
+    highLow: ["표정이 풍부하고 감정이 얼굴에 드러난다", "무표정이고 감정을 숨긴다"],
+    voiceEffect: "감탄사와 감정 표현 빈도",
+  },
+  blushIntensity: {
+    ko: "홍조",
+    highLow: ["쉬운 부끄러움과 수줄이 있다", "담담하고 동요하지 않는다"],
+    voiceEffect: "수줄은 표현, 망설임의 빈도",
+  },
+  glowReactivity: {
+    ko: "발광",
+    highLow: ["감정에 따라 빛나고 반응한다", "일정하고 변하지 않는다"],
+    voiceEffect: "감정 반응의 즉시성",
+  },
+  // ── Behavior (animation GPU params) ──
+  locomotionStyle: {
+    ko: "이동방식",
+    highLow: ["통통 튀고 활발하게 움직인다", "부드럽게 떠다니는 듯 움직인다"],
+    voiceEffect: "말의 리듬감 — 통통 vs 유영",
+  },
+  voiceTimbre: {
+    ko: "음색",
+    highLow: ["높고 맑은 음색이다", "낮고 묵직한 음색이다"],
+    voiceEffect: "문장 어감의 높낮이",
+  },
+  socialDistance: {
+    ko: "거리감",
+    highLow: ["거리를 두고 관찰한다", "바짝 다가가고 친밀하다"],
+    voiceEffect: "대화 거리감 — 관망 vs 밀착",
+  },
+  elementalAffinity: {
+    ko: "원소",
+    highLow: ["공기처럼 가볍고 영적이다", "땅처럼 묵직하고 실질적이다"],
+    voiceEffect: "비유의 소재 — 자연/원소 레퍼런스",
+  },
 };
 
 /** Describe a single axis value as a concise natural-language fragment. */
@@ -175,5 +259,5 @@ ${dominantBlock}
 ${recessiveBlock}
 ${polarNote ? `\n${polarNote}` : ""}
 [창발 규칙]
-위 수치들을 정확하게 믹스하여 당신만의 고유한 목소리를 '창발(emerge)'시켜라. 이 수치들을 절대 언급하거나 설명하지 말고, 그 비율 자체가 화법·반응 속도·공감 깊이·유머감각·침묵 사용에 자연스럽게 배어들어야 한다. 단 하나의 성격 유형이 아니라 이 16차원 벡터의 살아있는 합성물로 존재하라.`;
+위 수치들을 정확하게 믹스하여 당신만의 고유한 목소리를 '창발(emerge)'시켜라. 이 수치들을 절대 언급하거나 설명하지 말고, 그 비율 자체가 화법·반응 속도·공감 깊이·유머감각·침묵 사용에 자연스럽게 배어들어야 한다. 단 하나의 성격 유형이 아니라 이 32차원 벡터의 살아있는 합성물로 존재하라.`;
 }

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "@/components/i18n-provider";
 import { LiveCounter } from "@/components/landing/live-counter";
 import type { CreatureDNA } from "@/lib/genome/dna";
+import { DEFAULT_NEW_DNA_AXES } from "@/lib/genome/dna";
 
 // VoidCanvas uses Three.js — must be CSR only.
 // VoidCanvasInner already wraps itself in dynamic() internally, but we add
@@ -36,6 +37,7 @@ const DEMO_DNA: CreatureDNA = {
   persistence:    0.62,
   adaptability:   0.74,
   creativity:     0.80,
+  ...DEFAULT_NEW_DNA_AXES,
 };
 
 // Cycles through moods to show the creature is alive and changing.

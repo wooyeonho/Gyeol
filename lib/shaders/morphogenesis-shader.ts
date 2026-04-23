@@ -25,6 +25,26 @@ export interface MorphogenesisUniforms {
   uPersistence:   { value: number };
   uAdaptability:  { value: number };
   uCreativity:    { value: number };
+  // ── Physical Form (GPU morphology) ──
+  uBodyShape:     { value: number };
+  uLimbLength:    { value: number };
+  uHeadRatio:     { value: number };
+  uBodyDensity:   { value: number };
+  // ── Surface (GPU fragment) ──
+  uFurDensity:    { value: number };
+  uPatternComplexity: { value: number };
+  uTransparency:  { value: number };
+  uShininess:     { value: number };
+  // ── Expression (GPU face) ──
+  uEyeSize:       { value: number };
+  uMouthExpressiveness: { value: number };
+  uBlushIntensity: { value: number };
+  uGlowReactivity: { value: number };
+  // ── Behavior (GPU animation) ──
+  uLocomotionStyle: { value: number };
+  uVoiceTimbre:   { value: number };
+  uSocialDistance: { value: number };
+  uElementalAffinity: { value: number };
   // Fragment
   uBaseColor:     { value: THREE.Color };
   uRimColor:      { value: THREE.Color };
@@ -52,6 +72,7 @@ export function createMorphogenesisUniforms(
   );
   return {
     uTime:          { value: 0 },
+    // Original 16
     uAnalytical:    { value: dna.analytical },
     uIntuitive:     { value: dna.intuitive },
     uVerbal:        { value: dna.verbal },
@@ -68,15 +89,33 @@ export function createMorphogenesisUniforms(
     uPersistence:   { value: dna.persistence },
     uAdaptability:  { value: dna.adaptability },
     uCreativity:    { value: dna.creativity },
+    // New 16 (Physical Form, Surface, Expression, Behavior)
+    uBodyShape:     { value: dna.bodyShape },
+    uLimbLength:    { value: dna.limbLength },
+    uHeadRatio:     { value: dna.headRatio },
+    uBodyDensity:   { value: dna.bodyDensity },
+    uFurDensity:    { value: dna.furDensity },
+    uPatternComplexity: { value: dna.patternComplexity },
+    uTransparency:  { value: dna.transparency },
+    uShininess:     { value: dna.shininess },
+    uEyeSize:       { value: dna.eyeSize },
+    uMouthExpressiveness: { value: dna.mouthExpressiveness },
+    uBlushIntensity: { value: dna.blushIntensity },
+    uGlowReactivity: { value: dna.glowReactivity },
+    uLocomotionStyle: { value: dna.locomotionStyle },
+    uVoiceTimbre:   { value: dna.voiceTimbre },
+    uSocialDistance: { value: dna.socialDistance },
+    uElementalAffinity: { value: dna.elementalAffinity },
+    // Fragment visual params
     uBaseColor:     { value: color.clone() },
     uRimColor:      { value: rimColor },
     uInnerColor:    { value: innerColor },
     uPulseSpeed:    { value: 1.5 + dna.intensity * 1.5 },
-    uRimIntensity:  { value: 0.3 + dna.openness * 0.5 },
-    uInnerGlow:     { value: 0.2 + dna.warmth * 0.4 },
+    uRimIntensity:  { value: 0.3 + dna.openness * 0.5 + dna.glowReactivity * 0.3 },
+    uInnerGlow:     { value: 0.2 + dna.warmth * 0.4 + dna.blushIntensity * 0.2 },
     uOpacity:       { value: 1.0 },
-    uIridescence:   { value: dna.creativity * 0.6 + dna.intuitive * 0.3 },
-    uSubsurface:    { value: 0.3 + dna.warmth * 0.4 },
+    uIridescence:   { value: dna.creativity * 0.6 + dna.intuitive * 0.3 + dna.shininess * 0.2 },
+    uSubsurface:    { value: 0.3 + dna.warmth * 0.4 + dna.transparency * 0.2 },
     uBrightness:    { value: 1.4 },
   };
 }
@@ -137,6 +176,7 @@ export const morphogenesisVertexShader = /* glsl */ `
 ${SIMPLEX_NOISE_GLSL}
 
 uniform float uTime;
+// Original 16 DNA axes
 uniform float uAnalytical;
 uniform float uIntuitive;
 uniform float uVerbal;
@@ -153,12 +193,31 @@ uniform float uCuriosity;
 uniform float uPersistence;
 uniform float uAdaptability;
 uniform float uCreativity;
+// New 16 DNA axes (Physical Form, Surface, Expression, Behavior)
+uniform float uBodyShape;
+uniform float uLimbLength;
+uniform float uHeadRatio;
+uniform float uBodyDensity;
+uniform float uFurDensity;
+uniform float uPatternComplexity;
+uniform float uTransparency;
+uniform float uShininess;
+uniform float uEyeSize;
+uniform float uMouthExpressiveness;
+uniform float uBlushIntensity;
+uniform float uGlowReactivity;
+uniform float uLocomotionStyle;
+uniform float uVoiceTimbre;
+uniform float uSocialDistance;
+uniform float uElementalAffinity;
 
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
 varying float vFresnel;
 varying float vDisplacement;
 varying vec2 vUv;
+varying float vPatternCoord;
+varying float vFurNoise;
 
 void main() {
   vec3 pos    = position;
@@ -230,6 +289,49 @@ void main() {
   float dR = length(deformed);
   deformed = normalize(deformed) * mix(dR, r, uWarmth * 0.4);
 
+  // ═══ NEW: 16 Physical DNA axes — GPU-only morphology ═══
+
+  // ⑭ BODY_SHAPE: spherical↔elongated body deformation
+  float elongation = 1.0 + uBodyShape * 0.8;
+  float xzSquash   = 1.0 / sqrt(elongation);
+  deformed.y  *= elongation;
+  deformed.xz *= xzSquash;
+
+  // ⑮ HEAD_RATIO: inflate upper hemisphere (head region)
+  float headMask = smoothstep(0.0, 0.5, n.y);
+  deformed *= 1.0 + headMask * uHeadRatio * 0.35;
+
+  // ⑯ BODY_DENSITY: scale amplitude — dense=compact, airy=expanded
+  float densityScale = 0.85 + (1.0 - uBodyDensity) * 0.3;
+  deformed *= densityScale;
+
+  // ⑰ LIMB_LENGTH: radial protrusion at cardinal directions (limb-like bumps)
+  float limbMask = pow(max(0.0, abs(sin(theta * 2.0)) * abs(cos(phi * 1.5))), 2.0);
+  float limbProtrude = limbMask * uLimbLength * 0.25;
+  deformed += normalize(deformed) * limbProtrude;
+
+  // ⑱ FUR_DENSITY: high-freq surface displacement (fur/feather texture)
+  float furNoise = snoise(sampleN * 20.0 + uTime * 0.1) * uFurDensity * 0.06;
+  deformed += normalize(deformed) * furNoise;
+
+  // ⑲ PATTERN_COMPLEXITY: modulated surface detail for fragment shader
+  vPatternCoord = snoise(sampleN * (4.0 + uPatternComplexity * 12.0)) * 0.5 + 0.5;
+
+  // ⑳ LOCOMOTION_STYLE: bounce/hop vertex animation
+  float bounce = sin(uTime * (2.0 + uLocomotionStyle * 4.0)) * uLocomotionStyle * 0.04;
+  deformed.y += bounce;
+
+  // ㉑ ELEMENTAL_AFFINITY: swirl/vortex deformation
+  float vortex = uElementalAffinity * 0.3;
+  float vortexAngle = deformed.y * vortex * 3.14159;
+  float cv = cos(vortexAngle);
+  float sv = sin(vortexAngle);
+  deformed.xz = vec2(deformed.x * cv - deformed.z * sv,
+                     deformed.x * sv + deformed.z * cv);
+
+  // Pass fur noise to fragment shader
+  vFurNoise = furNoise;
+
   // ⑬ Varyings — approximate normal = normalized deformed position
   vNormal       = normalize(normalMatrix * normalize(deformed));
   vDisplacement = displacement + asymNoise;
@@ -256,12 +358,23 @@ uniform float uIridescence;
 uniform float uSubsurface;
 uniform float uBrightness;
 uniform float uIntensity;
+// New 16 DNA axes for fragment shader
+uniform float uFurDensity;
+uniform float uPatternComplexity;
+uniform float uTransparency;
+uniform float uShininess;
+uniform float uBlushIntensity;
+uniform float uGlowReactivity;
+uniform float uElementalAffinity;
+uniform float uEyeSize;
 
 varying vec3  vNormal;
 varying vec3  vWorldPosition;
 varying float vFresnel;
 varying float vDisplacement;
 varying vec2  vUv;
+varying float vPatternCoord;
+varying float vFurNoise;
 
 float _frag_hash(vec3 p) {
   p = fract(p * 0.3183099 + 0.1);
@@ -270,27 +383,52 @@ float _frag_hash(vec3 p) {
 }
 
 void main() {
-  // Iridescent color shift from viewing angle
-  float iriShift = vFresnel * uIridescence * 0.3;
+  // Iridescent color shift from viewing angle — enhanced by shininess
+  float iriShift = vFresnel * uIridescence * (0.3 + uShininess * 0.3);
   vec3 color = uBaseColor;
   color.r += iriShift * 0.2;
   color.g -= iriShift * 0.1;
   color.b += iriShift * 0.3;
 
-  // Inner heartbeat glow
+  // ═══ GPU Pattern Generation (replaces CPU vertex color loop) ═══
+
+  // Procedural spots/stripes/gradient from patternComplexity
+  float patternFreq = 4.0 + uPatternComplexity * 12.0;
+  float spotPattern = _frag_hash(vWorldPosition * patternFreq);
+  float stripePattern = sin(vWorldPosition.y * patternFreq + vWorldPosition.x * patternFreq * 0.5);
+  float patternBlend = mix(spotPattern, stripePattern * 0.5 + 0.5, uPatternComplexity);
+  vec3 patternColor = mix(color, uRimColor * 1.2, patternBlend * uPatternComplexity * 0.35);
+  color = mix(color, patternColor, uPatternComplexity);
+
+  // Fur/feather texture overlay — high-freq noise darkening
+  float furShade = 1.0 - abs(vFurNoise) * uFurDensity * 3.0;
+  color *= mix(1.0, furShade, uFurDensity * 0.4);
+
+  // Metallic/glossy specular highlight from shininess
+  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
+  vec3 viewDir  = normalize(cameraPosition - vWorldPosition);
+  vec3 halfDir  = normalize(lightDir + viewDir);
+  float spec = pow(max(0.0, dot(vNormal, halfDir)), 16.0 + uShininess * 64.0);
+  color += spec * uShininess * 0.6 * vec3(1.0, 0.95, 0.9);
+
+  // Blush effect — warm flush on facing surfaces
+  float blushMask = smoothstep(0.3, 0.7, dot(vNormal, viewDir));
+  color += vec3(0.4, 0.1, 0.1) * blushMask * uBlushIntensity * 0.5;
+
+  // Inner heartbeat glow — enhanced by glowReactivity
   float pulse    = sin(uTime * uPulseSpeed) * 0.5 + 0.5;
   float coreDist = length(vWorldPosition);
   float innerFade = exp(-coreDist * 3.0) * uInnerGlow;
-  color = mix(color, uInnerColor, innerFade * (0.6 + pulse * 0.4));
+  float reactiveGlow = 1.0 + uGlowReactivity * pulse * 0.5;
+  color = mix(color, uInnerColor * reactiveGlow, innerFade * (0.6 + pulse * 0.4));
 
   // Subsurface scattering approximation
-  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
-  vec3 viewDir  = normalize(cameraPosition - vWorldPosition);
   float sss = pow(max(0.0, dot(viewDir, -lightDir + vNormal * 0.5)), 3.0) * uSubsurface;
   color += uBaseColor * sss * 0.4;
 
-  // Fresnel rim glow
-  color += uRimColor * vFresnel * uRimIntensity;
+  // Fresnel rim glow — elemental affinity shifts rim color
+  vec3 elemRim = mix(uRimColor, vec3(0.3, 0.6, 1.0), uElementalAffinity * 0.4);
+  color += elemRim * vFresnel * uRimIntensity;
 
   // Spike tips extra emissive — displacement drives brightness
   float spikeTip = smoothstep(0.1, 0.5, vDisplacement);
@@ -303,8 +441,9 @@ void main() {
   // Self-illumination
   color *= uBrightness;
 
-  // Alpha: opaque core, slight edge transparency — uOpacity driven by OmniEngine phase-shift
-  float alpha = uOpacity * (0.92 + vFresnel * 0.08);
+  // Alpha: transparency DNA axis + fresnel edge + OmniEngine opacity
+  float baseAlpha = 1.0 - uTransparency * 0.6;
+  float alpha = uOpacity * baseAlpha * (0.92 + vFresnel * 0.08);
   gl_FragColor = vec4(color, alpha);
 }
 `;

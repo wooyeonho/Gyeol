@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bottom-nav";
 import { useAgentStore } from "@/store/agent-store";
 import { useTranslations } from "@/components/i18n-provider";
-import { DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
+import { DNA_AXES, DEFAULT_NEW_DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getDnaAxisLabel } from "@/lib/i18n/dna-axis-labels";
@@ -342,6 +342,7 @@ export default function DNAPage() {
     warmth: 0.5, intensity: 0.5, stability: 0.5, openness: 0.5,
     assertiveness: 0.5, empathy: 0.5, playfulness: 0.5, independence: 0.5,
     curiosity: 0.5, persistence: 0.5, adaptability: 0.5, creativity: 0.5,
+    ...DEFAULT_NEW_DNA_AXES,
   };
   const activeDNA = dna ?? defaultDNA;
 

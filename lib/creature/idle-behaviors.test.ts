@@ -4,6 +4,7 @@ import {
   getIdleBehaviorParams,
   type IdleBehavior,
 } from "./idle-behaviors";
+import { DEFAULT_NEW_DNA_AXES } from "@/lib/genome/dna";
 
 describe("resolveIdleBehavior", () => {
   const base = {
@@ -53,6 +54,7 @@ describe("resolveIdleBehavior", () => {
       warmth: 0.6, intensity: 0.5, stability: 0.8, openness: 0.5,
       assertiveness: 0.5, empathy: 0.5, playfulness: 0.3, independence: 0.3,
       curiosity: 0.3, persistence: 0.5, adaptability: 0.5, creativity: 0.3,
+      ...DEFAULT_NEW_DNA_AXES,
     };
     expect(resolveIdleBehavior({ ...base, idleSeconds: 15, dna })).toBe("meditating");
   });
