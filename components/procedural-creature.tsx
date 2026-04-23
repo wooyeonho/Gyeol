@@ -868,8 +868,9 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
 
     const energyMult = 1 + energy * 0.5;
     // Alive Math: organic pulse replaces static sin — adds breath + jitter + micro-distortion
+    // baseSize=1 so breath/jitter terms are non-zero; subtract 1 to center around 0 like the old Math.sin()
     const aliveTime = breathPhase * Math.PI * 2 * moodMod.speedMult * energyMult;
-    const breathSin = calculateAliveForm(aliveTime, 0, energy * 0.002) / (1 + energy * 0.002 * 5);
+    const breathSin = calculateAliveForm(aliveTime, 1, energy * 0.002) - 1;
     const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * (0.03 + energy * 0.04);
 
     // ─── PHYSICS LOGIC ────────────────────────────────────────────────────

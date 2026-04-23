@@ -335,7 +335,8 @@ export default function Home() {
           })) {
             const box = generateMysteryBox(undefined, agentState?.streak_days ?? 0);
             addPendingBox(box);
-            setActiveMysteryBox(box);
+            // Defer setState to avoid synchronous setState inside effect body (react-hooks/set-state-in-effect)
+            queueMicrotask(() => setActiveMysteryBox(box));
           }
           break;
         }
