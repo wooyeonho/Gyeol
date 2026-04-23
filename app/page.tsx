@@ -30,32 +30,13 @@ const DeathScreen = dynamic(() => import("@/components/death-screen").then((m) =
   ssr: false,
   loading: () => null,
 });
-const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), {
-  ssr: false,
-  loading: () => null,
-});
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureTapReact } from "@/components/effects/creature-tap";
-import { CreatureMiniStatus } from "@/components/creature-mini-status";
-import { StreakDisplay } from "@/components/streak-display";
-import { StreakFlame } from "@/components/streak-flame";
-import { HomeHero } from "@/components/engagement/home-hero";
-import { StreakShield } from "@/components/streak-shield";
-import { EvolutionProgressBar } from "@/components/evolution-progress-bar";
-import { PerfectDayBadge } from "@/components/perfect-day-badge";
-import { AffinityHeartGauge } from "@/components/affinity-heart-gauge";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
 import { mainTutorialSteps } from "@/components/tutorial-steps";
-import { TypeAdvantageBadge } from "@/components/type-advantage-badge";
-import { QuickCareButtons } from "@/components/quick-care-buttons";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
 import { ConversationStarter } from "@/components/conversation-starter";
-const LivingPresenceBeacon = dynamic(
-  () => import("@/components/living-presence-beacon").then((m) => ({ default: m.LivingPresenceBeacon })),
-  { ssr: false, loading: () => null },
-);
-import { moodToEmotionTone } from "@/lib/identity/mood-to-tone";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -70,27 +51,18 @@ const EvolutionCeremony = dynamic(() => import("@/components/evolution-ceremony"
   ssr: false,
   loading: () => null,
 });
-const WorldClassHub = dynamic(() => import("@/components/world-class-hub").then((m) => ({ default: m.WorldClassHub })), {
-  ssr: false,
-  loading: () => null,
-});
 import { ThreeErrorBoundary } from "@/components/three-error-boundary";
-import { GlobalFeedTicker } from "@/components/global-feed-ticker";
-import { WorldWeather } from "@/components/world-weather";
 const Celebration = dynamic(() => import("@/components/celebration"), { ssr: false, loading: () => null });
 import { PortraitGenerateButton } from "@/components/portrait-generate-button";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
-import { StreakSocietyBadge, getStreakTier } from "@/components/engagement/streak-society-badge";
-const AiDjFeed = dynamic(() => import("@/components/discover/ai-dj-feed").then((m) => ({ default: m.AiDjFeed })), { ssr: false, loading: () => null });
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
 const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
-const EnergyBar = dynamic(() => import("@/components/energy-bar").then((m) => ({ default: m.EnergyBar })), { ssr: false, loading: () => null });
 
 export default function Home() {
   const { locale, t } = useTranslations();
   const showTutorial = useShouldShowTutorial();
-  const { agentState, engagement, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
+  const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | null ?? null;
   useCreatureDna(agentId);
   const { fetchWorldState } = useWorldStore();
@@ -98,10 +70,7 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
-  const injectGreeting = useChatStore((s) => s.injectGreeting);
   const historyLoaded = useChatStore((s) => s.historyLoaded);
-  const greetingInjectedRef = useRef(false);
-  const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [activeMysteryBox, setActiveMysteryBox] = useState<MysteryBoxType | null>(null);
   const sessionMsgCountRef = useRef(0);
@@ -112,8 +81,6 @@ export default function Home() {
   useEffect(() => {
     fetchAgentState();
     fetchWorldState();
-    // Fetch engagement state (streak + XP) for home header
-    fetch("/api/engagement/state", { signal: AbortSignal.timeout(8000) }).catch(() => {});
   }, [fetchAgentState, fetchWorldState]);
 
   // Fetch daily bonus status — show modal if not yet claimed today
@@ -192,22 +159,6 @@ export default function Home() {
         });
     } catch {}
   }, [loading, agentState, fetchAgentState]);
-
-  // Inject greeting once history is loaded — no rAF polling needed
-  useEffect(() => {
-    if (!historyLoaded || !pendingGreeting || greetingInjectedRef.current) return;
-    greetingInjectedRef.current = true;
-    injectGreeting({
-      id: `greeting-${Date.now()}`,
-      role: "assistant" as const,
-      content: pendingGreeting,
-    });
-  }, [historyLoaded, pendingGreeting, injectGreeting]);
-
-  const handleGreetingReady = useCallback((greeting: string) => {
-    if (!greeting || greetingInjectedRef.current) return;
-    setPendingGreeting(greeting);
-  }, []);
 
   const visual: AgentVisual = agentState?.visual ?? {};
   const vitality = agentState?.vitality ?? 1;
@@ -389,22 +340,6 @@ export default function Home() {
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
-  }, [creature]);
-
-  // Creature comeback reaction — triple excite pulse "wiggle of recognition"
-  const handleComebackDetected = useCallback((multiplier: number) => {
-    void multiplier; // multiplier available for future intensity scaling
-    creature.excite();
-    creature.boostConversationEnergy(0.3);
-    const t1 = setTimeout(() => {
-      creature.excite();
-      creature.boostConversationEnergy(0.2);
-    }, 600);
-    const t2 = setTimeout(() => {
-      creature.excite();
-      creature.boostConversationEnergy(0.15);
-    }, 1200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [creature]);
 
   const handleCelebrationEnd = useCallback(async () => {
@@ -601,16 +536,12 @@ export default function Home() {
         />
       )}
 
-      {/* ===== CREATURE STAGE — dedicated hero viewport ===== */}
-      {/* Phase 4-2: CreatureTapReact wraps the stage so taps trigger a
-          wiggle animation + floating emoji reaction. The inner div keeps
-          its own class + style so the hero layout and background
-          gradient are unaffected. */}
-      <CreatureTapReact className="flex-shrink-0">
+      {/* ===== CREATURE STAGE — minimalist fullscreen hero ===== */}
+      <CreatureTapReact className="relative flex-1 min-h-0">
       <div
         data-tutorial="creature"
-        className="relative overflow-hidden"
-        style={{ height: "clamp(220px, 45vh, 480px)", minHeight: 220, backgroundImage: appearance.scene.backgroundGradient }}
+        className="relative h-full overflow-hidden"
+        style={{ backgroundImage: appearance.scene.backgroundGradient }}
       >
         {/* Ambient sky gradient (Apple Weather-style) — subtle full-gradient base layer */}
         <div
@@ -741,185 +672,46 @@ export default function Home() {
         )}
 
         {/* Bottom gradient fade into chat area */}
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black to-transparent" />
 
-        {/* Creature identity bar */}
-        <div className="absolute bottom-3 inset-x-0 z-10 text-center pointer-events-none">
+        {/* Minimalist creature identity — name + mood only */}
+        <div className="absolute bottom-4 inset-x-0 z-10 text-center pointer-events-none">
           <CreatureStatusIndicator activity={creature.state.activity} />
-          <p className="mt-1 text-section text-white drop-shadow-lg">
+          <p className="mt-1 text-lg font-medium text-white drop-shadow-lg tracking-wide">
             {agentState?.self_name ?? "GYEOL"}
           </p>
-          {agentState?.genome?.species && (
-            <p className="mt-0.5 text-xs text-white/40 italic tracking-wide">
-              {agentState.genome.species}
-            </p>
-          )}
-          <div className="flex items-center justify-center gap-2 mt-0.5 text-xs text-white/50" aria-live="polite">
-            <span>Gen {agentState?.gen_level ?? 1}</span>
-            {agentState?.genome?.species && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-white/30" />
-                <span style={{ color: `color-mix(in srgb, ${appearance.palette.primary} 70%, white)` }}>{agentState.genome.species}</span>
-              </>
-            )}
-            <span className="h-1 w-1 rounded-full bg-white/30" />
-            <span style={{ color: vitality < 0.2 ? "rgb(248,113,113)" : undefined }}>{Math.round(vitality * 100)}%</span>
+          <div className="flex items-center justify-center gap-2 mt-1 text-xs text-white/40">
             {agentState?.mood && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-white/30" />
-                <span className="text-purple-300/70">{agentState.mood}</span>
-              </>
+              <span className="text-white/50">{agentState.mood}</span>
             )}
-            {(agentState?.streak_days ?? 0) >= 0 && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-white/30" />
-                <StreakFlame
-                  days={agentState?.streak_days ?? 0}
-                  size="sm"
-                  showCount
-                />
-                <StreakShield
-                  count={typeof (agentState?.config as Record<string, unknown> | undefined)?.streak_shields === "number"
-                    ? (agentState!.config as Record<string, unknown>).streak_shields as number
-                    : 0}
-                  size="sm"
-                />
-              </>
-            )}
-            <PerfectDayBadge locale={locale} compact />
+            <span className="h-1 w-1 rounded-full bg-white/20" />
+            <span style={{ color: vitality < 0.2 ? "rgb(248,113,113)" : undefined }}>
+              {Math.round(vitality * 100)}%
+            </span>
           </div>
-          {/* BG3-style heart gauge — shows creature-user bond level */}
-          <div className="flex justify-center mt-1">
-            <AffinityHeartGauge score={agentState?.intimacy_score ?? 0} compact />
-          </div>
-          {/* Duolingo/Replika-style evolution progress bar */}
-          <div className="flex justify-center mt-1.5 pointer-events-auto">
-            <EvolutionProgressBar
-              genLevel={agentState?.gen_level ?? 1}
-              progress={typeof agentState?.progress === "number" ? agentState.progress : 0}
-              locale={locale}
-              size="sm"
-            />
-          </div>
-          {/* Pokemon-style type badge */}
-          {creatureDna && (
-            <div className="flex justify-center mt-1">
-              <TypeAdvantageBadge dna={creatureDna} locale={locale} compact />
-            </div>
-          )}
         </div>
       </div>
       </CreatureTapReact>
 
-      {/* ===== STREAK SOCIETY + SEASONAL EVENT — visible gamification badges ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 -mt-1 mb-1 flex flex-wrap items-center gap-2">
-        <StreakSocietyBadge
-          tier={getStreakTier(agentState?.streak_days ?? 0)}
-          days={agentState?.streak_days ?? 0}
-        />
-      </div>
-
-      {/* ===== HOME HERO — Duolingo-style streak + level + memory anchor ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 -mt-2 mb-2">
-        <HomeHero
-          streakDays={engagement?.currentStreak ?? (agentState?.streak_days ?? 0)}
-          todayActive={(agentState?.streak_days ?? 0) > 0}
-          level={engagement?.level ?? 1}
-          xpIntoLevel={engagement?.xpIntoLevel ?? 0}
-          xpForNext={engagement?.xpForNext ?? 50}
-          genLevel={typeof agentState?.gen_level === "number" ? agentState.gen_level : 1}
-          totalMessages={typeof agentState?.total_messages === "number" ? agentState.total_messages : 0}
-          isNewUser={!engagement || ((engagement.totalXp ?? 0) === 0 && (engagement.currentStreak ?? 0) === 0)}
-        />
-      </div>
-
-      {/* ===== QUICK CARE — Tamagotchi 3-button bar ===== */}
-      <div data-tutorial="care-buttons" className="relative z-10 flex-shrink-0 px-4 mb-1">
-        <QuickCareButtons
-          vitality={vitality}
-          onCareComplete={() => fetchAgentState({ silent: true })}
-        />
-        {/* Energy Bar — shows action energy with regen timer */}
-        <div className="mt-2">
-          <EnergyBar locale={locale} />
-        </div>
-      </div>
-
-      {/* ===== DYNAMIC ISLAND — always-visible creature mini status ===== */}
-      <CreatureMiniStatus
-        selfName={agentState?.self_name ?? "GYEOL"}
-        mood={agentState?.mood ?? null}
-        vitality={vitality}
-        activity={creature.state.activity}
-        primaryColor={appearance.palette.primary}
-      />
-
-      {/* ===== LIVING PRESENCE BEACON — Gyeol's strongest differentiator, visible. ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 pt-3 md:px-6">
-        <LivingPresenceBeacon
-          tone={moodToEmotionTone(agentState?.mood ?? null)}
-          memoryCount={agentState?.total_messages ?? 0}
-          compact
-        />
-      </div>
-
-      {/* ===== HUB + LIVING FEED ===== */}
-      <div className="relative z-10 flex-shrink-0">
-        <GlobalFeedTicker />
-        <WorldClassHub onComebackDetected={handleComebackDetected} />
-        <LivingFeed onGreetingReady={handleGreetingReady} />
-      </div>
-
-      {/* ===== AI DJ FEED — personalized recommendations ===== */}
-      <div className="relative z-10 flex-shrink-0 px-4 pb-2">
-        <AiDjFeed
-          streakDays={agentState?.streak_days ?? 0}
-          creatureLevel={agentState?.gen_level ?? 1}
-          mood={agentState?.mood ?? null}
-          locale={locale}
-        />
-      </div>
-
-      {/* World weather indicator */}
-      <WorldWeather />
-
-      {/* ===== CHAT AREA — fills remaining space ===== */}
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+      {/* ===== CHAT AREA — compact bottom section ===== */}
+      <div className="relative z-10 flex flex-col flex-shrink-0" style={{ height: "clamp(160px, 30vh, 320px)" }}>
         {/* First-time guide: show when no conversation yet */}
         {!conversationStarted && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, duration: 0.8 }}
-            className="flex flex-col items-center gap-3 px-6 py-4"
-          >
-            <div className="glass-card rounded-2xl px-5 py-4 max-w-sm text-center">
-              <p className="text-sm text-white/80 leading-relaxed">
-                {t("home.firstTimeGuide")}
-              </p>
-              <motion.div
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="mt-3 text-white/40"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto">
-                  <path d="M12 5v14M5 12l7 7 7-7" />
-                </svg>
-              </motion.div>
-            </div>
-          </motion.div>
+          <div className="flex flex-col items-center gap-2 px-6 py-3">
+            <p className="text-sm text-white/60 text-center">
+              {t("home.firstTimeGuide")}
+            </p>
+            <ConversationStarter
+              creatureName={agentState?.self_name ?? undefined}
+              locale={locale}
+              onSelect={(text) => sendMessage(text)}
+            />
+          </div>
         )}
 
-        {/* Conversation starter chips — visible until first message sent */}
-        {!conversationStarted && (
-          <ConversationStarter
-            creatureName={agentState?.self_name ?? undefined}
-            locale={locale}
-            onSelect={(text) => sendMessage(text)}
-          />
-        )}
-
-        <ChatPanel navVisible={conversationStarted} />
+        <div className="flex-1 min-h-0">
+          <ChatPanel navVisible={conversationStarted} />
+        </div>
       </div>
 
       <Soundscape
