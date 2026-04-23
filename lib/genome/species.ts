@@ -14,7 +14,7 @@
  */
 
 import type { CreatureDNA, DNAAxis } from "./dna";
-import { DNA_AXES } from "./dna";
+import { PERSONALITY_AXES } from "./dna";
 import { type ArchetypeBlend, computeArchetypeBlendWeights, getDominantArchetype } from "./continuous-morphology";
 
 export type SpeciesProfile = {
@@ -97,11 +97,11 @@ function findDominantInGroup(dna: CreatureDNA, axes: DNAAxis[]): DNAAxis {
  */
 function calculateRarity(dna: CreatureDNA): number {
   let extremity = 0;
-  for (const axis of DNA_AXES) {
+  for (const axis of PERSONALITY_AXES) {
     // Distance from center (0.5)
     extremity += Math.abs(dna[axis] - 0.5) * 2;
   }
-  return Math.min(1, extremity / DNA_AXES.length);
+  return Math.min(1, extremity / PERSONALITY_AXES.length);
 }
 
 /**

@@ -84,12 +84,17 @@ export const DEFAULT_NEW_DNA_AXES = {
   'locomotionStyle' | 'voiceTimbre' | 'socialDistance' | 'elementalAffinity'
 >;
 
-export const DNA_AXES = [
-  // Original 16 (Cognitive, Emotional, Social, Meta)
+/** Original 16 personality axes — used for rarity, distance, and trait ranking to preserve existing game mechanics */
+export const PERSONALITY_AXES = [
   "analytical", "intuitive", "verbal", "spatial",
   "warmth", "intensity", "stability", "openness",
   "assertiveness", "empathy", "playfulness", "independence",
   "curiosity", "persistence", "adaptability", "creativity",
+] as const;
+
+/** All 32 DNA axes (personality + physical/behavioral) */
+export const DNA_AXES = [
+  ...PERSONALITY_AXES,
   // New 16 (Physical Form, Surface, Expression, Behavior)
   "bodyShape", "limbLength", "headRatio", "bodyDensity",
   "furDensity", "patternComplexity", "transparency", "shininess",
@@ -296,11 +301,11 @@ export function applySoftMutation(
  */
 export function dnaDistance(a: CreatureDNA, b: CreatureDNA): number {
   let sumSq = 0;
-  for (const axis of DNA_AXES) {
+  for (const axis of PERSONALITY_AXES) {
     const diff = a[axis] - b[axis];
     sumSq += diff * diff;
   }
-  return Math.sqrt(sumSq / DNA_AXES.length);
+  return Math.sqrt(sumSq / PERSONALITY_AXES.length);
 }
 
 /**
