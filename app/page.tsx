@@ -682,9 +682,11 @@ export default function Home() {
           </p>
           <div className="flex items-center justify-center gap-2 mt-1 text-xs text-white/40">
             {agentState?.mood && (
-              <span className="text-white/50">{agentState.mood}</span>
+              <>
+                <span className="text-white/50">{agentState.mood}</span>
+                <span className="h-1 w-1 rounded-full bg-white/20" />
+              </>
             )}
-            <span className="h-1 w-1 rounded-full bg-white/20" />
             <span style={{ color: vitality < 0.2 ? "rgb(248,113,113)" : undefined }}>
               {Math.round(vitality * 100)}%
             </span>
