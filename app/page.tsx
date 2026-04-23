@@ -70,10 +70,7 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
-  const injectGreeting = useChatStore((s) => s.injectGreeting);
   const historyLoaded = useChatStore((s) => s.historyLoaded);
-  const greetingInjectedRef = useRef(false);
-  const [pendingGreeting, setPendingGreeting] = useState<string | null>(null);
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [activeMysteryBox, setActiveMysteryBox] = useState<MysteryBoxType | null>(null);
   const sessionMsgCountRef = useRef(0);
@@ -162,17 +159,6 @@ export default function Home() {
         });
     } catch {}
   }, [loading, agentState, fetchAgentState]);
-
-  // Inject greeting once history is loaded — no rAF polling needed
-  useEffect(() => {
-    if (!historyLoaded || !pendingGreeting || greetingInjectedRef.current) return;
-    greetingInjectedRef.current = true;
-    injectGreeting({
-      id: `greeting-${Date.now()}`,
-      role: "assistant" as const,
-      content: pendingGreeting,
-    });
-  }, [historyLoaded, pendingGreeting, injectGreeting]);
 
   const visual: AgentVisual = agentState?.visual ?? {};
   const vitality = agentState?.vitality ?? 1;
