@@ -649,7 +649,7 @@ function Scene({
   // volatility scales with excitePulse so excited creatures distort more.
   const aliveScale = calculateAliveForm(breathPhase * Math.PI * 2, 1, excitePulse * 0.01);
   const heartbeat = Math.pow(Math.max(0, Math.sin(breathPhase * Math.PI * 4)), 3) * 0.03;
-  const breathScale = aliveScale + heartbeat;
+  const breathScale = aliveScale + heartbeat + excitePulse * 0.12;
 
   // Activity-based dimming
   const activityDim = creatureActivity === "sleeping" ? 0.45 : creatureActivity === "drowsy" ? 0.7 : 1;
