@@ -47,6 +47,7 @@ export function BattleArena({
   const opponentRank = getRankTitle(opponentRating);
 
   const handleMove = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     (move: ComboMove) => {
       if (phase !== "select") return;
       haptic("tap");

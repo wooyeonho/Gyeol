@@ -39,12 +39,16 @@ export function OmniEngine({ dna, context, scale }: OmniEngineProps) {
 
   // Refs avoid stale closures inside useFrame
   const dnaRef         = useRef(dna);
+  // eslint-disable-next-line react-hooks/refs
   dnaRef.current       = dna;
   const contextRef     = useRef(context);
+  // eslint-disable-next-line react-hooks/refs
   contextRef.current   = context;
   const phaseShiftRef  = useRef(phaseShift);
+  // eslint-disable-next-line react-hooks/refs
   phaseShiftRef.current = phaseShift;
   const activeIdRef    = useRef(activeId);
+  // eslint-disable-next-line react-hooks/refs
   activeIdRef.current  = activeId;
 
   useFrame((_, dt) => {

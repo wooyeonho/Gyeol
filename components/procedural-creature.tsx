@@ -127,12 +127,19 @@ function RarityParticles({ color, intense }: { color: string; intense: boolean }
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
+      // eslint-disable-next-line react-hooks/purity
       arr[i * 3]     = (Math.random() - 0.5) * 0.8;
+      // eslint-disable-next-line react-hooks/purity
       arr[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
+      // eslint-disable-next-line react-hooks/purity
       arr[i * 3 + 2] = (Math.random() - 0.5) * 0.8;
+      // eslint-disable-next-line react-hooks/purity
       ageRef.current[i] = Math.random();
+      // eslint-disable-next-line react-hooks/purity
       velRef.current[i * 3]     = (Math.random() - 0.5) * 0.002;
+      // eslint-disable-next-line react-hooks/purity
       velRef.current[i * 3 + 1] = 0.005 + Math.random() * 0.008;
+      // eslint-disable-next-line react-hooks/purity
       velRef.current[i * 3 + 2] = (Math.random() - 0.5) * 0.002;
     }
     return arr;

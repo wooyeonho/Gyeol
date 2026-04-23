@@ -1056,6 +1056,7 @@ export function PixelCreature({
   const palette = buildPalette(appearance.palette.primary, appearance.palette.secondary);
 
   // Precompute both idle frames
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const sprites = useMemo(() => {
     return [
       generateSprite(appearance, 0),

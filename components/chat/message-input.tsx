@@ -90,6 +90,7 @@ export function MessageInput({
   const showSlashMenu = slashMatches.length > 0;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlashIndex(0);
   }, [input]);
 

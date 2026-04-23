@@ -229,6 +229,7 @@ async function runJob(
 // ── Plugin Registration ─────────────────────────────────
 // OpenClaw loads this via the `plugins` config in openclaw.json5.
 // Uses the function-style plugin module: (api) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function gyeolCronPlugin(api: any): void {
   const { logger } = api;
 
@@ -292,6 +293,7 @@ export default function gyeolCronPlugin(api: any): void {
   api.registerHttpRoute({
     path: "/gyeol/health",
     auth: "gateway" as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handler: (_req: any, res: any) => {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({

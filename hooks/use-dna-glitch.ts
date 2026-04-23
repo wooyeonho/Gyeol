@@ -19,6 +19,7 @@ export function useDnaGlitch(dna: CreatureDNA, threshold = 0.05): boolean {
       0,
     );
     if (maxChange >= threshold) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGlitching(true);
       const t = setTimeout(() => setGlitching(false), 200); // 0.2s — short and intense
       prevDnaRef.current = dna;

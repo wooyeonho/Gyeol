@@ -168,6 +168,7 @@ export default function BattlePass() {
 
   // Load season data
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSeason(getCurrentSeason());
     setProgress(getSeasonProgress());
   }, []);

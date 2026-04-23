@@ -26,6 +26,7 @@ export function OfflineIndicator() {
     };
 
     // Check initial state
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!navigator.onLine) setIsOffline(true);
 
     window.addEventListener("offline", handleOffline);

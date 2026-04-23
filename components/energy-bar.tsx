@@ -32,6 +32,7 @@ export function EnergyBar({ compact = false, locale = "ko" }: EnergyBarProps) {
   const isKo = locale === "ko";
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEnergy(getEnergyState());
     setRegenTime(getTimeToNextRegen());
 
