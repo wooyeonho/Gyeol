@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 
 vi.mock("@/lib/ai/router", () => ({
-  generateJSON: vi.fn(),
+  generateCognitiveJSON: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/embedding", () => ({
@@ -19,7 +19,7 @@ vi.mock("@/lib/cron-lock", () => ({
 
 import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
 import { createServiceClient } from "@/lib/supabase/service";
-import { generateJSON } from "@/lib/ai/router";
+import { generateCognitiveJSON } from "@/lib/ai/router";
 import { generateEmbedding } from "@/lib/ai/embedding";
 
 describe("dream integration", () => {
@@ -58,7 +58,7 @@ describe("dream integration", () => {
     (generateEmbedding as ReturnType<typeof vi.fn>).mockResolvedValue([0.1, 0.2]);
 
     let jsonCallCount = 0;
-    (generateJSON as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockImplementation(async () => {
       jsonCallCount++;
       if (jsonCallCount === 1) return { patterns: "recurring themes of light and water" };
       if (jsonCallCount === 2) return { dream_content: "A river of light flows through the darkness." };
@@ -138,14 +138,14 @@ describe("dream integration", () => {
     const { executeDream } = await import("./dream");
     const result = await executeDream();
 
-    // All 3 generateJSON stages were called
+    // All 3 generateCognitiveJSON stages were called
     expect(jsonCallCount).toBe(3);
     expect(releaseCronLock).toHaveBeenCalledWith("cron:dream");
   });
 
-  it("skips agent when generateJSON stage 1 returns null", async () => {
+  it("skips agent when generateCognitiveJSON stage 1 returns null", async () => {
     (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (generateJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (generateCognitiveJSON as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
     const insertFn = vi.fn().mockResolvedValue({});
     const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });

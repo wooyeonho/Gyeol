@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+vi.mock("@/lib/cron-core", () => ({ executeHeartbeat: vi.fn() }));
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 vi.mock("@/lib/ai/router", () => ({ generateText: vi.fn() }));
 vi.mock("@/lib/ai/embedding", () => ({ generateEmbedding: vi.fn() }));
@@ -26,7 +27,7 @@ vi.mock("@/lib/i18n/config", () => ({ getLanguageName: vi.fn().mockReturnValue("
 vi.mock("@/lib/i18n/generation", () => ({ resolveGenerationLocale: vi.fn().mockReturnValue("ko") }));
 vi.mock("@/lib/ops/logger", () => ({ logWarn: vi.fn() }));
 
-import { acquireCronLock, releaseCronLock } from "@/lib/cron-lock";
+import { executeHeartbeat } from "@/lib/cron-core";
 
 const CRON_SECRET = "test-secret-heartbeat";
 
@@ -62,7 +63,11 @@ describe("GET /api/cron/heartbeat", () => {
   });
 
   it("returns 200 with skipped when lock is held", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    (executeHeartbeat as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      timestamp: new Date().toISOString(),
+      skipped: "lock",
+    });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);
     expect(res.status).toBe(200);
@@ -71,25 +76,9 @@ describe("GET /api/cron/heartbeat", () => {
   });
 
   it("returns 200 when lock acquired and no agents", async () => {
-    (acquireCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (releaseCronLock as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-    const { createServiceClient } = await import("@/lib/supabase/service");
-    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({
-      from: vi.fn().mockImplementation((table: string) => {
-        if (table === "world_state") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: null }),
-              }),
-            }),
-          };
-        }
-        // agents returns empty → triggers early return with 0 processed
-        return {
-          select: vi.fn().mockResolvedValue({ data: [] }),
-        };
-      }),
+    (executeHeartbeat as ReturnType<typeof vi.fn>).mockResolvedValue({
+      processed: 0,
+      timestamp: new Date().toISOString(),
     });
     const { GET } = await import("./route");
     const res = await GET(makeRequest(CRON_SECRET) as never);
