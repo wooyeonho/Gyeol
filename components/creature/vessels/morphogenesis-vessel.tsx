@@ -3,7 +3,7 @@
 import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { damp } from "maath/easing";
+import { damp } from "@/lib/easing";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import {

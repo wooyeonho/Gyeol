@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { damp } from "maath/easing";
+import { damp } from "@/lib/easing";
 import {
   pickBestVessel,
   type VesselContext,

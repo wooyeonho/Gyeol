@@ -11,7 +11,7 @@ import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { deriveContinuousMorphology, blendGeometryParams, type ContinuousMorphology } from "@/lib/genome/continuous-morphology";
 import { deriveBodyStructure } from "@/lib/genome/body-plan";
 import { Outlines } from "@react-three/drei";
-import { damp, damp3 } from "maath/easing";
+import { damp, damp3 } from "@/lib/easing";
 import { VISUAL_CONFIG } from "@/lib/visual-config";
 import { CreatureBodyPlan } from "./creature-body-plan";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
