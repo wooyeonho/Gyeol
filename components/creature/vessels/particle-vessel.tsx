@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { damp } from "maath/easing";
+import { damp } from "@/lib/easing";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { deriveSpecies } from "@/lib/genome/species";
 import type { VesselPlugin, VesselProps, VesselContext } from "@/lib/creature/vessel-system";
@@ -31,6 +31,7 @@ const BILLBOARD_GEO = (() => {
 // ─── TypeScript Uniform Interface ─────────────────────────────────────────────
 
 interface ParticleUniforms {
+  [key: string]: { value: unknown };
   uTime:          { value: number };
   uOpacity:       { value: number };
   uParticleSize:  { value: number };

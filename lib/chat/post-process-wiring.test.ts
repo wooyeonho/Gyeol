@@ -50,7 +50,7 @@ import { classifyIntent } from "@/lib/dl/intent-classifier";
 import { classifyEmotion } from "@/lib/dl/emotion-classifier";
 import { validateDNATransition, applySafetyCorrections } from "@/lib/harness/creature-control";
 import { detectTurnMoodAsync, detectTurnMood } from "@/lib/evolution/personality";
-import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/genome/dna";
+import { applySoftMutation, generateInitialDNA, DEFAULT_NEW_DNA_AXES, type CreatureDNA } from "@/lib/genome/dna";
 
 // ─── Helpers ───
 
@@ -61,6 +61,7 @@ function makeDNA(base = 0.5, overrides: Partial<CreatureDNA> = {}): CreatureDNA 
     warmth: base, intensity: base, stability: base, openness: base,
     assertiveness: base, empathy: base, playfulness: base, independence: base,
     curiosity: base, persistence: base, adaptability: base, creativity: base,
+    ...DEFAULT_NEW_DNA_AXES,
     ...overrides,
   };
 }

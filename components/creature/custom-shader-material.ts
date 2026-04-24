@@ -13,7 +13,6 @@
  */
 
 import * as THREE from "three";
-import { damp } from "maath/easing";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
 import type { CreatureDNA } from "@/lib/genome/dna";
 
@@ -34,6 +33,11 @@ export type DNAMaterialTargets = {
 
 // Smooth easing speed — slow enough to be visually perceptible as a morph
 const LAMBDA = 2.0;
+
+// Frame-rate-independent scalar damp (same formula as maath/easing damp)
+function ds(current: number, target: number, dt: number): number {
+  return current + (target - current) * (1 - Math.exp(-LAMBDA * dt));
+}
 
 // Minimum non-zero values prevent shader variant flipping (0 ↔ non-zero triggers recompile)
 const EPS = 0.005;
@@ -121,21 +125,21 @@ export function dampDNAMaterial(
   targets: DNAMaterialTargets,
   dt: number,
 ): void {
-  mat.iridescence    = damp(mat.iridescence,    targets.iridescence,    LAMBDA, dt);
-  mat.iridescenceIOR = damp(mat.iridescenceIOR, targets.iridescenceIOR, LAMBDA, dt);
-  mat.sheen          = damp(mat.sheen,          targets.sheen,          LAMBDA, dt);
-  mat.sheenRoughness = damp(mat.sheenRoughness, targets.sheenRoughness, LAMBDA, dt);
-  mat.transmission   = damp(mat.transmission,   targets.transmission,   LAMBDA, dt);
-  mat.ior            = damp(mat.ior,            targets.ior,            LAMBDA, dt);
-  mat.roughness      = damp(mat.roughness,      targets.roughness,      LAMBDA, dt);
-  mat.metalness      = damp(mat.metalness,      targets.metalness,      LAMBDA, dt);
+  // @types/three@0.183 mistypes iridescence as boolean; cast to any to bypass.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const m = mat as any;
+  m.iridescence    = ds(m.iridescence,    targets.iridescence,    dt);
+  m.iridescenceIOR = ds(m.iridescenceIOR, targets.iridescenceIOR, dt);
+  m.sheen          = ds(m.sheen,          targets.sheen,          dt);
+  m.sheenRoughness = ds(m.sheenRoughness, targets.sheenRoughness, dt);
+  m.transmission   = ds(m.transmission,   targets.transmission,   dt);
+  m.ior            = ds(m.ior,            targets.ior,            dt);
+  m.roughness      = ds(m.roughness,      targets.roughness,      dt);
+  m.metalness      = ds(m.metalness,      targets.metalness,      dt);
+  m.sheenColor.r   = ds(m.sheenColor.r,   targets.sheenColorR,    dt);
+  m.sheenColor.g   = ds(m.sheenColor.g,   targets.sheenColorG,    dt);
+  m.sheenColor.b   = ds(m.sheenColor.b,   targets.sheenColorB,    dt);
 
-  // Sheen color — damp each channel separately
-  mat.sheenColor.r = damp(mat.sheenColor.r, targets.sheenColorR, LAMBDA, dt);
-  mat.sheenColor.g = damp(mat.sheenColor.g, targets.sheenColorG, LAMBDA, dt);
-  mat.sheenColor.b = damp(mat.sheenColor.b, targets.sheenColorB, LAMBDA, dt);
-
-  // Iridescence thickness upper bound (lower bound 100nm is constant)
   const range = mat.iridescenceThicknessRange as number[];
-  range[1] = damp(range[1], targets.iridescenceThicknessMax, LAMBDA, dt);
+  range[1] = ds(range[1], targets.iridescenceThicknessMax, dt);
 }
