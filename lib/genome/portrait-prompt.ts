@@ -1,251 +1,293 @@
 /**
  * DNA → Portrait Prompt System
  *
- * Converts a creature's DNA into character-design-oriented prompts.
- * Goals: cute, cool, ugly-charming, or weird — all should feel like
- * something people WANT to own and collect.
+ * Every DNA combination produces a unique, appealing collectible character.
+ * Design goal: cute / lovely / cool / ugly-charming / weird — always something
+ * a person wants to own. Pokémon and Tamagotchi energy.
  *
- * Design philosophy:
- * - Pokémon/Tamagotchi style: clear silhouette, readable personality,
- *   expressive face, appealing proportions
- * - DNA personality drives the visual archetype (chibi vs fierce vs derpy etc.)
- * - Every creature looks like a distinct collectible character
+ * Architecture:
+ * - Large lookup tables (body shape, eyes, face, ears, tail, art style)
+ * - DNA hash picks deterministically from each table
+ * - Continuous DNA values add nuance (size, roundness, expression intensity)
+ * - Result: effectively infinite unique characters, all appealing
  */
 
 import type { CreatureDNA } from "./dna";
-import { getDominantTraits, getRecessiveTraits } from "./dna";
 import type { SpeciesProfile } from "./species";
 import { deriveDNAAppearance } from "./appearance";
 import { getExpressedTraits } from "./traits";
 
-// ── Character design archetypes — personality-driven ─────────────
-// These define the BASE CHARACTER TYPE from DNA, not abstract shapes.
-// Each archetype has distinct proportions and personality reads.
-
-function getCharacterArchetype(dna: CreatureDNA, speciesArchetype: SpeciesProfile["archetype"]): {
-  body: string;
-  style: string;
-  proportions: string;
-} {
-  const cute = dna.warmth + dna.playfulness + dna.empathy;
-  const fierce = dna.assertiveness + dna.intensity + (1 - dna.warmth);
-  const cool = dna.analytical + dna.independence + dna.stability;
-  const weird = dna.creativity + dna.openness + (1 - dna.stability);
-  const shy = (1 - dna.assertiveness) + (1 - dna.verbal) + dna.empathy;
-
-  const max = Math.max(cute, fierce, cool, weird, shy);
-
-  // Personality-first character type
-  if (max === cute && cute > 1.2) {
-    // Round chibi creature — max cuteness
-    const forms: Record<SpeciesProfile["archetype"], string> = {
-      ethereal: "tiny round ghost creature with a chubby translucent body",
-      crystalline: "pudgy gem-like creature with sparkly round body",
-      organic: "plump round creature with big soft cheeks and a squishy belly",
-      mechanical: "cute round robot with big circular visor eyes and stubby arms",
-      fluid: "bubbly jelly creature with a wobbly round body",
-      volcanic: "tiny chubby dragon with a big head and a round flame tail",
-      spectral: "adorable round spirit with a soft glowing body",
-      verdant: "round plant creature with big leaf ears and tiny flower crown",
-    };
-    return {
-      body: forms[speciesArchetype] || forms.organic,
-      proportions: "chibi proportions, oversized round head, tiny stubby limbs, huge sparkling eyes",
-      style: "kawaii character design, soft pastel shading, clean bold outlines",
-    };
+// ── Deterministic hash from DNA ───────────────────────────────────
+function dnaHash(dna: CreatureDNA): number {
+  let h = 0x811c9dc5;
+  for (const v of Object.values(dna) as number[]) {
+    h ^= Math.round(v * 100000);
+    h = (Math.imul(h, 0x01000193)) >>> 0;
   }
-
-  if (max === fierce && fierce > 1.2) {
-    // Fierce/cool creature — the "scary but still collectible" type
-    const forms: Record<SpeciesProfile["archetype"], string> = {
-      ethereal: "sleek predatory spirit creature with sharp angular wings",
-      crystalline: "dangerous-looking crystal beast with jagged spines and glowing cracks",
-      organic: "fierce feral creature with sharp claws, wild mane, and intense eyes",
-      mechanical: "battle-worn robot creature with exposed pistons and a scarred chassis",
-      fluid: "dark liquid creature with sharp tendrils and a menacing dripping form",
-      volcanic: "mini dragon creature, aggressive posture, ember smoke trailing wings",
-      spectral: "shadowy wraith creature with glowing red eyes cutting through the dark",
-      verdant: "thorny beast creature, bark armor, dangerous sharp vine whips",
-    };
-    return {
-      body: forms[speciesArchetype] || forms.organic,
-      proportions: "compact powerful body, oversized claws or horns, intense glaring eyes, battle-ready stance",
-      style: "creature design, bold dramatic shading, high contrast, strong silhouette",
-    };
-  }
-
-  if (max === cool && cool > 1.2) {
-    // Cool and aloof — sleek, stylish, enigmatic
-    const forms: Record<SpeciesProfile["archetype"], string> = {
-      ethereal: "elegant ethereal creature with long flowing lines and a calm expression",
-      crystalline: "sleek geometric crystal creature with a dignified precise form",
-      organic: "graceful creature with clean smooth lines, calm half-lidded eyes",
-      mechanical: "sophisticated sleek robot with polished panels and a serene visor glow",
-      fluid: "cool liquid-glass creature with a still mirror-like surface",
-      volcanic: "composed volcanic creature, controlled embers, regal posture",
-      spectral: "mysterious cool ghost with a composed distant expression",
-      verdant: "dignified forest spirit, clean minimal vines, calm neutral expression",
-    };
-    return {
-      body: forms[speciesArchetype] || forms.organic,
-      proportions: "sleek proportions, calm collected pose, half-lidded or narrow eyes, elegant silhouette",
-      style: "stylish creature illustration, cool color palette, clean smooth shading, game character art",
-    };
-  }
-
-  if (max === weird && weird > 1.2) {
-    // Weird/ugly-charming — the "wtf is this but I love it" type
-    const forms: Record<SpeciesProfile["archetype"], string> = {
-      ethereal: "strange blobby spirit with mismatched floating eyes and wobbly appendages",
-      crystalline: "chaotic crystal creature with randomly sized facets and odd angles",
-      organic: "weird lumpy creature with asymmetric features and an odd charming grin",
-      mechanical: "bizarre patchwork robot cobbled together from mismatched parts",
-      fluid: "chaotic slime creature that drips in unusual directions with a goofy face",
-      volcanic: "strange magma thing with too many eyes and a blobby unpredictable shape",
-      spectral: "odd phantom with a comically confused expression and tangled ghost tail",
-      verdant: "chaotic plant creature with random sprouts everywhere and a bewildered look",
-    };
-    return {
-      body: forms[speciesArchetype] || forms.organic,
-      proportions: "quirky asymmetric proportions, unusual feature placement, oddly charming expression",
-      style: "quirky character design, flat bold colors, expressive exaggerated features, charming illustration",
-    };
-  }
-
-  // Default: shy/gentle — small, tentative, endearing
-  const forms: Record<SpeciesProfile["archetype"], string> = {
-    ethereal: "tiny timid spirit peeking out with big hesitant eyes",
-    crystalline: "small fragile crystal creature curled into a gentle pose",
-    organic: "small gentle creature with soft features and a shy downward glance",
-    mechanical: "small gentle robot with soft rounded edges and a hopeful blinking eye",
-    fluid: "tiny shy jelly creature that shrinks when looked at directly",
-    volcanic: "small bashful ember creature with a flickering warm glow",
-    spectral: "delicate shy ghost barely visible, peeking through semi-transparency",
-    verdant: "tiny sprout creature with two big leaves as ears, nervously smiling",
-  };
-  return {
-    body: forms[speciesArchetype] || forms.organic,
-    proportions: "small delicate frame, big gentle eyes, soft rounded features, endearing shy pose",
-    style: "gentle creature illustration, soft warm colors, delicate shading, heartwarming character design",
-  };
+  return h;
 }
 
-// ── Element-driven color accent / aura ────────────────────────────
-const ELEMENT_AURAS: Record<SpeciesProfile["element"], string> = {
-  light: "with soft golden sparkles and warm light halos around it",
-  shadow: "with wisps of dark smoke and tiny stars floating around it",
-  fire: "with small cute flames and floating embers",
-  ice: "with delicate frost crystals and cold sparkle effects",
-  nature: "with tiny flowers blooming and floating leaves around it",
-  void: "with subtle space distortion and floating geometric fragments",
-  storm: "with small cute lightning bolts crackling around it",
-  crystal: "with rainbow light refracting into tiny prisms around it",
-};
-
-// ── Emotional expression — personality drives the face ────────────
-function getFaceExpression(dna: CreatureDNA): string {
-  // High warmth + playfulness = big happy grin
-  if (dna.warmth > 0.7 && dna.playfulness > 0.6) return "huge joyful grin, crescent-shaped happy eyes";
-  // Grumpy but soft = tsundere appeal
-  if (dna.warmth < 0.35 && dna.stability > 0.6) return "pouty grumpy expression but soft features, tsundere look";
-  // Fierce + intensity = battle face
-  if (dna.intensity > 0.7 && dna.assertiveness > 0.6) return "fierce determined glare, narrowed glowing eyes";
-  // Curiosity = wide scanning eyes
-  if (dna.curiosity > 0.7) return "enormous curious wide eyes, alert inquisitive expression";
-  // Shy + empathy = bashful look
-  if (dna.empathy > 0.7 && dna.assertiveness < 0.4) return "shy gentle smile, soft blushing cheeks";
-  // Cool analytical = composed neutral
-  if (dna.analytical > 0.7) return "calm composed expression, cool half-lidded knowing eyes";
-  // High creativity + openness = derpy silly
-  if (dna.creativity > 0.7 && dna.openness > 0.6) return "goofy delighted expression, tongue slightly out, sparkly eyes";
-  // Independence = proud lone-wolf look
-  if (dna.independence > 0.75) return "proud aloof expression, chin tilted up, eyes looking sideways";
-  // Default: gentle content smile
-  return "gentle content smile, warm soft eyes";
+// Pick from array deterministically using hash + offset so each feature
+// uses a different slice of the hash space.
+function pick<T>(arr: T[], hash: number, offset = 0): T {
+  return arr[Math.abs((hash >>> offset) % arr.length)];
 }
 
-// ── Color description from DNA appearance ─────────────────────────
-function getColorDescription(appearance: ReturnType<typeof deriveDNAAppearance>): string {
-  const hueNames: Record<number, string> = {
-    0: "red", 30: "orange", 60: "yellow", 90: "lime green",
-    120: "green", 150: "teal", 180: "cyan", 210: "sky blue",
-    240: "blue", 270: "purple", 300: "pink", 330: "rose",
+// ── Body shapes — 24 options ──────────────────────────────────────
+// Concrete, specific character silhouettes. All are inherently appealing.
+const BODY_SHAPES = [
+  // 이등신 & chibi classics
+  "a tiny round creature with a massive spherical head (2-head chibi ratio), stubby little legs",
+  "a squishy bean-shaped creature, big round head, pinpoint stubby arms and legs",
+  "an egg-shaped soft creature, oversized rounded head, tiny body beneath it",
+  "a chubby round creature with a face taking up almost the whole front, nearly no neck",
+  "a smol round creature so small its head is bigger than the rest of it combined",
+  // Floaty / ghost types
+  "a floating teardrop-shaped spirit, big round head, wispy swirling tail where legs would be",
+  "a tiny ghost with a big round head and a billowing skirt-like translucent body beneath",
+  "a round cloud-puff spirit with a soft fluffy undefined body, barely any limbs visible",
+  // Fluffy / plush types
+  "a perfectly round fluffy ball creature with tiny hidden arms peeking out",
+  "an incredibly fluffy creature, mostly a big round puff of fur with eyes and a tiny nose",
+  "a chubby little creature that looks exactly like a living stuffed plush toy",
+  "a soft round creature like a living marshmallow, squishy and pillowy",
+  // Compact critter types
+  "a chubby four-legged creature with a round barrel body and big cheeks",
+  "a tiny caterpillar-shaped creature with a big cute head at one end",
+  "a compact little creature shaped like a plump raindrop standing upright",
+  "a tiny round snail-like creature with a decorative round shell on its back",
+  // Quirky / charming weird types
+  "a lanky thin creature with a disproportionately enormous round head",
+  "a star-shaped creature with a cute expressive face in the center",
+  "a tiny mushroom creature with an oversized round cap that serves as its head",
+  "a round pebble-shaped creature with simple soft features and stubby limbs",
+  // Special types
+  "a tiny fairy creature with an oversized round head and delicate translucent wings",
+  "a crystal gem with a tiny cute face, small wiggly arms, and expressive eyes",
+  "a tiny dragon hatchling with a huge head, round chubby body, and stubby wings",
+  "a round robot creature with a big circular head-screen displaying a cute face",
+];
+
+// ── Eye styles — 16 options ───────────────────────────────────────
+// Eyes are the #1 appeal factor. Every option should be irresistible.
+const EYE_STYLES = [
+  "enormous sparkling eyes with multiple star-shaped light reflections",
+  "huge glossy eyes with a big single highlight dot and soft gradient iris",
+  "wide button eyes with tiny little eyelashes and a cheerful glint",
+  "big shimmering eyes, three concentric rings of color, dreamy reflections",
+  "huge round eyes that take up a third of the face, simple and expressive",
+  "half-lidded sleepy-cute eyes with long soft lashes",
+  "tiny dot eyes and rosy cheeks (minimal tamagotchi-style charm)",
+  "enormous curious eyes scanning with wonder, pupils slightly dilated",
+  "crescent-moon shaped closed happy eyes (the classic smile-eyes)",
+  "big watery eyes on the verge of the most adorable expression imaginable",
+  "mismatched eyes, one a bit larger, giving it quirky asymmetric charm",
+  "multiple small cute eyes arranged in a charming cluster pattern",
+  "single large cyclops eye with gorgeous long lashes and a sparkle",
+  "glowing luminous eyes that emit soft warm light like tiny lanterns",
+  "big eyes with heterochromia, each a different color, uniquely beautiful",
+  "heavy-lidded sultry eyes with dramatic lashes, unexpectedly cool for a cute creature",
+];
+
+// ── Face detail / cheek marks — 12 options ───────────────────────
+const FACE_DETAILS = [
+  "rosy pink blush circles on both cheeks",
+  "tiny constellation-like freckle dots scattered across cheeks",
+  "heart-shaped blush marks on cheeks",
+  "small star-shaped markings on cheeks",
+  "soft triangle markings under eyes like a cat",
+  "glowing dot markings on cheeks that pulse gently",
+  "tiny swirl markings on forehead",
+  "crescent moon marking on forehead",
+  "small X-shaped scar on cheek (tough but cute)",
+  "tiny lightning bolt mark on cheek",
+  "simple dot freckles, three on each side",
+  "no markings, clean smooth face (iconic simplicity)",
+];
+
+// ── Head features — ears, horns, etc. — 16 options ───────────────
+const HEAD_FEATURES = [
+  "big floppy rounded bunny ears",
+  "tiny soft pointed cat ears",
+  "large leaf-shaped ears like a tropical plant",
+  "cute tiny nub horns, barely there but charming",
+  "long droopy antenna with a little ball at the tip",
+  "fluffy ear tufts like a tiny fox",
+  "a single tiny crystalline horn with an inner glow",
+  "round bear ears perfectly placed on top",
+  "large soft bat-like wings sprouting from the head",
+  "a tiny flower growing cheerfully from the top of the head",
+  "a tiny crown that it seems to have been born wearing",
+  "a swirly ahoge hair strand that bobs with every movement",
+  "big floppy dog ears that hang down past its chin",
+  "two small antlers with soft velvet texture",
+  "fish-fin-like ear flaps on either side",
+  "a tiny mushroom cap growing between its ears",
+];
+
+// ── Tail / rear detail — 12 options ──────────────────────────────
+const TAIL_FEATURES = [
+  "fluffy round pom-pom tail",
+  "curly little pig-like spiral tail",
+  "leaf-shaped flat tail",
+  "a tail with a small flame at the tip",
+  "a crystal shard at the end of a thin tail",
+  "heart-shaped tail tip",
+  "multiple wispy flowing tail strands",
+  "a star shape at the end of the tail",
+  "no tail, just a perfectly round little butt",
+  "swirly corkscrew tail",
+  "a tiny cloud puff attached as a tail",
+  "a tail shaped like a music note",
+];
+
+// ── Art styles — 14 options ───────────────────────────────────────
+// Each produces a distinct visual feel. All are appealing in different ways.
+const ART_STYLES = [
+  "kawaii sticker art, thick white outline, soft pastel flat colors, clean",
+  "soft pastel watercolor illustration, gentle color bleeding, delicate lines",
+  "bold flat cartoon style, clean strong outlines, vibrant saturated colors",
+  "cute chibi game character art, clean cel shading, bright appealing colors",
+  "glossy vinyl toy style, smooth shading, rounded plastic-like highlights",
+  "tamagotchi-inspired chunky minimal design, simple shapes, pure charm",
+  "neon glow creature art, luminous edges, deep dark background, vivid colors",
+  "plush toy illustration, fabric texture suggestion, huggable squishy look",
+  "vintage cute sticker aesthetic, warm tones, slightly retro rounded design",
+  "cute horror style, slightly unsettling element but irresistibly charming",
+  "holographic foil illustration, iridescent shifting colors, dreamy quality",
+  "soft colored pencil sketch, charming hand-drawn feel, warm appealing tones",
+  "glossy enamel pin design, bold outlines, flat vivid color fills",
+  "soft anime illustration style, round shapes, expressive features, bright eyes",
+];
+
+// ── Special charm effects — layered on top ────────────────────────
+const CHARM_EFFECTS = [
+  "surrounded by tiny floating sparkles and stars",
+  "with small floating hearts around it",
+  "with soft rainbow aura gently glowing",
+  "with small glowing particles orbiting around it",
+  "with tiny flowers floating around it",
+  "with little bubbles floating up around it",
+  "with small lightning sparks crackling cutely",
+  "with soft snowflake-like crystals floating",
+  "with tiny musical notes floating around its head",
+  "with a glowing halo of light above it",
+  "with small clouds puffing around its feet",
+  "with little leaf confetti floating around it",
+];
+
+// ── Proportion descriptor from DNA ───────────────────────────────
+function getProportions(dna: CreatureDNA): string {
+  // roundness: warmth + (1-analytical) + (1-assertiveness)
+  const roundness = (dna.warmth + (1 - dna.analytical) + (1 - dna.assertiveness)) / 3;
+  // compactness: (1-verbal) + (1-independence)
+  const compact = ((1 - dna.verbal) + (1 - dna.independence)) / 2;
+
+  if (roundness > 0.7 && compact > 0.6) return "극단적 이등신, head is half the total height, maximum chibi roundness";
+  if (roundness > 0.6) return "이등신 chibi proportions, big round head, small soft body";
+  if (compact > 0.7) return "삼등신 compact proportions, slightly taller chibi";
+  if (dna.verbal > 0.7 && dna.independence > 0.6) return "slender but still chibi, taller with expressive face";
+  return "soft chibi proportions, appealing rounded silhouette";
+}
+
+// ── Color palette from DNA ────────────────────────────────────────
+function getColorPalette(appearance: ReturnType<typeof deriveDNAAppearance>): string {
+  const HUE_NAMES: [number, string][] = [
+    [0, "warm red"], [20, "coral orange"], [40, "sunny orange"],
+    [60, "golden yellow"], [80, "yellow-green"], [100, "lime"],
+    [120, "mint green"], [150, "teal"], [170, "aqua"],
+    [200, "sky blue"], [220, "cornflower blue"], [240, "indigo blue"],
+    [260, "lavender"], [280, "soft purple"], [300, "magenta pink"],
+    [320, "hot pink"], [340, "rose pink"], [355, "cherry red"],
+  ];
+
+  const nearest = (hue: number) => {
+    let best = HUE_NAMES[0][1];
+    let bestDist = 360;
+    for (const [h, name] of HUE_NAMES) {
+      const d = Math.min(Math.abs(hue - h), 360 - Math.abs(hue - h));
+      if (d < bestDist) { bestDist = d; best = name; }
+    }
+    return best;
   };
 
-  const h = appearance.primaryHue;
-  let closestHue = 0;
-  let closestDist = 360;
-  for (const [key] of Object.entries(hueNames)) {
-    const k = Number(key);
-    const dist = Math.min(Math.abs(h - k), 360 - Math.abs(h - k));
-    if (dist < closestDist) { closestDist = dist; closestHue = k; }
-  }
-  const primaryName = hueNames[closestHue] || "indigo";
+  const primary = nearest(appearance.primaryHue);
+  const secondary = nearest((appearance.primaryHue + appearance.secondaryHueShift + 360) % 360);
 
-  const secondaryHue = (appearance.primaryHue + appearance.secondaryHueShift) % 360;
-  let closestSecondary = 0;
-  closestDist = 360;
-  for (const [key] of Object.entries(hueNames)) {
-    const k = Number(key);
-    const dist = Math.min(Math.abs(secondaryHue - k), 360 - Math.abs(secondaryHue - k));
-    if (dist < closestDist) { closestDist = dist; closestSecondary = k; }
-  }
-  const secondaryName = hueNames[closestSecondary] || "purple";
+  const pop = appearance.primarySaturation > 65
+    ? "vivid vibrant"
+    : appearance.primarySaturation > 45
+    ? "rich"
+    : "soft pastel muted";
 
-  const vibrancy = appearance.primarySaturation > 65 ? "vibrant" : appearance.primarySaturation > 45 ? "rich" : "soft muted";
-
-  return `${vibrancy} ${primaryName} and ${secondaryName} color scheme`;
+  return `${pop} ${primary} as the main color, ${secondary} as accent`;
 }
 
-// ── Trait-driven unique markings ──────────────────────────────────
-function getTraitMarkings(dna: CreatureDNA): string {
+// ── Mood / expression ─────────────────────────────────────────────
+function getExpression(dna: CreatureDNA): string {
+  // Use continuous values for nuanced blends
+  if (dna.warmth > 0.75 && dna.playfulness > 0.65)
+    return "enormous joyful grin, crescent happy eyes, pure radiant happiness";
+  if (dna.warmth < 0.3 && dna.stability > 0.65)
+    return "small determined pout, arms crossed, tsundere energy — grumpy but adorable";
+  if (dna.intensity > 0.75 && dna.assertiveness > 0.65)
+    return "fierce intense expression, narrowed glowing eyes, battle-ready but still cute";
+  if (dna.curiosity > 0.75)
+    return "impossibly wide curious eyes, mouth slightly open in wonder, enchanting expression";
+  if (dna.empathy > 0.75 && dna.assertiveness < 0.4)
+    return "soft gentle smile, blushing cheeks, warm caring expression that melts hearts";
+  if (dna.playfulness > 0.75 && dna.stability < 0.4)
+    return "mischievous grin, one eye slightly squinted, pure playful troublemaker";
+  if (dna.analytical > 0.7 && dna.warmth < 0.4)
+    return "cool composed expression, calm half-lidded eyes, elegant and unfazed";
+  if (dna.independence > 0.8)
+    return "proud lone-wolf expression, looking off to the side, effortlessly cool";
+  if (dna.openness > 0.75 && dna.creativity > 0.65)
+    return "goofy delighted expression, tongue slightly out, sparkling chaotic energy";
+  if (dna.empathy > 0.6 && dna.curiosity > 0.6)
+    return "big sparkling eyes full of wonder and kindness, the most lovable expression";
+  if (dna.stability > 0.75 && dna.playfulness < 0.35)
+    return "peaceful sleepy expression, soft closed or half-open eyes, dreamily content";
+  // gentle default
+  return "gentle happy smile, warm soft eyes, immediately likeable expression";
+}
+
+// ── Trait markings — unique signature details ─────────────────────
+function getMarkings(dna: CreatureDNA): string {
   const traits = getExpressedTraits(dna);
-  const markings: string[] = [];
-
-  for (const trait of traits.slice(0, 2)) {
+  const marks: string[] = [];
+  for (const trait of traits.slice(0, 1)) {
     switch (trait.id) {
-      case "pattern_sight": markings.push("glowing rune markings on body"); break;
-      case "word_weaver": markings.push("tiny letters floating around it"); break;
-      case "heart_reader": markings.push("glowing heart symbol on chest"); break;
-      case "storm_soul": markings.push("lightning bolt markings on body"); break;
-      case "quiet_anchor": markings.push("soft circular ring patterns on skin"); break;
-      case "dream_weaver": markings.push("galaxy swirl pattern on belly"); break;
-      case "trickster": markings.push("jester diamond pattern markings"); break;
-      case "lone_wolf": markings.push("cool scar marking across eye"); break;
-      case "chaos_bloom": markings.push("fractal flower patterns blooming on it"); break;
-      case "void_gazer": markings.push("dark eye-like void symbol on forehead"); break;
-      case "memory_keeper": markings.push("constellation dot pattern on back"); break;
-      case "cheerleader": markings.push("star-shaped sparkle trail"); break;
-      default: break;
+      case "pattern_sight":    marks.push("glowing geometric rune markings on body"); break;
+      case "word_weaver":      marks.push("tiny luminous letters floating around it"); break;
+      case "heart_reader":     marks.push("glowing heart symbol on chest"); break;
+      case "storm_soul":       marks.push("tiny lightning bolt markings on body"); break;
+      case "quiet_anchor":     marks.push("soft concentric ring patterns on skin"); break;
+      case "dream_weaver":     marks.push("tiny galaxy swirl visible inside its belly"); break;
+      case "trickster":        marks.push("playful diamond jester markings"); break;
+      case "lone_wolf":        marks.push("single cool scar marking across one eye"); break;
+      case "chaos_bloom":      marks.push("fractal flower patterns that bloom on skin"); break;
+      case "void_gazer":       marks.push("mysterious void-eye symbol on forehead"); break;
+      case "memory_keeper":    marks.push("soft constellation dot pattern on back"); break;
+      case "cheerleader":      marks.push("little star sparkles trailing behind it"); break;
     }
   }
-
-  return markings.join(", ");
+  return marks.join(", ");
 }
 
 // ── Evolution stage ───────────────────────────────────────────────
-function getEvolutionStage(genLevel: number): string {
-  if (genLevel <= 1) return "baby stage, small and simple, baby creature";
-  if (genLevel <= 3) return "young stage, slightly grown, cute juvenile creature";
-  if (genLevel <= 5) return "adult stage, fully developed, strong character design";
-  if (genLevel <= 8) return "evolved stage, powerful look, complex markings and details";
-  if (genLevel <= 12) return "ancient stage, legendary aura, glowing accumulated power";
-  return "transcendent stage, god-tier creature design, reality-bending presence";
-}
-
-// ── Eye description ───────────────────────────────────────────────
-function getEyeDesc(eyeHue: number): string {
-  if (eyeHue < 60) return "warm golden amber eyes";
-  if (eyeHue < 120) return "bright emerald green eyes";
-  if (eyeHue < 200) return "electric cyan glowing eyes";
-  if (eyeHue < 280) return "deep violet glowing eyes";
-  if (eyeHue < 340) return "rose pink sparkling eyes";
-  return "fiery red intense eyes";
+function getEvolutionHint(gen: number): string {
+  if (gen <= 1)  return "newborn baby stage, extra small and extra cute";
+  if (gen <= 3)  return "young juvenile stage, slightly grown, gaining personality";
+  if (gen <= 5)  return "fully evolved, confident and complete character design";
+  if (gen <= 8)  return "powerful evolved form, complex markings, majestic presence";
+  if (gen <= 12) return "ancient legendary form, glowing with accumulated power";
+  return "transcendent godlike form, reality bends around it";
 }
 
 /**
- * Generate a character-design-oriented portrait prompt from creature DNA.
- * Produces cute/cool/weird-charming characters — not abstract fantasy blobs.
+ * Main portrait prompt — produces a unique appealing collectible character.
+ * Front-loads the most important visual info for Flux-1-schnell.
  */
 export function generatePortraitPrompt(
   dna: CreatureDNA,
@@ -258,70 +300,69 @@ export function generatePortraitPrompt(
   } = {},
 ): string {
   const appearance = deriveDNAAppearance(dna, species, options.genLevel);
-  const genLevel = options.genLevel ?? 1;
+  const h = dnaHash(dna);
+  const gen = options.genLevel ?? 1;
 
-  const archetype = getCharacterArchetype(dna, species.archetype);
-  const colorDesc = getColorDescription(appearance);
-  const faceExpr = getFaceExpression(dna);
-  const eyeDesc = getEyeDesc(appearance.eyeHue);
-  const aura = ELEMENT_AURAS[species.element];
-  const markings = getTraitMarkings(dna);
-  const evolutionStage = getEvolutionStage(genLevel);
+  const body       = pick(BODY_SHAPES,    h,  0);
+  const eyes       = pick(EYE_STYLES,     h,  4);
+  const face       = pick(FACE_DETAILS,   h,  8);
+  const head       = pick(HEAD_FEATURES,  h, 12);
+  const tail       = pick(TAIL_FEATURES,  h, 16);
+  const artStyle   = pick(ART_STYLES,     h, 20);
+  const charm      = pick(CHARM_EFFECTS,  h, 24);
 
-  // Context framing
+  const proportions = getProportions(dna);
+  const color       = getColorPalette(appearance);
+  const expression  = getExpression(dna);
+  const markings    = getMarkings(dna);
+  const evolution   = getEvolutionHint(gen);
+
   let frameDesc: string;
   switch (options.context ?? "portrait") {
-    case "full_body":
-      frameDesc = "full body character design, centered on white/dark background, front view";
-      break;
-    case "action":
-      frameDesc = "dynamic action pose, exciting composition, dramatic angle";
-      break;
-    case "dream":
-      frameDesc = "dreamlike soft focus, surreal pastel background, floating";
-      break;
-    default:
-      frameDesc = "portrait view, centered composition, clean dark background, soft rim light";
+    case "full_body": frameDesc = "full body view, centered, simple clean background"; break;
+    case "action":    frameDesc = "dynamic cute action pose, fun composition"; break;
+    case "dream":     frameDesc = "dreamy soft pastel background, floating, ethereal"; break;
+    default:          frameDesc = "portrait view, centered, simple dark or white background";
   }
 
-  // Mood overlay
-  const moodLine = options.mood ? `mood: ${options.mood}` : "";
+  const moodLine = options.mood ? `feeling ${options.mood}` : "";
 
+  // Flux-1-schnell works best with front-loaded concrete visual description
   const parts = [
-    // Character core — what it IS
-    `${archetype.body}`,
-    archetype.proportions,
+    // 1. Core character — what it looks like (most important)
+    body,
+    proportions,
+    head,
+    tail,
 
-    // Color and style
-    colorDesc,
-    archetype.style,
+    // 2. Face — the emotional hook
+    eyes,
+    face,
+    expression,
 
-    // Face and eyes — the emotional hook
-    faceExpr,
-    eyeDesc,
+    // 3. Color and style
+    color,
+    artStyle,
 
-    // Unique details
-    aura,
+    // 4. Details and effects
+    charm,
     markings,
-    evolutionStage,
     moodLine,
+    evolution,
 
-    // Composition
+    // 5. Composition
     frameDesc,
 
-    // Quality tags — optimized for character illustration (not 3D render)
-    "masterpiece, best quality, highly detailed illustration",
-    "cute creature design, original character, collectible design",
-    "expressive character, strong silhouette, appealing design",
-    "no text, no watermark, clean background",
-    "2D digital illustration, vibrant colors, character art",
+    // 6. Quality (concise — Flux doesn't need long tag lists)
+    "masterpiece, adorable original character design, highly detailed, collectible creature",
+    "no text, no watermark, no humans",
   ].filter(Boolean);
 
   return parts.join(", ");
 }
 
 /**
- * Avatar prompt — same character-first approach, tighter crop.
+ * Avatar prompt — tighter, faster.
  */
 export function generateAvatarPrompt(
   dna: CreatureDNA,
@@ -329,28 +370,26 @@ export function generateAvatarPrompt(
   genLevel?: number,
 ): string {
   const appearance = deriveDNAAppearance(dna, species, genLevel);
-  const archetype = getCharacterArchetype(dna, species.archetype);
-  const colorDesc = getColorDescription(appearance);
-  const faceExpr = getFaceExpression(dna);
-  const eyeDesc = getEyeDesc(appearance.eyeHue);
-  const aura = ELEMENT_AURAS[species.element];
+  const h = dnaHash(dna);
+
+  const body      = pick(BODY_SHAPES,   h,  0);
+  const eyes      = pick(EYE_STYLES,    h,  4);
+  const head      = pick(HEAD_FEATURES, h, 12);
+  const artStyle  = pick(ART_STYLES,    h, 20);
+  const charm     = pick(CHARM_EFFECTS, h, 24);
+  const color     = getColorPalette(appearance);
+  const expression = getExpression(dna);
+  const proportions = getProportions(dna);
 
   return [
-    archetype.body,
-    archetype.proportions,
-    colorDesc,
-    archetype.style,
-    faceExpr,
-    eyeDesc,
-    aura,
-    "close-up portrait, centered, dark background",
-    "masterpiece, highly detailed illustration, cute creature design",
-    "expressive character, collectible design, no text, no watermark",
+    body, proportions, head, eyes, expression, color, artStyle, charm,
+    "close-up portrait, centered, clean background",
+    "masterpiece, adorable character design, collectible creature, no text, no watermark",
   ].filter(Boolean).join(", ");
 }
 
 /**
- * Evolution prompt pair — before and after.
+ * Evolution prompt pair.
  */
 export function generateEvolutionPromptPair(
   dnaBefore: CreatureDNA,
@@ -360,13 +399,7 @@ export function generateEvolutionPromptPair(
   genLevel: number,
 ): { before: string; after: string } {
   return {
-    before: generatePortraitPrompt(dnaBefore, speciesBefore, {
-      genLevel: genLevel - 1,
-      context: "portrait",
-    }),
-    after: generatePortraitPrompt(dnaAfter, speciesAfter, {
-      genLevel,
-      context: "portrait",
-    }),
+    before: generatePortraitPrompt(dnaBefore, speciesBefore, { genLevel: genLevel - 1 }),
+    after:  generatePortraitPrompt(dnaAfter,  speciesAfter,  { genLevel }),
   };
 }
