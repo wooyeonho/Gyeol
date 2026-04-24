@@ -14,6 +14,7 @@ import { parseBody, creaturePortraitBodySchema } from "@/lib/validation/schemas"
 
 const log = logger.child({ route: "api/creature/portrait" });
 
+const CF_FLUX_PATH = "@cf/black-forest-labs/flux-1-schnell";
 const CF_SDXL_PATH = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
 
 async function generateImageCF(prompt: string): Promise<string | null> {
@@ -21,24 +22,44 @@ async function generateImageCF(prompt: string): Promise<string | null> {
   const apiToken = process.env.CF_API_TOKEN;
   if (!accountId || !apiToken) return null;
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${CF_SDXL_PATH}`;
+  const baseUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 45_000);
+
+  // Try Flux-1-schnell first — significantly better for character illustration
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${baseUrl}/${CF_FLUX_PATH}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
+      body: JSON.stringify({ prompt: prompt.slice(0, 1500), num_steps: 8, width: 1024, height: 1024 }),
+      signal: ctrl.signal,
+    });
+    if (res.ok) {
+      const buffer = await res.arrayBuffer();
+      clearTimeout(timer);
+      return `data:image/png;base64,${Buffer.from(buffer).toString("base64")}`;
+    }
+    log.warn(`[Portrait] Flux ${res.status}, falling back to SDXL`);
+  } catch (e) {
+    log.warn("[Portrait] Flux failed, falling back to SDXL", { err: String(e) });
+  }
+
+  // Fallback to SDXL
+  try {
+    const res = await fetch(`${baseUrl}/${CF_SDXL_PATH}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
       body: JSON.stringify({ prompt: prompt.slice(0, 1500), num_steps: 20, width: 1024, height: 1024 }),
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      log.error(`[Portrait] CF image ${res.status}`, { detail: await res.text().catch(() => "") });
+      log.error(`[Portrait] SDXL ${res.status}`, { detail: await res.text().catch(() => "") });
       return null;
     }
     const buffer = await res.arrayBuffer();
     return `data:image/png;base64,${Buffer.from(buffer).toString("base64")}`;
   } catch (e) {
-    logRouteError("[Portrait] CF image error:", e);
+    logRouteError("[Portrait] SDXL error:", e);
     return null;
   } finally {
     clearTimeout(timer);
