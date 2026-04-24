@@ -693,17 +693,10 @@ export default function Home() {
             </span>
           </div>
         </div>
-      </div>
-      </CreatureTapReact>
 
-      {/* ===== CHAT AREA — compact bottom section ===== */}
-      <div className="relative z-10 flex flex-col flex-shrink-0" style={{ height: "clamp(160px, 30vh, 320px)" }}>
-        {/* First-time guide: show when no conversation yet */}
+        {/* Conversation starters — overlaid on creature so it stays the hero */}
         {!conversationStarted && (
-          <div className="flex flex-col items-center gap-2 px-6 py-3">
-            <p className="text-sm text-white/60 text-center">
-              {t("home.firstTimeGuide")}
-            </p>
+          <div className="absolute bottom-20 inset-x-0 z-10 px-4 pointer-events-auto">
             <ConversationStarter
               creatureName={agentState?.self_name ?? undefined}
               locale={locale}
@@ -711,7 +704,14 @@ export default function Home() {
             />
           </div>
         )}
+      </div>
+      </CreatureTapReact>
 
+      {/* ===== CHAT AREA — input only before conversation, expands after ===== */}
+      <div
+        className="relative z-10 flex flex-col flex-shrink-0"
+        style={{ height: conversationStarted ? "clamp(160px, 30vh, 320px)" : "auto" }}
+      >
         <div className="flex-1 min-h-0">
           <ChatPanel navVisible={conversationStarted} />
         </div>
@@ -744,26 +744,20 @@ export default function Home() {
           }}
         />
       )}
-      {/* Daily login bonus modal */}
+      {/* Daily login bonus — bottom sheet only, no full-screen dim */}
       {showDailyBonus && (
         <motion.div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={() => setShowDailyBonus(false)}
+          className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-20"
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", damping: 20 }}
         >
-          <motion.div
-            className="w-full max-w-sm pb-2 relative"
-            initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", damping: 20 }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="w-full max-w-sm relative">
             <button
               className="absolute -top-8 right-0 text-white/40 hover:text-white/70 text-sm"
               onClick={() => setShowDailyBonus(false)}
             >
-              {t("common.close") || "닫기"}
+              {t("common.close")}
             </button>
             <DailyLoginBonus
               currentDayIndex={bonusDayIndex}
@@ -775,7 +769,7 @@ export default function Home() {
                 setTimeout(() => setShowDailyBonus(false), 2000);
               }}
             />
-          </motion.div>
+          </div>
         </motion.div>
       )}
       <BottomNav />

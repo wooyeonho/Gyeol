@@ -238,7 +238,7 @@ function StepAlive({ t }: { t: (key: string) => string }) {
       <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {t("onboarding.step1Title")}
       </h2>
-      <p className="mt-3 text-base leading-7 text-white/80 [word-break:keep-all]">
+      <p className="mt-3 text-base leading-7 text-white/80 [overflow-wrap:break-word] [word-break:keep-all]">
         {t("onboarding.step1Desc")}
       </p>
     </>

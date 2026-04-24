@@ -179,6 +179,11 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+}
+
+:lang(ko) {
+  word-break: keep-all;
 }
 
 .theme-page {
