@@ -121,26 +121,22 @@ export function dampDNAMaterial(
   targets: DNAMaterialTargets,
   dt: number,
 ): void {
-  // @types/three@0.183 declares iridescence as boolean on the instance but
-  // Three.js treats it as a 0-1 float at runtime — cast to bypass the mismatch.
-  const m = mat as unknown as Omit<THREE.MeshPhysicalMaterial, "iridescence"> & {
-    iridescence: number;
-  };
-  m.iridescence      = damp(m.iridescence,      targets.iridescence,    LAMBDA, dt);
-  mat.iridescenceIOR = damp(mat.iridescenceIOR, targets.iridescenceIOR, LAMBDA, dt);
-  mat.sheen          = damp(mat.sheen,          targets.sheen,          LAMBDA, dt);
-  mat.sheenRoughness = damp(mat.sheenRoughness, targets.sheenRoughness, LAMBDA, dt);
-  mat.transmission   = damp(mat.transmission,   targets.transmission,   LAMBDA, dt);
-  mat.ior            = damp(mat.ior,            targets.ior,            LAMBDA, dt);
-  mat.roughness      = damp(mat.roughness,      targets.roughness,      LAMBDA, dt);
-  mat.metalness      = damp(mat.metalness,      targets.metalness,      LAMBDA, dt);
+  // @types/three@0.183 mistypes iridescence as boolean on the class instance;
+  // it is a 0-1 float at runtime. Use any to bypass the broken declaration.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const m = mat as any;
+  m.iridescence    = damp(m.iridescence,    targets.iridescence,    LAMBDA, dt);
+  m.iridescenceIOR = damp(m.iridescenceIOR, targets.iridescenceIOR, LAMBDA, dt);
+  m.sheen          = damp(m.sheen,          targets.sheen,          LAMBDA, dt);
+  m.sheenRoughness = damp(m.sheenRoughness, targets.sheenRoughness, LAMBDA, dt);
+  m.transmission   = damp(m.transmission,   targets.transmission,   LAMBDA, dt);
+  m.ior            = damp(m.ior,            targets.ior,            LAMBDA, dt);
+  m.roughness      = damp(m.roughness,      targets.roughness,      LAMBDA, dt);
+  m.metalness      = damp(m.metalness,      targets.metalness,      LAMBDA, dt);
+  m.sheenColor.r   = damp(m.sheenColor.r,   targets.sheenColorR,    LAMBDA, dt);
+  m.sheenColor.g   = damp(m.sheenColor.g,   targets.sheenColorG,    LAMBDA, dt);
+  m.sheenColor.b   = damp(m.sheenColor.b,   targets.sheenColorB,    LAMBDA, dt);
 
-  // Sheen color — damp each channel separately
-  mat.sheenColor.r = damp(mat.sheenColor.r, targets.sheenColorR, LAMBDA, dt);
-  mat.sheenColor.g = damp(mat.sheenColor.g, targets.sheenColorG, LAMBDA, dt);
-  mat.sheenColor.b = damp(mat.sheenColor.b, targets.sheenColorB, LAMBDA, dt);
-
-  // Iridescence thickness upper bound (lower bound 100nm is constant)
   const range = mat.iridescenceThicknessRange as number[];
   range[1] = damp(range[1], targets.iridescenceThicknessMax, LAMBDA, dt);
 }
