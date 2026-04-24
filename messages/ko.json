@@ -853,6 +853,12 @@
     "dnaPresetMystic": "신비로운 결",
     "dnaPresetCreative": "창의적인 결",
     "presetDescription": "성격 프리셋을 선택하면 결의 DNA가 설정됩니다",
+    "advancedModes": "고급 성격 모드",
+    "socialProofHeadline": "명이 이미 결과 함께하고 있어요",
+    "socialProofCreatures": "고유 크리처 탄생",
+    "socialProofConversations": "대화 나눔",
+    "socialProofActive": "오늘 활동 중",
+    "socialProofJoin": "지금 함께하는 사람들이 있어요",
     "tryDemo": "로그인 없이 체험하기"
   },
   "evolution": {

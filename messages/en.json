@@ -853,6 +853,12 @@
     "dnaPresetMystic": "Mystic Gyeol",
     "dnaPresetCreative": "Creative Gyeol",
     "presetDescription": "Choose a personality preset to configure your creature's DNA",
+    "advancedModes": "Advanced personality modes",
+    "socialProofHeadline": " people are already with Gyeol",
+    "socialProofCreatures": "Unique creatures born",
+    "socialProofConversations": "Conversations shared",
+    "socialProofActive": "Active today",
+    "socialProofJoin": "People are joining right now",
     "tryDemo": "Try without signing in"
   },
   "evolution": {

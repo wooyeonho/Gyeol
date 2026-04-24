@@ -238,7 +238,7 @@ function StepAlive({ t }: { t: (key: string) => string }) {
       <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {t("onboarding.step1Title")}
       </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
+      <p className="mt-3 text-base leading-7 text-white/80 [word-break:keep-all]">
         {t("onboarding.step1Desc")}
       </p>
     </>
@@ -262,7 +262,7 @@ function StepPersonality({
       <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {t("onboarding.step2Title")}
       </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
+      <p className="mt-3 text-base leading-7 text-white/80 [word-break:keep-all]">
         {t("onboarding.step2Desc")}
       </p>
       {/* DNA Preset Cards — quick-start personality selection */}
@@ -354,12 +354,12 @@ function StepRewards({ t }: { t: (key: string) => string }) {
       <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {t("onboarding.step3Title")}
       </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
+      <p className="mt-3 text-base leading-7 text-white/80 [word-break:keep-all]">
         {t("onboarding.step3Desc")}
       </p>
       <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
         <h3 className="text-sm font-semibold text-white">{t("onboarding.step4Title")}</h3>
-        <p className="mt-2 text-sm leading-6 text-white/75">
+        <p className="mt-2 text-sm leading-6 text-white/75 [word-break:keep-all]">
           {t("onboarding.step4Desc")}
         </p>
       </div>
@@ -405,9 +405,9 @@ function SocialProofBanner({ t }: { t: (key: string) => string }) {
   const userCount = useCountUp(12847, 1400);
 
   const stats = [
-    { label: t("onboarding.socialProofCreatures") || "고유 크리처 탄생", value: "344M+", icon: "🧬" },
-    { label: t("onboarding.socialProofConversations") || "대화 나눔", value: "1.2M+", icon: "💬" },
-    { label: t("onboarding.socialProofActive") || "오늘 활동 중", value: "8.4K", icon: "🔥" },
+    { label: t("onboarding.socialProofCreatures"), value: "344M+", icon: "🧬" },
+    { label: t("onboarding.socialProofConversations"), value: "1.2M+", icon: "💬" },
+    { label: t("onboarding.socialProofActive"), value: "8.4K", icon: "🔥" },
   ];
 
   return (
@@ -422,10 +422,10 @@ function SocialProofBanner({ t }: { t: (key: string) => string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.5 }}
-        className="mb-3 text-center text-sm font-semibold text-cyan-300/90"
+        className="mb-3 text-center text-sm font-semibold text-cyan-300/90 [word-break:keep-all]"
       >
         <span className="tabular-nums">{userCount.toLocaleString()}</span>
-        {t("onboarding.socialProofHeadline") || "명이 이미 결과 함께하고 있어요"}
+        {t("onboarding.socialProofHeadline")}
       </motion.p>
 
       <div className="flex items-center justify-around">
@@ -437,8 +437,8 @@ function SocialProofBanner({ t }: { t: (key: string) => string }) {
           </div>
         ))}
       </div>
-      <p className="mt-2.5 text-center text-[11px] text-white/40">
-        {t("onboarding.socialProofJoin") || "지금 함께하는 사람들이 있어요"}
+      <p className="mt-2.5 text-center text-[11px] text-white/40 [word-break:keep-all]">
+        {t("onboarding.socialProofJoin")}
       </p>
     </motion.div>
   );
