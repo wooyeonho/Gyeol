@@ -31,6 +31,7 @@ const BILLBOARD_GEO = (() => {
 // ─── TypeScript Uniform Interface ─────────────────────────────────────────────
 
 interface ParticleUniforms {
+  [key: string]: { value: unknown };
   uTime:          { value: number };
   uOpacity:       { value: number };
   uParticleSize:  { value: number };
