@@ -23,7 +23,6 @@ const FEATURES: Feature[] = [
   { id: "care", route: "/care", triggerAfterMessages: 8, emoji: "🍎", label: { ko: "생명체에게 밥을 줄 수 있어요", en: "You can feed your creature" } },
   { id: "diary", route: "/diary", triggerAfterMessages: 15, emoji: "📖", label: { ko: "생명체의 일기를 확인해보세요", en: "Check your creature's diary" } },
   { id: "journey", route: "/journey", triggerAfterMessages: 25, emoji: "🗺️", label: { ko: "함께한 여정을 돌아보세요", en: "Look back on your journey together" } },
-  { id: "creature-conversation", route: "/creature-conversation", triggerAfterMessages: 50, emoji: "💬", label: { ko: "다른 생명체와 대화시켜보세요", en: "Let creatures talk to each other" } },
 ];
 
 function getVisitedFeatures(): Set<string> {
