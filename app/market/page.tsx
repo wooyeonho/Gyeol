@@ -25,13 +25,14 @@ import {
 import {
   PLANS,
   annualSavingsKRW,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   bundleEffectivePriceKRW,
   canJoinChallenge,
   CHALLENGES,
   type PlanId,
 } from "@/lib/revenue/world-class-monetization";
-import { formatCurrency, categorizeTransaction } from "@/lib/fintech/world-class-fintech";
-import { cartTotals, freeShippingGap } from "@/lib/commerce/world-class-commerce";
+import { formatCurrency } from "@/lib/fintech/world-class-fintech";
+import { freeShippingGap } from "@/lib/commerce/world-class-commerce";
 
 type Item = {
   id: string;

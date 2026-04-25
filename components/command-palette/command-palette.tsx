@@ -137,13 +137,17 @@ export function CommandPalette() {
   let flatIndex = 0;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 px-4 pt-[14vh] backdrop-blur-sm"
       onClick={close}
+      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
       role="dialog"
+      tabIndex={-1}
       aria-modal="true"
       aria-label="Command palette"
     >
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
       <div
         className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

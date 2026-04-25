@@ -77,7 +77,9 @@ const XP_STREAK_BONUS = 15;
 
 // ── XP curve ────────────────────────────────────────────────────────────────
 
-function xpForTier(tier: number): number {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _xpForTier(tier: number): number {
   // Linear growth: tier 1 = 80, tier 2 = 92, tier 3 = 104 ...
   return BASE_XP + XP_PER_TIER_INCREMENT * (tier - 1);
 }

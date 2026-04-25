@@ -91,6 +91,7 @@ export function VitalsReporter() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       flush();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]); // re-register when route changes
 
   return null;

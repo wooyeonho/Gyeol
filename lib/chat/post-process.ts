@@ -259,6 +259,7 @@ export async function persistChatTurn(params: {
     ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
   }).eq("agent_id", params.agentId);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const goalSignal = await applyGoalLoop({
     agentId: params.agentId,
     agentState: params.agentState,

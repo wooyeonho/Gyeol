@@ -9,7 +9,7 @@ import {
   formatShortcut,
   type SlashCommand,
 } from "@/lib/features/world-class-patterns";
-import { rankCommands, previewUrl, type CommandEntry } from "@/lib/devtools/world-class-dx";
+import { rankCommands, type CommandEntry } from "@/lib/devtools/world-class-dx";
 
 interface Command {
   id: string;
@@ -97,6 +97,8 @@ export function CommandPalette({ locale = "ko", onThemeToggle }: CommandPaletteP
       group: isKo ? "단축키" : "Shortcuts",
     }));
 
+   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const ALL_COMMANDS = [...COMMANDS, ...slashCommands, ...shortcutCommands];
 
   // Build DX command entries for fuzzy ranking

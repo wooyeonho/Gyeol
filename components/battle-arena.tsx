@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
+
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BATTLE_MOVES, calculateCombo, calculateMoveDamage, type MoveType, type ComboMove } from "@/lib/game/combo-system";

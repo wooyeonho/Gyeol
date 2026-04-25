@@ -5,7 +5,6 @@ const WINDOW_MS = 60_000;
 const DEFAULT_MAX_PER_WINDOW = 30;
 // Always fail-closed: deny requests on error to prevent bypass.
 // Previously allowed env override to "open" — removed for security hardening.
-const FAIL_MODE = "closed" as const;
 
 /**
  * Plan-based rate limit tiers.

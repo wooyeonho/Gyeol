@@ -25,7 +25,9 @@ const CARE_ACTIONS = [
  * Compact enough to place on the home page for instant creature care.
  */
 export function QuickCareButtons({ vitality, onCareComplete, onOfflineAction, pendingCount = 0 }: QuickCareButtonsProps) {
-  const { locale, t } = useTranslations();
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { locale, t: _t } = useTranslations();
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<Record<string, boolean>>({});
 

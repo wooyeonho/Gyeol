@@ -53,6 +53,7 @@ function ts(): string {
  * @deprecated Use OpenClaw gateway instead. This is a fallback for
  * environments where OpenClaw gateway is not available.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function startScheduler(_config: EngineConfig): void {
   logger.info(`[${ts()}] [DEPRECATED] Legacy scheduler called — use OpenClaw gateway instead`);
   logger.info(`[${ts()}] Starting fallback scheduler with setInterval...`);

@@ -171,13 +171,15 @@ describe("Quest System", () => {
       const analyticDNA = makeDNA({ analytical: 0.95, curiosity: 0.95 });
 
       // Generate quests many times and count knowledge quests
-      let knowledgeCount = 0;
+       
+      let _knowledgeCount = 0;
       let totalCount = 0;
       // Since daily quests are seeded by date, we test the type distribution
       const quests = generateDailyQuests(analyticDNA);
       for (const q of quests) {
         totalCount++;
-        if (q.type === "knowledge") knowledgeCount++;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        if (q.type === "knowledge") _knowledgeCount++;
       }
       // With high analytical DNA, we expect at least some knowledge quests
       // or the bias to lean in that direction. We just verify the function

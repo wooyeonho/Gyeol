@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useKeyboardShortcuts, SHORTCUTS } from "@/lib/keyboard-shortcuts";
+import { useKeyboardShortcuts } from "@/lib/keyboard-shortcuts";
 import { useSearchModal } from "@/components/search-modal";
 import { SHORTCUTS as WORLD_CLASS_SHORTCUTS } from "@/lib/features/world-class-patterns";
 

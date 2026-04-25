@@ -95,13 +95,17 @@ export function SmartPaywall({
   const priceSuffix = billing === "annual" ? "/년" : "/월";
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="paywall-headline"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
       <div
         className={`relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${plan.gradient} bg-neutral-950 shadow-2xl`}
         onClick={(e) => e.stopPropagation()}

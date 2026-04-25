@@ -18,8 +18,10 @@ import type { Visual } from "@/components/breeding-card";
 import dynamic from "next/dynamic";
 import { DEFAULT_CHANNELS } from "@/lib/social/channel-system";
 import { hnScore, reputationTier } from "@/lib/community/world-class-community";
-import { scoreFeedItem, FEED_RECIPES, TAPBACK_REACTIONS, type FeedItem } from "@/lib/social/world-class-social";
-import { fitToAspect, collapseGap, SOCIAL_ASPECT_RATIOS, type AspectKey } from "@/lib/creative/world-class-creative";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { type FeedItem } from "@/lib/social/world-class-social";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { type AspectKey } from "@/lib/creative/world-class-creative";
 
 const PullToRefresh = dynamic(() => import("@/components/pull-to-refresh").then(m => ({ default: m.PullToRefresh })), { ssr: false });
 const ChannelList = dynamic(() => import("@/components/channel-list").then(m => ({ default: m.ChannelList })), { ssr: false });
@@ -153,7 +155,9 @@ export default function SocialPage() {
   const [translations, setTranslations] = useState<Record<string, string>>({});
 
   /** Resolve reputation tier for display. Uses reactionCount as proxy for reputation. */
-  function getReputationBadge(reactionCount: number) {
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function _getReputationBadge(reactionCount: number) {
     const tier = reputationTier(reactionCount);
     return tier;
   }

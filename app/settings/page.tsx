@@ -46,7 +46,6 @@ const StreakShieldShop = dynamic(() => import("@/components/streak-shield-shop")
   loading: () => <div className="h-44 rounded-2xl bg-white/5 animate-pulse" />,
 });
 import { type UnlockedAchievement } from "@/lib/engagement/achievements";
-import { getPerfectDayStreak } from "@/lib/engagement/perfect-day";
 import { PerfectDayBadge } from "@/components/perfect-day-badge";
 import {
   isFontSize,

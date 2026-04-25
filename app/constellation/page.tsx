@@ -7,7 +7,6 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { formatLocalizedDate } from "@/lib/i18n/format";
 import { BottomNav } from "@/components/bottom-nav";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
-import { PageSkeleton } from "@/components/discover/skeleton";
 
 const ConstellationScene = dynamic(() => import("@/components/constellation-scene"), { ssr: false });
 

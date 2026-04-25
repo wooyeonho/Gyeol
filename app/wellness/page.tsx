@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/purity */
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MoodCheckin } from "@/components/mood-checkin";

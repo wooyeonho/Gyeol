@@ -89,6 +89,7 @@ const HINT_ADJECTIVES_EN: Record<string, string> = {
 };
 
 /** Trait-family adjectives for vague hints (Korean) */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const HINT_ADJECTIVES_KO: Record<string, string> = {
   analytical: "계산적인",
   intuitive: "신비로운",

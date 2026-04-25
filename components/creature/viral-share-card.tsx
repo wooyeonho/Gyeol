@@ -78,6 +78,7 @@ function drawRadarChart(
       const a = start + i * step;
       const px = cx + rr * Math.cos(a);
       const py = cy + rr * Math.sin(a);
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.closePath();
@@ -109,6 +110,7 @@ function drawRadarChart(
     const v = dna[DNA_AXES[i]];
     const px = cx + r * v * Math.cos(a);
     const py = cy + r * v * Math.sin(a);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
   ctx.closePath();
@@ -429,6 +431,7 @@ export function ViralShareCard({
           style={{ aspectRatio: `${CARD_W}/${CARD_H}` }}
         >
           {composedImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={composedImage}
               alt={`${speciesName} share card`}

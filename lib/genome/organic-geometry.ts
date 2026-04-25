@@ -20,7 +20,9 @@ function noise3D(x: number, y: number, z: number): number {
   return (n - Math.floor(n)) * 2 - 1;
 }
 
-function smoothstep(edge0: number, edge1: number, x: number): number {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
 }
@@ -63,7 +65,6 @@ function makeCapsule(
   radialSegments: number = 6,
   heightSegments: number = 1,
 ): THREE.BufferGeometry {
-  const totalHeight = halfHeight * 2 + radius * 2;
   const geo = new THREE.CapsuleGeometry(radius, halfHeight * 2, Math.max(2, radialSegments), Math.max(1, heightSegments));
   const src = geo.toNonIndexed();
   return src;
@@ -106,6 +107,7 @@ function translateGeo(geo: THREE.BufferGeometry, dx: number, dy: number, dz: num
     pos[i + 1] += dy;
     pos[i + 2] += dz;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   pos.length; // keep TS happy
 }
 
@@ -148,8 +150,10 @@ function rotateGeoY(geo: THREE.BufferGeometry, angle: number): void {
   }
 }
 
+ 
 /** Scale all vertices in place. */
-function scaleGeo(geo: THREE.BufferGeometry, sx: number, sy: number, sz: number): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _scaleGeo(geo: THREE.BufferGeometry, sx: number, sy: number, sz: number): void {
   const pos = geo.attributes.position.array as Float32Array;
   for (let i = 0; i < pos.length; i += 3) {
     pos[i] *= sx;
@@ -230,6 +234,7 @@ function applyOrganicNoise(
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   pos.length; // TS
 }
 

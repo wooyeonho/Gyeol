@@ -15,13 +15,12 @@ import { useAgentStore } from "@/store/agent-store";
 import dynamic from "next/dynamic";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { getAvailableEvents, makeChoice, type StoryEvent } from "@/lib/game/narrative-system";
-import type { PartyMember, SynergyBonus } from "@/lib/game/party-system";
+import type { PartyMember } from "@/lib/game/party-system";
 import { calculatePartySynergy } from "@/lib/game/party-system";
 import { generateDailyQuests, QUEST_TEMPLATES } from "@/lib/game/quest-system";
 import type { Quest } from "@/lib/game/quest-system";
-import { continueWatching, dailyMix, orderedShelves } from "@/lib/content/world-class-content";
-import { levelFromXp, secondsUntilDailyReset, availableRewards } from "@/lib/gaming/world-class-liveops";
-import { parseNaturalDate, cycleView } from "@/lib/productivity/world-class-productivity";
+import { orderedShelves } from "@/lib/content/world-class-content";
+import { levelFromXp, secondsUntilDailyReset } from "@/lib/gaming/world-class-liveops";
 
 const DailySpecialChallenge = dynamic(() => import("@/components/daily-special-challenge").then(m => m.DailySpecialChallenge), { ssr: false });
 const DungeonExplorer = dynamic(() => import("@/components/dungeon-explorer").then(m => m.DungeonExplorer), { ssr: false });
@@ -580,7 +579,9 @@ export default function DiscoverPage() {
           <PartyPanel
             party={placeholderParty}
             synergies={partySynergies}
-            onSwitchActive={(id) => { haptic("tap"); }}
+             
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            onSwitchActive={(_id) => { haptic("tap"); }}
             onAddCreature={() => { haptic("tap"); }}
             compact={false}
           />

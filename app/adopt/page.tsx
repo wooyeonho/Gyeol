@@ -27,7 +27,9 @@ export default function AdoptPage() {
   const { locale, t } = useTranslations();
   const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submittingId, setSubmittingId] = useState<string | null>(null);
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function load() {

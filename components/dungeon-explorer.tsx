@@ -19,11 +19,15 @@ import {
   type ItemRarity,
 } from "@/lib/game/item-system";
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getRankTitle,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type BattleCreature,
 } from "@/lib/game/pvp-system";
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   BIOME_CONFIG,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type Biome,
 } from "@/lib/game/dungeon-system";
 import { haptic } from "@/lib/micro-interactions";

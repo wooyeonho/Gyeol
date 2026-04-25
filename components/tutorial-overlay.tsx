@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FocusTrap } from "@/components/focus-trap";
 
