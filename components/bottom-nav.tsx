@@ -15,7 +15,7 @@ const NotificationCenter = dynamic(() => import("@/components/notification-cente
   loading: () => null,
 });
 
-type IconName = "chat" | "discover" | "dna" | "social" | "settings";
+type IconName = "chat" | "dna" | "social" | "settings";
 
 function NavIcon({ name }: { name: IconName }) {
   const common = "h-[18px] w-[18px]";
@@ -24,13 +24,6 @@ function NavIcon({ name }: { name: IconName }) {
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M6 7h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-6l-4 3v-3H6a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3Z" />
-        </svg>
-      );
-    case "discover":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="9" />
-          <path d="m10 14 5-5-2 6-6 2 3-3Z" />
         </svg>
       );
     case "dna":
@@ -62,50 +55,23 @@ function NavIcon({ name }: { name: IconName }) {
 
 const TABS: Array<{ path: string; labelKey: string; icon: IconName; tutorialId: string; prominent?: boolean }> = [
   { path: "/", labelKey: "nav.chat", icon: "chat", tutorialId: "nav-chat" },
-  { path: "/discover", labelKey: "nav.discover", icon: "discover", tutorialId: "nav-discover" },
   { path: "/dna", labelKey: "nav.dna", icon: "dna", tutorialId: "nav-dna", prominent: true },
   { path: "/social", labelKey: "nav.social", icon: "social", tutorialId: "nav-social" },
   { path: "/settings", labelKey: "nav.settings", icon: "settings", tutorialId: "nav-settings" },
 ];
 
-// Paths that should light up the Discover tab (sub-sections of the Discover index).
-const DISCOVER_PATHS = new Set([
-  "/discover",
-  "/activity",
-  "/album",
-  "/explore",
-  "/leaderboard",
-  "/compare",
-  "/adopt",
-  "/market",
-  "/room",
-  "/constellation",
-  "/features",
-]);
-
-// Paths that should light up the DNA tab (includes the editor + related).
-const DNA_PATHS = new Set(["/dna", "/dna-edit", "/wrapped", "/quiz"]);
-
-// Paths that should light up the Social tab.
-const SOCIAL_PATHS = new Set([
-  "/social",
-  "/community",
-  "/feed",
-  "/friendship",
-  "/invite",
-  "/invites",
-]);
+const DNA_PATHS = new Set(["/dna", "/album", "/constellation"]);
+const SOCIAL_PATHS = new Set(["/social", "/community", "/invite", "/invites", "/molthub"]);
 
 function isTabActive(pathname: string, tabPath: string) {
   if (tabPath === "/") return pathname === "/";
-  if (tabPath === "/discover") return DISCOVER_PATHS.has(pathname);
   if (tabPath === "/dna") return DNA_PATHS.has(pathname) || pathname.startsWith("/dna/");
   if (tabPath === "/social") {
     return (
       SOCIAL_PATHS.has(pathname) ||
       pathname.startsWith("/social/") ||
       pathname.startsWith("/community/") ||
-      pathname.startsWith("/feed/")
+      pathname.startsWith("/molthub")
     );
   }
   return pathname === tabPath || pathname.startsWith(`${tabPath}/`);

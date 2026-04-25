@@ -77,7 +77,6 @@ export const DEFAULT_COMMANDS: Command[] = [
   { id: "nav.album", title: "Growth album", group: "Navigation", icon: "sparkles", href: "/album" },
   { id: "nav.constellation", title: "Memory constellation", group: "Navigation", icon: "star", href: "/constellation" },
   { id: "nav.timetravel", title: "Time travel", group: "Navigation", icon: "compass", href: "/time-travel", keywords: ["history", "past"] },
-  { id: "nav.discover", title: "Discover", group: "Navigation", icon: "compass", href: "/discover" },
   { id: "nav.social", title: "Social", group: "Navigation", icon: "heart", href: "/social", keywords: ["friends", "community"] },
   { id: "nav.market", title: "Market", group: "Navigation", icon: "gift", href: "/market" },
   { id: "nav.plans", title: "Plans & billing", group: "Account", icon: "gift", href: "/plans", keywords: ["subscription", "pro", "premium"] },

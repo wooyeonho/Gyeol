@@ -20,11 +20,9 @@ type Feature = {
 };
 
 const FEATURES: Feature[] = [
-  { id: "quiz", route: "/quiz", triggerAfterMessages: 3, emoji: "🧬", label: { ko: "성격 퀴즈로 DNA를 정해보세요", en: "Take the personality quiz to shape DNA" } },
   { id: "care", route: "/care", triggerAfterMessages: 8, emoji: "🍎", label: { ko: "생명체에게 밥을 줄 수 있어요", en: "You can feed your creature" } },
   { id: "diary", route: "/diary", triggerAfterMessages: 15, emoji: "📖", label: { ko: "생명체의 일기를 확인해보세요", en: "Check your creature's diary" } },
   { id: "journey", route: "/journey", triggerAfterMessages: 25, emoji: "🗺️", label: { ko: "함께한 여정을 돌아보세요", en: "Look back on your journey together" } },
-  { id: "dna-edit", route: "/dna-edit", triggerAfterMessages: 40, emoji: "✏️", label: { ko: "DNA를 직접 편집해보세요", en: "Try editing DNA directly" } },
   { id: "creature-conversation", route: "/creature-conversation", triggerAfterMessages: 50, emoji: "💬", label: { ko: "다른 생명체와 대화시켜보세요", en: "Let creatures talk to each other" } },
 ];
 

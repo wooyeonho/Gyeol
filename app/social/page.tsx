@@ -750,7 +750,7 @@ export default function SocialPage() {
               {t("socialPage.feedFriends")}
             </button>
             <Link
-              href="/compare"
+              href="/leaderboard"
               className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/78"
             >
               {t("leaderboard.compareNow")}
@@ -884,7 +884,7 @@ export default function SocialPage() {
                         {t("nav.chat")}
                       </Link>
                       <Link
-                        href="/compare"
+                        href="/leaderboard"
                         className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100"
                       >
                         {t("leaderboard.compareNow")}

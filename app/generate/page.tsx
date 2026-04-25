@@ -151,7 +151,7 @@ export default function GeneratePage() {
           {!available && (
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
-                href="/discover"
+                href="/social"
                 className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/82"
               >
                 {t("discover.title")}

@@ -104,7 +104,7 @@ const FEATURE_CATALOG_BASE: FeatureCatalogEntry[] = [
       ko: "다른 사용자의 존재들이 어떤 이름과 성장 궤적을 갖는지 둘러봅니다.",
       en: "Browse how other users' beings are named and how they are growing.",
     },
-    href: "/explore",
+    href: "/social",
     category: "world",
     status: "ready",
   },

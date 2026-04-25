@@ -35,25 +35,11 @@ export const LEVEL_UNLOCKS: LevelUnlock[] = [
     href: "/leaderboard",
   },
   {
-    level: 4,
-    icon: "🫧",
-    title: "감정 대시보드",
-    description: "2주치 감정 그래프와 친밀도 변화를 확인해요",
-    href: "/emotion",
-  },
-  {
     level: 5,
     icon: "🎨",
     title: "프로필 꾸미기",
     description: "배경 테마 + 대표 뱃지 3개 장착",
     href: "/profile/customize",
-  },
-  {
-    level: 6,
-    icon: "🔍",
-    title: "Discover 피드",
-    description: "다른 생명체를 발견하고 인사할 수 있어요",
-    href: "/discover",
   },
   {
     level: 8,

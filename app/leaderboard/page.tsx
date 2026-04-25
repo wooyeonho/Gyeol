@@ -223,7 +223,7 @@ export default function LeaderboardPage() {
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
-                href="/compare"
+                href="/leaderboard"
                 className="inline-flex items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-colors"
               >
                 {t("leaderboard.compareNow")}
