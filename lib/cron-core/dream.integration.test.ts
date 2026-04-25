@@ -135,8 +135,8 @@ describe("dream integration", () => {
 
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromMock });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { executeDream: _executeDream } = await import("./dream");
+    const { executeDream } = await import("./dream");
+    await executeDream();
 
     // All 3 generateCognitiveJSON stages were called
     expect(jsonCallCount).toBe(3);
