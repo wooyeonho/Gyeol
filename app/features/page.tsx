@@ -108,7 +108,7 @@ export default function FeaturesPage() {
               {t("featuresPage.login")}
             </Link>
             <Link
-              href="/explore"
+              href="/social"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/70 hover:bg-white/10"
             >
               {t("featuresPage.explore")}
@@ -250,7 +250,7 @@ export default function FeaturesPage() {
               {t("featuresPage.closingStart")}
             </Link>
             <Link
-              href="/explore"
+              href="/social"
               className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/75 hover:bg-white/10"
             >
               {t("featuresPage.closingExplore")}

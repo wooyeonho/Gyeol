@@ -27,7 +27,7 @@ export default function CommunityPage() {
 
   const cards = [
     {
-      href: "/explore",
+      href: "/social",
       title: t("communityPage.exploreTitle"),
       body: t("communityPage.exploreBody"),
       eyebrow: t("communityPage.exploreEyebrow"),

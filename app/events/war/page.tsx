@@ -62,7 +62,7 @@ export default function WarPage() {
         </>
       )}
 
-      <Link href="/explore" className="inline-block mt-6 text-white/70 text-sm">
+      <Link href="/social" className="inline-block mt-6 text-white/70 text-sm">
         Back to Explore
       </Link>
     </div>

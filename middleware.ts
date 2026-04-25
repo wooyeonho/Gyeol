@@ -120,7 +120,6 @@ const PUBLIC_PATHS = [
   "/auth",
   "/features",
   "/plans",
-  "/explore",
   "/dashboard",
   "/adopt",
   "/share",
