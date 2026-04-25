@@ -302,7 +302,16 @@ export default function Home() {
   const conversationStarted = (agentState?.total_messages ?? 0) > 0 || messages.some((m) => m.role === "user");
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
+    <div
+      className="flex h-[100dvh] flex-col bg-black overflow-hidden"
+      style={{
+        "--creature-primary": appearance.palette.primary,
+        // Reserve space for the fixed BottomNav (its intrinsic height is ~56px
+        // plus iOS safe-area) so ChatPanel's last message is never hidden
+        // underneath it on mobile.
+        paddingBottom: "calc(56px + env(safe-area-inset-bottom))",
+      } as React.CSSProperties}
+    >
       {showCeremony && (
         <EvolutionCeremony
           level={evolutionEvent.level!}
@@ -329,18 +338,29 @@ export default function Home() {
           />
         )}
 
-        {/* Character — centered, dominant */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Character
-            dna={creatureDna}
-            mood={mood}
-            stage={stage}
-            vitality={vitality}
-            energy={agentState?.intimacy_score ?? 0.5}
-            size={Math.min(360, Math.max(220, (agentState?.visual?.size ?? 60) * 4))}
-            onTap={handleCharacterTap}
-            onLongPress={handleCharacterLongPress}
-          />
+        {/* Character — centered, dominant.
+            Size uses CSS min() against viewport dims so the creature never
+            overflows small phones (e.g. 375×667 iPhone SE) yet still scales
+            up on tablets. The max of 340 matches the bodyShape extents in
+            the SVG renderer. */}
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <div
+            style={{
+              width: "min(70vw, 42vh, 340px)",
+              height: "min(70vw, 42vh, 340px)",
+            }}
+          >
+            <Character
+              dna={creatureDna}
+              mood={mood}
+              stage={stage}
+              vitality={vitality}
+              energy={agentState?.intimacy_score ?? 0.5}
+              className="!w-full !h-full"
+              onTap={handleCharacterTap}
+              onLongPress={handleCharacterLongPress}
+            />
+          </div>
         </div>
 
         {/* Bottom fade into chat */}
