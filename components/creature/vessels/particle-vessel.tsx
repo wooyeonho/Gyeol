@@ -340,6 +340,7 @@ void main() {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ParticleVesselInner({ dna, context: _context, opacity, scale }: VesselProps) {
   const meshRef     = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);

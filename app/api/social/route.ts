@@ -7,7 +7,6 @@ import { isMissingEnvError } from "@/lib/env/required";
 import { getTtlCache, setTtlCache } from "@/lib/cache/ttl";
 import { logger } from "@/lib/logger";
 import { hnScore } from "@/lib/community/world-class-community";
-import { scoreFeedItem, FEED_RECIPES } from "@/lib/social/world-class-social";
 
 type AgentSnapshot = {
   agent_id: string;

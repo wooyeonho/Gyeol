@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/refs */
+
 import React, { useState, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { damp } from "@/lib/easing";

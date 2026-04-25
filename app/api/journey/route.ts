@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   groupByDate,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   calculateDNAChanges,
   prepareRadarChartData,
   getDominantMood,

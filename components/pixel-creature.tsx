@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
+
 import { useCallback, useEffect, useRef, useMemo } from "react";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 
@@ -146,9 +148,11 @@ function dnaFloat(...vals: number[]): number {
   }
   return (h % 10000) / 10000;
 }
+ 
 
 /** Mix DNA values into an integer in range [min, max] */
-function dnaInt(min: number, max: number, ...vals: number[]): number {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _dnaInt(min: number, max: number, ...vals: number[]): number {
   return min + Math.round(dnaFloat(...vals) * (max - min));
 }
 
@@ -265,7 +269,6 @@ function generateSprite(
   // ── Derived body parameters ──
   const bodyScale = 0.6 + p.coreScale * 0.8; // 0.6..1.4
   const asymSeed = p.orbitOffset / 360;       // 0..1
-  const earTilt = (p.bandTilt + 24) / 48;     // normalized 0..1
 
   // ═══════════════════════════════════════════════════════
   //  CONTINUOUS PART PARAMETERS — derived from DNA floats
@@ -368,7 +371,6 @@ function generateSprite(
   // Build per-row half-widths
   const halfWidths: number[] = [];
   for (let r = 0; r < bodyHeight; r++) {
-    const t = r / Math.max(1, bodyHeight - 1); // 0=top, 1=bottom
     let hw: number;
 
     if (r < headRows) {

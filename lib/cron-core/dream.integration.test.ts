@@ -136,7 +136,7 @@ describe("dream integration", () => {
     (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue({ from: fromMock });
 
     const { executeDream } = await import("./dream");
-    const result = await executeDream();
+    await executeDream();
 
     // All 3 generateCognitiveJSON stages were called
     expect(jsonCallCount).toBe(3);

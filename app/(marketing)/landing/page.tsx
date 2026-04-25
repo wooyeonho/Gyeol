@@ -90,10 +90,13 @@ export default function LandingPage() {
             transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Creature canvas */}
+            { }
             <div
               className="relative h-[300px] w-[300px] cursor-pointer sm:h-[380px] sm:w-[380px]"
               onClick={handleCreatureTap}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCreatureTap(); } }}
               role="button"
+              tabIndex={0}
               aria-label="Tap the creature"
             >
               <VoidCanvas

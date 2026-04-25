@@ -288,7 +288,7 @@ export function MessageList({
                 <div
                   className="prose-gyeol break-words leading-relaxed"
                   // Safe: markdownToSafeHtml escapes all input HTML before converting markdown
-                  // eslint-disable-next-line react/no-danger
+                   
                   dangerouslySetInnerHTML={{ __html: markdownToSafeHtml(maskJargon(m.content)) }}
                 />
               )}

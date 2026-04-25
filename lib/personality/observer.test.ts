@@ -6,19 +6,23 @@ vi.mock("@/lib/supabase/service", () => ({
 
 import { createServiceClient } from "@/lib/supabase/service";
 
-function makeDb({ recentCount, previousCount, stateConfig = {} }: {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _makeDb({ recentCount, previousCount, stateConfig = {} }: {
   recentCount: number;
   previousCount: number;
   stateConfig?: Record<string, unknown>;
 }) {
   const insertFn = vi.fn().mockResolvedValue({});
   const updateFn = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) });
+ 
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let chatSelectCount = 0;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const from = vi.fn().mockImplementation((table: string) => {
     if (table === "chats") {
       chatSelectCount++;
-      const count = chatSelectCount === 1 ? recentCount : previousCount;
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnThis(),

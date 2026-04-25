@@ -25,7 +25,6 @@ import {
   updateUserDNA,
   type UserDNA,
 } from "@/lib/genome/user-dna";
-import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
 import { trySemanticCache } from "@/lib/chat/semantic-cache";
 import {

@@ -229,6 +229,7 @@ async function runJob(
 // ── Plugin Registration ─────────────────────────────────
 // OpenClaw loads this via the `plugins` config in openclaw.json5.
 // Uses the function-style plugin module: (api) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function gyeolCronPlugin(api: any): void {
   const { logger } = api;
 
@@ -241,6 +242,8 @@ export default function gyeolCronPlugin(api: any): void {
       label: job.label,
       description: job.description,
       parameters: { type: "object" as const, properties: {} },
+       
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       execute: async (_toolCallId: string, _params: unknown) => {
         const result = await runJob(job, logger);
         return {
@@ -257,6 +260,8 @@ export default function gyeolCronPlugin(api: any): void {
     label: "Gyeol Lifeline Watchdog",
     description: "Test the Gyeol app HTTP endpoint to verify it is alive (watchdog)",
     parameters: { type: "object" as const, properties: {} },
+     
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     execute: async (_toolCallId: string, _params: unknown) => {
       const result = await executeLifeline(logger);
       return {
@@ -272,6 +277,8 @@ export default function gyeolCronPlugin(api: any): void {
     label: "Gyeol Run All Jobs",
     description: "Run all Gyeol cron jobs sequentially (use for manual catch-up)",
     parameters: { type: "object" as const, properties: {} },
+     
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     execute: async (_toolCallId: string, _params: unknown) => {
       const results: Record<string, unknown> = {};
       for (const job of GYEOL_JOBS) {
@@ -292,6 +299,8 @@ export default function gyeolCronPlugin(api: any): void {
   api.registerHttpRoute({
     path: "/gyeol/health",
     auth: "gateway" as const,
+     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handler: (_req: any, res: any) => {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({

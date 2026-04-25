@@ -19,7 +19,9 @@ vi.mock("@/lib/i18n/generation", () => ({
 import { createServiceClient } from "@/lib/supabase/service";
 import { generateJSON } from "@/lib/ai/router";
 
-function buildChatContent(count: number, content = "나는 오늘도 열심히 했어요") {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _buildChatContent(count: number, content = "나는 오늘도 열심히 했어요") {
   return Array(count).fill({ content });
 }
 

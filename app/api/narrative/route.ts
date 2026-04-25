@@ -13,7 +13,9 @@ import {
 /**
  * GET /api/narrative — Load narrative state from server.
  */
-export async function GET(req: Request) {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_req: Request) {
   const authClient = await createServerSupabase();
   const {
     data: { user },

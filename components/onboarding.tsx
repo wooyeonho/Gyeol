@@ -205,7 +205,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
 /* ---------- Step sub-components ---------- */
 
-function StepWelcome({ t }: { t: (key: string) => string }) {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _StepWelcome({ t }: { t: (key: string) => string }) {
   return (
     <>
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10">
@@ -228,8 +230,10 @@ function StepWelcome({ t }: { t: (key: string) => string }) {
     </>
   );
 }
+ 
 
-function StepAlive({ t }: { t: (key: string) => string }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _StepAlive({ t }: { t: (key: string) => string }) {
   return (
     <>
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10">

@@ -256,7 +256,6 @@ describe("getSeasonTimeRemaining", () => {
 
   it("returns zero at the end of the season", () => {
     // After the very last moment of April
-    const now = new Date(2026, 4, 1, 0, 0, 0); // May 1 — past April season
     // getCurrentSeason now returns May, so end of May is far away
     // Let's instead test with a date at the very end of the month
     const almostEnd = new Date(2026, 3, 30, 23, 59, 59, 999);

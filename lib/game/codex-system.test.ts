@@ -93,7 +93,6 @@ describe("codex-system", () => {
     const r1 = calculateCodexReward("analytical/warmth/empathy");
     const r2 = calculateCodexReward("spatial/openness/independence");
     // With 128 species, at least some should differ; these two specific IDs do
-    const same = r1.coins === r2.coins && r1.evolutionPoints === r2.evolutionPoints;
     // Not guaranteed to differ but extremely likely given different hash inputs
     // We mainly verify the function runs without error
     expect(r1.coins).toBeGreaterThan(0);

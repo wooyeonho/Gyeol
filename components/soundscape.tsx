@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { smartSpeedDuration, waveformPeaks, type StageRole, promoteRole, demoteRole } from "@/lib/audio/world-class-voice";
-import { getVoiceLine, deriveSpeechParams, type VoiceLineTrigger } from "@/lib/creature/voice-lines";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { smartSpeedDuration, waveformPeaks, type demoteRole } from "@/lib/audio/world-class-voice";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { type VoiceLineTrigger } from "@/lib/creature/voice-lines";
 import { getMoodFromDNA, generateMusicConfig, type MoodLayer } from "@/lib/sound/adaptive-music";
-import { getBiomeFromContext, getBiomeSoundLayers, type BiomeType } from "@/lib/sound/biome-sounds";
+import { getBiomeFromContext, type BiomeType } from "@/lib/sound/biome-sounds";
 
 type SoundProfile = { base_note?: string; tempo?: number; instruments?: string[]; scale?: string[] };
 
@@ -101,6 +103,7 @@ export default function Soundscape({
       disposeRef.current = null;
       setPlaying(false);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, soundProfile]);
 
   // ── Creature emotion sounds — play on mood change ──
@@ -159,7 +162,6 @@ export default function Soundscape({
     : [];
 
   // Smart-speed duration display (if we know raw duration)
-  const smartDuration = playing ? smartSpeedDuration(60, 8000) : 0;
 
 
   if (!enabled) return null;

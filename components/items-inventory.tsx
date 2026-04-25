@@ -15,7 +15,7 @@ import {
   type Item,
 } from "@/lib/creature/items";
 import { haptic } from "@/lib/micro-interactions";
-import { generateProceduralItem, type ProceduralItem, type Affix } from "@/lib/game/affix-system";
+import { type ProceduralItem, type Affix } from "@/lib/game/affix-system";
 
 type Tab = "inventory" | "equipped" | "loot";
 

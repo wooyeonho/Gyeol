@@ -7,7 +7,6 @@ import ARViewer from "@/components/ar-viewer";
 import { useTranslations } from "@/components/i18n-provider";
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import { DiscoverPageHeader } from "@/components/discover/page-header";
-import { PageSkeleton } from "@/components/discover/skeleton";
 import { BottomNav } from "@/components/bottom-nav";
 import { ShareCard } from "@/components/share-card";
 import { CreatureStatusBar } from "@/components/creature-status-bar";

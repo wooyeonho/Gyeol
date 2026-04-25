@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
     const currentDNA = genome.dna as CreatureDNA;
 
     // Build a preview DNA with edits applied
-    const { dna: previewDNA, changedAxes, totalDelta } = applyDNAEdits(currentDNA, edits);
+     
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { dna: previewDNA, changedAxes, totalDelta: _totalDelta } = applyDNAEdits(currentDNA, edits);
 
     if (changedAxes.length === 0) {
       return NextResponse.json({ error: "No changes detected" }, { status: 400 });

@@ -6,6 +6,7 @@ import {
   getRankFromRating,
   getRankInfo,
   resetSeason,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   PVP_RANKS,
 } from "./pvp-ranking";
 

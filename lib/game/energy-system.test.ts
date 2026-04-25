@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   getEnergy,
-  useEnergy,
+  useEnergy as consumeEnergy,
   regenerateEnergy,
   receiveGift,
   canUseFeature,
@@ -49,15 +49,15 @@ describe("energy-system", () => {
 
   it("useEnergy reduces current energy by 1", () => {
     getEnergy(); // Initialize
-    const success = useEnergy();
+    const success = consumeEnergy();
     expect(success).toBe(true);
     expect(getEnergy().current).toBe(4);
   });
 
   it("useEnergy fails when energy is 0", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
-    expect(useEnergy()).toBe(false);
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
+    expect(consumeEnergy()).toBe(false);
     expect(getEnergy().current).toBe(0);
   });
 
@@ -66,7 +66,7 @@ describe("energy-system", () => {
   it("regenerates 1 energy after 4 hours", () => {
     getEnergy();
     // Drain all energy
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
     expect(getEnergy().current).toBe(0);
 
     // Simulate 4 hours passing
@@ -77,7 +77,7 @@ describe("energy-system", () => {
 
   it("regenerates multiple points after multiple intervals", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
 
     const eightHoursLater = new Date(Date.now() + 2 * REGEN_INTERVAL_MS);
     const state = regenerateEnergy(eightHoursLater);
@@ -86,7 +86,7 @@ describe("energy-system", () => {
 
   it("does not regenerate above max", () => {
     getEnergy();
-    useEnergy(); // 4/5
+    consumeEnergy(); // 4/5
 
     const dayLater = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const state = regenerateEnergy(dayLater);
@@ -103,7 +103,7 @@ describe("energy-system", () => {
 
   it("canUseFeature returns false when energy is 0", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
     expect(canUseFeature("dungeon_exploration")).toBe(false);
   });
 
@@ -133,7 +133,7 @@ describe("energy-system", () => {
 
   it("claimEnergyGift adds 1 energy and marks gift as claimed", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
     expect(getEnergy().current).toBe(0);
 
     const gift = sendEnergyGift("friend-1");
@@ -153,7 +153,7 @@ describe("energy-system", () => {
 
   it("claimEnergyGift enforces 10-per-day receive limit", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
 
     // Send 12 gifts from different friends
     const gifts: string[] = [];
@@ -174,7 +174,7 @@ describe("energy-system", () => {
 
   it("receiveGift claims the first unclaimed gift", () => {
     getEnergy();
-    for (let i = 0; i < MAX_ENERGY; i++) useEnergy();
+    for (let i = 0; i < MAX_ENERGY; i++) consumeEnergy();
     sendEnergyGift("friend-1");
 
     expect(receiveGift()).toBe(true);

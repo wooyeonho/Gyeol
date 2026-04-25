@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/purity */
+
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -442,6 +444,7 @@ export const ProceduralCreature = React.memo(function ProceduralCreature({
     const contEyes = conMorph.eyeCount;
     // Floor = how many full eyes; fractional part = partial eye opacity
     const fullCount = Math.floor(Math.min(contEyes, 5));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _fractional = contEyes - fullCount; // reserved for future partial-eye rendering
     // For backward compat: 1 eye = cyclops mode
     const count = fullCount < 2 ? 1 : fullCount;

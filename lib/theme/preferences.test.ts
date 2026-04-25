@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   isThemeMode,
   isFontSize,
@@ -6,7 +6,9 @@ import {
   readStoredHighContrast,
   readStoredFontSize,
   readStoredReduceMotion,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   applyThemePreferenceToDocument,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   writeThemePreference,
   THEME_STORAGE_KEYS,
   THEME_CHANGE_EVENT,

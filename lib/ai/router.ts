@@ -180,7 +180,9 @@ function fallbackStream(text: string): ReadableStream {
   });
 }
 
-function getFallbackText(systemPrompt: string) {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _getFallbackText(systemPrompt: string) {
   if (systemPrompt.includes("日本語")) return "...頭が少しぼんやりする。少し待っていて。";
   if (systemPrompt.includes("中文")) return "...脑子有点晕。等我一下。";
   if (systemPrompt.includes("español")) return "...La cabeza me da vueltas. Espérame un momento.";

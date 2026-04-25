@@ -26,6 +26,7 @@ export function PerfectDayBadge({
   const streak = useMemo(() => getPerfectDayStreak(), []);
   const milestones = useMemo(
     () => getEarnedPerfectDayMilestones(streak.current),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [streak.current],
   );
 

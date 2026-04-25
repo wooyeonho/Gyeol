@@ -8,8 +8,7 @@ import { useTranslations } from "@/components/i18n-provider";
 import { useAgentStore } from "@/store/agent-store";
 import type { DiaryEntry } from "@/lib/diary/creature-diary";
 import { estimateReadingMinutes, extractTldr, wordCount } from "@/lib/reader/world-class-reader";
-import { reviewCard, dueNow, updateStreakWithFreeze, type SrsCard, type StreakState } from "@/lib/learning/world-class-learning";
-import { parseNaturalDate, cycleView } from "@/lib/productivity/world-class-productivity";
+import { dueNow, updateStreakWithFreeze, type SrsCard, type StreakState } from "@/lib/learning/world-class-learning";
 
 export default function DiaryPage() {
   const { t, locale } = useTranslations();

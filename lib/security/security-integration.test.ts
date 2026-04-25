@@ -4,7 +4,7 @@
  * Verify that CSRF, rate limiting, Zod validation, and electric fence
  * work together to protect API routes.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { verifyCsrfOrigin } from "./csrf";
 import { checkElectricFence } from "./electric-fence";
 

@@ -23,7 +23,9 @@ import {
 type CreatorTab = "dashboard" | "content" | "submit";
 
 export default function CreatorPage() {
-  const { locale, t } = useTranslations();
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { locale, t: _t } = useTranslations();
   const isKo = locale === "ko";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -67,6 +67,7 @@ export function CreatureTapReact({
   );
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
     <div
       ref={hostRef}
       className={`relative ${className} ${wiggling ? "creature-tap-react" : ""}`}
