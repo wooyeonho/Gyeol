@@ -563,6 +563,9 @@ function Scene({
       hapticIntervalRef.current = null;
     }
   }, []);
+  // Cleanup haptic interval on unmount — prevents indefinite vibration if component
+  // unmounts while pointer is held down
+  useEffect(() => () => clearHapticInterval(), [clearHapticInterval]);
 
   const handlePointerDown = useCallback((e: { point?: { x: number; y: number; z: number }; clientX?: number; clientY?: number }) => {
     pointerDownTimeRef.current = Date.now();
@@ -719,7 +722,7 @@ function Scene({
         rotationIntensity={rotationIntensity * sleepFloatMult}
         floatIntensity={floatIntensity * sleepFloatMult}
       >
-        <group scale={pulseScale} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove}>
+        <group scale={pulseScale} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove} onPointerLeave={handlePointerUp}>
           {dna ? (
             <OmniEngine
               dna={dna}
