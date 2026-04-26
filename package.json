@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "verify:stripe": "node scripts/verify-stripe-setup.mjs",
     "verify:deploy": "node scripts/verify-deploy.mjs",
+    "check:runtime": "node scripts/check-runtime-health.mjs",
+    "check:runtime:strict": "node scripts/check-runtime-health.mjs --strict",
     "pre-deploy": "node scripts/pre-deploy-check.mjs",
     "analyze": "ANALYZE=true next build"
   },

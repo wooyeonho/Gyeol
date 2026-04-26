@@ -37,6 +37,7 @@ import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-ov
 import { mainTutorialSteps } from "@/components/tutorial-steps";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
 import { ConversationStarter } from "@/components/conversation-starter";
+import { CoreLoopPanel } from "@/components/core-loop-panel";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -62,7 +63,7 @@ const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay
 export default function Home() {
   const { locale, t } = useTranslations();
   const showTutorial = useShouldShowTutorial();
-  const { agentState, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
+  const { agentState, engagement, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | null ?? null;
   useCreatureDna(agentId);
   const { fetchWorldState } = useWorldStore();
@@ -77,6 +78,7 @@ export default function Home() {
   const [showDailyBonus, setShowDailyBonus] = useState(false);
   const [bonusDayIndex, setBonusDayIndex] = useState(1);
   const [bonusAlreadyClaimed, setBonusAlreadyClaimed] = useState(false);
+  const [petCountToday, setPetCountToday] = useState(0);
 
   useEffect(() => {
     fetchAgentState();
@@ -338,6 +340,7 @@ export default function Home() {
   // Zelda-like touch freedom: every gesture type affects creature affinity
   const handleCreatureTouch = useCallback((affinityDelta: number) => {
     creature.recordCreatureTouch(affinityDelta);
+    setPetCountToday((prev) => prev + 1);
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
@@ -355,26 +358,49 @@ export default function Home() {
     if (typeof window === "undefined") return false;
     return !localStorage.getItem("gyeol_onboarded");
   });
+  const [preferredName, setPreferredName] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem("gyeol_custom_name");
+    } catch {
+      return null;
+    }
+  });
   const [showAgeGate, setShowAgeGate] = useState(() => {
     if (typeof window === "undefined") return false;
     return !readAgeGateCompleted();
   });
+  const creatureName = preferredName ?? agentState?.self_name ?? "결";
+  const personalityMode =
+    typeof (agentState?.config as Record<string, unknown> | undefined)?.personality_mode === "string"
+      ? ((agentState?.config as Record<string, unknown>).personality_mode as string)
+      : null;
+  const recentMemory = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant" && typeof message.memoryMoment?.memory === "string")
+    ?.memoryMoment?.memory ?? null;
 
   const handleOnboardingComplete = useCallback(
-    async (personalityMode?: string) => {
+    async (payload?: { personalityMode?: string; preferredName?: string }) => {
       localStorage.setItem("gyeol_onboarded", "1");
       // Arm the first-conversation celebration — fires once the user sends
       // their very first message (tracked in the useEffect below).
       try {
         localStorage.setItem("gyeol_awaiting_first_reward", "1");
       } catch { /* quota */ }
+      if (payload?.preferredName) {
+        try {
+          localStorage.setItem("gyeol_custom_name", payload.preferredName);
+        } catch {}
+        setPreferredName(payload.preferredName);
+      }
       setShowOnboarding(false);
-      if (personalityMode) {
+      if (payload?.personalityMode) {
         try {
           await fetch("/api/settings", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ personality_mode: personalityMode }),
+            body: JSON.stringify({ personality_mode: payload.personalityMode }),
           });
           await fetchAgentState({ silent: true });
         } catch {
@@ -407,14 +433,17 @@ export default function Home() {
       localStorage.removeItem("gyeol_awaiting_first_reward");
     } catch { /* ignore */ }
     haptic("success");
+    const memoryLine = recentMemory
+      ? (t("home.firstRewardBody") || `결이 첫 기억을 만들기 시작했어요: ${recentMemory}`)
+      : (t("home.firstRewardBody") || "오늘의 돌봄이 완료됐어요. 결이 당신을 기억하기 시작했어요.");
     celebrate({
-      title: t("home.firstRewardTitle") || "첫 대화 완료!",
-      subtitle: t("home.firstRewardBody") || "결이 첫 기억을 새겼어요 ✨",
-      reward: { type: "xp", amount: 50, icon: "⚡" },
+      title: t("home.firstRewardTitle") || "오늘의 돌봄 완료",
+      subtitle: memoryLine,
+      reward: { type: "badge", amount: 1, icon: "🫶" },
       variant: "firework",
       autoDismissMs: 4000,
     });
-  }, [agentState?.total_messages, loading, showOnboarding, celebrate, t]);
+  }, [agentState?.total_messages, loading, showOnboarding, celebrate, t, recentMemory]);
 
   const handleAgeGateComplete = useCallback(
     async ({ ageGroup, guardianConsent }: { ageGroup: "under_13" | "teen" | "adult"; guardianConsent: boolean }) => {
@@ -494,6 +523,7 @@ export default function Home() {
   const conversationStarted =
     (agentState?.total_messages ?? 0) > 0 ||
     messages.some((message) => message.role === "user");
+  const dailyCareCompleted = conversationStarted && petCountToday > 0 && vitality >= 0.7;
 
   if (showAgeGate) {
     return <AgeGate onComplete={handleAgeGateComplete} />;
@@ -622,9 +652,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* AI-generated portrait — HERO character visual. When present,
-            becomes the dominant creature representation; procedural 3D
-            fades to background aura. */}
+        {/* AI-generated portrait — HERO character visual. */}
         {portraitUrl && (
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
@@ -655,6 +683,22 @@ export default function Home() {
           </motion.div>
         )}
 
+        {!portraitUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 z-[3] flex items-end justify-center pb-20 pointer-events-none"
+          >
+            <div className="relative w-[240px] rounded-[32px] border border-white/20 bg-black/55 p-5 text-center shadow-2xl backdrop-blur-md">
+              <div className="absolute -inset-8 -z-10 rounded-full blur-3xl" style={{ background: `radial-gradient(circle, ${appearance.palette.primary}55 0%, transparent 70%)` }} />
+              <div className="text-6xl">🥚</div>
+              <p className="mt-2 text-sm font-semibold text-white">{creatureName}</p>
+              <p className="mt-1 text-xs text-white/65">{t("home.firstTimeGuide") || "대화하면 기억이 쌓여요"}</p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Portrait status — auto-generating on first load, or manual retry */}
         {!portraitUrl && agentState && (
           portraitGenerating ? (
@@ -678,8 +722,8 @@ export default function Home() {
         {/* Minimalist creature identity — name + mood only */}
         <div className="absolute bottom-4 inset-x-0 z-10 text-center pointer-events-none">
           <CreatureStatusIndicator activity={creature.state.activity} />
-          <p className="mt-1 text-lg font-medium text-white drop-shadow-lg tracking-wide">
-            {agentState?.self_name ?? "GYEOL"}
+            <p className="mt-1 text-lg font-medium text-white drop-shadow-lg tracking-wide">
+            {creatureName}
           </p>
           <div className="flex items-center justify-center gap-2 mt-1 text-xs text-white/40">
             {agentState?.mood && (
@@ -696,17 +740,34 @@ export default function Home() {
       </div>
       </CreatureTapReact>
 
+      <CoreLoopPanel
+        locale={locale}
+        name={creatureName}
+        mood={agentState?.mood ?? null}
+        vitality={vitality}
+        streakDays={engagement?.currentStreak ?? agentState?.streak_days ?? 0}
+        totalMessages={agentState?.total_messages ?? 0}
+        genLevel={agentState?.gen_level ?? 1}
+        evolutionProgress={agentState?.progress}
+        intimacyScore={agentState?.intimacy_score}
+        conversationStarted={conversationStarted}
+        recentMemory={recentMemory}
+        petCountToday={petCountToday}
+        dailyCareCompleted={dailyCareCompleted}
+      />
+
       {/* ===== CHAT AREA — compact bottom section ===== */}
       <div className="relative z-10 flex flex-col flex-shrink-0" style={{ height: "clamp(160px, 30vh, 320px)" }}>
         {/* First-time guide: show when no conversation yet */}
         {!conversationStarted && (
           <div className="flex flex-col items-center gap-2 px-6 py-3">
             <p className="text-sm text-white/60 text-center">
-              {t("home.firstTimeGuide")}
+              {t("home.firstTimeGuide") || "내 결 키우기: 오늘 한 번 대화하면 기억이 생겨요."}
             </p>
             <ConversationStarter
-              creatureName={agentState?.self_name ?? undefined}
+              creatureName={creatureName}
               locale={locale}
+              personality={personalityMode}
               onSelect={(text) => sendMessage(text)}
             />
           </div>

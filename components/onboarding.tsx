@@ -1,657 +1,110 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
-import { haptic, playSound } from "@/lib/micro-interactions";
+import { haptic } from "@/lib/micro-interactions";
 import { FocusTrap } from "@/components/focus-trap";
 
 interface OnboardingProps {
-  onComplete: (personalityMode?: string) => void;
+  onComplete: (payload?: { personalityMode?: string; preferredName?: string }) => void;
 }
 
 const PERSONALITY_MODES = [
-  { key: "playful", emoji: "🎭" },
-  { key: "intimate", emoji: "💗" },
-  { key: "strategic", emoji: "🧠" },
-  { key: "primal", emoji: "🔥" },
-  { key: "surreal", emoji: "🌀" },
-  { key: "reflective", emoji: "🪞" },
-  { key: "creative", emoji: "🎨" },
+  { key: "shy", emoji: "🫧", ko: "수줍음", en: "Shy" },
+  { key: "playful", emoji: "🎈", ko: "장난기", en: "Playful" },
+  { key: "calm", emoji: "🌙", ko: "차분함", en: "Calm" },
+  { key: "loyal", emoji: "🤍", ko: "다정함", en: "Loyal" },
+  { key: "mysterious", emoji: "✨", ko: "신비로움", en: "Mysterious" },
+  { key: "energetic", emoji: "⚡", ko: "활발함", en: "Energetic" },
 ] as const;
 
-/** DNA presets — quick-start options for new users (Duolingo onboarding style) */
-const DNA_PRESETS = [
-  {
-    key: "lively",
-    labelKey: "onboarding.dnaPresetLively",
-    emoji: "⚡",
-    color: "#fbbf24",
-    traits: ["playfulness", "curiosity", "verbal"],
-    gradient: "from-amber-500/20 to-orange-500/10",
-  },
-  {
-    key: "calm",
-    labelKey: "onboarding.dnaPresetCalm",
-    emoji: "🌊",
-    color: "#60a5fa",
-    traits: ["stability", "empathy", "warmth"],
-    gradient: "from-blue-500/20 to-cyan-500/10",
-  },
-  {
-    key: "mystic",
-    labelKey: "onboarding.dnaPresetMystic",
-    emoji: "🔮",
-    color: "#a78bfa",
-    traits: ["intuitive", "openness", "independence"],
-    gradient: "from-purple-500/20 to-fuchsia-500/10",
-  },
-  {
-    key: "creative",
-    labelKey: "onboarding.dnaPresetCreative",
-    emoji: "🎨",
-    color: "#f472b6",
-    traits: ["creativity", "adaptability", "spatial"],
-    gradient: "from-pink-500/20 to-rose-500/10",
-  },
-] as const;
-
-const TOTAL_STEPS = 3; // Birth (auto) → Personality → Rewards
-
-const slideVariants = {
-  enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (d: number) => ({ x: d > 0 ? -80 : 80, opacity: 0 }),
-};
+const SUGGESTED_NAMES = ["결", "모아", "루미", "토리", "하루", "노아"];
 
 export function Onboarding({ onComplete }: OnboardingProps) {
-  const { t } = useTranslations();
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const { t, locale } = useTranslations();
+  const isKo = locale.startsWith("ko");
+  const [name, setName] = useState("");
+  const [selectedMode, setSelectedMode] = useState<string>("calm");
 
-  const goNext = useCallback(() => {
-    haptic("tap");
-    setDirection(1);
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
-  }, []);
+  const normalizedName = useMemo(() => name.trim(), [name]);
 
-  const goBack = useCallback(() => {
-    haptic("tap");
-    setDirection(-1);
-    setStep((s) => Math.max(s - 1, 0));
-  }, []);
-
-  const handleComplete = useCallback(() => {
+  const handleStart = () => {
     haptic("success");
-    onComplete(selectedMode ?? undefined);
-  }, [onComplete, selectedMode]);
-
-  const handleSkip = useCallback(() => {
-    haptic("tap");
-    onComplete();
-  }, [onComplete]);
-
-  return (
-    <FocusTrap active onEscape={handleSkip}>
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 px-4">
-      <motion.section
-        className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/15 bg-black/70 p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-xl sm:p-8"
-        initial={{ opacity: 0, y: 16, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-      >
-        {/* Progress dots */}
-        <div className="mb-6 flex items-center justify-center gap-2">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === step
-                  ? "w-6 bg-cyan-400"
-                  : i < step
-                    ? "w-1.5 bg-cyan-400/50"
-                    : "w-1.5 bg-white/20"
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Step content */}
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="text-center"
-          >
-            {step === 0 && <StepBirth t={t} onReady={goNext} />}
-            {step === 1 && (
-              <StepPersonality
-                t={t}
-                selectedMode={selectedMode}
-                onSelectMode={(mode) => {
-                  haptic("tap");
-                  setSelectedMode(mode);
-                }}
-              />
-            )}
-            {step === 2 && <StepRewards t={t} />}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Navigation */}
-        <div className="mt-8 flex flex-col gap-3">
-          {step < TOTAL_STEPS - 1 ? (
-            <>
-              <motion.button
-                type="button"
-                onClick={goNext}
-                className="min-h-12 rounded-full bg-cyan-400 px-6 text-base font-semibold text-black transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                whileTap={{ scale: 0.98 }}
-              >
-                {t("onboarding.next")}
-              </motion.button>
-              <div className="flex items-center justify-between">
-                {step > 0 ? (
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="min-h-10 rounded-full px-4 text-sm font-medium text-white/60 transition-colors hover:text-white/90"
-                  >
-                    {t("common.back")}
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={handleSkip}
-                  className="min-h-10 rounded-full px-4 text-sm font-medium text-white/60 transition-colors hover:text-white/90"
-                >
-                  {t("onboarding.skip")}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <motion.button
-                type="button"
-                onClick={handleComplete}
-                className="min-h-12 rounded-full bg-cyan-400 px-6 text-base font-semibold text-black transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                whileTap={{ scale: 0.98 }}
-              >
-                {t("onboarding.start")}
-              </motion.button>
-              <button
-                type="button"
-                onClick={goBack}
-                className="min-h-10 rounded-full px-4 text-sm font-medium text-white/60 transition-colors hover:text-white/90"
-              >
-                {t("common.back")}
-              </button>
-            </>
-          )}
-        </div>
-      </motion.section>
-    </div>
-    </FocusTrap>
-  );
-}
-
-/* ---------- Step sub-components ---------- */
-
- 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _StepWelcome({ t }: { t: (key: string) => string }) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10">
-        <span className="text-4xl" aria-hidden="true">✨</span>
-      </div>
-      <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.instantTitle")}
-      </h1>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.instantBody")}
-      </p>
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
-        <p className="text-sm font-medium text-white">{t("onboarding.instantChecklistTitle")}</p>
-        <ul className="mt-2 space-y-1.5 text-sm leading-6 text-white/75">
-          <li>{t("onboarding.instantChecklist1")}</li>
-          <li>{t("onboarding.instantChecklist2")}</li>
-          <li>{t("onboarding.instantChecklist3")}</li>
-        </ul>
-      </div>
-    </>
-  );
-}
- 
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _StepAlive({ t }: { t: (key: string) => string }) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10">
-        <span className="text-4xl" aria-hidden="true">🌱</span>
-      </div>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.step1Title")}
-      </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.step1Desc")}
-      </p>
-    </>
-  );
-}
-
-function StepPersonality({
-  t,
-  selectedMode,
-  onSelectMode,
-}: {
-  t: (key: string) => string;
-  selectedMode: string | null;
-  onSelectMode: (mode: string) => void;
-}) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-purple-400/30 bg-purple-400/10">
-        <span className="text-4xl" aria-hidden="true">🎭</span>
-      </div>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.step2Title")}
-      </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.step2Desc")}
-      </p>
-      {/* DNA Preset Cards — quick-start personality selection */}
-      <div className="mt-5 space-y-3">
-        <p className="text-xs text-white/50 text-center">
-          {t("onboarding.presetDescription") || "Choose a personality preset"}
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {DNA_PRESETS.map((preset) => {
-            const isPresetSelected = selectedMode === preset.key;
-            return (
-              <button
-                key={preset.key}
-                type="button"
-                onClick={() => onSelectMode(preset.key)}
-                className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all ${
-                  isPresetSelected
-                    ? "border-cyan-400/60 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
-                    : "border-white/10 bg-white/[0.04] hover:border-white/25"
-                }`}
-              >
-                <span className="text-2xl">{preset.emoji}</span>
-                <span className="text-sm font-semibold text-white/90">{t(preset.labelKey)}</span>
-                <div className="flex flex-wrap justify-center gap-1">
-                  {preset.traits.map((trait) => (
-                    <span
-                      key={trait}
-                      className="rounded-full px-1.5 py-0.5 text-[9px]"
-                      style={{ backgroundColor: `${preset.color}20`, color: preset.color }}
-                    >
-                      {trait}
-                    </span>
-                  ))}
-                </div>
-                {isPresetSelected && (
-                  <motion.div
-                    layoutId="preset-check"
-                    className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                  >
-                    <svg className="h-3 w-3 text-black" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="2 8 6 12 14 4" />
-                    </svg>
-                  </motion.div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Advanced personality modes */}
-      <details className="mt-4">
-        <summary className="cursor-pointer text-xs text-white/40 hover:text-white/60 transition-colors text-center">
-          {t("onboarding.advancedModes") || "Advanced personality modes"}
-        </summary>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {PERSONALITY_MODES.map((mode) => {
-            const isSelected = selectedMode === mode.key;
-            return (
-              <button
-                key={mode.key}
-                type="button"
-                onClick={() => onSelectMode(mode.key)}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                  isSelected
-                    ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
-                    : "border-white/10 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.08]"
-                }`}
-              >
-                <span className="text-lg">{mode.emoji}</span>
-                <span>{t(`onboarding.mode${mode.key.charAt(0).toUpperCase() + mode.key.slice(1)}`)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </details>
-    </>
-  );
-}
-
-function StepRewards({ t }: { t: (key: string) => string }) {
-  return (
-    <>
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10">
-        <span className="text-4xl" aria-hidden="true">🎁</span>
-      </div>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-        {t("onboarding.step3Title")}
-      </h2>
-      <p className="mt-3 text-base leading-7 text-white/80">
-        {t("onboarding.step3Desc")}
-      </p>
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-        <h3 className="text-sm font-semibold text-white">{t("onboarding.step4Title")}</h3>
-        <p className="mt-2 text-sm leading-6 text-white/75">
-          {t("onboarding.step4Desc")}
-        </p>
-      </div>
-
-      {/* Social proof — competitor insight from Instagram/TikTok */}
-      <SocialProofBanner t={t} />
-    </>
-  );
-}
-
-/** Smooth count-up hook for social proof numbers */
-function useCountUp(target: number, duration = 1200): number {
-  const [display, setDisplay] = useState(0);
-  const rafRef = useRef<number | null>(null);
-  const startedRef = useRef(false);
-
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    const startTime = performance.now();
-    function tick(now: number) {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic for a satisfying deceleration
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(Math.round(target * eased));
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [target, duration]);
-
-  return display;
-}
-
-/** Social proof banner — shows community size + count-up animation (Instagram/Duolingo style) */
-function SocialProofBanner({ t }: { t: (key: string) => string }) {
-  const userCount = useCountUp(12847, 1400);
-
-  const stats = [
-    { label: t("onboarding.socialProofCreatures") || "고유 크리처 탄생", value: "344M+", icon: "🧬" },
-    { label: t("onboarding.socialProofConversations") || "대화 나눔", value: "1.2M+", icon: "💬" },
-    { label: t("onboarding.socialProofActive") || "오늘 활동 중", value: "8.4K", icon: "🔥" },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.4 }}
-      className="mt-4 rounded-2xl border border-white/8 bg-gradient-to-r from-white/[0.03] to-white/[0.06] p-3"
-    >
-      {/* Headline social proof with count-up */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        className="mb-3 text-center text-sm font-semibold text-cyan-300/90"
-      >
-        <span className="tabular-nums">{userCount.toLocaleString()}</span>
-        {t("onboarding.socialProofHeadline") || "명이 이미 결과 함께하고 있어요"}
-      </motion.p>
-
-      <div className="flex items-center justify-around">
-        {stats.map((stat) => (
-          <div key={stat.label} className="flex flex-col items-center gap-0.5">
-            <span className="text-lg" aria-hidden="true">{stat.icon}</span>
-            <span className="text-sm font-bold text-white">{stat.value}</span>
-            <span className="text-[10px] text-white/45 leading-tight text-center">{stat.label}</span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-2.5 text-center text-[11px] text-white/40">
-        {t("onboarding.socialProofJoin") || "지금 함께하는 사람들이 있어요"}
-      </p>
-    </motion.div>
-  );
-}
-
-const DNA_AXES_DISPLAY = [
-  "analytical","intuitive","verbal","spatial",
-  "warmth","intensity","stability","openness",
-  "assertiveness","empathy","playfulness","independence",
-  "curiosity","persistence","adaptability","creativity",
-] as const;
-
-/**
- * Birth sequence — cinematic 5-second moment.
- * Dark void → spark → orb expansion → particle explosion → DNA 16축 결정 → creature forms.
- * No skip. This is THE emotional hook.
- */
-/** Particle burst — 24 radiating particles that fire on the spark→expand transition.
- *  Deterministic angles so the burst has even radial coverage without per-frame jitter. */
-const BIRTH_PARTICLES = Array.from({ length: 24 }, (_, i) => {
-  const angle = (i / 24) * Math.PI * 2;
-  return {
-    id: i,
-    dx: Math.cos(angle),
-    dy: Math.sin(angle),
-    // Stagger distances so the cloud feels organic, not clockwork.
-    distance: 90 + ((i * 37) % 60),
-    size: 2 + (i % 3),
+    onComplete({
+      personalityMode: selectedMode,
+      preferredName: normalizedName || undefined,
+    });
   };
-});
-
-function StepBirth({ t, onReady }: { t: (key: string) => string; onReady: () => void }) {
-  const [phase, setPhase] = useState<"void" | "spark" | "expand" | "dna" | "born">("void");
-  const [dnaRevealed, setDnaRevealed] = useState(0);
-  const [dnaValues] = useState(() =>
-    DNA_AXES_DISPLAY.map(() => Math.random() * 0.6 + 0.2)
-  );
-
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => { setPhase("spark"); haptic("tap"); }, 600),
-      setTimeout(() => { setPhase("expand"); haptic("tap"); }, 1400),
-      setTimeout(() => { setPhase("dna"); haptic("success"); try { playSound("levelUp"); } catch { /* blocked */ } }, 2600),
-      ...DNA_AXES_DISPLAY.map((_, i) =>
-        setTimeout(() => setDnaRevealed(i + 1), 2800 + i * 100)
-      ),
-      setTimeout(() => { setPhase("born"); haptic("success"); }, 4600),
-      setTimeout(() => onReady(), 5200),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [onReady]);
-
-  const showParticles = phase === "expand" || phase === "dna" || phase === "born";
 
   return (
-    <div className="flex flex-col items-center justify-center py-4" role="status" aria-label={t("onboarding.birthLabel")}>
-      {/* Orb — living creature preview with breathing animation after birth */}
-      <div className="relative flex items-center justify-center" style={{ height: 120 }}>
-        {/* Particle burst — radiates outward at spark→expand transition.
-            Framer-motion tweens each particle from center to its radial target
-            while fading; rendered inside the orb's relative container so they
-            stay centered on the creature. */}
-        {showParticles && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-            {BIRTH_PARTICLES.map((p) => (
-              <motion.span
-                key={p.id}
-                className="absolute rounded-full"
-                style={{
-                  width: p.size,
-                  height: p.size,
-                  background: phase === "dna" ? "rgba(196,181,253,0.9)" : "rgba(125,211,252,0.95)",
-                  boxShadow: "0 0 8px currentColor",
-                  color: phase === "dna" ? "rgba(168,85,247,0.7)" : "rgba(34,211,238,0.7)",
-                }}
-                initial={{ x: 0, y: 0, opacity: 0, scale: 0.4 }}
-                animate={{
-                  x: p.dx * p.distance,
-                  y: p.dy * p.distance,
-                  opacity: phase === "born" ? 0 : [0, 1, 0.6, 0],
-                  scale: [0.4, 1, 0.8, 0.2],
-                }}
-                transition={{
-                  duration: 1.6,
-                  ease: [0.22, 1, 0.36, 1],
-                  delay: (p.id % 6) * 0.03,
-                }}
-              />
-            ))}
+    <FocusTrap active onEscape={handleStart}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 px-4">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md rounded-[2rem] border border-white/15 bg-black/70 p-6 backdrop-blur-xl"
+        >
+          <div className="text-center">
+            <div className="text-6xl">🥚</div>
+            <h1 className="mt-3 text-2xl font-semibold text-white">{isKo ? "알에서 깨어날 준비를 하고 있어요" : "Getting ready to hatch"}</h1>
+            <p className="mt-2 text-sm text-white/70">{isKo ? "이름과 성격을 정하면 첫 대화를 시작할 수 있어요." : "Pick a name and personality to start your first chat."}</p>
           </div>
-        )}
-        <motion.div
-          className="rounded-full"
-          animate={{
-            width: phase === "void" ? 4 : phase === "spark" ? 16 : phase === "expand" ? 72 : phase === "dna" ? 56 : 80,
-            height: phase === "void" ? 4 : phase === "spark" ? 16 : phase === "expand" ? 72 : phase === "dna" ? 56 : 80,
-            backgroundColor:
-              phase === "void" ? "rgba(255,255,255,0.04)" :
-              phase === "spark" ? "rgba(34,211,238,0.5)" :
-              phase === "expand" ? "rgba(34,211,238,0.7)" :
-              phase === "dna" ? "rgba(168,85,247,0.6)" :
-              "rgba(34,211,238,0.9)",
-            boxShadow:
-              phase === "void" ? "none" :
-              phase === "spark" ? "0 0 30px rgba(34,211,238,0.5)" :
-              phase === "expand" ? "0 0 60px rgba(34,211,238,0.5), 0 0 120px rgba(34,211,238,0.2)" :
-              phase === "dna" ? "0 0 40px rgba(168,85,247,0.4), 0 0 80px rgba(168,85,247,0.2)" :
-              "0 0 80px rgba(34,211,238,0.7), 0 0 160px rgba(34,211,238,0.3)",
-            // After birth: gentle breathing scale animation
-            scale: phase === "born" ? [1, 1.06, 1] : 1,
-          }}
-          transition={phase === "born"
-            ? { scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }, duration: 0.5 }
-            : { duration: phase === "expand" ? 0.8 : 0.5, ease: "easeOut" }
-          }
-        />
-        {/* Ripple rings on birth */}
-        {phase === "born" && (
-          <>
-            <motion.div
-              className="absolute rounded-full border border-cyan-400/40"
-              initial={{ width: 80, height: 80, opacity: 0.8 }}
-              animate={{ width: 180, height: 180, opacity: 0 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-            />
-            <motion.div
-              className="absolute rounded-full border border-cyan-400/20"
-              initial={{ width: 80, height: 80, opacity: 0.5 }}
-              animate={{ width: 220, height: 220, opacity: 0 }}
-              transition={{ duration: 1.5, ease: "easeOut", delay: 0.15 }}
-            />
-          </>
-        )}
-      </div>
 
-      {/* DNA axes reveal */}
-      <AnimatePresence>
-        {(phase === "dna" || phase === "born") && (
-          <motion.div
-            key="dna-grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-3 grid grid-cols-4 gap-x-3 gap-y-1.5 w-full"
+          <div className="mt-6">
+            <p className="mb-2 text-sm font-medium text-white/90">{isKo ? "이름을 지어주세요" : "Give your creature a name"}</p>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value.slice(0, 16))}
+              placeholder={isKo ? "예: 결" : "e.g. Gyeol"}
+              className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/35"
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {SUGGESTED_NAMES.map((suggested) => (
+                <button
+                  key={suggested}
+                  type="button"
+                  onClick={() => setName(suggested)}
+                  className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-white/80 hover:bg-white/[0.08]"
+                >
+                  {suggested}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="mb-2 text-sm font-medium text-white/90">{isKo ? "어떤 성격의 결로 키울까요?" : "Choose a personality"}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {PERSONALITY_MODES.map((mode) => {
+                const selected = selectedMode === mode.key;
+                return (
+                  <button
+                    key={mode.key}
+                    type="button"
+                    onClick={() => {
+                      haptic("tap");
+                      setSelectedMode(mode.key);
+                    }}
+                    className={`rounded-xl border px-3 py-2 text-left text-sm ${selected ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/[0.04] text-white/80"}`}
+                  >
+                    <span className="mr-1">{mode.emoji}</span>
+                    {isKo ? mode.ko : mode.en}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleStart}
+            className="mt-6 w-full rounded-full bg-cyan-400 py-3 text-sm font-semibold text-black hover:bg-cyan-300"
           >
-            {DNA_AXES_DISPLAY.map((axis, i) => (
-              <motion.div
-                key={axis}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={i < dnaRevealed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.15 }}
-                className="flex flex-col items-center gap-0.5"
-              >
-                <span className="text-[8px] text-white/40 uppercase tracking-wide">{axis.slice(0,3)}</span>
-                <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: `hsl(${180 + i * 11}, 80%, 60%)` }}
-                    initial={{ width: "0%" }}
-                    animate={i < dnaRevealed ? { width: `${dnaValues[i] * 100}%` } : { width: "0%" }}
-                    transition={{ duration: 0.3, delay: 0.05 }}
-                  />
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Status text */}
-      <AnimatePresence mode="wait">
-        {phase === "void" && (
-          <motion.p key="void" initial={{ opacity: 0 }} animate={{ opacity: 0.3 }} exit={{ opacity: 0 }}
-            className="mt-4 text-xs text-white/30">...</motion.p>
-        )}
-        {phase === "spark" && (
-          <motion.p key="spark" initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} exit={{ opacity: 0 }}
-            className="mt-4 text-sm text-cyan-300/80">
-            {t("onboarding.birthSpark") || "무언가 깨어나고 있어..."}
-          </motion.p>
-        )}
-        {phase === "expand" && (
-          <motion.p key="expand" initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}
-            className="mt-4 text-sm text-cyan-200">
-            {t("onboarding.birthAlive") || "생명이 형성되고 있어..."}
-          </motion.p>
-        )}
-        {phase === "dna" && (
-          <motion.p key="dna" initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}
-            className="mt-3 text-xs text-purple-300/80">
-            {t("onboarding.birthDNA") || "DNA가 결정되고 있어..."}
-          </motion.p>
-        )}
-        {phase === "born" && (
-          <motion.div key="born" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-center">
-            <p className="text-base font-semibold text-cyan-200">
-              {t("onboarding.birthNotice") || "탄생했어."}
-            </p>
-            <motion.p
-              className="mt-1.5 text-xs text-white/50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              {t("onboarding.birthUnique") || "이 생명체는 세상에 단 하나뿐이야. 너만의 존재."}
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            {t("onboarding.start") || (isKo ? "첫 대화 시작" : "Start first chat")}
+          </button>
+        </motion.section>
+      </div>
+    </FocusTrap>
   );
 }
