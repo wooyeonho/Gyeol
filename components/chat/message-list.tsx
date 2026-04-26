@@ -67,6 +67,18 @@ const messageVariants = {
  */
 const VISIBLE_MESSAGE_CAP = 300;
 
+function pickEvolutionCopy(locale: string | undefined, dnaShift?: string[], traitEmerged?: { id: string; name: { ko: string; en: string } }[]) {
+  const isKo = locale?.startsWith("ko") ?? true;
+  const axisSet = new Set(dnaShift ?? []);
+  const traitIds = new Set((traitEmerged ?? []).map((trait) => trait.id));
+
+  if (axisSet.has("curiosity")) return isKo ? "호기심이 조금 자랐어요" : "Curiosity grew a little.";
+  if (axisSet.has("playfulness") || traitIds.has("trickster")) return isKo ? "더 장난스러워졌어요" : "A little more playful now.";
+  if (axisSet.has("empathy") || axisSet.has("warmth") || traitIds.has("heart_reader")) return isKo ? "당신을 조금 더 신뢰해요" : "Trust grew a little.";
+  if (traitIds.has("quiet_anchor") || axisSet.has("stability")) return isKo ? "조용하지만 더 깊이 반응하기 시작했어요" : "Quiet, but responding more deeply.";
+  return isKo ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.";
+}
+
 export function MessageList({
   messages,
   isStreaming,
@@ -299,24 +311,21 @@ export function MessageList({
               )}
               {m.dnaShift && m.dnaShift.length > 0 && !isStreaming && (
                 <motion.div
-                  className="mt-1.5 flex flex-wrap gap-1.5"
+                  className="mt-2 rounded-xl border p-2.5"
+                  style={{
+                    borderColor: `${appearance.palette.primary}40`,
+                    background: `${appearance.palette.primary}0a`,
+                  }}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  {m.dnaShift.map((axis) => (
-                    <span
-                      key={axis}
-                      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      style={{
-                        background: `${appearance.palette.primary}18`,
-                        color: appearance.palette.primary,
-                        border: `1px solid ${appearance.palette.primary}30`,
-                      }}
-                    >
-                      {axis} +
-                    </span>
-                  ))}
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: appearance.palette.primary }}>
+                    {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Personality Shift"}
+                  </p>
+                  <p className="mt-1 text-xs text-white/85">
+                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
+                  </p>
                 </motion.div>
               )}
               {m.memoryMoment && !isStreaming && (
@@ -330,11 +339,16 @@ export function MessageList({
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: `${appearance.palette.primary}90` }}>
-                    ✦ {m.memoryMoment.age_days}{locale?.startsWith("ko") ? "일 전의 기억" : "d ago — memory recalled"}
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}95` }}>
+                    {locale?.startsWith("ko") ? "새 기억이 생겼어요" : "A new memory formed"}
                   </p>
-                  <p className="mt-1 text-xs italic text-white/50 line-clamp-2">
-                    {maskJargon(m.memoryMoment.memory)}
+                  <p className="mt-1 text-xs text-white/80 line-clamp-2">
+                    {locale?.startsWith("ko") ? "결이 기억했어요:" : "Gyeol remembered:"} {maskJargon(m.memoryMoment.memory)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/60">
+                    {locale?.startsWith("ko")
+                      ? "이 기억은 앞으로 대화에 영향을 줄 수 있어요"
+                      : "This memory may influence future chats."}
                   </p>
                 </motion.div>
               )}
@@ -375,7 +389,10 @@ export function MessageList({
                   transition={{ duration: 0.6, type: "spring" }}
                 >
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: appearance.palette.primary }}>
-                    New Trait
+                    {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Trait Emerged"}
+                  </p>
+                  <p className="mt-1 text-xs text-white/85">
+                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
                   </p>
                   {m.traitEmerged.map((trait) => (
                     <p key={trait.id} className="mt-0.5 text-xs text-white/80">

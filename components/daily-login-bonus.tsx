@@ -60,7 +60,7 @@ export function DailyLoginBonus({
     <div className="glass-card-strong rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">
-          {isKo ? "출석 보상" : "Daily Login Bonus"}
+          {isKo ? "오늘의 돌봄" : "Today's Care"}
         </h3>
         <span className="text-[10px] text-white/40">
           {isKo ? `${currentDayIndex}일차` : `Day ${currentDayIndex}`}
@@ -102,7 +102,7 @@ export function DailyLoginBonus({
         <span className="text-2xl">{todayReward.icon}</span>
         <div>
           <p className="text-xs font-semibold text-amber-300">
-            {isKo ? "오늘의 보상" : "Today's Reward"}
+            {isKo ? "오늘의 성장 보상" : "Today's Growth Reward"}
           </p>
           <p className="text-[11px] text-white/60">
             {todayReward.label[locale === "ko" ? "ko" : "en"]}
@@ -125,7 +125,7 @@ export function DailyLoginBonus({
           ? (isKo ? "수령 중..." : "Claiming...")
           : claimed
           ? (isKo ? "오늘 수령 완료 ✓" : "Claimed today ✓")
-          : (isKo ? "보상 받기" : "Claim Reward")}
+          : (isKo ? "돌봄 완료하기" : "Complete care")}
       </motion.button>
 
       {/* Reveal animation */}
