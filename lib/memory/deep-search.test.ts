@@ -6,7 +6,7 @@ const day = 86400 * 1000;
 
 function m(partial: Partial<MemoryRow>): MemoryRow {
   return {
-    id: partial.id ?? Math.random().toString(36),
+    id: partial.id ?? crypto.randomUUID(),
     content: partial.content ?? "",
     createdAt: partial.createdAt ?? now,
     ...partial,
