@@ -105,7 +105,7 @@ export function MessageList({
   creatureName,
   typingLabel,
 }: {
-  messages: Array<{ id?: string; role: string; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
+  messages: Array<{ id?: string; role: string; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: { memory: string; age_days: number; similarity: number }; memoryCreated?: boolean; resonance?: { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] } }>;
   isStreaming: boolean;
   isFirstSession: boolean;
   firstSessionConfig: { heading: string; helper: string };
@@ -340,15 +340,36 @@ export function MessageList({
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}95` }}>
-                    {locale?.startsWith("ko") ? "새 기억이 생겼어요" : "A new memory formed"}
+                    {locale?.startsWith("ko") ? "오래된 기억이 떠올랐어요" : "A memory surfaced"}
                   </p>
                   <p className="mt-1 text-xs text-white/80 line-clamp-2">
                     {locale?.startsWith("ko") ? "결이 기억했어요:" : "Gyeol remembered:"} {maskJargon(m.memoryMoment.memory)}
                   </p>
                   <p className="mt-1 text-[11px] text-white/60">
                     {locale?.startsWith("ko")
-                      ? "이 기억은 앞으로 대화에 영향을 줄 수 있어요"
-                      : "This memory may influence future chats."}
+                      ? `${m.memoryMoment.age_days}일 전 기억이 이번 대화에 영향을 줬어요`
+                      : `A memory from ${m.memoryMoment.age_days} days ago shaped this reply.`}
+                  </p>
+                </motion.div>
+              )}
+              {m.memoryCreated && !isStreaming && (
+                <motion.div
+                  className="mt-2 rounded-xl border p-2.5"
+                  style={{
+                    borderColor: `${appearance.palette.primary}30`,
+                    background: `linear-gradient(135deg, ${appearance.palette.primary}08, ${appearance.palette.primary}03)`,
+                  }}
+                  initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}95` }}>
+                    {locale?.startsWith("ko") ? "새 기억이 생겼어요" : "A new memory formed"}
+                  </p>
+                  <p className="mt-1 text-xs text-white/80">
+                    {locale?.startsWith("ko")
+                      ? "방금 나눈 이야기가 기억에 담겼어요"
+                      : "This conversation is being committed to memory."}
                   </p>
                 </motion.div>
               )}

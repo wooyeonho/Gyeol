@@ -436,15 +436,19 @@ export async function POST(req: NextRequest) {
           const traitEvent = JSON.stringify({ type: "trait_emerged", traits: newTraits });
           controller.enqueue(encoder.encode(`data: ${traitEvent}\n\n`));
         }
-        // P5A: Memory moment event (if context had a strong match)
+        // memory_recalled: an old memory (≥7 days, similarity ≥0.95) surfaced during context build
         if (context.memoryMoment) {
           const mmEvent = JSON.stringify({
-            type: "memory_moment",
+            type: "memory_recalled",
             memory: context.memoryMoment.content,
             age_days: context.memoryMoment.ageDays,
             similarity: context.memoryMoment.similarity,
           });
           controller.enqueue(encoder.encode(`data: ${mmEvent}\n\n`));
+        }
+        // memory_created: a new memory will be persisted from this turn (embedding ready)
+        if (context.embedding.length > 0) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "memory_created" })}\n\n`));
         }
         // Resonance (결맞춤) — user DNA ↔ creature DNA cosine similarity
         if (inlineResonance) {
