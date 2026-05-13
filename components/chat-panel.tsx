@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 
 import { resolveIdentityAppearance } from "@/lib/identity/appearance";
+import { deriveEvolutionSummary } from "@/lib/identity/evolution-copy";
 import { onScreenshotAttempt } from "@/lib/security/screenshot-detect";
 import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
@@ -88,12 +89,15 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   const isFirstSession = totalMessages === 0 && messages.length === 0;
   const lastAssistantMeta = [...messages]
     .reverse()
-    .find((message) => message.role === "assistant" && (message.dnaShift?.length || message.traitEmerged?.length || message.memoryMoment));
-  const growthSummary = (() => {
-    if (lastAssistantMeta?.traitEmerged?.length) return locale.startsWith("ko") ? "새로운 성격 조짐" : "New personality signs";
-    if (lastAssistantMeta?.dnaShift?.length) return locale.startsWith("ko") ? "결이 조금 달라졌어요" : "Gyeol changed a little";
-    return locale.startsWith("ko") ? "기억이 쌓이는 중" : "Memories are building";
-  })();
+    .find((message) => message.role === "assistant" && (
+      message.dnaShift?.length || message.traitEmerged?.length ||
+      message.memoryMoment || message.memoryCreated
+    ));
+  const growthSummary = deriveEvolutionSummary(locale, {
+    dnaShift: lastAssistantMeta?.dnaShift,
+    traitEmerged: lastAssistantMeta?.traitEmerged,
+    hasMemory: !!(lastAssistantMeta?.memoryMoment || lastAssistantMeta?.memoryCreated),
+  });
   const firstSessionConfig = getFirstSessionConfig(t);
   const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(t);
   const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");

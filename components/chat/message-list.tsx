@@ -4,6 +4,7 @@ import { StarterPrompts } from "./starter-prompts";
 import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
+import { getEvolutionCopy } from "@/lib/identity/evolution-copy";
 
 /**
  * Convert a subset of Markdown to safe HTML for AI assistant messages.
@@ -67,17 +68,6 @@ const messageVariants = {
  */
 const VISIBLE_MESSAGE_CAP = 300;
 
-function pickEvolutionCopy(locale: string | undefined, dnaShift?: string[], traitEmerged?: { id: string; name: { ko: string; en: string } }[]) {
-  const isKo = locale?.startsWith("ko") ?? true;
-  const axisSet = new Set(dnaShift ?? []);
-  const traitIds = new Set((traitEmerged ?? []).map((trait) => trait.id));
-
-  if (axisSet.has("curiosity")) return isKo ? "호기심이 조금 자랐어요" : "Curiosity grew a little.";
-  if (axisSet.has("playfulness") || traitIds.has("trickster")) return isKo ? "더 장난스러워졌어요" : "A little more playful now.";
-  if (axisSet.has("empathy") || axisSet.has("warmth") || traitIds.has("heart_reader")) return isKo ? "당신을 조금 더 신뢰해요" : "Trust grew a little.";
-  if (traitIds.has("quiet_anchor") || axisSet.has("stability")) return isKo ? "조용하지만 더 깊이 반응하기 시작했어요" : "Quiet, but responding more deeply.";
-  return isKo ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.";
-}
 
 export function MessageList({
   messages,
@@ -324,7 +314,7 @@ export function MessageList({
                     {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Personality Shift"}
                   </p>
                   <p className="mt-1 text-xs text-white/85">
-                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
+                    {getEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
                   </p>
                 </motion.div>
               )}
@@ -413,7 +403,7 @@ export function MessageList({
                     {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Trait Emerged"}
                   </p>
                   <p className="mt-1 text-xs text-white/85">
-                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
+                    {getEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
                   </p>
                   {m.traitEmerged.map((trait) => (
                     <p key={trait.id} className="mt-0.5 text-xs text-white/80">
