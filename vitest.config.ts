@@ -13,12 +13,17 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules", ".next"],
+    exclude: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/dist/**",
+      "openclaw/**",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
       include: ["lib/**/*.ts", "store/**/*.ts", "hooks/**/*.ts", "app/api/**/*.ts"],
-      exclude: ["node_modules/", ".next/", "e2e/", "**/*.test.ts", "**/*.spec.ts"],
+      exclude: ["**/node_modules/**", "**/.next/**", "e2e/", "**/*.test.ts", "**/*.spec.ts"],
       thresholds: {
         lines: 60,
         functions: 60,
