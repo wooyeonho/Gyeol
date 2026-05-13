@@ -32,6 +32,7 @@ const EVENT_LABELS: Record<string, { ko: string; emoji: string }> = {
   evolution: { ko: "진화 완료", emoji: "🌟" },
   streak_milestone: { ko: "스트릭 달성", emoji: "🔥" },
   memory_created: { ko: "새 기억 생성", emoji: "💭" },
+  memory_recalled: { ko: "오래된 기억 회상", emoji: "🔮" },
   achievement: { ko: "업적 달성", emoji: "🏆" },
   birthday: { ko: "생일 기념", emoji: "🎂" },
 };

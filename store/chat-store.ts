@@ -30,7 +30,7 @@ import { haptic, playSound } from "@/lib/micro-interactions";
 
 interface MemoryMomentData { memory: string; age_days: number; similarity: number }
 interface ResonanceData { score: number; delta: number; topOverlap: { axis: string; closeness: number }[] }
-interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData; resonance?: ResonanceData }
+interface Message { id?: string; role: "user" | "assistant"; content: string; error?: boolean; pending?: boolean; dnaShift?: string[]; traitEmerged?: { id: string; name: { ko: string; en: string } }[]; memoryMoment?: MemoryMomentData; memoryCreated?: boolean; resonance?: ResonanceData }
 type MessageMeta = {
   experiment_key?: string;
   experiment_variant?: string;
@@ -124,7 +124,7 @@ async function handleStreamResponse(
   // P6A: Batched streaming — collect deltas in a buffer, flush to Zustand at ~15fps
   // instead of 60+ state updates/sec. Reduces array copies and re-renders dramatically.
   let contentBuffer = "";
-  let metaBuffer: Partial<Pick<Message, "dnaShift" | "traitEmerged" | "memoryMoment" | "resonance">> = {};
+  let metaBuffer: Partial<Pick<Message, "dnaShift" | "traitEmerged" | "memoryMoment" | "memoryCreated" | "resonance">> = {};
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
   const FLUSH_INTERVAL = 66; // ~15fps — smooth enough for text, 4x fewer renders
 
@@ -134,7 +134,7 @@ async function handleStreamResponse(
     const meta = { ...metaBuffer };
     contentBuffer = "";
     metaBuffer = {};
-    if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment && !meta.resonance) return;
+    if (!text && !meta.dnaShift && !meta.traitEmerged && !meta.memoryMoment && !meta.memoryCreated && !meta.resonance) return;
     set((s) => {
       const last = s.messages[s.messages.length - 1];
       if (!last || last.role !== "assistant") return s;
@@ -146,6 +146,7 @@ async function handleStreamResponse(
         ...(meta.dnaShift ? { dnaShift: meta.dnaShift } : {}),
         ...(meta.traitEmerged ? { traitEmerged: meta.traitEmerged } : {}),
         ...(meta.memoryMoment ? { memoryMoment: meta.memoryMoment } : {}),
+        ...(meta.memoryCreated ? { memoryCreated: true } : {}),
         ...(meta.resonance ? { resonance: meta.resonance } : {}),
       };
       const msgs = s.messages.slice();
@@ -211,12 +212,15 @@ async function handleStreamResponse(
             } else if (parsed.type === "trait_emerged" && Array.isArray(parsed.traits)) {
               metaBuffer.traitEmerged = parsed.traits as { id: string; name: { ko: string; en: string } }[];
               scheduleFlush();
-            } else if (parsed.type === "memory_moment" && typeof parsed.memory === "string") {
+            } else if (parsed.type === "memory_recalled" && typeof parsed.memory === "string") {
               metaBuffer.memoryMoment = {
                 memory: parsed.memory as string,
                 age_days: typeof parsed.age_days === "number" ? parsed.age_days : 0,
                 similarity: typeof parsed.similarity === "number" ? parsed.similarity : 0,
               };
+              scheduleFlush();
+            } else if (parsed.type === "memory_created") {
+              metaBuffer.memoryCreated = true;
               scheduleFlush();
             } else if (parsed.type === "resonance" && typeof parsed.score === "number") {
               metaBuffer.resonance = {
