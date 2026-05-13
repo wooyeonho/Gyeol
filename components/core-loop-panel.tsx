@@ -29,11 +29,11 @@ type CopySet = {
   memory: string;
   memoryEmpty: string;
   moodLabel: string;
-  evolvesIn: string;
   personalityHint: string;
   memoryAccumulating: string;
   changedLittle: string;
   tomorrow: string;
+  evolutionHints: [string, string, string, string];
 };
 
 function getCopy(isKo: boolean): CopySet {
@@ -50,11 +50,16 @@ function getCopy(isKo: boolean): CopySet {
         memory: "최근 기억",
         memoryEmpty: "아직 새겨진 기억이 없어요. 오늘 대화로 첫 기억을 만들어봐요.",
         moodLabel: "기분",
-        evolvesIn: "진화까지 남은 대화",
         personalityHint: "새로운 성격 조짐",
         memoryAccumulating: "기억이 쌓이는 중",
         changedLittle: "결이 조금 달라졌어요",
         tomorrow: "내일 다시 오면 결이 더 자랄 수 있어요",
+        evolutionHints: [
+          "성장을 시작했어요",
+          "조금씩 달라지는 중",
+          "진화 준비 중",
+          "조금 더 대화하면 결이 달라질 수 있어요",
+        ],
       }
     : {
         title: "Raise my Gyeol",
@@ -68,11 +73,16 @@ function getCopy(isKo: boolean): CopySet {
         memory: "Recent memory",
         memoryEmpty: "No memory yet. Start chatting to form the first memory.",
         moodLabel: "Mood",
-        evolvesIn: "messages until evolution",
         personalityHint: "New personality signs",
         memoryAccumulating: "Memories are building",
         changedLittle: "Gyeol changed a little",
         tomorrow: "Come back tomorrow to keep growing together",
+        evolutionHints: [
+          "Growth has begun",
+          "Slowly changing",
+          "Evolution is building",
+          "A few more chats may change Gyeol",
+        ],
       };
 }
 
@@ -103,8 +113,11 @@ export function CoreLoopPanel({
     conversationStarted,
   });
 
-  const evolvesIn = Math.max(0, Math.ceil((100 - metrics.progress) / 10));
   const bond = Math.round((intimacyScore ?? metrics.progress / 100) * 100);
+  // Qualitative evolution hint — avoids showing a number that contradicts the
+  // probabilistic checkEvolution() logic (random increment + dice roll per turn).
+  const evolutionHintIndex = metrics.progress >= 90 ? 3 : metrics.progress >= 60 ? 2 : metrics.progress >= 30 ? 1 : 0;
+  const evolutionHint = c.evolutionHints[evolutionHintIndex];
 
   return (
     <div className="pointer-events-auto mx-auto mb-2 w-full max-w-3xl px-4">
@@ -132,8 +145,7 @@ export function CoreLoopPanel({
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-cyan-300" style={{ width: `${metrics.progress}%` }} />
             </div>
-            <p className="mt-2 text-[11px] text-cyan-100/80">{c.evolvesIn}: {evolvesIn}</p>
-            <p className="mt-1 text-[11px] text-violet-100/80">{c.personalityHint}</p>
+            <p className="mt-2 text-[11px] text-cyan-100/80">{evolutionHint}</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
