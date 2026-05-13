@@ -33,6 +33,7 @@ const DeathScreen = dynamic(() => import("@/components/death-screen").then((m) =
 import { CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureTapReact } from "@/components/effects/creature-tap";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
+import { loadDailyCare, incrementPetCount, saveDailyCare } from "@/lib/care/daily-care";
 import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
 import { mainTutorialSteps } from "@/components/tutorial-steps";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
@@ -78,7 +79,7 @@ export default function Home() {
   const [showDailyBonus, setShowDailyBonus] = useState(false);
   const [bonusDayIndex, setBonusDayIndex] = useState(1);
   const [bonusAlreadyClaimed, setBonusAlreadyClaimed] = useState(false);
-  const [petCountToday, setPetCountToday] = useState(0);
+  const [petCountToday, setPetCountToday] = useState(() => loadDailyCare().petCountToday);
 
   useEffect(() => {
     fetchAgentState();
@@ -340,7 +341,7 @@ export default function Home() {
   // Zelda-like touch freedom: every gesture type affects creature affinity
   const handleCreatureTouch = useCallback((affinityDelta: number) => {
     creature.recordCreatureTouch(affinityDelta);
-    setPetCountToday((prev) => prev + 1);
+    setPetCountToday(incrementPetCount());
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
@@ -524,6 +525,11 @@ export default function Home() {
     (agentState?.total_messages ?? 0) > 0 ||
     messages.some((message) => message.role === "user");
   const dailyCareCompleted = conversationStarted && petCountToday > 0 && vitality >= 0.7;
+
+  // Persist care completion the moment it first becomes true this day
+  useEffect(() => {
+    if (dailyCareCompleted) saveDailyCare({ careCompleted: true });
+  }, [dailyCareCompleted]);
 
   if (showAgeGate) {
     return <AgeGate onComplete={handleAgeGateComplete} />;
