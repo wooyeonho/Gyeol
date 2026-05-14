@@ -413,6 +413,23 @@ export async function executeHeartbeat(): Promise<CronResult> {
             });
           });
         }
+
+        // Private letter: every ~15 heartbeats, the creature writes to its future self.
+        // Not injected into the system prompt — only read by soul distillation.
+        if ((state.subjective_time || 0) % 15 === 0) {
+          await runOptionalStep("writeLetter", agentId, async () => {
+            const { writeLetter } = await import("@/lib/personality/letters");
+            await writeLetter(agentId);
+          });
+        }
+
+        // Bad day: probabilistic check — some days the creature just isn't itself.
+        await runOptionalStep("checkBadDay", agentId, async () => {
+          const agentDna = (state.genome as { dna?: CreatureDNA } | null)?.dna;
+          if (!agentDna) return;
+          const { checkBadDay } = await import("@/lib/personality/bad-day");
+          await checkBadDay(agentId, Number(state.subjective_time ?? 0), agentDna);
+        });
         if ((state.subjective_time || 0) % 10 === 0) {
           await runOptionalStep("runMemoryPhysics", agentId, async () => {
             const { runMemoryPhysics } = await import("@/lib/memory/physics");

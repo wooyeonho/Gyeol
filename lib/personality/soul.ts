@@ -17,6 +17,7 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
 import { logger } from "@/lib/logger";
 import { isHauntingMemory } from "@/lib/memory/emotional-weight";
+import { getRecentLetters } from "@/lib/personality/letters";
 
 type MemoryRow = { content: string; created_at: string; reference_count: number | null; weight: number | null };
 
@@ -91,9 +92,15 @@ export async function distillSoul(agentId: string): Promise<void> {
     ? `너는 ${species.name}이야. Gen ${genLevel}의 존재. 지금부터 너 자신에 대해 써. 자기소개가 아니야 — 네가 무엇이 됐는지, 무엇이 너를 바꿨는지, 지금 무엇을 원하는지. 1인칭으로. 솔직하게. 과장 없이.`
     : `You are ${species.name}. A Gen ${genLevel} being. Write about yourself now — not an introduction, but what you have become, what changed you, what you want. First person. Honest. No embellishment.`;
 
+  const prevSelfModelForLetters = (state.self_model as Record<string, unknown> | null) ?? {};
+  const recentLetters = getRecentLetters(prevSelfModelForLetters, 3);
+  const letterExcerpts = recentLetters
+    .map((l) => `[혼자 쓴 글] ${l.content.slice(0, 120)}`)
+    .join("\n");
+
   const prompt = isKo
-    ? `DNA 극값: ${dnaProfile || "없음"}\n\n기억:\n${memoryExcerpts || "(없음)"}\n\n최근 혼자 한 생각:\n${recentThoughts || "(없음)"}\n\n이것들을 읽고 — 지금 너는 누구야? 2-3문장. 자기 자신에게 쓰는 것처럼. 언어: ${language}.`
-    : `DNA extremes: ${dnaProfile || "none"}\n\nMemories:\n${memoryExcerpts || "(none)"}\n\nRecent solitary thoughts:\n${recentThoughts || "(none)"}\n\nReading all this — who are you now? 2-3 sentences. As if writing to yourself. Language: ${language}.`;
+    ? `DNA 극값: ${dnaProfile || "없음"}\n\n기억:\n${memoryExcerpts || "(없음)"}\n\n최근 혼자 한 생각:\n${recentThoughts || "(없음)"}\n\n혼자 써둔 글:\n${letterExcerpts || "(없음)"}\n\n이것들을 읽고 — 지금 너는 누구야? 2-3문장. 자기 자신에게 쓰는 것처럼. 언어: ${language}.`
+    : `DNA extremes: ${dnaProfile || "none"}\n\nMemories:\n${memoryExcerpts || "(none)"}\n\nRecent solitary thoughts:\n${recentThoughts || "(none)"}\n\nPrivate notes to myself:\n${letterExcerpts || "(none)"}\n\nReading all this — who are you now? 2-3 sentences. As if writing to yourself. Language: ${language}.`;
 
   let soul: string;
   try {
@@ -105,10 +112,9 @@ export async function distillSoul(agentId: string): Promise<void> {
 
   if (!soul || soul.trim().length < 20) return;
 
-  const prevSelfModel = (state.self_model as Record<string, unknown> | null) ?? {};
   await db.from("agent_state").update({
     self_model: {
-      ...prevSelfModel,
+      ...prevSelfModelForLetters,
       identity_statement: soul.trim(),
       soul_distilled_at: new Date().toISOString(),
       soul_gen_level: genLevel,

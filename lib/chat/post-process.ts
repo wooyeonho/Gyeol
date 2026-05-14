@@ -138,6 +138,7 @@ export async function persistChatTurn(params: {
   memoryMoment?: { content: string; ageDays: number } | null;
   reply: string;
   writer: DbWriter;
+  userId?: string;
 }) {
   // P1C Phase 1: Independent tasks in parallel (chat insert + embedding generation)
   const [, embedding] = await Promise.all([
@@ -300,7 +301,6 @@ export async function persistChatTurn(params: {
   }
 
   // Check if any active wants were satisfied by this conversation turn.
-  // Runs fire-and-forget so it doesn't block the response path.
   void (async () => {
     try {
       const { checkWantSatisfaction, markWantsSatisfied } = await import("@/lib/personality/wants");
@@ -311,6 +311,25 @@ export async function persistChatTurn(params: {
       if (satisfied.length > 0) await markWantsSatisfied(params.agentId, satisfied);
     } catch { /* non-critical */ }
   })();
+
+  // Update per-user bond — how the creature feels about this specific person.
+  if (params.userId) {
+    void (async () => {
+      try {
+        const { updateBond } = await import("@/lib/personality/bonds");
+        const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+        const locale = typeof currentConfig.preferred_locale === "string" ? currentConfig.preferred_locale : "ko";
+        await updateBond({
+          agentId: params.agentId,
+          userId: params.userId!,
+          message: params.message,
+          reply: params.reply,
+          intimacyScore: params.agentState?.intimacy_score ?? 0,
+          isKo: locale.startsWith("ko"),
+        });
+      } catch { /* non-critical */ }
+    })();
+  }
 
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({

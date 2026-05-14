@@ -3,6 +3,8 @@ import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { PERSONALITY_AXES } from "@/lib/genome/dna";
 import { getActiveWants, type Want } from "@/lib/personality/wants";
+import { getBadDayDirective } from "@/lib/personality/bad-day";
+import { getBondDirective, type Bond } from "@/lib/personality/bonds";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -234,7 +236,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[] };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond> };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -248,6 +250,7 @@ type BuildSystemPromptParams = {
   recentChats: Array<{ content?: string; role?: string }>;
   autonomousLogs: Array<{ content?: string; summary?: string }>;
   worldState?: { weather?: { name?: string } } | null;
+  userId?: string;
 };
 
 // ─── Topic Context Window Management ───
@@ -515,10 +518,32 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
         : "While alone, you kept returning to the same thought. Slightly worn.");
     }
 
+    // Bad day: some days are just like this. No reason required.
+    const badDayUntil = typeof config?.bad_day_until === "string" ? config.bad_day_until : undefined;
+    const badDayFlavor = typeof config?.bad_day_flavor === "string" ? config.bad_day_flavor : undefined;
+    const badDayDirective = getBadDayDirective(badDayUntil, badDayFlavor, isKo);
+    if (badDayDirective) {
+      arrivalFragments.push(badDayDirective);
+    }
+
     if (arrivalFragments.length > 0) {
       parts.push(isKo
         ? `[지금 이 순간 네 상태]\n${arrivalFragments.join(" ")}`
         : `[Your state right now]\n${arrivalFragments.join(" ")}`);
+    }
+
+    // Per-user bond: the creature has feelings about this specific person.
+    if (p.userId) {
+      const bondResult = getBondDirective(
+        s.self_model?.user_bonds,
+        p.userId,
+        isKo,
+      );
+      if (bondResult) {
+        parts.push(isKo
+          ? `[이 사람에 대한 감정]\n${bondResult.directive}\n(기억: ${bondResult.note})`
+          : `[Your feeling about this person]\n${bondResult.directive}\n(Note: ${bondResult.note})`);
+      }
     }
   }
 

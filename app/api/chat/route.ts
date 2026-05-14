@@ -232,6 +232,7 @@ export async function POST(req: NextRequest) {
       message,
       reader: supabase,
       writer: service,
+      userId: user.id,
     });
 
     // Auto-sync locale in background
@@ -488,6 +489,7 @@ export async function POST(req: NextRequest) {
             : null,
           reply: fullResponse,
           writer: service,
+          userId: user.id,
         });
         // Advance engagement streak + award XP (non-fatal)
         try {

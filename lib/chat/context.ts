@@ -113,6 +113,7 @@ export async function buildChatPromptContext(params: {
   message: string;
   reader: DbReader;
   writer: DbWriter;
+  userId?: string;
 }): Promise<ChatPromptContext> {
   // OPT-A: Start embedding generation immediately (parallel with all DB fetches).
   // Previously: waited for agentState → then started embedding (~300ms saved).
@@ -229,6 +230,7 @@ export async function buildChatPromptContext(params: {
     recentChats: chronologicalChats,
     autonomousLogs: logRows.map((log) => ({ content: log.summary })),
     worldState,
+    userId: params.userId,
   });
 
   return {
