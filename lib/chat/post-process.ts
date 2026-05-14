@@ -381,6 +381,22 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Correction memory — when the user corrects the creature, store it as a scar.
+  // High reference-count so it surfaces whenever the topic comes up.
+  void (async () => {
+    try {
+      const { recordCorrection } = await import("@/lib/personality/corrections");
+      const corrConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const corrLocale = typeof corrConfig.preferred_locale === "string" ? corrConfig.preferred_locale : "ko";
+      await recordCorrection({
+        agentId: params.agentId,
+        message: params.message,
+        reply: params.reply,
+        isKo: corrLocale.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,

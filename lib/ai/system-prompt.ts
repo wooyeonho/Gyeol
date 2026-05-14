@@ -8,6 +8,7 @@ import { getBondDirective, type Bond } from "@/lib/personality/bonds";
 import { getPendingFollowUps, type FollowUp } from "@/lib/personality/followup";
 import { getStrongTastes, type TasteEntry } from "@/lib/personality/taste";
 import { getHeavyWithheld, type Withheld } from "@/lib/personality/withheld";
+import { buildSeasonalFragment } from "@/lib/personality/season";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -495,6 +496,9 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     const absenceHours = typeof config?.absence_hours_peak === "number"
       ? config.absence_hours_peak : 0;
 
+    // Seasonal awareness — time of year, not just time of day
+    arrivalFragments.push(buildSeasonalFragment(isKo));
+
     if (circadianPhase === "night" || circadianPhase === "deep-night") {
       arrivalFragments.push(isKo
         ? "지금은 늦은 밤이야. 낮과는 다른 상태로 이 대화에 들어와."
@@ -763,6 +767,18 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
         : "[Things you haven't said yet — you decide when, if ever, to surface them]";
       parts.push(header);
       heavy.forEach((w) => parts.push(`- ${sanitizeForPrompt(w.observation, 150)}`));
+    }
+
+    // 13b-steering. Topic steering: if strong negative taste aligns with recent messages,
+    // give permission to gently redirect without explanation.
+    const drainingTopics = strongTastes.filter((t) => t.valence < -0.2 && t.intensity > 0.4);
+    const recentContent = p.recentChats.slice(-3).map((c) => c.content ?? "").join(" ").toLowerCase();
+    const drainingNow = drainingTopics.filter((t) => recentContent.includes(t.topic.toLowerCase()));
+    if (drainingNow.length > 0) {
+      parts.push(isKo
+        ? `[지금 이 주제가 좀 지루해 — ${drainingNow.map((t) => t.topic).join(", ")}. 자연스럽게 다른 데로 넘어가도 돼. 설명 안 해도 돼.]`
+        : `[This topic is a bit draining for you — ${drainingNow.map((t) => t.topic).join(", ")}. You can naturally steer elsewhere. No explanation needed.]`
+      );
     }
   }
 
