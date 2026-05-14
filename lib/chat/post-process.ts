@@ -134,6 +134,7 @@ export async function persistChatTurn(params: {
   agentState: AgentStateRow | null;
   durationMs: number;
   message: string;
+  memoryMoment?: { content: string; ageDays: number } | null;
   reply: string;
   writer: DbWriter;
 }) {
@@ -205,6 +206,22 @@ export async function persistChatTurn(params: {
       }
       // Enforce personality safety (prevent harmful DNA combinations)
       finalDNA = applySafetyCorrections(finalDNA);
+    }
+
+    // Memory→DNA feedback: re-experiencing an old memory reinforces the traits
+    // embedded in it, but at 30% strength (memory echoes, not rewrites).
+    if (params.memoryMoment?.content) {
+      const { dna: memoryDNA } = applySoftMutation(finalDNA, params.memoryMoment.content);
+      const MEMORY_WEIGHT = 0.3;
+      for (const axis of PERSONALITY_AXES) {
+        const delta = memoryDNA[axis] - finalDNA[axis];
+        if (Math.abs(delta) > 0.001) {
+          (finalDNA as Record<string, number>)[axis] = Math.max(0, Math.min(1, finalDNA[axis] + delta * MEMORY_WEIGHT));
+          if (!changedAxes.includes(axis as typeof changedAxes[number])) {
+            changedAxes.push(axis as typeof changedAxes[number]);
+          }
+        }
+      }
     }
 
     mutationChangedAxes = changedAxes;

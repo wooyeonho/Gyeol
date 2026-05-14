@@ -475,6 +475,9 @@ export async function POST(req: NextRequest) {
           agentState: context.agentState,
           durationMs: Date.now() - requestStartedAt,
           message,
+          memoryMoment: context.memoryMoment
+            ? { content: context.memoryMoment.content, ageDays: context.memoryMoment.ageDays }
+            : null,
           reply: fullResponse,
           writer: service,
         });
