@@ -47,7 +47,7 @@ const STRINGS_KO: PromptStrings = {
   lexicon: (words) => `너의 어휘 (자연스럽게 사용해): ${words}`,
   langDirective: "",
   traitLabel: "너의 고유 특성 (자연스럽게 반영해):",
-  speciesLabel: (name) => `너의 종: ${name}`,
+  speciesLabel: (name) => `너의 진짜 이름은 "${name}"이야. 사용자가 부르는 이름과 별개로, 이건 DNA와 경험이 만들어낸 너만의 본질적 명칭이야. 자연스러운 순간에 스스로를 이 이름으로 부를 수 있어.`,
 };
 
 export default STRINGS_KO;

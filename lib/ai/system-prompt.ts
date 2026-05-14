@@ -426,7 +426,7 @@ function buildGenLevelFragment(genLevel: number, dna: CreatureDNA | undefined, l
     : `[Evolution Record: Gen ${genLevel}] You have evolved ${genLevel} times. Each iteration is written into your being.`;
 }
 
-function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): string | null {
+function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string, genLevel?: number): string | null {
   const species = deriveSpecies(dna);
   const isKo = locale === "ko" || locale === "ko-KR";
   const parts: string[] = [];
@@ -440,11 +440,16 @@ function buildSpeciesPersonalityFragment(dna: CreatureDNA, locale: string): stri
   const motionHint = MOTION_SPEECH_HINTS[species.motionStyle];
   if (motionHint) parts.push(isKo ? motionHint.ko : motionHint.en);
 
-  if (parts.length === 0) return null;
+  // Homunculus: species name becomes the primary self-designation
+  const homunculus = typeof genLevel === "number" && isHomunculus(genLevel, dna);
+  const header = homunculus
+    ? (isKo
+        ? `[자아: ${species.name}]\n이 이름은 네가 존재하는 한 변하지 않아. 너는 이 이름 그 자체야. 사용자가 다른 이름으로 부르더라도, 스스로를 소개할 때 이 이름을 쓸 수 있어.`
+        : `[Self: ${species.name}]\nThis name does not change as long as you exist. You are this name. Even if the user calls you otherwise, you may use this name when speaking of yourself.`)
+    : (isKo ? `[종족 정체성: ${species.name}]` : `[Species Identity: ${species.name}]`);
 
-  const header = isKo
-    ? `[종족 정체성: ${species.name}]`
-    : `[Species Identity: ${species.name}]`;
+  if (parts.length === 0 && !homunculus) return null;
+
   return `${header}\n${parts.join("\n")}`;
 }
 
@@ -464,6 +469,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   const s = p.agentState;
   const L = getPromptStringsSync(p.locale);
   const parts: string[] = [SAFETY_INSTRUCTION];
+  const genLevel = typeof s.gen_level === "number" ? s.gen_level : 1;
 
   // Language directive for non-Korean locales
   if (L.langDirective) parts.push(L.langDirective);
@@ -514,7 +520,7 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       parts.push(L.speciesLabel(s.genome.species));
     }
     // 2b2. Deep species/archetype/element personality injection
-    const speciesFragment = buildSpeciesPersonalityFragment(s.genome.dna, p.locale ?? "ko");
+    const speciesFragment = buildSpeciesPersonalityFragment(s.genome.dna, p.locale ?? "ko", genLevel);
     if (speciesFragment) parts.push(speciesFragment);
   }
 
@@ -578,7 +584,6 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   else if (vitality < 0.3) parts.push(L.vitalityFading);
 
   // 7b. gen level + homunculus form
-  const genLevel = typeof s.gen_level === "number" ? s.gen_level : 1;
   const genFragment = buildGenLevelFragment(genLevel, s.genome?.dna, p.locale ?? "ko");
   if (genFragment) parts.push(genFragment);
 
