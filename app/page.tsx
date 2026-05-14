@@ -13,6 +13,7 @@ import { RewardToast } from "@/components/reward-toast";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { useCreatureState } from "@/hooks/use-creature-state";
 import { useCreatureDna } from "@/hooks/use-creature-dna";
+import { useCreatureLife } from "@/hooks/use-creature-life";
 import { deriveEmotionMood, getEmotionSoundProfile } from "@/lib/soundscape/emotion-map";
 import { getCircadianTint } from "@/lib/circadian";
 import { deriveDNATheme, applyDNAThemeToRoot } from "@/lib/theme/dna-theme";
@@ -30,7 +31,7 @@ const DeathScreen = dynamic(() => import("@/components/death-screen").then((m) =
   ssr: false,
   loading: () => null,
 });
-import { CreatureStatusIndicator } from "@/components/creature-status";
+import { CreatureGrowthPulse, CreatureStatusIndicator } from "@/components/creature-status";
 import { CreatureTapReact } from "@/components/effects/creature-tap";
 import { markAgeGateCompleted, readAgeGateCompleted } from "@/lib/safety/age-gate";
 import { useShouldShowTutorial, TutorialOverlay } from "@/components/tutorial-overlay";
@@ -38,6 +39,8 @@ import { mainTutorialSteps } from "@/components/tutorial-steps";
 import { DailyLoginBonus } from "@/components/daily-login-bonus";
 import { ConversationStarter } from "@/components/conversation-starter";
 import { CoreLoopPanel } from "@/components/core-loop-panel";
+import { deriveEvolutionSummary } from "@/lib/identity/evolution-copy";
+import { translateVisibleLifeSignal } from "@/lib/creature-life/visible-signals";
 
 const VoidCanvas = dynamic(() => import("@/components/void-canvas").then((m) => ({ default: m.VoidCanvas })), {
   ssr: false,
@@ -66,6 +69,11 @@ export default function Home() {
   const { agentState, engagement, loading, error, fetchAgentState, evolutionEvent, clearEvolution } = useAgentStore();
   const agentId = (agentState as Record<string, unknown> | null)?.agent_id as string | null ?? null;
   useCreatureDna(agentId);
+  const { visibleSignal: creatureLifeSignal, recordTouch: recordCreatureLifeTouch } = useCreatureLife(agentId);
+  const creatureLifeSignalLabel = useMemo(
+    () => translateVisibleLifeSignal(creatureLifeSignal, locale),
+    [creatureLifeSignal, locale],
+  );
   const { fetchWorldState } = useWorldStore();
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
@@ -341,10 +349,11 @@ export default function Home() {
   const handleCreatureTouch = useCallback((affinityDelta: number) => {
     creature.recordCreatureTouch(affinityDelta);
     setPetCountToday((prev) => prev + 1);
+    recordCreatureLifeTouch(affinityDelta >= 0.3 ? "long" : "light");
     // Haptic feedback varies by touch intensity
     if (affinityDelta >= 0.3) haptic("success");
     else if (affinityDelta >= 0.1) haptic("send");
-  }, [creature]);
+  }, [creature, recordCreatureLifeTouch]);
 
   const handleCelebrationEnd = useCallback(async () => {
     try {
@@ -379,6 +388,15 @@ export default function Home() {
     .reverse()
     .find((message) => message.role === "assistant" && typeof message.memoryMoment?.memory === "string")
     ?.memoryMoment?.memory ?? null;
+  const growthPulse = useMemo(() => {
+    const latest = [...messages].reverse().find((message) => message.role === "assistant" && (message.memoryMoment || (message.dnaShift?.length ?? 0) > 0 || (message.traitEmerged?.length ?? 0) > 0));
+    if (!latest) return null;
+    return deriveEvolutionSummary({
+      hasMemoryMoment: !!latest.memoryMoment,
+      dnaShift: latest.dnaShift,
+      traitEmerged: latest.traitEmerged,
+    });
+  }, [messages]);
 
   const handleOnboardingComplete = useCallback(
     async (payload?: { personalityMode?: string; preferredName?: string }) => {
@@ -722,6 +740,12 @@ export default function Home() {
         {/* Minimalist creature identity — name + mood only */}
         <div className="absolute bottom-4 inset-x-0 z-10 text-center pointer-events-none">
           <CreatureStatusIndicator activity={creature.state.activity} />
+          <CreatureGrowthPulse locale={locale} summary={growthPulse} />
+          {creatureLifeSignalLabel && (
+            <p className="mx-auto mt-1 w-fit rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[11px] text-white/65">
+              {creatureLifeSignalLabel}
+            </p>
+          )}
             <p className="mt-1 text-lg font-medium text-white drop-shadow-lg tracking-wide">
             {creatureName}
           </p>

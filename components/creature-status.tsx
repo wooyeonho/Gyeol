@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useTranslations } from "@/components/i18n-provider";
+import { getEvolutionCopy } from "@/lib/identity/evolution-copy";
 
 export function CreatureStatusIndicator({ activity }: { activity: CreatureActivity }) {
   const { t } = useTranslations();
@@ -31,5 +32,28 @@ export function CreatureStatusIndicator({ activity }: { activity: CreatureActivi
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+export function CreatureGrowthPulse({
+  locale,
+  summary,
+}: {
+  locale: string;
+  summary: "memory" | "curiosity" | "playful" | "trust" | "deep" | null;
+}) {
+  if (!summary) return null;
+  const label = getEvolutionCopy(summary, locale);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="mx-auto mt-2 w-fit rounded-full border border-emerald-200/25 bg-emerald-100/10 px-3 py-1 text-[11px] text-emerald-100/90"
+      aria-live="polite"
+    >
+      {label}
+    </motion.div>
   );
 }

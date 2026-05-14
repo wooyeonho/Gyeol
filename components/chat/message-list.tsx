@@ -4,6 +4,7 @@ import { StarterPrompts } from "./starter-prompts";
 import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
+import { deriveEvolutionSummary, getEvolutionCopy } from "@/lib/identity/evolution-copy";
 
 /**
  * Convert a subset of Markdown to safe HTML for AI assistant messages.
@@ -194,6 +195,11 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {visibleMessages.map((m, vi) => {
         const i = vi + indexOffset; // original index for callbacks
+        const evolutionSummary = deriveEvolutionSummary({
+          hasMemoryMoment: !!m.memoryMoment,
+          dnaShift: m.dnaShift,
+          traitEmerged: m.traitEmerged,
+        });
         return (
         <motion.div
           key={m.id ?? `${m.role}-${i}`}
@@ -324,7 +330,7 @@ export function MessageList({
                     {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Personality Shift"}
                   </p>
                   <p className="mt-1 text-xs text-white/85">
-                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
+                    {evolutionSummary ? getEvolutionCopy(evolutionSummary, locale ?? "ko") : (locale?.startsWith("ko") ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.")}
                   </p>
                 </motion.div>
               )}
@@ -340,7 +346,9 @@ export function MessageList({
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}95` }}>
-                    {locale?.startsWith("ko") ? "새 기억이 생겼어요" : "A new memory formed"}
+                    {locale?.startsWith("ko")
+                      ? (m.memoryMoment.age_days <= 0 ? "새 기억이 생겼어요" : "기억이 떠올랐어요")
+                      : (m.memoryMoment.age_days <= 0 ? "A new memory formed" : "A memory resurfaced")}
                   </p>
                   <p className="mt-1 text-xs text-white/80 line-clamp-2">
                     {locale?.startsWith("ko") ? "결이 기억했어요:" : "Gyeol remembered:"} {maskJargon(m.memoryMoment.memory)}
@@ -392,7 +400,7 @@ export function MessageList({
                     {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Trait Emerged"}
                   </p>
                   <p className="mt-1 text-xs text-white/85">
-                    {pickEvolutionCopy(locale, m.dnaShift, m.traitEmerged)}
+                    {evolutionSummary ? getEvolutionCopy(evolutionSummary, locale ?? "ko") : (locale?.startsWith("ko") ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.")}
                   </p>
                   {m.traitEmerged.map((trait) => (
                     <p key={trait.id} className="mt-0.5 text-xs text-white/80">
