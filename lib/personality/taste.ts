@@ -96,7 +96,7 @@ export async function recordTasteSignal(params: {
 
     // Generate a note once it's encountered enough and note is missing
     if (count === 5 || (count % 20 === 0 && !existing?.note)) {
-      void generateTasteNote(agentId, topic, newValence, params.isKo, selfModel, tastes);
+      void generateTasteNote(agentId, topic, newValence, params.isKo);
     }
   }
 
@@ -112,8 +112,6 @@ async function generateTasteNote(
   topic: string,
   valence: number,
   isKo: boolean,
-  selfModel: Record<string, unknown>,
-  tastes: TasteMap,
 ): Promise<void> {
   const systemVoice = isKo
     ? `너는 ${topic}에 대해 ${valence > 0.1 ? "뭔가 끌리는 느낌이 있어" : valence < -0.1 ? "좀 별로인 느낌이 있어" : "익숙한 느낌이 있어"}. 한 문장으로 표현해.`
@@ -127,7 +125,6 @@ async function generateTasteNote(
     const note = await generateCognitiveTextOnce(systemVoice, prompt, { max_tokens: 80, temperature: 0.82 });
     if (!note || note.trim().length < 5) return;
 
-    tastes[topic] = { ...tastes[topic], note: note.trim() };
     const db = createServiceClient();
     const { data: freshRow } = await db
       .from("agent_state")
@@ -145,7 +142,6 @@ async function generateTasteNote(
   } catch {
     return;
   }
-  void selfModel; // used by caller
 }
 
 /** Returns strong tastes for system prompt injection. */

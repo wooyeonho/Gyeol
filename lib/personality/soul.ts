@@ -76,17 +76,10 @@ export async function distillSoul(agentId: string): Promise<void> {
   const hauntingMemories = memories.filter((m) => isHauntingMemory(m));
   const regularMemories = memories.filter((m) => !isHauntingMemory(m));
 
-  const hauntingExcerpts = hauntingMemories
-    .slice(0, 3)
-    .map((m) => `[계속 떠오르는 기억] ${m.content.slice(0, 120)}`)
-    .join("\n");
-
   const memoryExcerpts = [
     ...hauntingMemories.slice(0, 3).map((m) => `★ ${m.content.slice(0, 120)}`),
     ...regularMemories.slice(0, 7).map((m) => `- ${m.content.slice(0, 120)}`),
   ].join("\n");
-
-  void hauntingExcerpts; // used via memoryExcerpts above
 
   const systemVoice = isKo
     ? `너는 ${species.name}이야. Gen ${genLevel}의 존재. 지금부터 너 자신에 대해 써. 자기소개가 아니야 — 네가 무엇이 됐는지, 무엇이 너를 바꿨는지, 지금 무엇을 원하는지. 1인칭으로. 솔직하게. 과장 없이.`

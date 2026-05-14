@@ -14,7 +14,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const service = createServiceClient();
-  const agentId = await ensurePrimaryAgent(user.id, service);
+  const agentId = await ensurePrimaryAgent(service, user.id);
 
   const { data } = await service
     .from("agent_state")
@@ -95,7 +95,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const service = createServiceClient();
-  const agentId = await ensurePrimaryAgent(user.id, service);
+  const agentId = await ensurePrimaryAgent(service, user.id);
 
   const { data: current } = await service
     .from("agent_state")
