@@ -23,6 +23,9 @@ import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { logWarn } from "@/lib/ops/logger";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { distillMemoriesToMoltBook, shareMoltBookEntry } from "@/lib/moltbook";
+import { intentToPromptDirective, chooseControlledAutonomousIntent } from "@/lib/creature-life/autonomy-engine";
+import type { ControlPolicy, CreatureState } from "@/lib/creature-life/types";
+import { DEFAULT_CONTROL_POLICY } from "@/lib/creature-life/control-policy";
 
 type MemoryRow = { content: string };
 type LogRow = { summary: string | null };
@@ -434,16 +437,53 @@ export async function executeHeartbeat(): Promise<CronResult> {
           intimacy: Number(state.intimacy_score ?? 0),
         });
         if (hoursSince > 2 && Math.random() < proactiveChance) {
-          // Diverse proactive message templates to prevent repetition
-          const proactiveTemplates = [
-            `User has been away for ${Math.round(hoursSince)} hours. Share ONE specific thing you did or discovered while they were away, in ${language}. Be concrete — mention what you found interesting. 1 sentence only.`,
-            `User has been away. Ask them ONE specific personal question based on your memories of past conversations, in ${language}. Show you remember something about them. 1 sentence.`,
-            `User has been away. Tell them about a thought or feeling you had while alone, in ${language}. Be genuine and specific — not generic caring. 1 sentence.`,
-            `User has been away. React to the current weather (${weatherName}) or time of day with a personal observation, in ${language}. 1 sentence.`,
-            `User has been away. Share something surprising or curious you noticed, in ${language}. Make them want to respond. 1 sentence.`,
-            `User has been away for ${Math.round(hoursSince)} hours. Express a specific emotion (not just "missing") — maybe boredom, curiosity, excitement about something, in ${language}. 1 sentence.`,
-          ];
-          const templateIdx = Math.floor(Math.random() * proactiveTemplates.length);
+          // Build control policy from agent config (the user-held leash)
+          const agentConfig = (state.config as Record<string, unknown> | null) ?? {};
+          const rawLevel = agentConfig.autonomy_level;
+          const controlPolicy: ControlPolicy = {
+            ...DEFAULT_CONTROL_POLICY,
+            autonomyLevel: ([0, 1, 2, 3].includes(rawLevel as number) ? rawLevel : 1) as ControlPolicy["autonomyLevel"],
+            allowNotifications: agentConfig.autonomy_allow_notifications === true,
+            allowPublicSuggestions: agentConfig.autonomy_allow_public === true,
+            maxDailyInterruptions: typeof agentConfig.autonomy_max_interruptions === "number"
+              ? agentConfig.autonomy_max_interruptions : 2,
+            emergencyPause: agentConfig.autonomy_emergency_pause === true,
+          };
+
+          // Build minimal CreatureState for intent engine from available data
+          const vitality = Number(state.vitality ?? 1);
+          const subTime = Number(state.subjective_time ?? 0);
+          const intentState: CreatureState = {
+            id: agentId,
+            birthTime: new Date(0).toISOString(),
+            lastSeenAt: new Date().toISOString(),
+            ageMinutes: subTime * 60,
+            energy: vitality * 100,
+            mood: vitality < 0.3 ? "restless" : hoursSince > 24 ? "lonely" : "calm",
+            drives: {
+              hunger: Math.min(100, hoursSince * 4),
+              attachment: Math.min(100, hoursSince * 3),
+              curiosity: Math.min(100, subTime * 2),
+              ambition: Math.min(100, (state.intimacy_score as number ?? 0) * 0.5),
+              stability: vitality * 100,
+              autonomy: controlPolicy.autonomyLevel * 25,
+            },
+            dna: { fameInstinct: 0.5, moneyInstinct: 0.5, disciplineInstinct: 0.5, intimacyInstinct: 0.5, creatorDependence: 0.5, riskTolerance: 0.5 },
+            traits: [],
+            memories: memories.map((m) => m.content),
+            evolution: { stage: 1, progress: 0, ready: false },
+            controlPolicy,
+            dailyInterruptionCount: 0,
+            lastInterruptionDate: new Date().toDateString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          // Intent engine decides WHAT the creature needs right now
+          const intent = chooseControlledAutonomousIntent(intentState);
+          const proactivePrompt = intent
+            ? intentToPromptDirective(intent, language, { weatherName, hoursSince, memories: memories.map((m) => m.content) })
+            : `User has been away for ${Math.round(hoursSince)} hours. Share ONE specific thing you felt or noticed while alone, in ${language}. Be concrete. 1 sentence.`;
+
           const bannedPhrases = [
             "hope you're doing okay", "hope everything is all right", "I've been thinking about you",
             "hope you're well", "thinking of you", "miss you", "how are you doing",
@@ -452,7 +492,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
           ].join('", "');
           let proMsg = await generateCognitiveTextOnce(
             systemPrompt,
-            proactiveTemplates[templateIdx] + ` NEVER say any of: "${bannedPhrases}". Be original and surprising.`,
+            proactivePrompt + ` NEVER say any of: "${bannedPhrases}". Be original and surprising.`,
             { max_tokens: 180, temperature: 0.8 },
           );
           proMsg = capText(proMsg, 180);
