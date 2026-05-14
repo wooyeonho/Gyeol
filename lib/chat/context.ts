@@ -219,6 +219,7 @@ export async function buildChatPromptContext(params: {
       feature_behavior_profile: promptConfig.feature_behavior_profile as FeatureBehaviorProfile | undefined,
     },
     system_prompt: { base: undefined, fragments: agentState?.fragments ?? [] },
+    gen_level: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
   };
 
   const systemPrompt = buildSystemPrompt({
