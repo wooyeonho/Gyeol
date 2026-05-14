@@ -385,6 +385,15 @@ export async function executeHeartbeat(): Promise<CronResult> {
             await updateSelfModel(agentId);
           });
         }
+        // Soul distillation: every 10 heartbeats the creature writes who it has become.
+        // Reads memories + DNA + gen level, produces a first-person self-narrative
+        // that is injected into every subsequent conversation as identity_statement.
+        if ((state.subjective_time || 0) % 10 === 0) {
+          await runOptionalStep("distillSoul", agentId, async () => {
+            const { distillSoul } = await import("@/lib/personality/soul");
+            await distillSoul(agentId);
+          });
+        }
         if ((state.subjective_time || 0) % 10 === 0) {
           await runOptionalStep("runMemoryPhysics", agentId, async () => {
             const { runMemoryPhysics } = await import("@/lib/memory/physics");
