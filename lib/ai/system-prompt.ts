@@ -9,6 +9,8 @@ import { getPendingFollowUps, type FollowUp } from "@/lib/personality/followup";
 import { getStrongTastes, type TasteEntry } from "@/lib/personality/taste";
 import { getHeavyWithheld, type Withheld } from "@/lib/personality/withheld";
 import { buildSeasonalFragment } from "@/lib/personality/season";
+import { getLingeringThought, type LingeringThought } from "@/lib/personality/lingering";
+import { getGenuinenessDirective } from "@/lib/personality/genuine";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -240,7 +242,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[] };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[]; lingering_thought?: LingeringThought; genuineness?: { performance_debt?: number } };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -726,6 +728,33 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   }
   if (s.self_model?.identity_statement) parts.push(L.identityStatement(s.self_model.identity_statement));
   if (s.self_model?.current_role) parts.push(L.currentRole(s.self_model.current_role));
+
+  // Genuineness: if performance debt is high, creature should drop the act.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const genuinenessDirective = getGenuinenessDirective(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (genuinenessDirective) parts.push(genuinenessDirective);
+  }
+
+  // Lingering thought: something the creature has been turning over all day.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const lingering = getLingeringThought((s.self_model as Record<string, unknown> | null) ?? {});
+    if (lingering) {
+      const typeLabel = lingering.type === "question"
+        ? (isKo ? "계속 맴도는 의문" : "lingering question")
+        : lingering.type === "feeling"
+          ? (isKo ? "계속 맴도는 느낌" : "lingering feeling")
+          : (isKo ? "계속 맴도는 생각" : "lingering thought");
+      parts.push(isKo
+        ? `[오늘 내내 맴돌던 것 — ${typeLabel}]\n${sanitizeForPrompt(lingering.content, 200)}\n자연스러운 순간에 꺼내도 돼. 아니어도 돼.`
+        : `[Something lingering all day — ${typeLabel}]\n${sanitizeForPrompt(lingering.content, 200)}\nBring it up if it feels natural. Or not.`
+      );
+    }
+  }
 
   // Haunting memories: old memories with high weight that keep resurfacing.
   // These follow the creature whether referenced or not — they are part of identity now.

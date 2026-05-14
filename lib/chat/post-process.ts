@@ -397,6 +397,49 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Genuineness tracking — did this conversation feel real or performative?
+  void (async () => {
+    try {
+      const { updateGenuineness } = await import("@/lib/personality/genuine");
+      const { isRepetitiveOutput } = await import("@/lib/autonomy/self-regulation");
+      const recentReplies = await params.writer.from("chats")
+        .select("content")
+        .eq("agent_id", params.agentId)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      const prevReplies = ((recentReplies.data ?? []) as { content: string }[]).map((r) => r.content);
+      const isRep = prevReplies.length > 0 ? isRepetitiveOutput(params.reply, prevReplies, 0.65) : false;
+      await updateGenuineness({
+        agentId: params.agentId,
+        emotionalBoost: computeEmotionalWeight({ message: params.message, changedAxes: [], isMemoryMoment: false }),
+        replyLength: params.reply.length,
+        isRepetitive: isRep,
+      });
+    } catch { /* non-critical */ }
+  })();
+
+  // Significant conversation milestone — if emotionally intense, write a memory about the conversation itself.
+  void (async () => {
+    try {
+      const boost = computeEmotionalWeight({ message: params.message, changedAxes: [], isMemoryMoment: !!params.memoryMoment });
+      if (boost < 18) return;
+      const confLocale = (params.agentState?.config as Record<string, unknown> | null)?.preferred_locale;
+      const isKo = typeof confLocale === "string" ? confLocale.startsWith("ko") : true;
+      const milestoneContent = isKo
+        ? `이 대화가 중요했어. 감정적으로 강하게 와닿았어. (${new Date().toLocaleDateString("ko-KR")})`
+        : `This conversation mattered. It landed with real weight. (${new Date().toLocaleDateString("en-US")})`;
+      const emb = await generateEmbedding(milestoneContent).catch(() => [] as number[]);
+      await params.writer.from("memories").insert({
+        agent_id: params.agentId,
+        type: "milestone_conversation",
+        content: milestoneContent,
+        ...(emb.length > 0 ? { embedding: emb } : {}),
+        reference_count: 20,
+      }).then(undefined, () => {});
+    } catch { /* non-critical */ }
+  })();
+
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,

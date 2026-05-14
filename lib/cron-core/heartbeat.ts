@@ -423,6 +423,24 @@ export async function executeHeartbeat(): Promise<CronResult> {
           });
         }
 
+        // Lingering thought: every ~12 heartbeats, generate what's been on the creature's mind.
+        if ((state.subjective_time || 0) % 12 === 0) {
+          await runOptionalStep("generateLingeringThought", agentId, async () => {
+            const agentDna = (state.genome as { dna?: CreatureDNA } | null)?.dna;
+            if (!agentDna) return;
+            const { generateLingeringThought } = await import("@/lib/personality/lingering");
+            const selfModel = (state.self_model as Record<string, unknown> | null) ?? {};
+            await generateLingeringThought({
+              agentId,
+              recentMemories: memories.map((m) => m.content),
+              recentHeartbeatThoughts: recentSummaries.slice(0, 3),
+              identityStatement: typeof selfModel.identity_statement === "string"
+                ? selfModel.identity_statement : undefined,
+              isKo: locale === "ko",
+            });
+          });
+        }
+
         // Bad day: probabilistic check — some days the creature just isn't itself.
         await runOptionalStep("checkBadDay", agentId, async () => {
           const agentDna = (state.genome as { dna?: CreatureDNA } | null)?.dna;
