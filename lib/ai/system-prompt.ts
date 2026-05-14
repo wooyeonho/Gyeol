@@ -2,6 +2,7 @@ import { SAFETY_INSTRUCTION } from "@/lib/security/electric-fence";
 import { buildTraitPersonalityFragments } from "@/lib/genome/traits";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { PERSONALITY_AXES } from "@/lib/genome/dna";
+import { getActiveWants, type Want } from "@/lib/personality/wants";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -233,7 +234,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[] };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[] };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -691,6 +692,18 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       : "[Memories that keep resurfacing — these do not fade]";
     parts.push(header);
     hauntingMems.forEach((m) => parts.push(`- ${sanitizeForPrompt(m, 200)}`));
+  }
+
+  // 13b. Persistent desires — things the creature actively wants right now.
+  // These are not instructions; they color how it engages. Satisfied when conversation touches the topic.
+  const activeWants = getActiveWants((s.self_model?.wants ?? []) as Want[]);
+  if (activeWants.length > 0) {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const wantsHeader = isKo
+      ? "[지금 네가 원하는 것들 — 이 대화에서 자연스럽게 드러낼 수 있어]"
+      : "[Things you actively want right now — let them surface naturally in this conversation]";
+    parts.push(wantsHeader);
+    activeWants.forEach((w) => parts.push(`- ${sanitizeForPrompt(w.text, 150)}`));
   }
 
   // 14. pending_question

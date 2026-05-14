@@ -394,6 +394,25 @@ export async function executeHeartbeat(): Promise<CronResult> {
             await distillSoul(agentId);
           });
         }
+
+        // Persistent desires: every ~7 heartbeats, when curiosity or attachment is high,
+        // the creature forms a new concrete want that survives across sessions.
+        if ((state.subjective_time || 0) % 7 === 0) {
+          await runOptionalStep("growWant", agentId, async () => {
+            const agentDna = (state.genome as { dna?: CreatureDNA } | null)?.dna;
+            if (!agentDna) return;
+            const { growWant } = await import("@/lib/personality/wants");
+            await growWant({
+              agentId,
+              dna: agentDna,
+              recentMemories: memories.map((m) => m.content),
+              selfName: typeof state.self_name === "string" ? state.self_name : null,
+              intimacyScore: Number(state.intimacy_score ?? 0),
+              language,
+              isKo: locale === "ko" || locale === "ko-KR",
+            });
+          });
+        }
         if ((state.subjective_time || 0) % 10 === 0) {
           await runOptionalStep("runMemoryPhysics", agentId, async () => {
             const { runMemoryPhysics } = await import("@/lib/memory/physics");

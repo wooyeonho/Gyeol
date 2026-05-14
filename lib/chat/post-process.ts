@@ -299,6 +299,19 @@ export async function persistChatTurn(params: {
     nextConfig.absence_hours_peak = 0;
   }
 
+  // Check if any active wants were satisfied by this conversation turn.
+  // Runs fire-and-forget so it doesn't block the response path.
+  void (async () => {
+    try {
+      const { checkWantSatisfaction, markWantsSatisfied } = await import("@/lib/personality/wants");
+      const { data: stateSnap } = await params.writer.from("agent_state").select("self_model").eq("agent_id", params.agentId).single();
+      const selfModel = (stateSnap?.self_model as Record<string, unknown> | null) ?? {};
+      const rawWants = (selfModel.wants as import("@/lib/personality/wants").Want[] | null) ?? [];
+      const satisfied = checkWantSatisfaction(rawWants, params.message, params.reply);
+      if (satisfied.length > 0) await markWantsSatisfied(params.agentId, satisfied);
+    } catch { /* non-critical */ }
+  })();
+
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,
