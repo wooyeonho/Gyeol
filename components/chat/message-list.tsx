@@ -4,6 +4,7 @@ import { StarterPrompts } from "./starter-prompts";
 import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
 import { applyJargonMask, type SimpleModeLevel } from "@/lib/i18n/jargon-map";
+import { deriveEvolutionSummary, getEvolutionCopy } from "@/lib/identity/evolution-copy";
 
 /**
  * Convert a subset of Markdown to safe HTML for AI assistant messages.
@@ -182,6 +183,11 @@ export function MessageList({
       <AnimatePresence initial={false}>
       {visibleMessages.map((m, vi) => {
         const i = vi + indexOffset; // original index for callbacks
+        const evolutionSummary = deriveEvolutionSummary({
+          hasMemoryMoment: !!m.memoryMoment,
+          dnaShift: m.dnaShift,
+          traitEmerged: m.traitEmerged,
+        });
         return (
         <motion.div
           key={m.id ?? `${m.role}-${i}`}
@@ -299,24 +305,21 @@ export function MessageList({
               )}
               {m.dnaShift && m.dnaShift.length > 0 && !isStreaming && (
                 <motion.div
-                  className="mt-1.5 flex flex-wrap gap-1.5"
+                  className="mt-2 rounded-xl border p-2.5"
+                  style={{
+                    borderColor: `${appearance.palette.primary}40`,
+                    background: `${appearance.palette.primary}0a`,
+                  }}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  {m.dnaShift.map((axis) => (
-                    <span
-                      key={axis}
-                      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      style={{
-                        background: `${appearance.palette.primary}18`,
-                        color: appearance.palette.primary,
-                        border: `1px solid ${appearance.palette.primary}30`,
-                      }}
-                    >
-                      {axis} +
-                    </span>
-                  ))}
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: appearance.palette.primary }}>
+                    {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Personality Shift"}
+                  </p>
+                  <p className="mt-1 text-xs text-white/85">
+                    {evolutionSummary ? getEvolutionCopy(evolutionSummary, locale ?? "ko") : (locale?.startsWith("ko") ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.")}
+                  </p>
                 </motion.div>
               )}
               {m.memoryMoment && !isStreaming && (
@@ -330,11 +333,18 @@ export function MessageList({
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: `${appearance.palette.primary}90` }}>
-                    ✦ {m.memoryMoment.age_days}{locale?.startsWith("ko") ? "일 전의 기억" : "d ago — memory recalled"}
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: `${appearance.palette.primary}95` }}>
+                    {locale?.startsWith("ko")
+                      ? (m.memoryMoment.age_days <= 0 ? "새 기억이 생겼어요" : "기억이 떠올랐어요")
+                      : (m.memoryMoment.age_days <= 0 ? "A new memory formed" : "A memory resurfaced")}
                   </p>
-                  <p className="mt-1 text-xs italic text-white/50 line-clamp-2">
-                    {maskJargon(m.memoryMoment.memory)}
+                  <p className="mt-1 text-xs text-white/80 line-clamp-2">
+                    {locale?.startsWith("ko") ? "결이 기억했어요:" : "Gyeol remembered:"} {maskJargon(m.memoryMoment.memory)}
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/60">
+                    {locale?.startsWith("ko")
+                      ? "이 기억은 앞으로 대화에 영향을 줄 수 있어요"
+                      : "This memory may influence future chats."}
                   </p>
                 </motion.div>
               )}
@@ -375,7 +385,10 @@ export function MessageList({
                   transition={{ duration: 0.6, type: "spring" }}
                 >
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: appearance.palette.primary }}>
-                    New Trait
+                    {locale?.startsWith("ko") ? "새로운 성격 조짐" : "Trait Emerged"}
+                  </p>
+                  <p className="mt-1 text-xs text-white/85">
+                    {evolutionSummary ? getEvolutionCopy(evolutionSummary, locale ?? "ko") : (locale?.startsWith("ko") ? "새로운 성격 조짐이 보여요" : "New personality signs are showing.")}
                   </p>
                   {m.traitEmerged.map((trait) => (
                     <p key={trait.id} className="mt-0.5 text-xs text-white/80">

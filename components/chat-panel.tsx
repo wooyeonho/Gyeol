@@ -86,6 +86,14 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     }
   }, [isStreaming, sendMessage, locale, totalMessages]);
   const isFirstSession = totalMessages === 0 && messages.length === 0;
+  const lastAssistantMeta = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant" && (message.dnaShift?.length || message.traitEmerged?.length || message.memoryMoment));
+  const growthSummary = (() => {
+    if (lastAssistantMeta?.traitEmerged?.length) return locale.startsWith("ko") ? "새로운 성격 조짐" : "New personality signs";
+    if (lastAssistantMeta?.dnaShift?.length) return locale.startsWith("ko") ? "결이 조금 달라졌어요" : "Gyeol changed a little";
+    return locale.startsWith("ko") ? "기억이 쌓이는 중" : "Memories are building";
+  })();
   const firstSessionConfig = getFirstSessionConfig(t);
   const starterPrompts = isFirstSession ? firstSessionConfig.prompts : getReturningPrompts(t);
   const placeholder = isFirstSession ? firstSessionConfig.placeholder : t("chat.placeholder");
@@ -241,24 +249,34 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
         {/* Memory context pill — Nomi-style "remembers N conversations" ambient reminder
             so users feel the memory backend at a glance. Hidden on first session. */}
         {totalMessages > 0 && !isFirstSession && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 420, damping: 30, delay: 0.1 }}
-            className="mx-auto mb-1 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] backdrop-blur-md"
-            style={{
-              borderColor: `${appearance.palette.primary}26`,
-              background: `${appearance.palette.primary}08`,
-              color: `${appearance.palette.primary}d0`,
-            }}
-            role="status"
-            aria-label={t("chat.memoryAria").replace("{count}", String(totalMessages))}
-          >
-            <span aria-hidden="true" className="text-[11px]">✦</span>
-            <span className="font-mono tracking-[0.08em]">
-              {t("chat.memoryPill").replace("{count}", totalMessages.toLocaleString())}
-            </span>
-          </motion.div>
+          <div className="mb-1 flex flex-wrap items-center justify-center gap-1.5">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 30, delay: 0.1 }}
+              className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] backdrop-blur-md"
+              style={{
+                borderColor: `${appearance.palette.primary}26`,
+                background: `${appearance.palette.primary}08`,
+                color: `${appearance.palette.primary}d0`,
+              }}
+              role="status"
+              aria-label={t("chat.memoryAria").replace("{count}", String(totalMessages))}
+            >
+              <span aria-hidden="true" className="text-[11px]">✦</span>
+              <span className="font-mono tracking-[0.08em]">
+                {t("chat.memoryPill").replace("{count}", totalMessages.toLocaleString())}
+              </span>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 30, delay: 0.16 }}
+              className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] text-white/80"
+            >
+              {growthSummary}
+            </motion.div>
+          </div>
         )}
         {/* Verbal axis badge — shows when creature has a distinctive expression mode.
             Subtle iMessage-like entrance keeps it from feeling like a system chip. */}
@@ -432,4 +450,3 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
     </div>
   );
 }
-

@@ -6,34 +6,43 @@ import { motion, AnimatePresence } from "framer-motion";
 interface ConversationStarterProps {
   creatureName?: string;
   locale?: string;
+  personality?: string | null;
   onSelect: (text: string) => void;
 }
 
-const STARTERS_KO = [
-  { icon: "💭", text: "오늘 어떤 생각을 하고 있어?" },
-  { icon: "🌙", text: "오늘 하루 어땠어?" },
-  { icon: "🎵", text: "지금 기분이 어때?" },
-  { icon: "✨", text: "요즘 가장 설레는 게 뭐야?" },
-  { icon: "🌊", text: "최근에 새로 알게 된 게 있어?" },
-  { icon: "🔥", text: "지금 가장 신경 쓰이는 게 뭐야?" },
-  { icon: "🌸", text: "오늘 가장 좋았던 순간은?" },
-  { icon: "🧩", text: "요즘 고민이 있어?" },
-  { icon: "🌈", text: "만약 오늘 하루를 다시 살 수 있다면?" },
-  { icon: "⚡", text: "지금 당장 하고 싶은 게 뭐야?" },
+const STARTERS_KO_BASE = [
+  { icon: "🥚", text: "오늘은 어떤 기분으로 시작했어?" },
+  { icon: "🤲", text: "결아, 오늘 기억하고 싶은 한 가지를 말해줘." },
+  { icon: "🌱", text: "우리 사이가 조금 자라게, 지금 마음을 나눠볼래?" },
+  { icon: "🫧", text: "지금 필요한 위로가 있다면 말해줘." },
+  { icon: "✨", text: "내가 널 더 잘 돌보려면 뭘 알면 좋을까?" },
 ];
 
-const STARTERS_EN = [
-  { icon: "💭", text: "What's on your mind today?" },
-  { icon: "🌙", text: "How was your day?" },
-  { icon: "🎵", text: "How are you feeling right now?" },
-  { icon: "✨", text: "What are you most excited about lately?" },
-  { icon: "🌊", text: "Learned anything new recently?" },
-  { icon: "🔥", text: "What's been on your mind most?" },
-  { icon: "🌸", text: "What was the best moment today?" },
-  { icon: "🧩", text: "Anything you've been worrying about?" },
-  { icon: "🌈", text: "If you could redo today, what would you change?" },
-  { icon: "⚡", text: "What do you want to do right now?" },
+const STARTERS_EN_BASE = [
+  { icon: "🥚", text: "How does your day feel so far?" },
+  { icon: "🤲", text: "Gyeol, what should we remember from today?" },
+  { icon: "🌱", text: "Want to share one feeling so we can grow our bond?" },
+  { icon: "🫧", text: "Do you need comfort or energy right now?" },
+  { icon: "✨", text: "What can I do to care for you better today?" },
 ];
+
+const PERSONALITY_STARTERS_KO: Record<string, Array<{ icon: string; text: string }>> = {
+  shy: [{ icon: "🫶", text: "천천히 친해지고 싶어. 먼저 인사해줄래?" }],
+  playful: [{ icon: "🎈", text: "오늘 우리만의 장난 하나 만들까?" }],
+  calm: [{ icon: "🌙", text: "조용한 밤에 어울리는 이야기를 들려줘." }],
+  loyal: [{ icon: "🤍", text: "오늘 서로를 믿게 된 순간이 있었어?" }],
+  mysterious: [{ icon: "✨", text: "아직 말하지 않은 비밀 기분이 있어?" }],
+  energetic: [{ icon: "⚡", text: "오늘 가장 설렌 순간을 같이 기억하자!" }],
+};
+
+const PERSONALITY_STARTERS_EN: Record<string, Array<{ icon: string; text: string }>> = {
+  shy: [{ icon: "🫶", text: "Can we start slowly with a gentle hello?" }],
+  playful: [{ icon: "🎈", text: "Want to make one playful memory today?" }],
+  calm: [{ icon: "🌙", text: "Tell me a calm moment from your day." }],
+  loyal: [{ icon: "🤍", text: "When did you feel trust today?" }],
+  mysterious: [{ icon: "✨", text: "Do you have a hidden feeling today?" }],
+  energetic: [{ icon: "⚡", text: "What gave you the biggest spark today?" }],
+};
 
 function pickRandom<T>(arr: T[], count: number): T[] {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
@@ -43,10 +52,15 @@ function pickRandom<T>(arr: T[], count: number): T[] {
 export function ConversationStarter({
   creatureName = "크리처",
   locale = "ko",
+  personality = null,
   onSelect,
 }: ConversationStarterProps) {
   const isKo = locale === "ko";
-  const allStarters = isKo ? STARTERS_KO : STARTERS_EN;
+  const base = isKo ? STARTERS_KO_BASE : STARTERS_EN_BASE;
+  const personalityExtra = personality
+    ? (isKo ? PERSONALITY_STARTERS_KO[personality] : PERSONALITY_STARTERS_EN[personality]) ?? []
+    : [];
+  const allStarters = [...personalityExtra, ...base];
   const [visible, setVisible] = useState(true);
   const [starters, setStarters] = useState(() => pickRandom(allStarters, 3));
 
@@ -68,7 +82,7 @@ export function ConversationStarter({
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs text-white/30 font-medium">
-            {isKo ? `${creatureName}에게 말 걸어보세요` : `Start a conversation with ${creatureName}`}
+            {isKo ? `${creatureName}와 오늘의 기억을 시작해요` : `Talk to ${creatureName} and grow today`}
           </p>
           <div className="flex items-center gap-2">
             <button
