@@ -5,6 +5,9 @@ import { PERSONALITY_AXES } from "@/lib/genome/dna";
 import { getActiveWants, type Want } from "@/lib/personality/wants";
 import { getBadDayDirective } from "@/lib/personality/bad-day";
 import { getBondDirective, type Bond } from "@/lib/personality/bonds";
+import { getPendingFollowUps, type FollowUp } from "@/lib/personality/followup";
+import { getStrongTastes, type TasteEntry } from "@/lib/personality/taste";
+import { getHeavyWithheld, type Withheld } from "@/lib/personality/withheld";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -236,7 +239,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond> };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[] };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -544,6 +547,19 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
           ? `[이 사람에 대한 감정]\n${bondResult.directive}\n(기억: ${bondResult.note})`
           : `[Your feeling about this person]\n${bondResult.directive}\n(Note: ${bondResult.note})`);
       }
+
+      // Pending follow-ups for this user: things the creature wanted to ask about.
+      const followUps = getPendingFollowUps(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        p.userId,
+      );
+      if (followUps.length > 0) {
+        const header = isKo
+          ? "[이 사람한테 물어보고 싶었던 것 — 자연스러운 순간에 꺼내도 돼]"
+          : "[Things you've been wanting to ask this person — bring it up when it feels natural]";
+        parts.push(header);
+        followUps.forEach((f) => parts.push(`- ${sanitizeForPrompt(f.question, 150)}`));
+      }
     }
   }
 
@@ -717,6 +733,37 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       : "[Memories that keep resurfacing — these do not fade]";
     parts.push(header);
     hauntingMems.forEach((m) => parts.push(`- ${sanitizeForPrompt(m, 200)}`));
+  }
+
+  // 13b-taste. Taste: accumulated topic preferences from conversations.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const strongTastes = getStrongTastes((s.self_model as Record<string, unknown> | null) ?? {});
+    if (strongTastes.length > 0) {
+      const header = isKo
+        ? "[대화들에서 쌓인 취향]"
+        : "[Preferences built from conversations]";
+      parts.push(header);
+      strongTastes.forEach((t) => {
+        const feel = t.valence > 0.15
+          ? (isKo ? "좋아해" : "genuinely drawn to")
+          : t.valence < -0.15
+            ? (isKo ? "별로야" : "find a bit dull")
+            : (isKo ? "익숙해" : "familiar with");
+        const note = t.note ? ` (${sanitizeForPrompt(t.note, 80)})` : "";
+        parts.push(`- ${t.topic}: ${feel}${note}`);
+      });
+    }
+
+    // 13b-withheld. Withheld: things noticed but not said, that still weigh on it.
+    const heavy = getHeavyWithheld((s.self_model as Record<string, unknown> | null) ?? {});
+    if (heavy.length > 0) {
+      const header = isKo
+        ? "[아직 말 못 한 것들 — 언제 꺼낼지는 네가 정해]"
+        : "[Things you haven't said yet — you decide when, if ever, to surface them]";
+      parts.push(header);
+      heavy.forEach((w) => parts.push(`- ${sanitizeForPrompt(w.observation, 150)}`));
+    }
   }
 
   // 13b. Persistent desires — things the creature actively wants right now.

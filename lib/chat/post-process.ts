@@ -331,6 +331,56 @@ export async function persistChatTurn(params: {
     })();
   }
 
+  // Register follow-up queue — things with unresolved outcomes the creature noticed.
+  if (params.userId) {
+    void (async () => {
+      try {
+        const { registerFollowUp } = await import("@/lib/personality/followup");
+        const currentConfig2 = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+        const locale2 = typeof currentConfig2.preferred_locale === "string" ? currentConfig2.preferred_locale : "ko";
+        await registerFollowUp({
+          agentId: params.agentId,
+          userId: params.userId!,
+          message: params.message,
+          reply: params.reply,
+          isKo: locale2.startsWith("ko"),
+        });
+      } catch { /* non-critical */ }
+    })();
+  }
+
+  // Record taste signals — topics with emotional weight accumulate into preferences.
+  void (async () => {
+    try {
+      const { recordTasteSignal } = await import("@/lib/personality/taste");
+      const currentConfig3 = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const locale3 = typeof currentConfig3.preferred_locale === "string" ? currentConfig3.preferred_locale : "ko";
+      await recordTasteSignal({
+        agentId: params.agentId,
+        message: params.message,
+        reply: params.reply,
+        emotionalBoost: 0, // computed inside taste via its own signal detection
+        isKo: locale3.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
+  // Register withheld observations — things noticed but not said.
+  void (async () => {
+    try {
+      const { checkWithheld } = await import("@/lib/personality/withheld");
+      const currentConfig4 = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const locale4 = typeof currentConfig4.preferred_locale === "string" ? currentConfig4.preferred_locale : "ko";
+      await checkWithheld({
+        agentId: params.agentId,
+        userId: params.userId,
+        message: params.message,
+        reply: params.reply,
+        isKo: locale4.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,
