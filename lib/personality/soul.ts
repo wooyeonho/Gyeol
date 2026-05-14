@@ -70,7 +70,7 @@ export async function distillSoul(agentId: string): Promise<void> {
 
   const locale = resolveGenerationLocale({ config: state.config as Record<string, unknown> });
   const language = getLanguageName(locale);
-  const isKo = locale === "ko" || locale === "ko-KR";
+  const isKo = locale === "ko";
 
   const dnaProfile = describeShift(dna);
   const hauntingMemories = memories.filter((m) => isHauntingMemory(m));

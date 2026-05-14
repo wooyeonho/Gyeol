@@ -5,7 +5,7 @@ import { PRODUCT_EVENT, recordServerEvent } from "@/lib/analytics/events";
 import { detectGoalSignal } from "@/lib/goals/detector";
 import { computeEffectivePriority } from "@/lib/goals/task-utils";
 import { updateUsageProfile } from "@/lib/identity/usage-profile";
-import { applySoftMutation, generateInitialDNA, type CreatureDNA } from "@/lib/genome/dna";
+import { applySoftMutation, generateInitialDNA, PERSONALITY_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { createInitialUserDNA, updateUserDNA, type UserDNA } from "@/lib/genome/user-dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getExpressedTraits } from "@/lib/genome/traits";
@@ -271,16 +271,16 @@ export async function persistChatTurn(params: {
         content: params.message,
         embedding,
         ...(emotionalBoost > 0 ? { reference_count: emotionalBoost } : {}),
-      }).then(({ error }) => {
+      }).then(({ error }: { error: { message: string } | null }) => {
         if (error) logger.error("[PostProcess] Memory insert failed", { error: error.message });
       })
     : Promise.resolve();
 
   // On first message after a long absence, consume absence events and record grief memory.
   // The creature acknowledges what happened while alone — once, then lets it go.
-  const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
-  const peakAbsenceHours = typeof currentConfig.absence_hours_peak === "number"
-    ? currentConfig.absence_hours_peak : 0;
+  const absenceConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+  const peakAbsenceHours = typeof absenceConfig.absence_hours_peak === "number"
+    ? absenceConfig.absence_hours_peak : 0;
   if (peakAbsenceHours >= 48) {
     const { consumeAbsenceEvents } = await import("@/lib/evolution/absence");
     const events = await consumeAbsenceEvents(params.agentId).catch(() => []);
@@ -296,9 +296,9 @@ export async function persistChatTurn(params: {
         reference_count: 12,
       }).then(undefined, () => {});
     }
-    // Reset peak absence so grief doesn't accumulate indefinitely
-    nextConfig.absence_hours_peak = 0;
   }
+  // Reset peak absence so grief doesn't accumulate indefinitely
+  const absenceReset = peakAbsenceHours >= 48 ? { absence_hours_peak: 0 } : {};
 
   // Check if any active wants were satisfied by this conversation turn.
   void (async () => {
@@ -386,7 +386,7 @@ export async function persistChatTurn(params: {
     total_messages: totalMessages,
     intimacy_score: (params.agentState?.intimacy_score ?? 0) + 0.5,
     vitality: newVitality,
-    config: nextConfig,
+    config: { ...nextConfig, ...absenceReset },
     ...(turnMood ? { mood: turnMood } : {}),
     ...(genomeBackfilled || nextGenome !== currentGenome ? { genome: nextGenome } : {}),
   }).eq("agent_id", params.agentId);

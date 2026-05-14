@@ -409,7 +409,7 @@ export async function executeHeartbeat(): Promise<CronResult> {
               selfName: typeof state.self_name === "string" ? state.self_name : null,
               intimacyScore: Number(state.intimacy_score ?? 0),
               language,
-              isKo: locale === "ko" || locale === "ko-KR",
+              isKo: locale === "ko",
             });
           });
         }
