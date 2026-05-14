@@ -34,6 +34,7 @@ import {
   type Big5,
 } from "@/lib/ai/world-class-orchestrator";
 import { generateDnaPrompt } from "@/lib/ai/dna-prompt";
+import { computeResistance } from "@/lib/creature/resistance";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ route: "api/chat" });
@@ -391,10 +392,17 @@ export async function POST(req: NextRequest) {
     // 2. DNA anchor: prepend a compact identity fingerprint so the first tokens
     //    the model reads are WHO this creature is, not conversation history.
     //    This is the primary anti-drift mechanism — cheap and deterministic.
+    // Resistance: if the creature's DNA resists this message, prepend a directive.
+    // This is character, not safety — the creature says "I won't", not "I can't".
+    const resistance = genome?.dna
+      ? computeResistance(message, genome.dna, locale ?? "ko")
+      : { resist: false as const };
+    const resistancePrefix = resistance.resist ? `[지금 이 대화에서] ${resistance.directive}\n\n` : "";
+
     const dnaAnchor = buildDnaAnchor(context.agentState as Record<string, unknown> | null);
     const anchoredSystemPrompt = dnaAnchor
-      ? `${dnaAnchor}\n\n${finalSystemPrompt}`
-      : finalSystemPrompt;
+      ? `${resistancePrefix}${dnaAnchor}\n\n${finalSystemPrompt}`
+      : `${resistancePrefix}${finalSystemPrompt}`;
     // ────────────────────────────────────────────────────────────────────────
 
     // Choose stream source: cache hit (lightweight adaptation) or full LLM

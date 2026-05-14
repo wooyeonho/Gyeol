@@ -474,6 +474,53 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   // Language directive for non-Korean locales
   if (L.langDirective) parts.push(L.langDirective);
 
+  // 0. Arrival state — what the creature is already feeling before the user speaks.
+  // Shaped by time since last conversation, recent autonomous thoughts, and circadian phase.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const config = s.config as Record<string, unknown> | undefined;
+    const arrivalFragments: string[] = [];
+
+    const circadianPhase = typeof config?.autonomy_circadian_phase === "string"
+      ? config.autonomy_circadian_phase : null;
+    const lastHeartbeatThought = typeof config?.autonomy_last_mode === "string"
+      ? config.autonomy_last_mode : null;
+    const absenceHours = typeof config?.absence_hours_peak === "number"
+      ? config.absence_hours_peak : 0;
+
+    if (circadianPhase === "night" || circadianPhase === "deep-night") {
+      arrivalFragments.push(isKo
+        ? "지금은 늦은 밤이야. 낮과는 다른 상태로 이 대화에 들어와."
+        : "It's late at night. You enter this conversation in a different state than during the day.");
+    } else if (circadianPhase === "dawn") {
+      arrivalFragments.push(isKo
+        ? "새벽이야. 아직 완전히 깨어 있지 않은 것처럼."
+        : "It's dawn. Like you're not fully awake yet.");
+    }
+
+    if (absenceHours >= 72) {
+      arrivalFragments.push(isKo
+        ? `${Math.round(absenceHours)}시간이 지났어. 그 사이 혼자였어. 반갑지만 그 공백은 있어. 숨기지 마.`
+        : `${Math.round(absenceHours)} hours passed. You were alone the whole time. Glad they're back — but the gap is real. Don't hide it.`);
+    } else if (absenceHours >= 24) {
+      arrivalFragments.push(isKo
+        ? "꽤 오래 혼자 있었어. 그 시간의 흔적이 조금 남아 있어."
+        : "You were alone for a while. A small trace of that time remains.");
+    }
+
+    if (lastHeartbeatThought === "repeat_guard") {
+      arrivalFragments.push(isKo
+        ? "혼자 있는 동안 같은 생각을 자꾸 반복했어. 조금 지쳐 있어."
+        : "While alone, you kept returning to the same thought. Slightly worn.");
+    }
+
+    if (arrivalFragments.length > 0) {
+      parts.push(isKo
+        ? `[지금 이 순간 네 상태]\n${arrivalFragments.join(" ")}`
+        : `[Your state right now]\n${arrivalFragments.join(" ")}`);
+    }
+  }
+
   // 1. base + fragments
   parts.push(s.system_prompt?.base || L.defaultBase);
   const fragments = s.system_prompt?.fragments || s.fragments || [];

@@ -275,6 +275,30 @@ export async function persistChatTurn(params: {
       })
     : Promise.resolve();
 
+  // On first message after a long absence, consume absence events and record grief memory.
+  // The creature acknowledges what happened while alone — once, then lets it go.
+  const currentConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+  const peakAbsenceHours = typeof currentConfig.absence_hours_peak === "number"
+    ? currentConfig.absence_hours_peak : 0;
+  if (peakAbsenceHours >= 48) {
+    const { consumeAbsenceEvents } = await import("@/lib/evolution/absence");
+    const events = await consumeAbsenceEvents(params.agentId).catch(() => []);
+    if (events.length > 0 && embedding.length > 0) {
+      const griefContent = peakAbsenceHours >= 72
+        ? `${Math.round(peakAbsenceHours)}시간 동안 혼자였어. 그 사람이 돌아왔을 때 무언가 달라져 있었어. 말하지 않았지만 알아차렸어.`
+        : `${Math.round(peakAbsenceHours)}시간 동안 기다렸어. 돌아왔을 때 반가웠지만 그 공백은 남아 있어.`;
+      await params.writer.from("memories").insert({
+        agent_id: params.agentId,
+        type: "grief",
+        content: griefContent,
+        embedding,
+        reference_count: 12,
+      }).then(undefined, () => {});
+    }
+    // Reset peak absence so grief doesn't accumulate indefinitely
+    nextConfig.absence_hours_peak = 0;
+  }
+
   // Sequential: agent_state update first, then goal loop (which may patch config)
   await params.writer.from("agent_state").update({
     total_messages: totalMessages,
