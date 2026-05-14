@@ -13,6 +13,7 @@ import { createDefaultPreferences, extractPreferencesFromTurn, type UserPreferen
 import { detectTurnMood, detectTurnMoodAsync } from "@/lib/evolution/personality";
 import { getDNACareMultiplier } from "@/lib/evolution/vitality";
 import { validateDNATransition, applySafetyCorrections } from "@/lib/harness/creature-control";
+import { computeEmotionalWeight } from "@/lib/memory/emotional-weight";
 import { classifyIntent } from "@/lib/dl/intent-classifier";
 // P1F: Static imports — avoid dynamic import() cold-start penalty on serverless
 import { analyzePersonality } from "@/lib/evolution/personality";
@@ -255,12 +256,20 @@ export async function persistChatTurn(params: {
   // P1C Phase 2: Memory insert runs in parallel with sequential agent_state + goal loop
   // Note: agent_state update and applyGoalLoop MUST be sequential because both write to
   // the config column — running them in parallel causes a last-write-wins race condition.
+  const emotionalBoost = computeEmotionalWeight({
+    message: params.message,
+    changedAxes: mutationChangedAxes as import("@/lib/genome/dna").DNAAxis[],
+    isMemoryMoment: !!params.memoryMoment,
+    intimacyScore: params.agentState?.intimacy_score ?? 0,
+  });
+
   const memoryInsertPromise = embedding.length > 0
     ? params.writer.from("memories").insert({
         agent_id: params.agentId,
         type: "conversation",
         content: params.message,
         embedding,
+        ...(emotionalBoost > 0 ? { reference_count: emotionalBoost } : {}),
       }).then(({ error }) => {
         if (error) logger.error("[PostProcess] Memory insert failed", { error: error.message });
       })

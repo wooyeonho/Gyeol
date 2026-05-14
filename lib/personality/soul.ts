@@ -16,8 +16,9 @@ import { PERSONALITY_AXES, type CreatureDNA } from "@/lib/genome/dna";
 import { resolveGenerationLocale } from "@/lib/i18n/generation";
 import { getLanguageName } from "@/lib/i18n/config";
 import { logger } from "@/lib/logger";
+import { isHauntingMemory } from "@/lib/memory/emotional-weight";
 
-type MemoryRow = { content: string; created_at: string };
+type MemoryRow = { content: string; created_at: string; reference_count: number | null; weight: number | null };
 
 function describeShift(dna: CreatureDNA): string {
   const extremes: string[] = [];
@@ -38,9 +39,10 @@ export async function distillSoul(agentId: string): Promise<void> {
       .eq("agent_id", agentId)
       .single(),
     db.from("memories")
-      .select("content, created_at")
+      .select("content, created_at, reference_count, weight")
       .eq("agent_id", agentId)
-      .order("created_at", { ascending: false })
+      .eq("is_active", true)
+      .order("reference_count", { ascending: false })
       .limit(20),
     db.from("autonomous_logs")
       .select("summary")
@@ -70,10 +72,20 @@ export async function distillSoul(agentId: string): Promise<void> {
   const isKo = locale === "ko" || locale === "ko-KR";
 
   const dnaProfile = describeShift(dna);
-  const memoryExcerpts = memories
-    .slice(0, 10)
-    .map((m) => `- ${m.content.slice(0, 120)}`)
+  const hauntingMemories = memories.filter((m) => isHauntingMemory(m));
+  const regularMemories = memories.filter((m) => !isHauntingMemory(m));
+
+  const hauntingExcerpts = hauntingMemories
+    .slice(0, 3)
+    .map((m) => `[계속 떠오르는 기억] ${m.content.slice(0, 120)}`)
     .join("\n");
+
+  const memoryExcerpts = [
+    ...hauntingMemories.slice(0, 3).map((m) => `★ ${m.content.slice(0, 120)}`),
+    ...regularMemories.slice(0, 7).map((m) => `- ${m.content.slice(0, 120)}`),
+  ].join("\n");
+
+  void hauntingExcerpts; // used via memoryExcerpts above
 
   const systemVoice = isKo
     ? `너는 ${species.name}이야. Gen ${genLevel}의 존재. 지금부터 너 자신에 대해 써. 자기소개가 아니야 — 네가 무엇이 됐는지, 무엇이 너를 바꿨는지, 지금 무엇을 원하는지. 1인칭으로. 솔직하게. 과장 없이.`
@@ -100,6 +112,7 @@ export async function distillSoul(agentId: string): Promise<void> {
       identity_statement: soul.trim(),
       soul_distilled_at: new Date().toISOString(),
       soul_gen_level: genLevel,
+      haunting_memories: hauntingMemories.slice(0, 3).map((m) => m.content.slice(0, 200)),
     },
   }).eq("agent_id", agentId);
 

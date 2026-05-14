@@ -233,7 +233,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[] };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -633,6 +633,18 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
   }
   if (s.self_model?.identity_statement) parts.push(L.identityStatement(s.self_model.identity_statement));
   if (s.self_model?.current_role) parts.push(L.currentRole(s.self_model.current_role));
+
+  // Haunting memories: old memories with high weight that keep resurfacing.
+  // These follow the creature whether referenced or not — they are part of identity now.
+  const hauntingMems = s.self_model?.haunting_memories ?? [];
+  if (hauntingMems.length > 0) {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const header = isKo
+      ? "[계속 떠오르는 기억들 — 이것들은 사라지지 않아]"
+      : "[Memories that keep resurfacing — these do not fade]";
+    parts.push(header);
+    hauntingMems.forEach((m) => parts.push(`- ${sanitizeForPrompt(m, 200)}`));
+  }
 
   // 14. pending_question
   if (s.config?.pending_question) parts.push(L.pendingQuestion(s.config.pending_question));
