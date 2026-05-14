@@ -423,6 +423,19 @@ export async function executeHeartbeat(): Promise<CronResult> {
           });
         }
 
+        // Worldview: every ~40 heartbeats, distill what the creature has learned about people.
+        // Not about any specific user — about humans as a pattern.
+        if ((state.subjective_time || 0) % 40 === 0) {
+          await runOptionalStep("updateWorldview", agentId, async () => {
+            const { updateWorldview } = await import("@/lib/personality/worldview");
+            await updateWorldview({
+              agentId,
+              recentMemories: memories.map((m) => m.content),
+              isKo: locale === "ko",
+            });
+          });
+        }
+
         // Lingering thought: every ~12 heartbeats, generate what's been on the creature's mind.
         if ((state.subjective_time || 0) % 12 === 0) {
           await runOptionalStep("generateLingeringThought", agentId, async () => {

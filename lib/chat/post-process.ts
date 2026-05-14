@@ -397,6 +397,14 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Worldview reinforcement — if this message echoes a belief the creature already holds, deepen it.
+  void (async () => {
+    try {
+      const { reinforceWorldview } = await import("@/lib/personality/worldview");
+      await reinforceWorldview({ agentId: params.agentId, message: params.message });
+    } catch { /* non-critical */ }
+  })();
+
   // Genuineness tracking — did this conversation feel real or performative?
   void (async () => {
     try {

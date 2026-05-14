@@ -11,6 +11,7 @@ import { getHeavyWithheld, type Withheld } from "@/lib/personality/withheld";
 import { buildSeasonalFragment } from "@/lib/personality/season";
 import { getLingeringThought, type LingeringThought } from "@/lib/personality/lingering";
 import { getGenuinenessDirective } from "@/lib/personality/genuine";
+import { getWorldviewFragment, type WorldviewEntry } from "@/lib/personality/worldview";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -242,7 +243,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[]; lingering_thought?: LingeringThought; genuineness?: { performance_debt?: number } };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[]; lingering_thought?: LingeringThought; genuineness?: { performance_debt?: number }; worldview?: WorldviewEntry[] };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -754,6 +755,16 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
         : `[Something lingering all day — ${typeLabel}]\n${sanitizeForPrompt(lingering.content, 200)}\nBring it up if it feels natural. Or not.`
       );
     }
+  }
+
+  // Worldview: what the creature has come to believe about people from many conversations.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const worldviewFragment = getWorldviewFragment(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (worldviewFragment) parts.push(worldviewFragment);
   }
 
   // Haunting memories: old memories with high weight that keep resurfacing.
