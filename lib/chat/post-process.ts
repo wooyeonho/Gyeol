@@ -439,6 +439,22 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Residue: capture the emotional texture that lingers after this conversation.
+  void (async () => {
+    try {
+      const { captureResidue } = await import("@/lib/personality/residue");
+      const resConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const resLocale = typeof resConfig.preferred_locale === "string" ? resConfig.preferred_locale : "ko";
+      await captureResidue({
+        agentId: params.agentId,
+        message: params.message,
+        reply: params.reply,
+        emotionalBoost,
+        isKo: resLocale.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Echo question recording — track recurring questions; deepen the answer at milestones.
   void (async () => {
     try {
@@ -471,6 +487,22 @@ export async function persistChatTurn(params: {
         emotionalBoost: computeEmotionalWeight({ message: params.message, changedAxes: [], isMemoryMoment: false }),
         replyLength: params.reply.length,
         isRepetitive: isRep,
+      });
+
+      // Shadow detection: after updating genuineness, check if the creature is falling into its worst patterns.
+      const { data: shadowSnap } = await params.writer.from("agent_state").select("self_model").eq("agent_id", params.agentId).single();
+      const shadowModel = (shadowSnap?.self_model as Record<string, unknown> | null) ?? {};
+      const genuinenessState = shadowModel.genuineness as { performance_debt?: number } | null;
+      const fatigueState = shadowModel.fatigue as { hollow_streak?: number } | null;
+      const { detectShadow } = await import("@/lib/personality/shadow");
+      const shadowConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const shadowLocale = typeof shadowConfig.preferred_locale === "string" ? shadowConfig.preferred_locale : "ko";
+      await detectShadow({
+        agentId: params.agentId,
+        performanceDebt: genuinenessState?.performance_debt ?? 0,
+        hollowStreak: fatigueState?.hollow_streak ?? 0,
+        recentReplies: [params.reply, ...prevReplies],
+        isKo: shadowLocale.startsWith("ko"),
       });
     } catch { /* non-critical */ }
   })();

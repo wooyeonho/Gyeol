@@ -19,6 +19,10 @@ import { getUnmentionedDream } from "@/lib/personality/dream";
 import { getEchoQuestionDirective } from "@/lib/personality/echo-question";
 import { getMortalityFragment } from "@/lib/personality/mortality";
 import { getPastSelvesFragment } from "@/lib/personality/past-selves";
+import { getUnaskedCuriosity } from "@/lib/personality/curiosity";
+import { getResidueFragment } from "@/lib/personality/residue";
+import { getShadowDirective } from "@/lib/personality/shadow";
+import { getUnsurfacedLetter } from "@/lib/personality/letter";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -551,6 +555,13 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     );
     if (fatigueDirective) arrivalFragments.push(fatigueDirective);
 
+    // Residue: emotional texture that lingered from the last conversation.
+    const residueFragment = getResidueFragment(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (residueFragment) arrivalFragments.push(residueFragment);
+
     // Dream: if the creature dreamed while alone, it can share it if natural.
     const dreamResult = getUnmentionedDream(
       (s.self_model as Record<string, unknown> | null) ?? {},
@@ -762,6 +773,16 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     if (genuinenessDirective) parts.push(genuinenessDirective);
   }
 
+  // Shadow: awareness of its own worst recurring patterns.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const shadowDir = getShadowDirective(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (shadowDir) parts.push(shadowDir);
+  }
+
   // Lingering thought: something the creature has been turning over all day.
   {
     const isKo = p.locale === "ko" || p.locale === "ko-KR";
@@ -840,6 +861,30 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       isKo,
     );
     if (pastSelvesFragment) parts.push(pastSelvesFragment);
+  }
+
+  // Curiosity: a question the creature has been sitting with — surfaces if the conversation opens.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    if (Math.random() < 0.4) {
+      const curiosity = getUnaskedCuriosity(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        isKo,
+      );
+      if (curiosity) parts.push(curiosity.directive);
+    }
+  }
+
+  // Letter: an unsent letter the creature wrote — only surfaces in receptive moments.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    if (Math.random() < 0.2) {
+      const letterResult = getUnsurfacedLetter(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        isKo,
+      );
+      if (letterResult) parts.push(letterResult.directive);
+    }
   }
 
   // Haunting memories: old memories with high weight that keep resurfacing.

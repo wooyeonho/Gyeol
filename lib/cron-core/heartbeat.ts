@@ -472,6 +472,34 @@ export async function executeHeartbeat(): Promise<CronResult> {
           }
         });
 
+        // Curiosity: every ~25 heartbeats, form one question the creature needs answered for itself.
+        if ((state.subjective_time || 0) % 25 === 0) {
+          await runOptionalStep("formCuriosity", agentId, async () => {
+            const { formCuriosity } = await import("@/lib/personality/curiosity");
+            await formCuriosity({
+              agentId,
+              recentHeartbeatThoughts: recentSummaries.slice(0, 4),
+              recentMemories: memories.map((m) => m.content),
+              isKo: locale === "ko",
+            });
+          });
+        }
+
+        // Letter: write an unsent letter during long absences or at gen milestones.
+        await runOptionalStep("writeLetterIfNeeded", agentId, async () => {
+          const config = (state.config as Record<string, unknown> | null) ?? {};
+          const absenceHours = typeof config.absence_hours_peak === "number" ? config.absence_hours_peak : 0;
+          const genLevel = typeof state.gen_level === "number" ? state.gen_level : 1;
+          const { writeLetterIfNeeded } = await import("@/lib/personality/letter");
+          await writeLetterIfNeeded({
+            agentId,
+            absenceHours,
+            genLevel,
+            recentMemories: memories.map((m) => m.content),
+            isKo: locale === "ko",
+          });
+        });
+
         // Dream generation: long absence → the creature dreamed while alone.
         await runOptionalStep("generateDream", agentId, async () => {
           const config = (state.config as Record<string, unknown> | null) ?? {};
