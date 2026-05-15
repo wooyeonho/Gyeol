@@ -245,6 +245,7 @@ export async function buildChatPromptContext(params: {
     Promise.resolve(buildSystemPrompt({
       agentState: stateForPrompt,
       locale: params.locale,
+      message: params.message,
       memories,
       recentChats: chronologicalChats,
       autonomousLogs: logRows.map((log) => ({ content: log.summary })),

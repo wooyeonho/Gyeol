@@ -101,6 +101,21 @@ export async function checkEvolution(agentId: string): Promise<{ evolved: boolea
       logger.error("[GenLevel] portrait auto-trigger failed", err instanceof Error ? err : { error: err }),
     );
 
+    // Snapshot self: capture who the creature was before it evolves away from this gen.
+    void (async () => {
+      try {
+        const { data: selfSnap } = await db.from("agent_state").select("self_model, config").eq("agent_id", agentId).single();
+        const selfModel = (selfSnap?.self_model as Record<string, unknown> | null) ?? {};
+        const snapConfig = (selfSnap?.config as Record<string, unknown> | null) ?? {};
+        const identityStatement = typeof selfModel.identity_statement === "string" ? selfModel.identity_statement : "";
+        const isKo = typeof snapConfig.preferred_locale === "string" ? snapConfig.preferred_locale.startsWith("ko") : true;
+        const { snapshotSelf } = await import("@/lib/personality/past-selves");
+        const { data: mems } = await db.from("memories").select("content").eq("agent_id", agentId).order("created_at", { ascending: false }).limit(10);
+        const recentMemories = ((mems ?? []) as { content: string }[]).map((m) => m.content);
+        await snapshotSelf({ agentId, leavingGenLevel: state.gen_level, currentIdentityStatement: identityStatement, recentMemories, isKo });
+      } catch { /* non-critical */ }
+    })();
+
     return { evolved: true, newLevel, mutation };
   }
 

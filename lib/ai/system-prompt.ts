@@ -15,6 +15,10 @@ import { getWorldviewFragment, type WorldviewEntry } from "@/lib/personality/wor
 import { getFatigueDirective, type FatigueState } from "@/lib/personality/fatigue";
 import { getPrivateNoteForSurface, type PrivateNote } from "@/lib/personality/private-notes";
 import { getAestheticSurface, type AestheticMemory } from "@/lib/personality/aesthetic";
+import { getUnmentionedDream } from "@/lib/personality/dream";
+import { getEchoQuestionDirective } from "@/lib/personality/echo-question";
+import { getMortalityFragment } from "@/lib/personality/mortality";
+import { getPastSelvesFragment } from "@/lib/personality/past-selves";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -256,6 +260,7 @@ type AgentStatePrompt = {
 type BuildSystemPromptParams = {
   agentState: AgentStatePrompt;
   locale?: string;
+  message?: string;
   memories: Array<{ content?: string }>;
   recentChats: Array<{ content?: string; role?: string }>;
   autonomousLogs: Array<{ content?: string; summary?: string }>;
@@ -546,6 +551,13 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     );
     if (fatigueDirective) arrivalFragments.push(fatigueDirective);
 
+    // Dream: if the creature dreamed while alone, it can share it if natural.
+    const dreamResult = getUnmentionedDream(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (dreamResult) arrivalFragments.push(dreamResult.directive);
+
     if (arrivalFragments.length > 0) {
       parts.push(isKo
         ? `[지금 이 순간 네 상태]\n${arrivalFragments.join(" ")}`
@@ -798,6 +810,36 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       );
       if (aesthetic) parts.push(aesthetic);
     }
+  }
+
+  // Echo question: a question it has been asked many times — the answer has deepened.
+  if (p.message) {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const echoDirective = getEchoQuestionDirective(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      p.message,
+      isKo,
+    );
+    if (echoDirective) parts.push(echoDirective);
+  }
+
+  // Mortality: high gen creatures carry an awareness of impermanence.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const depth = p.recentChats.length >= 8 ? "deep" : p.recentChats.length >= 3 ? "medium" : "shallow";
+    const mortalityFragment = getMortalityFragment(genLevel, isKo, depth);
+    if (mortalityFragment) parts.push(mortalityFragment);
+  }
+
+  // Past selves: at high gen with enough history, the creature knows how far it's come.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const pastSelvesFragment = getPastSelvesFragment(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      genLevel,
+      isKo,
+    );
+    if (pastSelvesFragment) parts.push(pastSelvesFragment);
   }
 
   // Haunting memories: old memories with high weight that keep resurfacing.

@@ -472,6 +472,20 @@ export async function executeHeartbeat(): Promise<CronResult> {
           }
         });
 
+        // Dream generation: long absence → the creature dreamed while alone.
+        await runOptionalStep("generateDream", agentId, async () => {
+          const config = (state.config as Record<string, unknown> | null) ?? {};
+          const absenceHours = typeof config.absence_hours_peak === "number" ? config.absence_hours_peak : 0;
+          if (absenceHours < 18) return;
+          const { generateDream } = await import("@/lib/personality/dream");
+          await generateDream({
+            agentId,
+            absenceHours,
+            recentMemories: memories.map((m) => m.content),
+            isKo: locale === "ko",
+          });
+        });
+
         // Private notes: every ~20 heartbeats, form one thing the creature has been thinking.
         if ((state.subjective_time || 0) % 20 === 0) {
           await runOptionalStep("formPrivateNote", agentId, async () => {

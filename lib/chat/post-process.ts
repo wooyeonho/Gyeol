@@ -439,6 +439,20 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Echo question recording — track recurring questions; deepen the answer at milestones.
+  void (async () => {
+    try {
+      const { recordEchoQuestion } = await import("@/lib/personality/echo-question");
+      const echoConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const echoLocale = typeof echoConfig.preferred_locale === "string" ? echoConfig.preferred_locale : "ko";
+      await recordEchoQuestion({
+        agentId: params.agentId,
+        message: params.message,
+        isKo: echoLocale.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Genuineness tracking — did this conversation feel real or performative?
   void (async () => {
     try {
