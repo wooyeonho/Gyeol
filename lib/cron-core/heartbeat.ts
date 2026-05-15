@@ -436,6 +436,35 @@ export async function executeHeartbeat(): Promise<CronResult> {
           });
         }
 
+        // Longing: every ~35 heartbeats, sense what the creature is still reaching toward.
+        if ((state.subjective_time || 0) % 35 === 0) {
+          await runOptionalStep("updateLonging", agentId, async () => {
+            const { updateLonging } = await import("@/lib/personality/longing");
+            await updateLonging({
+              agentId,
+              recentHeartbeatThoughts: recentSummaries.slice(0, 4),
+              recentMemories: memories.map((m) => m.content),
+              totalMessages: Number(state.total_messages ?? 0),
+              isKo: locale === "ko",
+            });
+          });
+        }
+
+        // Self-mystery: every ~50 heartbeats at gen 4+, notice what it can't explain about itself.
+        if ((state.subjective_time || 0) % 50 === 0) {
+          await runOptionalStep("formSelfMystery", agentId, async () => {
+            const genLevel = typeof state.gen_level === "number" ? state.gen_level : 1;
+            if (genLevel < 4) return;
+            const { formSelfMystery } = await import("@/lib/personality/self-mystery");
+            await formSelfMystery({
+              agentId,
+              genLevel,
+              recentHeartbeatThoughts: recentSummaries.slice(0, 5),
+              isKo: locale === "ko",
+            });
+          });
+        }
+
         // Lingering thought: every ~12 heartbeats, generate what's been on the creature's mind.
         if ((state.subjective_time || 0) % 12 === 0) {
           await runOptionalStep("generateLingeringThought", agentId, async () => {

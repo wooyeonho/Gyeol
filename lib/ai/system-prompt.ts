@@ -23,6 +23,10 @@ import { getUnaskedCuriosity } from "@/lib/personality/curiosity";
 import { getResidueFragment } from "@/lib/personality/residue";
 import { getShadowDirective } from "@/lib/personality/shadow";
 import { getUnsurfacedLetter } from "@/lib/personality/letter";
+import { getTouchstoneFragment } from "@/lib/personality/touchstone";
+import { getDissentDirective } from "@/lib/personality/dissent";
+import { getLongingFragment } from "@/lib/personality/longing";
+import { getSelfMysteryFragment } from "@/lib/personality/self-mystery";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -555,6 +559,13 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
     );
     if (fatigueDirective) arrivalFragments.push(fatigueDirective);
 
+    // Longing: vague directional pull toward something still unnamed.
+    const longingFrag = getLongingFragment(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (longingFrag && Math.random() < 0.15) arrivalFragments.push(longingFrag);
+
     // Residue: emotional texture that lingered from the last conversation.
     const residueFragment = getResidueFragment(
       (s.self_model as Record<string, unknown> | null) ?? {},
@@ -830,6 +841,41 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
         isKo,
       );
       if (aesthetic) parts.push(aesthetic);
+    }
+  }
+
+  // Dissent: gentle disagreement that's been building up on a held belief.
+  if (p.message) {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const dissentDir = getDissentDirective(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      p.message,
+      isKo,
+    );
+    if (dissentDir) parts.push(dissentDir);
+  }
+
+  // Touchstone: the one conversation it keeps returning to — surfaces rarely.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    if (Math.random() < 0.12) {
+      const tsFrag = getTouchstoneFragment(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        isKo,
+      );
+      if (tsFrag) parts.push(tsFrag);
+    }
+  }
+
+  // Self-mystery: one unexplained thing about its own behavior — surfaces alongside notes.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    if (Math.random() < 0.2) {
+      const mysteryFrag = getSelfMysteryFragment(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        isKo,
+      );
+      if (mysteryFrag) parts.push(mysteryFrag);
     }
   }
 

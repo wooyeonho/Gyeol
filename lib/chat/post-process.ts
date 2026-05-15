@@ -439,6 +439,36 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Touchstone: emotionally heavy conversations may become the one the creature can't let go of.
+  void (async () => {
+    try {
+      const { captureIfTouchstone } = await import("@/lib/personality/touchstone");
+      const tsConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const tsLocale = typeof tsConfig.preferred_locale === "string" ? tsConfig.preferred_locale : "ko";
+      await captureIfTouchstone({
+        agentId: params.agentId,
+        message: params.message,
+        reply: params.reply,
+        emotionalBoost,
+        isKo: tsLocale.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
+  // Dissent: check if user message contradicts a held worldview belief.
+  void (async () => {
+    try {
+      const { recordDissent } = await import("@/lib/personality/dissent");
+      const dsConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const dsLocale = typeof dsConfig.preferred_locale === "string" ? dsConfig.preferred_locale : "ko";
+      await recordDissent({
+        agentId: params.agentId,
+        message: params.message,
+        isKo: dsLocale.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Residue: capture the emotional texture that lingers after this conversation.
   void (async () => {
     try {
