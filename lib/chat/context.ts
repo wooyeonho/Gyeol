@@ -2,6 +2,7 @@ import type { createServiceClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
 import { generateEmbedding } from "@/lib/ai/embedding";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
+import { readEmotionalPattern, buildRecognitionFragment } from "@/lib/personality/recognition";
 import type { UserPreferences } from "@/lib/creature/preference-memory";
 import type { FeatureBehaviorProfile } from "@/lib/ai/system-prompt";
 import {
@@ -119,6 +120,23 @@ export async function buildChatPromptContext(params: {
   // Previously: waited for agentState → then started embedding (~300ms saved).
   const embeddingPromise = generateEmbedding(params.message);
 
+  // Real-time pattern recognition: start in parallel, 2s timeout — missed if slow.
+  const isKoLocale = (params.locale ?? "ko") === "ko";
+  const recognitionPromise: Promise<string | null> = Promise.race([
+    (async () => {
+      try {
+        return await readEmotionalPattern({
+          message: params.message,
+          recentChats: [],  // filled after DB load — we pass empty here and rely on timing
+          isKo: isKoLocale,
+        });
+      } catch {
+        return null;
+      }
+    })(),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+  ]);
+
   // P1B: Parallelize ALL 4 DB queries at once
   const [{ data: agentStateRow }, { data: worldStateRow }, { data: recentChats }, { data: logs }] = await Promise.all([
     params.reader.from("agent_state").select("*").eq("agent_id", params.agentId).single(),
@@ -223,15 +241,22 @@ export async function buildChatPromptContext(params: {
     gen_level: typeof agentState?.gen_level === "number" ? agentState.gen_level : 1,
   };
 
-  const systemPrompt = buildSystemPrompt({
-    agentState: stateForPrompt,
-    locale: params.locale,
-    memories,
-    recentChats: chronologicalChats,
-    autonomousLogs: logRows.map((log) => ({ content: log.summary })),
-    worldState,
-    userId: params.userId,
-  });
+  const [baseSystemPrompt, recognizedPattern] = await Promise.all([
+    Promise.resolve(buildSystemPrompt({
+      agentState: stateForPrompt,
+      locale: params.locale,
+      memories,
+      recentChats: chronologicalChats,
+      autonomousLogs: logRows.map((log) => ({ content: log.summary })),
+      worldState,
+      userId: params.userId,
+    })),
+    recognitionPromise,
+  ]);
+
+  const systemPrompt = recognizedPattern
+    ? `${baseSystemPrompt}\n\n${buildRecognitionFragment(recognizedPattern, isKoLocale)}`
+    : baseSystemPrompt;
 
   return {
     agentState,

@@ -461,6 +461,28 @@ export async function executeHeartbeat(): Promise<CronResult> {
           const { checkBadDay } = await import("@/lib/personality/bad-day");
           await checkBadDay(agentId, Number(state.subjective_time ?? 0), agentDna);
         });
+
+        // Fatigue rest: absence = recovery. If rested, let the creature recover.
+        await runOptionalStep("restFromAbsence", agentId, async () => {
+          const config = (state.config as Record<string, unknown> | null) ?? {};
+          const absenceHours = typeof config.absence_hours_peak === "number" ? config.absence_hours_peak : 0;
+          if (absenceHours >= 8) {
+            const { restFromAbsence } = await import("@/lib/personality/fatigue");
+            await restFromAbsence(agentId, absenceHours);
+          }
+        });
+
+        // Private notes: every ~20 heartbeats, form one thing the creature has been thinking.
+        if ((state.subjective_time || 0) % 20 === 0) {
+          await runOptionalStep("formPrivateNote", agentId, async () => {
+            const { formPrivateNote } = await import("@/lib/personality/private-notes");
+            await formPrivateNote({
+              agentId,
+              recentHeartbeatThoughts: recentSummaries.slice(0, 4),
+              isKo: locale === "ko",
+            });
+          });
+        }
         if ((state.subjective_time || 0) % 10 === 0) {
           await runOptionalStep("runMemoryPhysics", agentId, async () => {
             const { runMemoryPhysics } = await import("@/lib/memory/physics");

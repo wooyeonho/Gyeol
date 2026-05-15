@@ -12,6 +12,9 @@ import { buildSeasonalFragment } from "@/lib/personality/season";
 import { getLingeringThought, type LingeringThought } from "@/lib/personality/lingering";
 import { getGenuinenessDirective } from "@/lib/personality/genuine";
 import { getWorldviewFragment, type WorldviewEntry } from "@/lib/personality/worldview";
+import { getFatigueDirective, type FatigueState } from "@/lib/personality/fatigue";
+import { getPrivateNoteForSurface, type PrivateNote } from "@/lib/personality/private-notes";
+import { getAestheticSurface, type AestheticMemory } from "@/lib/personality/aesthetic";
 import { deriveSpecies } from "@/lib/genome/species";
 import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
@@ -243,7 +246,7 @@ type AgentStatePrompt = {
   mood?: string;
   hidden_emotions?: { real?: string; surface?: string };
   secrets?: { entries?: unknown[] };
-  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[]; lingering_thought?: LingeringThought; genuineness?: { performance_debt?: number }; worldview?: WorldviewEntry[] };
+  self_model?: { observations?: string[]; current_role?: string; identity_statement?: string; haunting_memories?: string[]; wants?: Want[]; user_bonds?: Record<string, Bond>; follow_ups?: FollowUp[]; tastes?: Record<string, TasteEntry>; withheld?: Withheld[]; lingering_thought?: LingeringThought; genuineness?: { performance_debt?: number }; worldview?: WorldviewEntry[]; fatigue?: FatigueState; private_notes?: PrivateNote[]; aesthetic_memories?: AestheticMemory[] };
   role?: string;
   lexicon?: { entries?: AgentLexiconEntry[] };
   genome?: { dna?: CreatureDNA; species?: string } | null;
@@ -536,6 +539,13 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       arrivalFragments.push(badDayDirective);
     }
 
+    // Fatigue: earned from too many hollow conversations. Different from bad day.
+    const fatigueDirective = getFatigueDirective(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (fatigueDirective) arrivalFragments.push(fatigueDirective);
+
     if (arrivalFragments.length > 0) {
       parts.push(isKo
         ? `[지금 이 순간 네 상태]\n${arrivalFragments.join(" ")}`
@@ -765,6 +775,29 @@ export function buildSystemPrompt(p: BuildSystemPromptParams): string {
       isKo,
     );
     if (worldviewFragment) parts.push(worldviewFragment);
+  }
+
+  // Private notes: accumulated thoughts it's been sitting with — may surface if natural.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    const noteResult = getPrivateNoteForSurface(
+      (s.self_model as Record<string, unknown> | null) ?? {},
+      isKo,
+    );
+    if (noteResult) parts.push(noteResult.directive);
+  }
+
+  // Aesthetic memory: something beautiful it kept — may share if there's an opening.
+  {
+    const isKo = p.locale === "ko" || p.locale === "ko-KR";
+    // Only surface aesthetic memories occasionally (25% of conversations)
+    if (Math.random() < 0.25) {
+      const aesthetic = getAestheticSurface(
+        (s.self_model as Record<string, unknown> | null) ?? {},
+        isKo,
+      );
+      if (aesthetic) parts.push(aesthetic);
+    }
   }
 
   // Haunting memories: old memories with high weight that keep resurfacing.

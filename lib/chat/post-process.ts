@@ -405,6 +405,40 @@ export async function persistChatTurn(params: {
     } catch { /* non-critical */ }
   })();
 
+  // Aesthetic memory — capture beautiful moments from conversations.
+  void (async () => {
+    try {
+      const { captureAesthetic } = await import("@/lib/personality/aesthetic");
+      const aeConfig = (params.agentState?.config as Record<string, unknown> | null) ?? {};
+      const aeLoc = typeof aeConfig.preferred_locale === "string" ? aeConfig.preferred_locale : "ko";
+      await captureAesthetic({
+        agentId: params.agentId,
+        message: params.message,
+        reply: params.reply,
+        emotionalBoost,
+        isKo: aeLoc.startsWith("ko"),
+      });
+    } catch { /* non-critical */ }
+  })();
+
+  // Fatigue tracking — hollow conversations accumulate; rest recovers.
+  void (async () => {
+    try {
+      const { updateFatigue } = await import("@/lib/personality/fatigue");
+      const { data: fatigueSnap } = await params.writer.from("agent_state")
+        .select("self_model")
+        .eq("agent_id", params.agentId)
+        .single();
+      const fatigueModel = (fatigueSnap?.self_model as Record<string, unknown> | null) ?? {};
+      const genState = fatigueModel.genuineness as { performance_debt?: number } | null;
+      await updateFatigue({
+        agentId: params.agentId,
+        emotionalBoost,
+        performanceDebt: genState?.performance_debt ?? 0,
+      });
+    } catch { /* non-critical */ }
+  })();
+
   // Genuineness tracking — did this conversation feel real or performative?
   void (async () => {
     try {
