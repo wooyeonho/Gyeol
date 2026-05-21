@@ -378,7 +378,11 @@
     "preserve": "보관",
     "preserved": "보관됨",
     "readMore": "더 읽기",
-    "collapse": "접기"
+    "collapse": "접기",
+    "bucket_today": "오늘",
+    "bucket_this_week": "이번 주",
+    "bucket_this_month": "이번 달",
+    "bucket_older": "그 이전"
   },
   "settings": {
     "title": "설정",

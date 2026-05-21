@@ -381,7 +381,11 @@
     "preserve": "Keep",
     "preserved": "Kept",
     "readMore": "Read more",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "bucket_today": "Today",
+    "bucket_this_week": "This week",
+    "bucket_this_month": "This month",
+    "bucket_older": "Earlier"
   },
   "settings": {
     "title": "設定",

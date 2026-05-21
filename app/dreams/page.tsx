@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "@/components/i18n-provider";
 import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
@@ -25,6 +25,21 @@ function formatDate(iso: string, locale: string): string {
     day: "numeric",
   });
 }
+
+type DreamBucket = "today" | "this_week" | "this_month" | "older";
+
+function bucketForDream(iso: string, now: number): DreamBucket {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return "older";
+  const ageMs = now - ts;
+  const day = 86400000;
+  if (ageMs < day) return "today";
+  if (ageMs < 7 * day) return "this_week";
+  if (ageMs < 30 * day) return "this_month";
+  return "older";
+}
+
+const BUCKET_ORDER: DreamBucket[] = ["today", "this_week", "this_month", "older"];
 
 export default function DreamsPage() {
   const { locale, t } = useTranslations();
@@ -54,6 +69,23 @@ export default function DreamsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Group dreams by recency so a long list stays scannable. The bucketing is
+  // computed once per render against a stable "now" so a dream doesn't drift
+  // into a different bucket while the page is mounted.
+  const grouped = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<DreamBucket, Dream[]>();
+    for (const dream of dreams) {
+      const bucket = bucketForDream(dream.created_at, now);
+      const arr = map.get(bucket) ?? [];
+      arr.push(dream);
+      map.set(bucket, arr);
+    }
+    return BUCKET_ORDER
+      .map((bucket) => ({ bucket, dreams: map.get(bucket) ?? [] }))
+      .filter((g) => g.dreams.length > 0);
+  }, [dreams]);
 
   async function togglePreserved(id: string, current: boolean) {
     const next = !current;
@@ -105,8 +137,16 @@ export default function DreamsPage() {
         </motion.div>
       )}
 
-      <motion.div variants={itemVariants} className="space-y-3">
-        {dreams.map((dream) => {
+      {grouped.map(({ bucket, dreams: bucketDreams }) => (
+        <motion.div
+          key={bucket}
+          variants={itemVariants}
+          className="space-y-3"
+        >
+          <p className="text-xs font-medium uppercase tracking-wider text-white/45">
+            {t(`dreams.bucket_${bucket}`)}
+          </p>
+          {bucketDreams.map((dream) => {
           const isOpen = expanded === dream.id;
           return (
             <motion.article
@@ -169,7 +209,8 @@ export default function DreamsPage() {
             </motion.article>
           );
         })}
-      </motion.div>
+        </motion.div>
+      ))}
     </PageShell>
   );
 }
