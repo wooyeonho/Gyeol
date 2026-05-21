@@ -7,6 +7,7 @@ import { AnimatedEmptyState } from "@/components/ui/animated-empty-state";
 import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { PageSkeleton } from "@/components/discover/skeleton";
 import { ErrorBanner } from "@/components/discover/error-banner";
+import { ShareSnapshotButton } from "@/components/share-snapshot-button";
 
 type Dream = {
   id: string;
@@ -112,12 +113,19 @@ export default function DreamsPage() {
 
   return (
     <PageShell>
-      <motion.div variants={itemVariants} className="space-y-2 pb-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-white/60">
-          {t("dreams.eyebrow")}
-        </p>
-        <h1 className="text-2xl font-semibold text-white">{t("dreams.title")}</h1>
-        <p className="text-sm text-white/60">{t("dreams.subtitle")}</p>
+      <motion.div variants={itemVariants} className="flex items-start justify-between gap-3 pb-2">
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-white/60">
+            {t("dreams.eyebrow")}
+          </p>
+          <h1 className="text-2xl font-semibold text-white">{t("dreams.title")}</h1>
+          <p className="text-sm text-white/60">{t("dreams.subtitle")}</p>
+        </div>
+        {dreams.length > 0 && (
+          <div className="flex-shrink-0 pt-1">
+            <ShareSnapshotButton />
+          </div>
+        )}
       </motion.div>
 
       {error && (

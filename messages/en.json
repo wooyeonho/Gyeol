@@ -714,6 +714,13 @@
     "growWithGyeol": "Grow with Gyeol →",
     "tagline": "Gyeol · an AI that builds relationships"
   },
+  "share": {
+    "button": "Share",
+    "loading": "Preparing…",
+    "copied": "Link copied",
+    "shared": "Shared",
+    "error": "Try again"
+  },
   "marketPage": {
     "eyebrow": "Beta expansion",
     "title": "Market",

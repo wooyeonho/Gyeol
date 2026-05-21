@@ -714,6 +714,13 @@
     "growWithGyeol": "결의와 함께 성장하기 →",
     "tagline": "결의 · 관계를 쌓는 AI"
   },
+  "share": {
+    "button": "공유",
+    "loading": "준비 중…",
+    "copied": "링크 복사됨",
+    "shared": "공유 완료",
+    "error": "다시 시도"
+  },
   "marketPage": {
     "eyebrow": "베타 확장",
     "title": "마켓",
