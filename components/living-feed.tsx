@@ -116,7 +116,14 @@ export function LivingFeed({
   const { t } = useTranslations();
   const [data, setData] = useState<WelcomeData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem("gyeol_living_feed_dismissed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [expandedDream, setExpandedDream] = useState<string | null>(null);
 
   // Stabilize callback ref to prevent re-fetching when parent re-renders with new callback identity
@@ -151,6 +158,11 @@ export function LivingFeed({
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
+    try {
+      window.sessionStorage.setItem("gyeol_living_feed_dismissed", "1");
+    } catch {
+      // sessionStorage may be unavailable (private mode, quota); fall back to in-memory.
+    }
   }, []);
 
   // First visit — no activity yet → inject birth greeting into chat
@@ -247,6 +259,15 @@ export function LivingFeed({
               {t("common.close")}
             </button>
           </div>
+
+          {/* AI-generated welcome-back greeting (warm voice from the creature) */}
+          {data.greeting && (
+            <div className="border-b border-white/8 px-4 py-3">
+              <p className="text-sm leading-relaxed text-white/90 italic">
+                &ldquo;{data.greeting}&rdquo;
+              </p>
+            </div>
+          )}
 
           {/* Activity timeline */}
           <div className="max-h-[280px] overflow-y-auto px-4 py-3">
