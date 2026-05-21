@@ -29,6 +29,7 @@ export default function ConstellationPage() {
   const [constellations, setConstellations] = useState<Constellation[]>([]);
   const [selfAgent, setSelfAgent] = useState<ConstellationAgent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedConstellation, setSelectedConstellation] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/constellation")
@@ -111,6 +112,8 @@ export default function ConstellationPage() {
         ) : (
           <ConstellationScene
             stars={stars}
+            constellations={constellations}
+            selectedConstellation={selectedConstellation}
             color={appearance.palette.primary}
             backgroundColor={appearance.palette.background}
             emptyLabel={t("constellationPage.emptySky")}
@@ -122,12 +125,29 @@ export default function ConstellationPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             {t("constellationPage.clusters")}
           </p>
-          {constellations.map((c) => (
-            <div key={c.name} className="text-sm text-white/70">
-              <span className="font-medium text-white/90">{c.name}</span>
-              <span className="ml-2">{c.starIds.length} {t("constellationPage.stars")}</span>
-            </div>
-          ))}
+          {constellations.map((c) => {
+            const isSelected = selectedConstellation === c.name;
+            return (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() =>
+                  setSelectedConstellation(isSelected ? null : c.name)
+                }
+                aria-pressed={isSelected}
+                className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
+                  isSelected
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/[0.04] hover:text-white/90"
+                }`}
+              >
+                <span className="font-medium">{c.name}</span>
+                <span className="text-xs text-white/50">
+                  {c.starIds.length} {t("constellationPage.stars")}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <div className="theme-panel rounded-2xl p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
