@@ -371,6 +371,18 @@
     "preserve": "Preserve",
     "emptyDesc": "Activities will appear as your being evolves"
   },
+  "dreams": {
+    "title": "Dream Journal",
+    "eyebrow": "Dream Journal",
+    "subtitle": "Dreams your being had while you were away. After more than six hours apart, your being begins to dream.",
+    "empty": "No dreams recorded yet",
+    "emptyDesc": "After more than six hours apart, your being weaves its memories into a dream.",
+    "loadError": "Failed to load dreams.",
+    "preserve": "Keep",
+    "preserved": "Kept",
+    "readMore": "Read more",
+    "collapse": "Collapse"
+  },
   "settings": {
     "title": "設定",
     "loadError": "Failed to load settings.",

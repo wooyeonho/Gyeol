@@ -368,6 +368,18 @@
     "preserve": "보관",
     "emptyDesc": "결이 진화하면 여기에 활동이 기록됩니다"
   },
+  "dreams": {
+    "title": "결의 꿈 일기",
+    "eyebrow": "Dream Journal",
+    "subtitle": "결이 당신과 떨어져 있을 때 꾼 꿈들이에요. 6시간 이상 떨어져 있으면 결은 꿈을 꿔요.",
+    "empty": "아직 기록된 꿈이 없어요",
+    "emptyDesc": "결과 6시간 이상 떨어져 있으면 그동안의 기억을 엮어 꿈을 꿔요.",
+    "loadError": "꿈을 불러오지 못했어요.",
+    "preserve": "보관",
+    "preserved": "보관됨",
+    "readMore": "더 읽기",
+    "collapse": "접기"
+  },
   "settings": {
     "title": "설정",
     "loadError": "설정 정보를 불러오지 못했습니다.",

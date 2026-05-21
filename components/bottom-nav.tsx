@@ -80,6 +80,7 @@ const DISCOVER_PATHS = new Set([
   "/market",
   "/room",
   "/constellation",
+  "/dreams",
   "/features",
 ]);
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { useTranslations } from "@/components/i18n-provider";
 
 type Activity = {
@@ -354,6 +355,17 @@ export function LivingFeed({
                 </span>
               </div>
             </div>
+          )}
+
+          {/* Link to full Dream Journal, only shown when this recap surfaced
+              at least one dream so we don't promote an empty destination. */}
+          {data.dreams.length > 0 && (
+            <Link
+              href="/dreams"
+              className="block border-t border-white/8 px-4 py-2.5 text-xs text-white/55 transition-colors hover:bg-white/[0.04] hover:text-white/80"
+            >
+              {t("dreams.title")} →
+            </Link>
           )}
         </div>
       </motion.div>
