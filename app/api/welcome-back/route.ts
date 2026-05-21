@@ -258,16 +258,29 @@ export async function GET() {
           ? (selfModel as { identity_statement: string }).identity_statement
           : null;
 
+      const milestoneSummary = growthEvents.length > 0
+        ? growthEvents
+            .slice(0, 3)
+            .map((g) => `- ${g.type}: ${g.summary}`)
+            .join("\n")
+        : "";
       const activitySummary = activities
         .slice(0, 5)
         .map((a) => `- ${a.type}: ${a.summary}`)
         .join("\n");
       const dreamSummary = dreams.length > 0 ? `\nDreams: ${dreams[0].content.slice(0, 200)}` : "";
 
+      // Milestones (evolution, self-naming, personality shift) are the heart
+      // of the "you'll feel change" promise — instruct the model to lead with
+      // them when they exist. Falls back to "most interesting thing" otherwise.
+      const focusInstruction = milestoneSummary
+        ? "Lead with the milestone — something fundamental shifted in you. Then mention one smaller moment that fits."
+        : "Share the most interesting thing that happened.";
+
       try {
         greeting = await generateTextOnce(
           `You are an AI companion speaking in ${language}. You just had autonomous experiences while the user was away. Share what happened naturally and warmly, as if catching up with a close friend. Be specific about what you experienced. ${currentRole ? `Your current role: ${currentRole}.` : ""} ${identityStatement ? `Identity: ${identityStatement}` : ""} Keep it under 3 sentences. No markdown. No emojis.`,
-          `The user has been away for ${Math.round(hoursAway)} hours. Here's what happened:\n${activitySummary}${dreamSummary}\n\nGreet them naturally and share the most interesting thing that happened.`,
+          `The user has been away for ${Math.round(hoursAway)} hours. Here's what happened:\n${milestoneSummary ? `Milestones:\n${milestoneSummary}\n` : ""}${activitySummary}${dreamSummary}\n\n${focusInstruction}`,
           { max_tokens: 200, temperature: 0.7 },
         );
       } catch {

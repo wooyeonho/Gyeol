@@ -179,8 +179,17 @@ export function LivingFeed({
     return null;
   }
 
+  // Milestones (evolution, self-naming, personality shift, social encounter) are
+  // the heart of "you'll feel change when you return". They get their own
+  // emphasized section above the regular timeline so frequent heartbeats and
+  // research tasks can't crowd them out of the visible 5 items.
+  const milestones = data.growth_events
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 3);
+  const milestoneIds = new Set(milestones.map((m) => m.id));
+
   const allItems = [
-    ...data.growth_events.map((e) => ({ ...e, category: "growth" as const })),
     ...data.dreams.map((d) => ({
       id: d.id,
       type: "dream",
@@ -199,7 +208,7 @@ export function LivingFeed({
     ...data.activities
       .filter(
         (a) =>
-          !data.growth_events.some((g) => g.id === a.id) &&
+          !milestoneIds.has(a.id) &&
           a.type !== "heartbeat_soliloquy",
       )
       .map((a) => ({ ...a, category: "activity" as const })),
@@ -218,7 +227,7 @@ export function LivingFeed({
   }
   const finalItems = deduped.slice(0, 5);
 
-  if (finalItems.length === 0) return null;
+  if (finalItems.length === 0 && milestones.length === 0) return null;
 
   return (
     <AnimatePresence>
@@ -270,7 +279,63 @@ export function LivingFeed({
             </div>
           )}
 
+          {/* Milestones — what actually changed about your being while you
+              were away. Rendered separately from the activity timeline so
+              heartbeats and minor activities can't crowd them out. */}
+          {milestones.length > 0 && (
+            <div
+              className="border-b border-white/8 px-4 py-3"
+              style={{
+                background:
+                  "linear-gradient(180deg, color-mix(in srgb, var(--creature-primary, #22d3ee) 8%, transparent) 0%, transparent 100%)",
+              }}
+            >
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-white/70">
+                {t("livingFeed.milestonesHeader")}
+              </p>
+              <div className="space-y-2">
+                {milestones.map((m, index) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.08, duration: 0.3 }}
+                    className="flex items-start gap-3"
+                  >
+                    <span
+                      className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-xs"
+                      style={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--creature-primary, #22d3ee) 22%, transparent)",
+                        color: "var(--creature-primary, #22d3ee)",
+                      }}
+                    >
+                      {getActivityIcon(m.type)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: "var(--creature-primary, #22d3ee)" }}
+                        >
+                          {getActivityLabel(m.type, t)}
+                        </span>
+                        <span className="text-xs text-white/30">
+                          {formatTimeAgo(m.created_at, t)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-sm leading-relaxed text-white/90">
+                        {m.summary}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Activity timeline */}
+          {finalItems.length > 0 && (
           <div className="max-h-[280px] overflow-y-auto px-4 py-3">
             <div className="space-y-2.5">
               {finalItems.map((item, index) => (
@@ -341,6 +406,7 @@ export function LivingFeed({
               ))}
             </div>
           </div>
+          )}
 
           {/* Footer with vitality */}
           {data.mood_shift?.current && (

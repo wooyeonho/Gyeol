@@ -962,6 +962,7 @@
     "echo": "Global Echo"
   },
   "livingFeed": {
+    "milestonesHeader": "What changed in your being",
     "whileAway": "あなたがいない間に",
     "hoursAway": "{n}時間前",
     "minutesAgo": "{n}分前",

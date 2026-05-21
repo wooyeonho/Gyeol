@@ -1056,6 +1056,7 @@
     "fontSizeXLarge": "매우 크게"
   },
   "livingFeed": {
+    "milestonesHeader": "결에게 일어난 변화",
     "whileAway": "당신이 없는 동안",
     "hoursAway": "{n}시간 전",
     "minutesAgo": "{n}분 전",
