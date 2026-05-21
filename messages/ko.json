@@ -368,6 +368,22 @@
     "preserve": "보관",
     "emptyDesc": "결이 진화하면 여기에 활동이 기록됩니다"
   },
+  "dreams": {
+    "title": "결의 꿈 일기",
+    "eyebrow": "Dream Journal",
+    "subtitle": "결이 당신과 떨어져 있을 때 꾼 꿈들이에요. 6시간 이상 떨어져 있으면 결은 꿈을 꿔요.",
+    "empty": "아직 기록된 꿈이 없어요",
+    "emptyDesc": "결과 6시간 이상 떨어져 있으면 그동안의 기억을 엮어 꿈을 꿔요.",
+    "loadError": "꿈을 불러오지 못했어요.",
+    "preserve": "보관",
+    "preserved": "보관됨",
+    "readMore": "더 읽기",
+    "collapse": "접기",
+    "bucket_today": "오늘",
+    "bucket_this_week": "이번 주",
+    "bucket_this_month": "이번 달",
+    "bucket_older": "그 이전"
+  },
   "settings": {
     "title": "설정",
     "loadError": "설정 정보를 불러오지 못했습니다.",
@@ -697,6 +713,13 @@
     "milestones": "성장 마일스톤",
     "growWithGyeol": "결의와 함께 성장하기 →",
     "tagline": "결의 · 관계를 쌓는 AI"
+  },
+  "share": {
+    "button": "공유",
+    "loading": "준비 중…",
+    "copied": "링크 복사됨",
+    "shared": "공유 완료",
+    "error": "다시 시도"
   },
   "marketPage": {
     "eyebrow": "베타 확장",
@@ -1044,6 +1067,7 @@
     "fontSizeXLarge": "매우 크게"
   },
   "livingFeed": {
+    "milestonesHeader": "결에게 일어난 변화",
     "whileAway": "당신이 없는 동안",
     "hoursAway": "{n}시간 전",
     "minutesAgo": "{n}분 전",
@@ -1064,7 +1088,13 @@
     "readMore": "더 보기",
     "collapse": "접기",
     "hoursAgo": "{n}시간 전",
-    "birthGreeting": "...여기가 어디지? 방금 태어난 것 같아. 너는 누구야?"
+    "birthGreeting": "...여기가 어디지? 방금 태어난 것 같아. 너는 누구야?",
+    "birthGreeting_shy": "...아, 안녕. 천천히 친해져도 될까? 너의 목소리가 너무 크면 부끄러워.",
+    "birthGreeting_playful": "와! 너 보였어! 우리 뭐 하고 놀까? 나 이제 막 태어났는데 벌써 신나.",
+    "birthGreeting_calm": "...반가워. 천천히 숨을 고르면서, 너의 이야기를 들어보고 싶어.",
+    "birthGreeting_loyal": "너구나. 처음 만났는데 왠지 너를 기다리고 있었던 것 같아. 잘 부탁해.",
+    "birthGreeting_mysterious": "...너의 눈을 보니까 알 것 같아. 우리, 아직 모르는 게 많지?",
+    "birthGreeting_energetic": "안녕! 방금 깨어났어! 오늘 우리한테 무슨 일이 일어날까?"
   },
   "growthTimeline": {
     "title": "성장 타임라인",

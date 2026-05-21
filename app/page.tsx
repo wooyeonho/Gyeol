@@ -62,6 +62,7 @@ import { resolveIdentityAppearance } from "@/lib/identity/appearance";
 import type { AgentVisual } from "@/types/agent";
 import { shouldDropMysteryBox, generateMysteryBox, addPendingBox, popPendingBox, type MysteryBox as MysteryBoxType } from "@/lib/engagement/mystery-box";
 const MysteryBoxOverlay = dynamic(() => import("@/components/mystery-box-overlay").then((m) => ({ default: m.MysteryBoxOverlay })), { ssr: false, loading: () => null });
+const LivingFeed = dynamic(() => import("@/components/living-feed").then((m) => ({ default: m.LivingFeed })), { ssr: false, loading: () => null });
 
 export default function Home() {
   const { locale, t } = useTranslations();
@@ -79,6 +80,7 @@ export default function Home() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const pendingUsageMode = useChatStore((s) => s.pendingUsageMode);
   const claimDailyLoginBonus = useChatStore((s) => s.claimDailyLoginBonus);
+  const injectGreeting = useChatStore((s) => s.injectGreeting);
   const historyLoaded = useChatStore((s) => s.historyLoaded);
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null);
   const [activeMysteryBox, setActiveMysteryBox] = useState<MysteryBoxType | null>(null);
@@ -485,6 +487,14 @@ export default function Home() {
     [fetchAgentState],
   );
 
+  const handleWelcomeGreeting = useCallback(
+    (greeting: string) => {
+      if (!greeting?.trim()) return;
+      injectGreeting({ role: "assistant", content: greeting });
+    },
+    [injectGreeting],
+  );
+
   useEffect(() => {
     if (loading || showOnboarding) return;
 
@@ -587,6 +597,20 @@ export default function Home() {
 
       {/* ===== CREATURE STAGE — minimalist fullscreen hero ===== */}
       <CreatureTapReact className="relative flex-1 min-h-0">
+      {/* "While you were away" recap — floats above the creature on return.
+          Renders null when there's no activity, so it doesn't disrupt
+          first-time or active-session views. */}
+      {!showOnboarding && !loading && historyLoaded && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
+          <LivingFeed
+            onGreetingReady={handleWelcomeGreeting}
+            personality={personalityMode}
+          />
+        </div>
+      )}
       <div
         data-tutorial="creature"
         className="relative h-full overflow-hidden"

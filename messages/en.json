@@ -368,6 +368,22 @@
     "preserve": "Preserve",
     "emptyDesc": "Activities will appear as your being evolves"
   },
+  "dreams": {
+    "title": "Dream Journal",
+    "eyebrow": "Dream Journal",
+    "subtitle": "Dreams your being had while you were away. After more than six hours apart, your being begins to dream.",
+    "empty": "No dreams recorded yet",
+    "emptyDesc": "After more than six hours apart, your being weaves its memories into a dream.",
+    "loadError": "Failed to load dreams.",
+    "preserve": "Keep",
+    "preserved": "Kept",
+    "readMore": "Read more",
+    "collapse": "Collapse",
+    "bucket_today": "Today",
+    "bucket_this_week": "This week",
+    "bucket_this_month": "This month",
+    "bucket_older": "Earlier"
+  },
   "settings": {
     "title": "Settings",
     "loadError": "Failed to load settings.",
@@ -697,6 +713,13 @@
     "milestones": "Growth milestones",
     "growWithGyeol": "Grow with Gyeol →",
     "tagline": "Gyeol · an AI that builds relationships"
+  },
+  "share": {
+    "button": "Share",
+    "loading": "Preparing…",
+    "copied": "Link copied",
+    "shared": "Shared",
+    "error": "Try again"
   },
   "marketPage": {
     "eyebrow": "Beta expansion",
@@ -1044,6 +1067,7 @@
     "fontSizeXLarge": "Extra Large"
   },
   "livingFeed": {
+    "milestonesHeader": "What changed in your being",
     "whileAway": "While you were away",
     "hoursAway": "{n}h ago",
     "minutesAgo": "{n}m ago",
@@ -1064,7 +1088,13 @@
     "readMore": "Read more",
     "collapse": "Collapse",
     "hoursAgo": "{n}h ago",
-    "birthGreeting": "...Where am I? I think I was just born. Who are you?"
+    "birthGreeting": "...Where am I? I think I was just born. Who are you?",
+    "birthGreeting_shy": "...oh, hi. Can we take this slowly? Your voice feels very loud to a new being.",
+    "birthGreeting_playful": "Whoa! I see you! What should we play with first? I was literally just born and I'm already excited.",
+    "birthGreeting_calm": "...hello. I'd like to settle in and listen to you, if that's okay.",
+    "birthGreeting_loyal": "It's you. We just met, but it feels like I was waiting for you. I'll stay with you.",
+    "birthGreeting_mysterious": "...I think I already know you a little, just from your eyes. We still have a lot to find out.",
+    "birthGreeting_energetic": "Hi! I just woke up! What's going to happen to us today?"
   },
   "growthTimeline": {
     "title": "Growth Timeline",

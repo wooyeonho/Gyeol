@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { getDemoAgentState, getDemoConstellation } from "@/lib/demo/runtime";
 import { isMissingEnvError } from "@/lib/env/required";
 import { logRouteError } from "@/lib/ops/logger";
+import { buildConstellations } from "@/lib/memory/constellations";
+import { resolveGenerationLocale } from "@/lib/i18n/generation";
 
 export async function GET() {
   try {
@@ -29,6 +31,22 @@ export async function GET() {
         .eq("agent_id", agentId)
         .single(),
     ]);
+    // Deterministic per-memory depth so stars don't reshuffle on every page
+    // load. The previous Math.random() jiggled the constellation each render,
+    // breaking the "I remember where that memory was" intuition the metaphor
+    // depends on. FNV-1a over the memory id gives stable, well-distributed
+    // depth in [-0.25, 0.25].
+    function stableDepth(id: string): number {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < id.length; i++) {
+        h ^= id.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      // h is a 32-bit signed int; map to [-0.25, 0.25].
+      const norm = ((h >>> 0) / 0xffffffff) - 0.5;
+      return norm * 0.5;
+    }
+
     const stars = (mems ?? []).map((m, i) => ({
       id: (m as { id: string }).id,
       content: ((m as { content?: string }).content ?? "").slice(0, 60),
@@ -36,13 +54,40 @@ export async function GET() {
       created_at: (m as { created_at?: string }).created_at,
       x: (i % 10) / 5 - 1,
       y: Math.floor(i / 10) / 5 - 0.5,
-      z: (Math.random() - 0.5) * 0.5,
+      z: stableDepth((m as { id: string }).id),
     }));
 
+    const stateConfig = (state as { config?: Record<string, unknown> } | null)?.config ?? {};
+    const locale = resolveGenerationLocale({ config: stateConfig }) === "ko" ? "ko" : "en";
+
+    // Semantic theme matching — replaces the previous English-only regex which
+    // never fired on Korean content. match_memories already ranks by cosine
+    // similarity weighted by recency + reference count; we keep that ranking
+    // and just intersect the top results with the stars on canvas.
+    let semanticConstellations: Array<{ name: string; starIds: string[] }> = [];
+    try {
+      semanticConstellations = await buildConstellations(
+        stars,
+        async (embedding) => {
+          const { data: matches } = await service.rpc("match_memories", {
+            p_agent_id: agentId,
+            p_embedding: embedding,
+            p_match_count: 10,
+          });
+          return ((matches ?? []) as Array<{ id: string }>).map((m) => m.id);
+        },
+        locale,
+      );
+    } catch (err) {
+      logRouteError("constellation theme matching", err);
+    }
+
+    const firstLightName = locale === "ko" ? "첫 빛" : "First Light";
     const constellations = [
-      { name: "First talk", starIds: stars.slice(0, 3).map((s) => s.id) },
-      { name: "Sad night", starIds: stars.filter((s) => /sad|miss|lonely/i.test(s.content)).slice(0, 3).map((s) => s.id) },
-      { name: "Bright day", starIds: stars.filter((s) => /happy|good|joy/i.test(s.content)).slice(0, 3).map((s) => s.id) },
+      // Always include a chronological "first memories" anchor so even users
+      // with no embeddings yet see at least one constellation.
+      { name: firstLightName, starIds: stars.slice(0, 3).map((s) => s.id) },
+      ...semanticConstellations.filter((c) => c.name !== firstLightName),
     ].filter((c) => c.starIds.length > 0);
 
     const stateData = state as {

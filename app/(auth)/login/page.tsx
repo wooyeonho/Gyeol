@@ -102,6 +102,18 @@ export default function LoginPage() {
         <p className="mt-2 text-[13px] leading-[1.55] text-white/55">
           {t("auth.loginSubtitle")}
         </p>
+        <ul className="mt-4 space-y-1.5 text-[12px] leading-[1.5] text-white/60">
+          {[
+            t("auth.loginBenefit1"),
+            t("auth.loginBenefit2"),
+            t("auth.loginBenefit3"),
+          ].map((benefit) => (
+            <li key={benefit} className="flex gap-2">
+              <span aria-hidden="true" className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-cyan-300/60" />
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
       </motion.div>
 
       {!isConfigured && (
