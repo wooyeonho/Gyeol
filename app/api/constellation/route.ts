@@ -31,6 +31,22 @@ export async function GET() {
         .eq("agent_id", agentId)
         .single(),
     ]);
+    // Deterministic per-memory depth so stars don't reshuffle on every page
+    // load. The previous Math.random() jiggled the constellation each render,
+    // breaking the "I remember where that memory was" intuition the metaphor
+    // depends on. FNV-1a over the memory id gives stable, well-distributed
+    // depth in [-0.25, 0.25].
+    function stableDepth(id: string): number {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < id.length; i++) {
+        h ^= id.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      // h is a 32-bit signed int; map to [-0.25, 0.25].
+      const norm = ((h >>> 0) / 0xffffffff) - 0.5;
+      return norm * 0.5;
+    }
+
     const stars = (mems ?? []).map((m, i) => ({
       id: (m as { id: string }).id,
       content: ((m as { content?: string }).content ?? "").slice(0, 60),
@@ -38,7 +54,7 @@ export async function GET() {
       created_at: (m as { created_at?: string }).created_at,
       x: (i % 10) / 5 - 1,
       y: Math.floor(i / 10) / 5 - 0.5,
-      z: (Math.random() - 0.5) * 0.5,
+      z: stableDepth((m as { id: string }).id),
     }));
 
     const stateConfig = (state as { config?: Record<string, unknown> } | null)?.config ?? {};
