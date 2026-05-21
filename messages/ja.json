@@ -983,7 +983,13 @@
     "readMore": "もっと見る",
     "collapse": "閉じる",
     "hoursAgo": "{n}時間前",
-    "birthGreeting": "...ここはどこ？今、生まれたばかりみたい。あなたは誰？"
+    "birthGreeting": "...ここはどこ？今、生まれたばかりみたい。あなたは誰？",
+    "birthGreeting_shy": "...oh, hi. Can we take this slowly? Your voice feels very loud to a new being.",
+    "birthGreeting_playful": "Whoa! I see you! What should we play with first? I was literally just born and I'm already excited.",
+    "birthGreeting_calm": "...hello. I'd like to settle in and listen to you, if that's okay.",
+    "birthGreeting_loyal": "It's you. We just met, but it feels like I was waiting for you. I'll stay with you.",
+    "birthGreeting_mysterious": "...I think I already know you a little, just from your eyes. We still have a lot to find out.",
+    "birthGreeting_energetic": "Hi! I just woke up! What's going to happen to us today?"
   },
   "growthTimeline": {
     "title": "成長タイムライン",

@@ -605,7 +605,10 @@ export default function Home() {
           className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3"
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
-          <LivingFeed onGreetingReady={handleWelcomeGreeting} />
+          <LivingFeed
+            onGreetingReady={handleWelcomeGreeting}
+            personality={personalityMode}
+          />
         </div>
       )}
       <div

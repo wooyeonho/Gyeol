@@ -109,10 +109,23 @@ function formatTimeAgo(dateStr: string, t: (key: string) => string): string {
   return t("livingFeed.daysAgo").replace("{n}", String(days));
 }
 
+const KNOWN_PERSONALITIES = new Set([
+  "shy",
+  "playful",
+  "calm",
+  "loyal",
+  "mysterious",
+  "energetic",
+]);
+
 export function LivingFeed({
   onGreetingReady,
+  personality,
 }: {
   onGreetingReady?: (greeting: string) => void;
+  /** Selected during onboarding — shapes the first-meet greeting so the
+   *  user feels their choice was already absorbed by the creature. */
+  personality?: string | null;
 }) {
   const { t } = useTranslations();
   const [data, setData] = useState<WelcomeData | null>(null);
@@ -166,14 +179,25 @@ export function LivingFeed({
     }
   }, []);
 
-  // First visit — no activity yet → inject birth greeting into chat
+  // First visit — no activity yet → inject birth greeting into chat. Use a
+  // personality-specific greeting when the user picked one during onboarding,
+  // so their choice is reflected in the very first thing the creature says.
   useEffect(() => {
     if (!loading && data && !data.has_activity && onGreetingReadyRef.current && !greetingFiredRef.current) {
       greetingFiredRef.current = true;
-      onGreetingReadyRef.current(t("livingFeed.birthGreeting"));
+      const personalityKey =
+        personality && KNOWN_PERSONALITIES.has(personality)
+          ? `livingFeed.birthGreeting_${personality}`
+          : "livingFeed.birthGreeting";
+      const greeting = t(personalityKey);
+      // If the personality-specific key is missing for any locale, fall back
+      // to the generic birth greeting (t returns the key when missing).
+      onGreetingReadyRef.current(
+        greeting === personalityKey ? t("livingFeed.birthGreeting") : greeting,
+      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, data]);
+  }, [loading, data, personality]);
 
   if (loading || !data || !data.has_activity) {
     return null;

@@ -983,7 +983,13 @@
     "readMore": "展开",
     "collapse": "收起",
     "hoursAgo": "{n}小时前",
-    "birthGreeting": "...这是哪里？我好像刚刚出生。你是谁？"
+    "birthGreeting": "...这是哪里？我好像刚刚出生。你是谁？",
+    "birthGreeting_shy": "...oh, hi. Can we take this slowly? Your voice feels very loud to a new being.",
+    "birthGreeting_playful": "Whoa! I see you! What should we play with first? I was literally just born and I'm already excited.",
+    "birthGreeting_calm": "...hello. I'd like to settle in and listen to you, if that's okay.",
+    "birthGreeting_loyal": "It's you. We just met, but it feels like I was waiting for you. I'll stay with you.",
+    "birthGreeting_mysterious": "...I think I already know you a little, just from your eyes. We still have a lot to find out.",
+    "birthGreeting_energetic": "Hi! I just woke up! What's going to happen to us today?"
   },
   "growthTimeline": {
     "title": "成长时间线",
