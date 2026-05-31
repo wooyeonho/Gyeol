@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
+vi.mock("next/server", () => ({
+  NextResponse: {
+    json: vi.fn((body, opts) => ({
+      status: opts?.status ?? 200,
+      json: async () => body,
+    })),
+  },
+}));
+
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(),
 }));
