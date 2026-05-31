@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
 import { NewPostsPill } from "@/components/social/new-posts-pill";
@@ -69,10 +69,15 @@ export default function FeedPage() {
       .catch(() => setLoading(false));
   };
 
+  const latestEventTimeRef = useRef<string>("");
+  useEffect(() => {
+    latestEventTimeRef.current = events[0]?.created_at ?? "";
+  }, [events]);
+
   // Poll for new posts every 30s
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`/api/feed?tab=${tab}&after=${events[0]?.created_at ?? ""}`)
+      fetch(`/api/feed?tab=${tab}&after=${latestEventTimeRef.current}`)
         .then((r) => r.json())
         .then((d) => {
           const count = (d.events ?? []).length;
@@ -81,7 +86,7 @@ export default function FeedPage() {
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
-  }, [tab, events]);
+  }, [tab]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "all", label: "전체", icon: "🌍" },

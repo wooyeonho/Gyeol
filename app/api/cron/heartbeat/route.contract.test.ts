@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+vi.mock("next/server", () => ({
+  NextRequest: class extends Request {},
+  NextResponse: {
+    json: vi.fn((body, opts) => ({
+      status: opts?.status ?? 200,
+      json: async () => body,
+    })),
+  },
+}));
+
 vi.mock("@/lib/cron-core", () => ({ executeHeartbeat: vi.fn() }));
 vi.mock("@/lib/supabase/service", () => ({ createServiceClient: vi.fn() }));
 vi.mock("@/lib/ai/router", () => ({ generateText: vi.fn() }));
