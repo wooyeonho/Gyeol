@@ -478,12 +478,18 @@ export function generateDailyQuests(dna?: CreatureDNA): Quest[] {
       selected[selected.length - 1] = easyTemplate;
     }
   }
-  if (!difficulties.includes("medium")) {
+  // Re-check difficulties after potentially adding an "easy" quest
+  const newDifficulties = selected.map((s) => s.difficulty);
+  if (!newDifficulties.includes("medium")) {
     const medTemplate = pool.find(
       (t) => t.difficulty === "medium" && !selected.includes(t),
     );
     if (medTemplate && selected.length > 1) {
-      selected[selected.length - 2] = medTemplate;
+      // Don't overwrite the easy template we just added
+      const targetIndex = selected[selected.length - 1].difficulty === "easy"
+        ? selected.length - 2
+        : selected.length - 1;
+      selected[targetIndex] = medTemplate;
     }
   }
 
