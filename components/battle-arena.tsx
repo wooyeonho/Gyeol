@@ -5,7 +5,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BATTLE_MOVES, calculateCombo, calculateMoveDamage, type MoveType, type ComboMove } from "@/lib/game/combo-system";
-import { calculateBattleResult, getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
+import { getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
 import { haptic } from "@/lib/micro-interactions";
 
 interface BattleArenaProps {

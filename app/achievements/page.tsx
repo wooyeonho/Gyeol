@@ -26,17 +26,21 @@ export default function AchievementsPage() {
   const [filter, setFilter] = useState<AchievementRarity | "all">("all");
   const celebrate = useCelebrationStore((s) => s.celebrate);
 
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     // Load from API — the route returns each achievement definition
     // with `unlocked` + `newly_unlocked` booleans. We collect unlocked
     // ids for the grid and trigger a celebration for the rarest newly
     // unlocked entry.
-    fetch("/api/achievements", { cache: "no-store" })
+    fetch("/api/achievements", { cache: "no-store", signal: controller.signal })
       .then((r) => (r.ok ? r.json() : { achievements: [] }))
       .then((data) => {
-        if (cancelled) return;
-        if (!Array.isArray(data.achievements)) return;
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(data.achievements)) {
+            setLoading(false);
+            return;
+        }
 
         type ApiAchievement = { id?: string; achievement_id?: string; unlocked?: boolean; newly_unlocked?: boolean };
         const all: ApiAchievement[] = data.achievements;
@@ -48,6 +52,7 @@ export default function AchievementsPage() {
             .map((a) => a.id ?? a.achievement_id ?? ""),
         );
         setUnlockedIds(unlockedSet);
+        setLoading(false);
 
         // Trigger celebration for the rarest newly-unlocked achievement
         const newly = all.filter((a) => a.newly_unlocked);
@@ -59,32 +64,39 @@ export default function AchievementsPage() {
             .sort((x, y) => (RARITY_WEIGHT[y.def.rarity] ?? 0) - (RARITY_WEIGHT[x.def.rarity] ?? 0));
           const top = sorted[0];
           if (top) {
-            const variant =
-              top.def.rarity === "mythic" || top.def.rarity === "legendary"
-                ? "firework"
-                : top.def.rarity === "epic"
-                ? "sparkle"
-                : "confetti";
-            celebrate({
-              title: `${top.def.icon} ${top.def.label[loc]}`,
-              subtitle: top.def.description[loc],
-              reward: top.def.reward.coins
-                ? { type: "coins", amount: top.def.reward.coins, icon: "🪙" }
-                : undefined,
-              variant,
-              autoDismissMs: 4000,
-            });
-            // Mark as seen so we don't trigger again on next visit
+            // Mark as seen so we don't trigger again on next visit, wait for it before showing
             fetch("/api/achievements", {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
+              signal: controller.signal
+            }).then(() => {
+                if (controller.signal.aborted) return;
+                const variant =
+                  top.def.rarity === "mythic" || top.def.rarity === "legendary"
+                    ? "firework"
+                    : top.def.rarity === "epic"
+                    ? "sparkle"
+                    : "confetti";
+                celebrate({
+                  title: `${top.def.icon} ${top.def.label[loc]}`,
+                  subtitle: top.def.description[loc],
+                  reward: top.def.reward.coins
+                    ? { type: "coins", amount: top.def.reward.coins, icon: "🪙" }
+                    : undefined,
+                  variant,
+                  autoDismissMs: 4000,
+                });
             }).catch(() => {});
           }
         }
       })
-      .catch(() => {});
+      .catch((e) => {
+          if (e.name !== 'AbortError') {
+              setLoading(false);
+          }
+      });
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [celebrate, loc]);
 
@@ -138,40 +150,48 @@ export default function AchievementsPage() {
         </div>
 
         {/* Badge grid */}
-        <div className="space-y-3">
-          {filtered.map((ach) => {
-            const unlocked = unlockedIds.has(ach.id);
-            return unlocked ? (
-              <AchievementShareCard
-                key={ach.id}
-                achievement={{
-                  id: ach.id,
-                  name: ach.label[loc],
-                  description: ach.description[loc],
-                  icon: ach.icon,
-                  rarity: ach.rarity,
-                }}
-                onShare={(id) => {
-                  if (typeof navigator?.share === "function") {
-                    navigator.share({
-                      title: `GYEOL - ${ach.label[loc]}`,
-                      text: ach.description[loc],
-                      url: `${window.location.origin}/api/og/achievement?id=${id}`,
-                    }).catch(() => {});
-                  }
-                }}
-              />
-            ) : (
-              <AchievementCard
-                key={ach.id}
-                achievement={ach}
-                unlocked={unlocked}
-              />
-            );
-          })}
-        </div>
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+               <div key={i} className="h-24 w-full rounded-2xl bg-white/[0.04] animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((ach) => {
+              const unlocked = unlockedIds.has(ach.id);
+              return unlocked ? (
+                <AchievementShareCard
+                  key={ach.id}
+                  achievement={{
+                    id: ach.id,
+                    name: ach.label[loc],
+                    description: ach.description[loc],
+                    icon: ach.icon,
+                    rarity: ach.rarity,
+                  }}
+                  onShare={() => {
+                    if (typeof navigator?.share === "function") {
+                      navigator.share({
+                        title: `GYEOL - ${ach.label[loc]}`,
+                        text: ach.description[loc],
+                        url: `${window.location.origin}/api/og/achievement?id=${ach.id}`,
+                      }).catch(() => {});
+                    }
+                  }}
+                />
+              ) : (
+                <AchievementCard
+                  key={ach.id}
+                  achievement={ach}
+                  unlocked={unlocked}
+                />
+              );
+            })}
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <p className="text-center text-sm text-white/30 py-8">
             {t("achievements.none") || "해당 등급의 업적이 없어요"}
           </p>

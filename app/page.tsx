@@ -114,9 +114,11 @@ export default function Home() {
   useEffect(() => {
     if (!agentState || portraitFetchedRef.current) return;
     portraitFetchedRef.current = true;
+    const controller = new AbortController();
     fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
+        if (controller.signal.aborted) return;
         if (data?.portraits?.length) {
           try {
             const latest = JSON.parse(data.portraits[0].content);
@@ -132,16 +134,18 @@ export default function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ context: "portrait" }),
-          signal: AbortSignal.timeout(60_000),
+          signal: controller.signal,
         })
           .then((r) => r.ok ? r.json() : null)
           .then((genData) => {
+            if (controller.signal.aborted) return;
             if (genData?.url) setPortraitUrl(genData.url);
           })
           .catch(() => { /* silent — user can retry via button */ })
-          .finally(() => setPortraitGenerating(false));
+          .finally(() => { if(!controller.signal.aborted) setPortraitGenerating(false) });
       })
       .catch(() => { /* non-critical */ });
+      return () => controller.abort();
   }, [agentState]);
 
   // Transfer demo DNA to new account (runs once after first agent creation)
@@ -304,6 +308,7 @@ export default function Home() {
       }
     }
   }, [messages, creature, historyLoaded, agentState?.total_messages, agentState?.streak_days]);
+
 
   // Creature reward reaction — visual pulse when rewards fire
   // Use object reference equality to deduplicate: creature dep changes every render,
