@@ -290,7 +290,7 @@ export function BattleArena({
                 : (isKo ? "패배..." : "Defeat...")}
             </div>
             <div className="space-y-1">
-              {battleResult.highlights.map((h, i) => (
+              {battleResult.highlights.map((h: { message: { ko: string; en: string } }, i: number) => (
                 <p key={i} className="text-xs text-white/50">
                   {isKo ? h.message.ko : h.message.en}
                 </p>

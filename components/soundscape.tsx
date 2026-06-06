@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { smartSpeedDuration, waveformPeaks, type demoteRole } from "@/lib/audio/world-class-voice";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { type VoiceLineTrigger } from "@/lib/creature/voice-lines";
+import { waveformPeaks } from "@/lib/audio/world-class-voice";
 import { getMoodFromDNA, generateMusicConfig, type MoodLayer } from "@/lib/sound/adaptive-music";
 import { getBiomeFromContext, type BiomeType } from "@/lib/sound/biome-sounds";
 
@@ -103,8 +100,8 @@ export default function Soundscape({
       disposeRef.current = null;
       setPlaying(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, soundProfile]);
+
+  }, [enabled, soundProfile, voiceHint]);
 
   // ── Creature emotion sounds — play on mood change ──
   const lastMoodRef = useRef<string | null>(null);
@@ -127,14 +124,16 @@ export default function Soundscape({
     const dna = creatureDna ?? { playfulness: 0.5, intensity: 0.5 };
 
     // Lazy-load the creature voice module to keep initial bundle small
+    let timeoutId: ReturnType<typeof setTimeout>;
     import("@/lib/soundscape/creature-voice").then(({ getCreatureVoice, playCreatureVoice }) => {
       const profile = getCreatureVoice(mood, dna);
       // Delay the vocalization slightly so it layers after the emotion sound
       const delayMs = 120;
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         playCreatureVoice(profile);
       }, delayMs);
     }).catch(() => {});
+    return () => clearTimeout(timeoutId);
   }, [enabled, mood, creatureDna]);
 
   // ── Adaptive music — mood-based soundtrack from DNA ──
@@ -157,8 +156,14 @@ export default function Soundscape({
   }, [enabled, creatureDna]);
 
   // Compute waveform peaks for visual indicator
-  const waveformBars = playing
-    ? waveformPeaks(Array.from({ length: 64 }, (_, i) => Math.sin(i * 0.3) * (0.3 + Math.random() * 0.7)), 8)
+  const randArrayRef = useRef<number[] | null>(null);
+  if (playing && !randArrayRef.current) {
+    randArrayRef.current = Array.from({ length: 64 }, () => Math.random());
+  } else if (!playing) {
+    randArrayRef.current = null;
+  }
+  const waveformBars = playing && randArrayRef.current
+    ? waveformPeaks(Array.from({ length: 64 }, (_, i) => Math.sin(i * 0.3) * (0.3 + randArrayRef.current![i] * 0.7)), 8)
     : [];
 
   // Smart-speed duration display (if we know raw duration)

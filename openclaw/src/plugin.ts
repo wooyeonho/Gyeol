@@ -229,8 +229,12 @@ async function runJob(
 // ── Plugin Registration ─────────────────────────────────
 // OpenClaw loads this via the `plugins` config in openclaw.json5.
 // Uses the function-style plugin module: (api) => void
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function gyeolCronPlugin(api: any): void {
+export default function gyeolCronPlugin(api: {
+  logger: { info: (msg: string) => void; error: (msg: string) => void };
+  registerTool: (tool: unknown) => void;
+  registerHttpRoute: (route: unknown) => void;
+  registerService: (service: unknown) => void;
+}): void {
   const { logger } = api;
 
   logger.info(`[Gyeol] Registering ${GYEOL_JOBS.length} cron-core jobs as OpenClaw tools`);

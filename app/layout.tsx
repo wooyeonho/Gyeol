@@ -23,6 +23,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { CatchBoundary } from "@/components/ui/catch-boundary";
+import { Suspense } from "react";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -172,7 +173,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       </head>
       <body className={`${pretendard.className} bg-background text-foreground min-h-screen antialiased`}>
@@ -184,27 +185,29 @@ export default async function RootLayout({
           >
             Skip to content
           </a>
-          <DocumentLocaleSync />
-          <ThemePreferenceSync />
-          <WebPushManager />
-          <CookieConsent />
-          <OfflineIndicator />
-          <GlobalCelebration />
-          <EngagementCelebrationHost />
-          <GlobalKeyboardProvider />
-          <CommandPalette locale={locale} />
-          <VitalsReporter />
-          <PwaInstallPrompt />
-          <ToastProvider />
-          <OfflineBanner />
-          <NavigationHub />
-          <AnalyticsProvider>
-            <SwipeNavigation>
-              <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
-              </CatchBoundary>
-            </SwipeNavigation>
-          </AnalyticsProvider>
+          <CatchBoundary>
+            <Suspense>
+              <DocumentLocaleSync />
+              <ThemePreferenceSync />
+              <WebPushManager />
+              <CookieConsent />
+              <OfflineIndicator />
+              <GlobalCelebration />
+              <EngagementCelebrationHost />
+              <GlobalKeyboardProvider />
+              <CommandPalette locale={locale} />
+              <VitalsReporter />
+              <PwaInstallPrompt />
+              <ToastProvider />
+              <OfflineBanner />
+              <NavigationHub />
+              <AnalyticsProvider>
+                <SwipeNavigation>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </SwipeNavigation>
+              </AnalyticsProvider>
+            </Suspense>
+          </CatchBoundary>
         </I18nProvider>
         </ReducedMotionProvider>
       </body>

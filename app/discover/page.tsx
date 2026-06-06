@@ -175,6 +175,9 @@ export default function DiscoverPage() {
   const [narrativeEvent, setNarrativeEvent] = useState<StoryEvent | null>(null);
   const [narrativeOutcome, setNarrativeOutcome] = useState<string | null>(null);
 
+  const totalMessagesValue = (agentState?.total_messages as number) ?? 0;
+  const intimacyScoreValue = agentState?.intimacy_score ?? 0;
+
   useEffect(() => {
     const timeOfDay = (() => {
       const h = new Date().getHours();
@@ -184,15 +187,15 @@ export default function DiscoverPage() {
       return "evening";
     })();
     const available = getAvailableEvents({
-      totalMessages: (agentState?.total_messages as number) ?? 0,
-      affinity: agentState?.intimacy_score ?? 0,
+      totalMessages: totalMessagesValue,
+      affinity: intimacyScoreValue,
       genLevel,
       timeOfDay,
     });
     if (available.length > 0) {
       setNarrativeEvent(available[0]);
     }
-  }, [agentState, genLevel]);
+  }, [totalMessagesValue, intimacyScoreValue, genLevel]);
 
   const handleNarrativeChoice = (choiceId: string) => {
     if (!narrativeEvent) return;
