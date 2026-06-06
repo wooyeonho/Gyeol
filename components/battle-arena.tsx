@@ -5,7 +5,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BATTLE_MOVES, calculateCombo, calculateMoveDamage, type MoveType, type ComboMove } from "@/lib/game/combo-system";
-import { getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
+import { calculateBattleResult, getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
 import { haptic } from "@/lib/micro-interactions";
 
 interface BattleArenaProps {
@@ -290,7 +290,7 @@ export function BattleArena({
                 : (isKo ? "패배..." : "Defeat...")}
             </div>
             <div className="space-y-1">
-              {battleResult.highlights.map((h, i) => (
+              {battleResult.highlights.map((h: any, i: number) => (
                 <p key={i} className="text-xs text-white/50">
                   {isKo ? h.message.ko : h.message.en}
                 </p>
