@@ -285,7 +285,7 @@ export function MessageList({
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
               }}
-              initial={{ opacity: 0, x: -8 }}
+              initial={i >= messages.length - 1 ? { opacity: 0, x: -8 } : false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35 }}
             >
@@ -367,7 +367,7 @@ export function MessageList({
                     borderColor: `${appearance.palette.primary}35`,
                     background: `${appearance.palette.primary}10`,
                   }}
-                  initial={{ opacity: 0, x: -8 }}
+                  initial={i >= messages.length - 1 ? { opacity: 0, x: -8 } : false}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
                   title={m.resonance.topOverlap.map((o) => `${o.axis}: ${Math.round(o.closeness * 100)}%`).join(" · ")}
