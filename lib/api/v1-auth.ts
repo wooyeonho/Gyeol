@@ -78,29 +78,6 @@ export async function authorizeV1ApiKey(
     };
   }
 
-  // Backward compatibility: legacy single env key (timing-safe comparison).
-  // DEPRECATED: This auth method has no tenant binding and will be removed.
-  // Migrate to database-bound API keys (api_keys table) for proper per-user scoping.
-  const envKey = process.env.GYEOL_ENGINE_API_KEY;
-  if (envKey && envKey.length === raw.length) {
-    const a = Buffer.from(raw);
-    const b = Buffer.from(envKey);
-    if (crypto.timingSafeEqual(a, b)) {
-      logger.warn(
-        "[V1Auth] DEPRECATED: Legacy env-based API key used. " +
-        "This method lacks tenant binding and will be removed in a future release. " +
-        "Please migrate to database-bound API keys (api_keys table).",
-        { identifier: getApiKeyIdentifier(request) }
-      );
-      return {
-        id: null,
-        identifier: getApiKeyIdentifier(request),
-        isLegacyEnvKey: true,
-        ownerUserId: null,
-      };
-    }
-  }
-
   return null;
 }
 
@@ -121,19 +98,10 @@ export function resolveAuthorizedUserId(
     return { userId: context.ownerUserId };
   }
 
-  if (!context.isLegacyEnvKey) {
-    return { error: "MISSING_TENANT" };
-  }
-
-  if (!requestedUserId) {
-    return { error: "MISSING_USER_ID" };
-  }
-
-  return { userId: requestedUserId };
+  return { error: "MISSING_TENANT" };
 }
 
 export function canAccessAgent(context: V1ApiKeyContext, ownerUserId: string | null | undefined): boolean {
   if (!ownerUserId) return false;
-  if (context.isLegacyEnvKey) return true;
   return Boolean(context.ownerUserId) && context.ownerUserId === ownerUserId;
 }

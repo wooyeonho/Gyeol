@@ -93,6 +93,14 @@ export async function executeHeartbeat(): Promise<CronResult> {
 
   const startedAt = Date.now();
 
+  // Aggressively clean up stale rate limits to minimize DB storage costs (<$70/month target)
+  try {
+    const serviceClient = createServiceClient();
+    await serviceClient.rpc("cleanup_rate_limits");
+  } catch (cleanupErr) {
+    logger.warn("[Heartbeat] cleanup_rate_limits failed", { error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr) });
+  }
+
   try {
     const db = createServiceClient();
     const baseUrl = getBaseUrl();

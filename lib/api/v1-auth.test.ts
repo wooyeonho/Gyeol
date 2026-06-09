@@ -24,8 +24,8 @@ describe("resolveAuthorizedUserId", () => {
     expect(resolveAuthorizedUserId(boundContext, "user-2")).toEqual({ error: "FORBIDDEN" });
   });
 
-  it("requires explicit user_id for legacy env keys", () => {
-    expect(resolveAuthorizedUserId(legacyContext, null)).toEqual({ error: "MISSING_USER_ID" });
+  it("requires a bound tenant (legacy keys fail)", () => {
+    expect(resolveAuthorizedUserId(legacyContext, null)).toEqual({ error: "MISSING_TENANT" });
   });
 });
 
@@ -35,7 +35,7 @@ describe("canAccessAgent", () => {
     expect(canAccessAgent(boundContext, "user-2")).toBe(false);
   });
 
-  it("keeps legacy env key access for backward-compatible local usage", () => {
-    expect(canAccessAgent(legacyContext, "user-1")).toBe(true);
+  it("blocks legacy env key access completely", () => {
+    expect(canAccessAgent(legacyContext, "user-1")).toBe(false);
   });
 });
