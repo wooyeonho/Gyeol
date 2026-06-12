@@ -1,5 +1,6 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { StarterPrompts } from "./starter-prompts";
 import { TypingIndicator } from "@/components/typing-indicator";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
@@ -136,13 +137,30 @@ export function MessageList({
   /** Localized "{name} is thinking..." template for typing indicator */
   typingLabel?: string;
 }) {
-  // Cap rendered messages to avoid excessive DOM nodes (virtual scroll lite)
-  const visibleMessages = useMemo(
-    () => messages.length > VISIBLE_MESSAGE_CAP ? messages.slice(-VISIBLE_MESSAGE_CAP) : messages,
-    [messages],
-  );
-  // Offset for correct index mapping when messages are capped
-  const indexOffset = messages.length - visibleMessages.length;
+  // No longer capping with slice since we use react-virtual.
+  // We keep visibleMessages identical to messages to avoid rewriting variable names below.
+  const visibleMessages = messages;
+  const indexOffset = 0;
+
+  // Set up TanStack Virtualizer
+  const scrollElementRef = useRef<HTMLDivElement | null>(null);
+
+  // Total virtual items: messages + 1 for typing indicator if streaming
+  const totalCount = visibleMessages.length + (isStreaming ? 1 : 0);
+
+  const virtualizer = useVirtualizer({
+    count: totalCount,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 100, // rough estimate of message height
+    overscan: 10,
+  });
+
+  // Auto-scroll logic: scroll to the bottom when new messages arrive or during streaming
+  useEffect(() => {
+    if (totalCount > 0) {
+      virtualizer.scrollToIndex(totalCount - 1, { align: "end", behavior: isStreaming ? "auto" : "smooth" });
+    }
+  }, [totalCount, isStreaming, virtualizer]);
 
   // Jargon mask for simple mode — applies vocabulary substitution to AI messages
   const maskJargon = useCallback(
@@ -168,7 +186,8 @@ export function MessageList({
 
   return (
     <div
-      className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 pr-1"
+      ref={scrollElementRef}
+      className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto py-4 pr-1"
       style={{ contain: "layout style" }}
       role="log"
       aria-live="polite"
@@ -176,38 +195,81 @@ export function MessageList({
       aria-label={t("chat.logAriaLabel")}
     >
       {isHydratingHistory && (
-        <div className="rounded-3xl border border-white/10 bg-black/30 px-5 py-6 text-sm text-white/55">
+        <div className="rounded-3xl border border-white/10 bg-black/30 px-5 py-6 text-sm text-white/55 mb-4">
           {t("common.loading")}
         </div>
       )}
       {!isHydratingHistory && messages.length === 0 && (
-        <StarterPrompts
-          isFirstSession={isFirstSession}
-          firstSessionConfig={firstSessionConfig}
-          vitality={vitality}
-          starterPrompts={starterPrompts}
-          appearance={appearance}
-          isStreaming={isStreaming}
-          onPromptClick={onPromptClick}
-          t={t}
-        />
+        <div className="mb-4">
+          <StarterPrompts
+            isFirstSession={isFirstSession}
+            firstSessionConfig={firstSessionConfig}
+            vitality={vitality}
+            starterPrompts={starterPrompts}
+            appearance={appearance}
+            isStreaming={isStreaming}
+            onPromptClick={onPromptClick}
+            t={t}
+          />
+        </div>
       )}
+
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
       <AnimatePresence initial={false}>
-      {visibleMessages.map((m, vi) => {
-        const i = vi + indexOffset; // original index for callbacks
+      {virtualizer.getVirtualItems().map((virtualItem) => {
+        const i = virtualItem.index;
+
+        // Render typing indicator if this is the last virtual item and we are streaming
+        if (isStreaming && i === visibleMessages.length) {
+          return (
+            <motion.div
+              key="typing-indicator"
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
+              className="absolute left-0 top-0 w-full px-2 pb-2"
+              style={{ transform: `translateY(${virtualItem.start}px)` }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3 }}
+            >
+              <TypingIndicator
+                accentColor={accentColor}
+                creatureName={creatureName}
+                label={typingLabel}
+              />
+            </motion.div>
+          );
+        }
+
+        const m = visibleMessages[i];
+        if (!m) return null; // Safe guard
+
         const evolutionSummary = deriveEvolutionSummary({
           hasMemoryMoment: !!m.memoryMoment,
           dnaShift: m.dnaShift,
           traitEmerged: m.traitEmerged,
         });
+
+        // Conditionally disable Framer Motion initial prop to prevent entrance animations for old messages
+        const shouldAnimateEntrance = i >= messages.length - 1;
+
         return (
         <motion.div
+          ref={virtualizer.measureElement}
+          data-index={virtualItem.index}
           key={m.id ?? `${m.role}-${i}`}
-          className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          className={`absolute left-0 top-0 flex w-full p-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
+          style={{ transform: `translateY(${virtualItem.start}px)` }}
           variants={messageVariants}
-          initial="hidden"
+          initial={shouldAnimateEntrance ? "hidden" : false}
           animate="visible"
-          layout
         >
           {m.role === "user" ? (
             <motion.div
@@ -450,23 +512,7 @@ export function MessageList({
         );
       })}
       </AnimatePresence>
-      <AnimatePresence>
-        {isStreaming && (
-          <motion.div
-            className="px-2 pb-2"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.3 }}
-          >
-            <TypingIndicator
-              accentColor={accentColor}
-              creatureName={creatureName}
-              label={typingLabel}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
       <div ref={bottomRef} />
     </div>
   );
