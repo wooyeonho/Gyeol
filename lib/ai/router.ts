@@ -373,7 +373,44 @@ export async function generateCognitiveJSON<T extends Record<string, unknown> = 
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T | null> {
-  const messages: Msg[] = [{ role: "user", content: userPrompt }];
+  let messages: Msg[] = [{ role: "user", content: userPrompt }];
+
+  // Helper to attempt parsing with auto-correction for JSON formatting issues
+  const tryParseJSON = async (raw: string, modelName: string, timeout: number): Promise<T | null> => {
+    try {
+      const stripped = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(cleaned) as unknown;
+      if (isRecord(parsed)) return parsed as T;
+      return null;
+    } catch (parseError) {
+      logger.warn(`[Cognitive:JSON] ${modelName} parse failed, attempting auto-correction`, { error: parseError instanceof Error ? parseError.message : String(parseError) });
+
+      // Auto-correction prompt
+      const correctionMessages: Msg[] = [
+        ...messages,
+        { role: "assistant", content: raw },
+        { role: "user", content: "The previous response was not valid JSON. Please return ONLY a valid JSON object matching the requested structure, with no markdown formatting, no comments, and no extra text." }
+      ];
+
+      try {
+        const correctionRes = await callGroq(modelName, systemPrompt, correctionMessages, false, timeout, 400, 0.1); // lower temp for correction
+        const correctionData = (await correctionRes.json()) as GroqCompletionResponse;
+        const correctionRaw = correctionData.choices?.[0]?.message?.content ?? "";
+        const correctionStripped = correctionRaw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+        const correctionCleaned = correctionStripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const correctionParsed = JSON.parse(correctionCleaned) as unknown;
+
+        if (isRecord(correctionParsed)) {
+           logger.info(`[Cognitive:JSON] ${modelName} auto-correction successful`);
+           return correctionParsed as T;
+        }
+      } catch (e) {
+         logger.error(`[Cognitive:JSON] ${modelName} auto-correction failed`, e instanceof Error ? e : { error: e });
+      }
+      return null;
+    }
+  };
 
   // Primary: cognitive Groq models (70b)
   for (const m of COGNITIVE_MODELS) {
@@ -381,11 +418,9 @@ export async function generateCognitiveJSON<T extends Record<string, unknown> = 
       const res = await callGroq(m.name, systemPrompt, messages, false, m.timeout, 400, 0.3);
       const data = (await res.json()) as GroqCompletionResponse;
       const raw = data.choices?.[0]?.message?.content ?? "";
-      // DeepSeek R1 wraps output in <think>...</think> — strip it before parsing
-      const stripped = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-      const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      const parsed = JSON.parse(cleaned) as unknown;
-      if (isRecord(parsed)) return parsed as T;
+
+      const parsed = await tryParseJSON(raw, m.name, m.timeout);
+      if (parsed) return parsed;
     } catch (e) { logger.error(`[Cognitive:JSON] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
   }
 
@@ -394,10 +429,27 @@ export async function generateCognitiveJSON<T extends Record<string, unknown> = 
     try {
       const text = await callDeepSeek(systemPrompt, messages, 400, 0.3);
       if (text) {
-        const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-        const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        const parsed = JSON.parse(cleaned) as unknown;
-        if (isRecord(parsed)) return parsed as T;
+        // DeepSeek doesn't use callGroq underneath, so we implement a simplified auto-correct here or just parse
+         try {
+            const stripped = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+            const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+            const parsed = JSON.parse(cleaned) as unknown;
+            if (isRecord(parsed)) return parsed as T;
+         } catch (parseError) {
+             logger.warn("[Cognitive:JSON] DeepSeek parse failed, attempting auto-correction");
+             const correctionMessages: Msg[] = [
+                ...messages,
+                { role: "assistant", content: text },
+                { role: "user", content: "The previous response was not valid JSON. Please return ONLY a valid JSON object matching the requested structure, with no markdown formatting, no comments, and no extra text." }
+              ];
+              const correctionText = await callDeepSeek(systemPrompt, correctionMessages, 400, 0.1);
+              if (correctionText) {
+                 const correctionStripped = correctionText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+                 const correctionCleaned = correctionStripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                 const correctionParsed = JSON.parse(correctionCleaned) as unknown;
+                 if (isRecord(correctionParsed)) return correctionParsed as T;
+              }
+         }
       }
     } catch (e) { logger.error("[Cognitive:JSON] DeepSeek failed", e instanceof Error ? e : { error: e }); }
   }
