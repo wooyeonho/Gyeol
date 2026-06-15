@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BATTLE_MOVES, calculateCombo, calculateMoveDamage, type MoveType, type ComboMove } from "@/lib/game/combo-system";
 import { calculateBattleResult, getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
@@ -48,6 +48,15 @@ export function BattleArena({
   const playerRank = getRankTitle(playerRating);
   const opponentRank = getRankTitle(opponentRating);
 
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup all timeouts on unmount
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
   const handleMove = useCallback(
     (move: ComboMove) => {
       if (phase !== "select") return;
@@ -88,16 +97,22 @@ export function BattleArena({
       const newOpponentHp = Math.max(0, opponentHp - playerDmg);
       const newPlayerHp = Math.max(0, playerHp - opponentDmg);
 
-      setTimeout(() => {
+      // Clear existing timeouts related to battle
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+
+      const t1 = setTimeout(() => {
         setOpponentHp(newOpponentHp);
       }, 300);
+      timeoutsRef.current.push(t1);
 
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         setPlayerHp(newPlayerHp);
       }, 600);
+      timeoutsRef.current.push(t2);
 
       // Check for battle end — determine winner by actual HP outcome
-      setTimeout(() => {
+      const t3 = setTimeout(() => {
         if (newOpponentHp <= 0 || newPlayerHp <= 0) {
           const playerWon = newOpponentHp <= 0 && (newPlayerHp > 0 || newOpponentHp <= newPlayerHp);
           const winner = playerWon ? playerCreature : opponentCreature;
@@ -112,6 +127,7 @@ export function BattleArena({
           };
           setBattleResult(result);
           setPhase("result");
+          setRecentMoves([]); // Reset recent moves after battle
           // Sync battle result to server
           fetch("/api/room/battle", {
             method: "POST",
@@ -127,8 +143,9 @@ export function BattleArena({
           setPhase("select");
         }
       }, 900);
+      timeoutsRef.current.push(t3);
     },
-    [phase, recentMoves, playerHp, opponentHp, playerCreature, opponentCreature, isKo, onBattleEnd],
+    [phase, recentMoves, playerHp, opponentHp, playerCreature, opponentCreature, isKo, onBattleEnd, playerMaxHp, opponentMaxHp],
   );
 
   const hpBarColor = (current: number, max: number) => {
@@ -235,7 +252,7 @@ export function BattleArena({
             exit={{ opacity: 0, y: -10 }}
             className="grid grid-cols-3 gap-2"
           >
-            {BATTLE_MOVES.filter((m) => m.type !== "heal" && m.type !== "guard" || BATTLE_MOVES.indexOf(m) < 4).slice(0, 5).map((move) => (
+            {BATTLE_MOVES.filter((m) => (m.type !== "heal" && m.type !== "guard") || BATTLE_MOVES.indexOf(m) < 4).slice(0, 5).map((move) => (
               <button
                 key={move.type}
                 type="button"

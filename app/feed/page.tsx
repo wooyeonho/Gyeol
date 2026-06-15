@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
 import { NewPostsPill } from "@/components/social/new-posts-pill";
@@ -51,8 +51,11 @@ export default function FeedPage() {
   const [newPostCount, setNewPostCount] = useState(0);
   const { particles, burst } = useHeartBurst();
 
+  const loadFeedRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
+    loadFeedRef.current = controller;
     fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
@@ -63,16 +66,26 @@ export default function FeedPage() {
   const loadFeed = () => {
     setEvents([]);
     setLoading(true);
-    fetch(`/api/feed?tab=${tab}`)
+    if (loadFeedRef.current) {
+      loadFeedRef.current.abort();
+    }
+    const controller = new AbortController();
+    loadFeedRef.current = controller;
+    fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
-      .catch(() => setLoading(false));
+      .catch(() => { if (!controller.signal.aborted) setLoading(false); });
   };
+
+  const latestEventRef = useRef<string | null>(null);
+  useEffect(() => {
+    latestEventRef.current = events[0]?.created_at ?? null;
+  }, [events]);
 
   // Poll for new posts every 30s
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`/api/feed?tab=${tab}&after=${events[0]?.created_at ?? ""}`)
+      fetch(`/api/feed?tab=${tab}&after=${latestEventRef.current ?? ""}`)
         .then((r) => r.json())
         .then((d) => {
           const count = (d.events ?? []).length;
@@ -81,7 +94,7 @@ export default function FeedPage() {
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
-  }, [tab, events]);
+  }, [tab]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "all", label: "전체", icon: "🌍" },
@@ -111,7 +124,7 @@ export default function FeedPage() {
           {tabs.map((t) => (
             <button
               key={t.key}
-              onClick={() => { setLoading(true); setTab(t.key); }}
+              onClick={() => { if (tab !== t.key) { setLoading(true); setTab(t.key); } }}
               className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${
                 tab === t.key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
               }`}

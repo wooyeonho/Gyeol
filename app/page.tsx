@@ -114,7 +114,12 @@ export default function Home() {
   useEffect(() => {
     if (!agentState || portraitFetchedRef.current) return;
     portraitFetchedRef.current = true;
-    fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
+
+    const controller = new AbortController();
+    // 8s timeout, handled by signal abortion later if needed
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+    fetch("/api/creature/portrait", { signal: controller.signal })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.portraits?.length) {
@@ -132,7 +137,7 @@ export default function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ context: "portrait" }),
-          signal: AbortSignal.timeout(60_000),
+          signal: controller.signal,
         })
           .then((r) => r.ok ? r.json() : null)
           .then((genData) => {
@@ -141,7 +146,13 @@ export default function Home() {
           .catch(() => { /* silent — user can retry via button */ })
           .finally(() => setPortraitGenerating(false));
       })
-      .catch(() => { /* non-critical */ });
+      .catch(() => { /* non-critical */ })
+      .finally(() => clearTimeout(timeoutId));
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [agentState]);
 
   // Transfer demo DNA to new account (runs once after first agent creation)

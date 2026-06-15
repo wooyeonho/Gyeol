@@ -104,7 +104,7 @@ export default function Soundscape({
       setPlaying(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, soundProfile]);
+  }, [enabled, soundProfile, voiceHint]);
 
   // ── Creature emotion sounds — play on mood change ──
   const lastMoodRef = useRef<string | null>(null);
@@ -126,15 +126,24 @@ export default function Soundscape({
 
     const dna = creatureDna ?? { playfulness: 0.5, intensity: 0.5 };
 
+    let cancelled = false;
+    let tId: NodeJS.Timeout | null = null;
+
     // Lazy-load the creature voice module to keep initial bundle small
     import("@/lib/soundscape/creature-voice").then(({ getCreatureVoice, playCreatureVoice }) => {
+      if (cancelled) return;
       const profile = getCreatureVoice(mood, dna);
       // Delay the vocalization slightly so it layers after the emotion sound
       const delayMs = 120;
-      setTimeout(() => {
-        playCreatureVoice(profile);
+      tId = setTimeout(() => {
+        if (!cancelled) playCreatureVoice(profile);
       }, delayMs);
     }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (tId) clearTimeout(tId);
+    };
   }, [enabled, mood, creatureDna]);
 
   // ── Adaptive music — mood-based soundtrack from DNA ──
@@ -157,8 +166,14 @@ export default function Soundscape({
   }, [enabled, creatureDna]);
 
   // Compute waveform peaks for visual indicator
+  // Compute waveform peaks for visual indicator. Use deterministic random-like values based on index to avoid
+  // Math.random() in the render function.
   const waveformBars = playing
-    ? waveformPeaks(Array.from({ length: 64 }, (_, i) => Math.sin(i * 0.3) * (0.3 + Math.random() * 0.7)), 8)
+    ? waveformPeaks(Array.from({ length: 64 }, (_, i) => {
+        // Pseudo-random deterministic value between 0.3 and 1.0 based on index
+        const pseudoRand = 0.3 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.7;
+        return Math.sin(i * 0.3) * pseudoRand;
+      }), 8)
     : [];
 
   // Smart-speed duration display (if we know raw duration)
