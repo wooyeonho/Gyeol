@@ -173,10 +173,16 @@ export function ChatPanel({ navVisible = true }: { navVisible?: boolean }) {
   // Screenshot detection — Snapchat-style protection for private chats
   const [screenshotWarning, setScreenshotWarning] = useState(false);
   useEffect(() => {
-    return onScreenshotAttempt(() => {
+    let tId: NodeJS.Timeout | null = null;
+    const cleanup = onScreenshotAttempt(() => {
       setScreenshotWarning(true);
-      setTimeout(() => setScreenshotWarning(false), 3000);
+      if (tId) clearTimeout(tId);
+      tId = setTimeout(() => setScreenshotWarning(false), 3000);
     });
+    return () => {
+      cleanup();
+      if (tId) clearTimeout(tId);
+    };
   }, []);
 
   // Notify server of typing activity (debounced)
