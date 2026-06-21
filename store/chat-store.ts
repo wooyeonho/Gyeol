@@ -68,7 +68,7 @@ interface ChatStore {
 
 function createMessage(role: "user" | "assistant", content: string, error = false): Message {
   return {
-    id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `${role}-${Date.now()}-${crypto.randomUUID()}`,
     role,
     content,
     error,
@@ -434,7 +434,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
     haptic("send");
     playSound("send");
-    const optimisticId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticId = `user-${Date.now()}-${crypto.randomUUID()}`;
     set((s) => {
       // Cap message history at 200 to prevent unbounded memory growth
       const MAX_MESSAGES = 200;

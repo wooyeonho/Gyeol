@@ -229,7 +229,7 @@ export function generateMysteryBox(rarity?: BoxRarity, streakDays = 0): MysteryB
   }
 
   return {
-    id: `box_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `box_${Date.now()}_${crypto.randomUUID()}`,
     rarity: boxRarity,
     label: BOX_LABELS[boxRarity],
     icon: BOX_ICONS[boxRarity],

@@ -57,7 +57,7 @@ export function useOfflineSync() {
 
   const enqueue = useCallback((type: string, payload: unknown) => {
     const action: PendingAction = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `${Date.now()}-${crypto.randomUUID()}`,
       type,
       payload,
       createdAt: Date.now(),
