@@ -239,19 +239,11 @@ export async function POST(req: NextRequest) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
         after(async () => {
-          const { data: freshRow } = await service
-            .from("agent_state")
-            .select("config")
-            .eq("agent_id", agentId)
-            .maybeSingle();
-          const freshConfig = (freshRow as { config?: Record<string, unknown> } | null)?.config ?? {};
-          await service
-            .from("agent_state")
-            .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
-            .eq("agent_id", agentId)
-            .then(({ error: syncErr }: { error: { message: string } | null }) => {
-              if (syncErr) log.error("[Chat] preferred_locale sync failed", syncErr instanceof Error ? syncErr : { detail: String(syncErr) });
-            });
+          const { error: syncErr } = await service.rpc("merge_agent_config", {
+            p_agent_id: agentId,
+            p_config: { preferred_locale: normalizedLocale },
+          });
+          if (syncErr) log.error("[Chat] preferred_locale sync failed", syncErr instanceof Error ? syncErr : { detail: String(syncErr) });
         });
       }
     }

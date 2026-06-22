@@ -285,7 +285,7 @@ export function MessageList({
                 borderColor: `${appearance.palette.primary}35`,
                 boxShadow: `0 0 0 1px ${appearance.palette.primary}12 inset`,
               }}
-              initial={{ opacity: 0, x: -8 }}
+              initial={i >= messages.length - 1 ? { opacity: 0, x: -8 } : false}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35 }}
             >
@@ -322,7 +322,7 @@ export function MessageList({
                     borderColor: `${appearance.palette.primary}40`,
                     background: `${appearance.palette.primary}0a`,
                   }}
-                  initial={{ opacity: 0, y: 4 }}
+                  initial={i >= messages.length - 1 ? { opacity: 0, y: 4 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
@@ -341,7 +341,7 @@ export function MessageList({
                     borderColor: `${appearance.palette.primary}30`,
                     background: `linear-gradient(135deg, ${appearance.palette.primary}08, ${appearance.palette.primary}03)`,
                   }}
-                  initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                  initial={i >= messages.length - 1 ? { opacity: 0, y: 8, filter: "blur(4px)" } : false}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                 >
@@ -367,7 +367,7 @@ export function MessageList({
                     borderColor: `${appearance.palette.primary}35`,
                     background: `${appearance.palette.primary}10`,
                   }}
-                  initial={{ opacity: 0, x: -8 }}
+                  initial={i >= messages.length - 1 ? { opacity: 0, x: -8 } : false}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
                   title={m.resonance.topOverlap.map((o) => `${o.axis}: ${Math.round(o.closeness * 100)}%`).join(" · ")}
@@ -392,7 +392,7 @@ export function MessageList({
                     borderColor: `${appearance.palette.primary}40`,
                     background: `${appearance.palette.primary}0a`,
                   }}
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={i >= messages.length - 1 ? { opacity: 0, scale: 0.9 } : false}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.6, type: "spring" }}
                 >

@@ -383,7 +383,7 @@ export async function generateCognitiveJSON<T extends Record<string, unknown> = 
       const raw = data.choices?.[0]?.message?.content ?? "";
       // DeepSeek R1 wraps output in <think>...</think> — strip it before parsing
       const stripped = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-      const cleaned = stripped.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const cleaned = stripped.replace(/```(?:json)?\n?/g, "").trim();
       const parsed = JSON.parse(cleaned) as unknown;
       if (isRecord(parsed)) return parsed as T;
     } catch (e) { logger.error(`[Cognitive:JSON] ${m.name} failed`, e instanceof Error ? e : { error: e }); }
