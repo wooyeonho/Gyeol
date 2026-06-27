@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SpringCard } from "@/components/ui/spring-card";
 import { SkeletonFeedCard } from "@/components/ui/skeleton";
 import { NewPostsPill } from "@/components/social/new-posts-pill";
@@ -51,11 +51,18 @@ export default function FeedPage() {
   const [newPostCount, setNewPostCount] = useState(0);
   const { particles, burst } = useHeartBurst();
 
+  const latestEventRef = useRef<string | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
+      .then((d) => {
+        setEvents(d.events ?? []);
+        latestEventRef.current = d.events?.[0]?.created_at ?? null;
+        setLoading(false);
+        setNewPostCount(0);
+      })
       .catch(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [tab]);
@@ -63,16 +70,23 @@ export default function FeedPage() {
   const loadFeed = () => {
     setEvents([]);
     setLoading(true);
-    fetch(`/api/feed?tab=${tab}`)
+    const controller = new AbortController();
+    fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
-      .catch(() => setLoading(false));
+      .then((d) => {
+        setEvents(d.events ?? []);
+        latestEventRef.current = d.events?.[0]?.created_at ?? null;
+        setLoading(false);
+        setNewPostCount(0);
+      })
+      .catch(() => { if (!controller.signal.aborted) setLoading(false); });
   };
 
   // Poll for new posts every 30s
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`/api/feed?tab=${tab}&after=${events[0]?.created_at ?? ""}`)
+      const afterParam = latestEventRef.current ? `&after=${latestEventRef.current}` : "";
+      fetch(`/api/feed?tab=${tab}${afterParam}`)
         .then((r) => r.json())
         .then((d) => {
           const count = (d.events ?? []).length;
@@ -81,7 +95,7 @@ export default function FeedPage() {
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
-  }, [tab, events]);
+  }, [tab]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "all", label: "전체", icon: "🌍" },

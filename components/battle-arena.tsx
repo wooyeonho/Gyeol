@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BATTLE_MOVES, calculateCombo, calculateMoveDamage, type MoveType, type ComboMove } from "@/lib/game/combo-system";
 import { calculateBattleResult, getRankTitle, type BattleCreature } from "@/lib/game/pvp-system";
@@ -43,6 +43,25 @@ export function BattleArena({
   const [battleResult, setBattleResult] = useState<ReturnType<typeof calculateBattleResult> | null>(null);
   const [comboFlash, setComboFlash] = useState<string | null>(null);
 
+  // Clear timeouts when unmounting
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      timeoutRefs.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  // Reset battle state when opponent changes
+  useEffect(() => {
+    setRecentMoves([]);
+    setTurnLogs([]);
+    setPhase("select");
+    setBattleResult(null);
+    setPlayerHp(playerCreature.stats.hp);
+    setOpponentHp(opponentCreature.stats.hp);
+  }, [opponentCreature, playerCreature]);
+
   const playerMaxHp = playerCreature.stats.hp;
   const opponentMaxHp = opponentCreature.stats.hp;
   const playerRank = getRankTitle(playerRating);
@@ -69,7 +88,7 @@ export function BattleArena({
       if (combo.comboName) {
         const name = isKo ? combo.comboName.ko : combo.comboName.en;
         setComboFlash(name);
-        setTimeout(() => setComboFlash(null), 1500);
+        timeoutRefs.current.push(setTimeout(() => setComboFlash(null), 1500));
       }
 
       setTurnLogs((prev) => [
@@ -88,16 +107,16 @@ export function BattleArena({
       const newOpponentHp = Math.max(0, opponentHp - playerDmg);
       const newPlayerHp = Math.max(0, playerHp - opponentDmg);
 
-      setTimeout(() => {
+      timeoutRefs.current.push(setTimeout(() => {
         setOpponentHp(newOpponentHp);
-      }, 300);
+      }, 300));
 
-      setTimeout(() => {
+      timeoutRefs.current.push(setTimeout(() => {
         setPlayerHp(newPlayerHp);
-      }, 600);
+      }, 600));
 
       // Check for battle end — determine winner by actual HP outcome
-      setTimeout(() => {
+      timeoutRefs.current.push(setTimeout(() => {
         if (newOpponentHp <= 0 || newPlayerHp <= 0) {
           const playerWon = newOpponentHp <= 0 && (newPlayerHp > 0 || newOpponentHp <= newPlayerHp);
           const winner = playerWon ? playerCreature : opponentCreature;
@@ -126,7 +145,7 @@ export function BattleArena({
         } else {
           setPhase("select");
         }
-      }, 900);
+      }, 900));
     },
     [phase, recentMoves, playerHp, opponentHp, playerCreature, opponentCreature, isKo, onBattleEnd],
   );
@@ -235,7 +254,7 @@ export function BattleArena({
             exit={{ opacity: 0, y: -10 }}
             className="grid grid-cols-3 gap-2"
           >
-            {BATTLE_MOVES.filter((m) => m.type !== "heal" && m.type !== "guard" || BATTLE_MOVES.indexOf(m) < 4).slice(0, 5).map((move) => (
+            {BATTLE_MOVES.filter((m) => (m.type !== "heal" && m.type !== "guard") && BATTLE_MOVES.indexOf(m) < 4).slice(0, 5).map((move) => (
               <button
                 key={move.type}
                 type="button"
