@@ -114,9 +114,18 @@ export default function Home() {
   useEffect(() => {
     if (!agentState || portraitFetchedRef.current) return;
     portraitFetchedRef.current = true;
-    fetch("/api/creature/portrait", { signal: AbortSignal.timeout(8000) })
+
+    const controller = new AbortController();
+
+    // Handle timeouts manually instead of using AbortSignal.any for older browser compatibility
+    const fetchTimeoutId = setTimeout(() => controller.abort("TimeoutError"), 8000);
+
+    fetch("/api/creature/portrait", { signal: controller.signal })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
+        clearTimeout(fetchTimeoutId);
+        if (controller.signal.aborted && controller.signal.reason !== "TimeoutError") return;
+
         if (data?.portraits?.length) {
           try {
             const latest = JSON.parse(data.portraits[0].content);
@@ -128,20 +137,35 @@ export default function Home() {
         }
         // No portrait exists yet — auto-generate the hero character image.
         setPortraitGenerating(true);
+        const postTimeoutId = setTimeout(() => controller.abort("TimeoutError"), 60_000);
         return fetch("/api/creature/portrait", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ context: "portrait" }),
-          signal: AbortSignal.timeout(60_000),
+          signal: controller.signal,
         })
           .then((r) => r.ok ? r.json() : null)
           .then((genData) => {
-            if (genData?.url) setPortraitUrl(genData.url);
+            clearTimeout(postTimeoutId);
+            if (!controller.signal.aborted && genData?.url) setPortraitUrl(genData.url);
           })
-          .catch(() => { /* silent — user can retry via button */ })
-          .finally(() => setPortraitGenerating(false));
+          .catch((err) => {
+            clearTimeout(postTimeoutId);
+            if (!controller.signal.aborted && err.name !== 'TimeoutError' && controller.signal.reason !== "TimeoutError") {
+              // silent — user can retry via button
+            }
+          })
+          .finally(() => {
+             if (!controller.signal.aborted || controller.signal.reason === "TimeoutError") setPortraitGenerating(false);
+          });
       })
-      .catch(() => { /* non-critical */ });
+      .catch(() => {
+        clearTimeout(fetchTimeoutId);
+      });
+
+    return () => {
+      controller.abort();
+    };
   }, [agentState]);
 
   // Transfer demo DNA to new account (runs once after first agent creation)
@@ -338,6 +362,13 @@ export default function Home() {
         creature.boostConversationEnergy(intensity * 0.6);
       }, 500);
     }
+
+    return () => {
+      if (rewardTimerRef.current) {
+        clearTimeout(rewardTimerRef.current);
+        rewardTimerRef.current = null;
+      }
+    };
   }, [lastReward, creature]);
 
   const handleCanvasTap = useCallback(() => {

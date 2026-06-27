@@ -198,13 +198,13 @@ export default async function RootLayout({
           <ToastProvider />
           <OfflineBanner />
           <NavigationHub />
-          <AnalyticsProvider>
-            <SwipeNavigation>
-              <CatchBoundary>
+          <CatchBoundary>
+            <AnalyticsProvider>
+              <SwipeNavigation>
                 <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
-              </CatchBoundary>
-            </SwipeNavigation>
-          </AnalyticsProvider>
+              </SwipeNavigation>
+            </AnalyticsProvider>
+          </CatchBoundary>
         </I18nProvider>
         </ReducedMotionProvider>
       </body>

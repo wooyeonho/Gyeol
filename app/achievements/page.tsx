@@ -24,18 +24,21 @@ export default function AchievementsPage() {
   const loc = (["ko", "en", "ja", "zh", "es"].includes(locale) ? locale : "en") as "ko" | "en" | "ja" | "zh" | "es";
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<AchievementRarity | "all">("all");
+  const [loading, setLoading] = useState(true);
   const celebrate = useCelebrationStore((s) => s.celebrate);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+
     // Load from API — the route returns each achievement definition
     // with `unlocked` + `newly_unlocked` booleans. We collect unlocked
     // ids for the grid and trigger a celebration for the rarest newly
     // unlocked entry.
-    fetch("/api/achievements", { cache: "no-store" })
+    fetch("/api/achievements", { cache: "no-store", signal: controller.signal })
       .then((r) => (r.ok ? r.json() : { achievements: [] }))
-      .then((data) => {
-        if (cancelled) return;
+      .then(async (data) => {
+        if (controller.signal.aborted) return;
+        setLoading(false);
         if (!Array.isArray(data.achievements)) return;
 
         type ApiAchievement = { id?: string; achievement_id?: string; unlocked?: boolean; newly_unlocked?: boolean };
@@ -65,26 +68,40 @@ export default function AchievementsPage() {
                 : top.def.rarity === "epic"
                 ? "sparkle"
                 : "confetti";
-            celebrate({
-              title: `${top.def.icon} ${top.def.label[loc]}`,
-              subtitle: top.def.description[loc],
-              reward: top.def.reward.coins
-                ? { type: "coins", amount: top.def.reward.coins, icon: "🪙" }
-                : undefined,
-              variant,
-              autoDismissMs: 4000,
-            });
+
             // Mark as seen so we don't trigger again on next visit
-            fetch("/api/achievements", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-            }).catch(() => {});
+            // Guarantee PATCH execution before celebration triggering
+            try {
+              const res = await fetch("/api/achievements", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+              });
+
+              if (res.ok && !controller.signal.aborted) {
+                celebrate({
+                  title: `${top.def.icon} ${top.def.label[loc]}`,
+                  subtitle: top.def.description[loc],
+                  reward: top.def.reward.coins
+                    ? { type: "coins", amount: top.def.reward.coins, icon: "🪙" }
+                    : undefined,
+                  variant,
+                  autoDismissMs: 4000,
+                });
+              }
+            } catch {
+              // Ignore network errors
+            }
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
+
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [celebrate, loc]);
 
@@ -95,6 +112,21 @@ export default function AchievementsPage() {
   });
 
   const unlockedCount = ACHIEVEMENTS.filter((a) => unlockedIds.has(a.id)).length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black px-4 pb-28 pt-16">
+        <div className="mx-auto max-w-lg space-y-4">
+          <header className="diamond-border rounded-2xl p-6 text-center h-40 animate-pulse bg-white/5" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={`skel-${i}`} className="h-32 rounded-2xl bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black px-4 pb-28 pt-16">

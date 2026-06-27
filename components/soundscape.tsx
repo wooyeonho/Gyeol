@@ -104,7 +104,7 @@ export default function Soundscape({
       setPlaying(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, soundProfile]);
+  }, [enabled, soundProfile, voiceHint]);
 
   // ── Creature emotion sounds — play on mood change ──
   const lastMoodRef = useRef<string | null>(null);
@@ -120,21 +120,32 @@ export default function Soundscape({
 
   // ── Creature voice synthesis — vocalization on emotion change ──
   const lastVoiceMoodRef = useRef<string | null>(null);
+  const voiceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!enabled || !mood || mood === lastVoiceMoodRef.current) return;
     lastVoiceMoodRef.current = mood;
 
     const dna = creatureDna ?? { playfulness: 0.5, intensity: 0.5 };
 
+    let cancelled = false;
+
     // Lazy-load the creature voice module to keep initial bundle small
     import("@/lib/soundscape/creature-voice").then(({ getCreatureVoice, playCreatureVoice }) => {
+      if (cancelled) return;
       const profile = getCreatureVoice(mood, dna);
       // Delay the vocalization slightly so it layers after the emotion sound
       const delayMs = 120;
-      setTimeout(() => {
-        playCreatureVoice(profile);
+      voiceTimeoutRef.current = setTimeout(() => {
+        if (!cancelled) playCreatureVoice(profile);
       }, delayMs);
     }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (voiceTimeoutRef.current) {
+        clearTimeout(voiceTimeoutRef.current);
+      }
+    };
   }, [enabled, mood, creatureDna]);
 
   // ── Adaptive music — mood-based soundtrack from DNA ──
