@@ -47,7 +47,7 @@
 
 ## [Monetization & Retention Hook]
 **[현재 아키텍처 파악]**
-*   **Tiered Access**: API Rate Limiting 레이어(`lib/rate-limit.ts`)에서 'free', 'pro', 'premium' 3단계 구독 모델에 따라 분당 허용 요청수(15, 40, 80)를 차등 부여하여 자연스러운 업셀(Up-sell)을 유도합니다.
+*   **Tiered Access**: API Rate Limiting 레이어(`lib/rate-limit.ts`)에서 'free', 'pro', 'premium' 3단계 구독 모델에 따라 분당 허용 요청수(15, 40, 80)를 차등 부여하여 자연스러운 업셀(Up-sell) 유도 메커니즘을 구축했습니다.
 *   **Retention Mechanics**: 일일 과제(Daily challenge), 랜덤 박스, 연속 출석(Streak), 그리고 DNA 기반 사회 부족 시스템(`lib/society/civilization.ts`)을 통해 체류 시간을 극대화합니다.
 *   **Living Presence**: 사용자가 접속하지 않아도 발생하는 자율 활동, 월드 이벤트, 꿈 시스템이 강력한 FOMO(Fear Of Missing Out)를 유발하여 재방문율을 높입니다.
 
