@@ -163,15 +163,19 @@ export default function SocialPage() {
   }
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     try {
       const raw = window.localStorage.getItem("gyeol-hidden-social-posts");
       if (raw) {
         const parsed = JSON.parse(raw) as string[];
-        if (Array.isArray(parsed)) setHiddenPostIds(parsed);
+        if (Array.isArray(parsed)) {
+          timeoutId = setTimeout(() => setHiddenPostIds(parsed), 0);
+        }
       }
     } catch {
       // Ignore malformed local hidden post state.
     }
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {

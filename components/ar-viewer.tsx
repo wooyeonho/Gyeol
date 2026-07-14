@@ -17,12 +17,18 @@ export default function ARViewer({ color = "#a0a0ff", size = 0.3, onPositionSave
   const [savedPosition, setSavedPosition] = useState<[number, number, number] | null>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const xr = (navigator as XRNavigator).xr;
     if (typeof navigator === "undefined" || !xr) {
-      setSupported(false);
-      return;
+      timeoutId = setTimeout(() => setSupported(false), 0);
+      return () => clearTimeout(timeoutId);
     }
-    xr.isSessionSupported("immersive-ar").then(setSupported).catch(() => setSupported(false));
+    xr.isSessionSupported("immersive-ar").then(s => {
+      timeoutId = setTimeout(() => setSupported(s), 0);
+    }).catch(() => {
+      timeoutId = setTimeout(() => setSupported(false), 0);
+    });
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const startAR = async () => {

@@ -754,8 +754,15 @@ export default function SettingsPage() {
     const total = state?.total_messages ?? 0;
     const dates: string[] = [];
     const today = new Date();
+    // Deterministic pseudo-random based on agent_id or gen_level
+    const seed = state?.agent_id ? state.agent_id.charCodeAt(0) : 42;
+    let s = seed;
+    const random = () => {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
     for (let i = 0; i < Math.min(total, 365); i++) {
-      const daysAgo = Math.floor(Math.random() * 365);
+      const daysAgo = Math.floor(random() * 365);
       const d = new Date(today);
       d.setDate(d.getDate() - daysAgo);
       dates.push(d.toISOString().slice(0, 10));
@@ -878,10 +885,14 @@ export default function SettingsPage() {
         {state && (
           <section className="theme-panel rounded-3xl p-4">
             <GrowthChart
-              data={Array.from({ length: 7 }, (_, i) => ({
-                label: `Day ${i + 1}`,
-                value: Math.min(100, ((state.gen_level ?? 1) * 10) + i * 5 + Math.round(Math.random() * 10)),
-              }))}
+              data={Array.from({ length: 7 }, (_, i) => {
+                const seed = state?.agent_id ? state.agent_id.charCodeAt(0) + i : 42 + i;
+                const rand = (seed * 16807 % 2147483647 - 1) / 2147483646;
+                return {
+                  label: `Day ${i + 1}`,
+                  value: Math.min(100, ((state.gen_level ?? 1) * 10) + i * 5 + Math.round(rand * 10)),
+                };
+              })}
               color="#22d3ee"
               title={t("settings.genLevel") || "Growth"}
               suffix=" pts"

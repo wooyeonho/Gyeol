@@ -71,14 +71,18 @@ export default function WellnessPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("gyeol-mood-history");
+    let timeoutId: NodeJS.Timeout;
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as MoodEntry[];
-        setHistory(parsed);
-        const today = new Date().toISOString().slice(0, 10);
-        setTodayDone(parsed.some((e) => e.date === today));
+        timeoutId = setTimeout(() => {
+          setHistory(parsed);
+          const today = new Date().toISOString().slice(0, 10);
+          setTodayDone(parsed.some((e) => e.date === today));
+        }, 0);
       } catch { /* ignore */ }
     }
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handleMoodSubmit = (mood: string, note: string) => {
