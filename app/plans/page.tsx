@@ -56,15 +56,21 @@ export default function PlansPage() {
   }, []);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
     if (success === "1") {
-      setNotice(t("plans.successNotice"));
+      timeoutId = setTimeout(() => {
+        setNotice(t("plans.successNotice"));
+      }, 0);
       window.history.replaceState({}, "", "/plans");
     } else if (canceled === "1") {
-      setNotice(t("plans.canceledNotice"));
+      timeoutId = setTimeout(() => {
+        setNotice(t("plans.canceledNotice"));
+      }, 0);
       window.history.replaceState({}, "", "/plans");
     }
+    return () => clearTimeout(timeoutId);
   }, [searchParams, t]);
 
   useEffect(() => {
