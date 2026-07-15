@@ -56,15 +56,33 @@
     "@types/three": "^0.183.1",
     "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.1.0",
+    "@webassemblyjs/ast": "^1.14.1",
+    "@webassemblyjs/wasm-edit": "^1.14.1",
+    "@webassemblyjs/wasm-parser": "^1.14.1",
+    "acorn-import-phases": "^1.0.4",
+    "chrome-trace-event": "^1.0.4",
+    "enhanced-resolve": "^5.24.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eslint-scope": "^5.1.1",
+    "events": "^3.3.0",
+    "loader-runner": "^4.3.2",
+    "mime-db": "^1.54.0",
+    "minimizer-webpack-plugin": "^5.6.1",
+    "neo-async": "^2.6.2",
     "node-cron": "^4.2.1",
     "pg": "^8.20.0",
+    "schema-utils": "^4.3.3",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "watchpack": "^2.5.2",
+    "webpack": "^5.108.4",
+    "webpack-sources": "^3.5.1"
   },
   "overrides": {
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.10",
+    "ajv": "^8.20.0",
+    "json-schema-traverse": "^1.0.0"
   }
 }
