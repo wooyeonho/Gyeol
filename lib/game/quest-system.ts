@@ -471,14 +471,16 @@ export function generateDailyQuests(dna?: CreatureDNA): Quest[] {
   }
 
   // Ensure difficulty spread: at least one easy and one medium
-  const difficulties = selected.map((s) => s.difficulty);
-  if (!difficulties.includes("easy")) {
+  const hasEasy = () => selected.some((s) => s.difficulty === "easy");
+  const hasMedium = () => selected.some((s) => s.difficulty === "medium");
+
+  if (!hasEasy()) {
     const easyTemplate = pool.find((t) => t.difficulty === "easy");
     if (easyTemplate && selected.length > 0) {
       selected[selected.length - 1] = easyTemplate;
     }
   }
-  if (!difficulties.includes("medium")) {
+  if (!hasMedium()) {
     const medTemplate = pool.find(
       (t) => t.difficulty === "medium" && !selected.includes(t),
     );
