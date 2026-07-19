@@ -21,7 +21,7 @@ function noise3D(x: number, y: number, z: number): number {
 }
 
  
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function _smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
@@ -152,7 +152,7 @@ function rotateGeoY(geo: THREE.BufferGeometry, angle: number): void {
 
  
 /** Scale all vertices in place. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function _scaleGeo(geo: THREE.BufferGeometry, sx: number, sy: number, sz: number): void {
   const pos = geo.attributes.position.array as Float32Array;
   for (let i = 0; i < pos.length; i += 3) {

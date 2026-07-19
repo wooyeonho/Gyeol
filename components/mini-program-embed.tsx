@@ -6,9 +6,9 @@ import {
   parseMiniProgramCommand,
   createPoll,
   rollDice,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   MINI_PROGRAM_REGISTRY,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   type MiniProgramType,
   type PollData,
 } from "@/lib/chat/mini-programs";
@@ -325,7 +325,7 @@ function WeatherEmbed({ args, locale }: { args: string; locale: string }) {
 
 // ── Mood ──
  
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function MoodEmbed({ args: _args, locale, onResult }: { args: string; locale: string; onResult?: (r: string) => void }) {
   const isKo = locale === "ko";
   const moods = [

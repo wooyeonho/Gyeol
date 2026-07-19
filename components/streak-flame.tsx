@@ -22,7 +22,7 @@ const SIZE = { sm: 20, md: 28, lg: 40 };
 export function StreakFlame({ days, atRisk = false, size = "md", showCount = true }: StreakFlameProps) {
   const px = SIZE[size];
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const { outer, inner, glow: _glow } = flameColor(days);
   const isGolden = days >= 7;
 

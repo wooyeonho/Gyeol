@@ -35,7 +35,7 @@ export default function ChallengesPage() {
     return initOrRefreshDailyChallenges();
   });
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const [definitions, _setDefinitions] = useState<ReturnType<typeof generateDailyChallenges>>(() => {
     if (typeof window === "undefined") return [];
     return generateDailyChallenges(getTodayDateString());

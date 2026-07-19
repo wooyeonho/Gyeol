@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveIdleBehavior, type IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { deriveAffinityMood } from "@/lib/creature/affinity-tracker";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { createForceState, stepForceSimulation, type ForceState, type Vec2 } from "@/lib/creature/force-system";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { getCircadianTint } from "@/lib/circadian";

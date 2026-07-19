@@ -515,7 +515,7 @@ function Scene({
   onCreatureTouch,
   breathPhase = 0, creatureActivity = "awake" as CreatureActivity, excitePulse = 0, pointerNorm,
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   dna, mood, conversationEnergy = 0, genLevel, forceState, idleBehaviorParams, idleBehavior,
   rarityTier,
 }: InnerProps) {

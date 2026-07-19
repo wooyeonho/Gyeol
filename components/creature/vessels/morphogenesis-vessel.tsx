@@ -21,7 +21,7 @@ const DAMP_LAMBDA = 1.8;
 // IcosahedronGeometry(0.5, 4) → ~10k triangles — balanced quality / mobile perf
 const BASE_GEOMETRY = new THREE.IcosahedronGeometry(0.5, 4);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function MorphogenesisVesselInner({ dna, context: _context, opacity, scale }: VesselProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 

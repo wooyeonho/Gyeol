@@ -8,7 +8,7 @@ import { type MysteryBox, type BoxRarity } from "@/lib/engagement/mystery-box";
 import {
   getPityCount,
   processPityAfterOpen,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   LEGENDARY_PITY_THRESHOLD,
   ENCOURAGEMENT_THRESHOLD,
 } from "@/lib/engagement/pity-system";

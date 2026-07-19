@@ -82,7 +82,7 @@ describe("crawlSite", () => {
   it("crawls seed page and follows same-domain links", async () => {
     const html1 = `<html><head><title>Page 1</title></head><body><main>Content 1</main><a href="/page2">Link</a></body></html>`;
     const html2 = `<html><head><title>Page 2</title></head><body><main>Content 2</main></body></html>`;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     let callCount = 0;
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {

@@ -25,7 +25,7 @@ import {
 import {
   PLANS,
   annualSavingsKRW,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   bundleEffectivePriceKRW,
   canJoinChallenge,
   CHALLENGES,

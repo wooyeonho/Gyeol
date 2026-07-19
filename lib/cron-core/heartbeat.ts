@@ -67,7 +67,7 @@ async function runOptionalStep(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 async function triggerAutonomousAction(_baseUrl: string, action: "learner" | "crawl", _cronSecret: string) {
   try {
     if (action === "learner") {

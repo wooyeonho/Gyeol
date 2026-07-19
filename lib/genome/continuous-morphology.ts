@@ -339,7 +339,7 @@ export function blendGeometryParams(
 // ─── Helpers ─────────────────────────────────────────────────────────
 
  
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function _clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
 }

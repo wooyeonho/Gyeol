@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import {
   generateStickerPack,
   getStickersByRarity,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   getUnlockedStickers,
   getStickerProgress,
   type Sticker,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   type StickerPack,
 } from "@/lib/creature/sticker-system";
 import type { CreatureDNA } from "@/lib/genome/dna";

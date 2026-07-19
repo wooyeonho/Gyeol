@@ -28,7 +28,7 @@ export default function AdoptPage() {
   const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const [_submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

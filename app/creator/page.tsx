@@ -24,7 +24,7 @@ type CreatorTab = "dashboard" | "content" | "submit";
 
 export default function CreatorPage() {
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const { locale, t: _t } = useTranslations();
   const isKo = locale === "ko";
   const [loading, setLoading] = useState(true);

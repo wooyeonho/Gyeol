@@ -178,7 +178,7 @@ describe("Quest System", () => {
       const quests = generateDailyQuests(analyticDNA);
       for (const q of quests) {
         totalCount++;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         if (q.type === "knowledge") _knowledgeCount++;
       }
       // With high analytical DNA, we expect at least some knowledge quests

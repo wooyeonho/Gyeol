@@ -18,9 +18,9 @@ import type { Visual } from "@/components/breeding-card";
 import dynamic from "next/dynamic";
 import { DEFAULT_CHANNELS } from "@/lib/social/channel-system";
 import { hnScore, reputationTier } from "@/lib/community/world-class-community";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { type FeedItem } from "@/lib/social/world-class-social";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { type AspectKey } from "@/lib/creative/world-class-creative";
 
 const PullToRefresh = dynamic(() => import("@/components/pull-to-refresh").then(m => ({ default: m.PullToRefresh })), { ssr: false });
@@ -156,7 +156,7 @@ export default function SocialPage() {
 
   /** Resolve reputation tier for display. Uses reactionCount as proxy for reputation. */
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   function _getReputationBadge(reactionCount: number) {
     const tier = reputationTier(reactionCount);
     return tier;

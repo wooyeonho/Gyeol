@@ -26,7 +26,7 @@ const CARE_ACTIONS = [
  */
 export function QuickCareButtons({ vitality, onCareComplete, onOfflineAction, pendingCount = 0 }: QuickCareButtonsProps) {
    
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const { locale, t: _t } = useTranslations();
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<Record<string, boolean>>({});

@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect */
+
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -47,7 +47,7 @@ export function EnergyBar({ compact = false, locale = "ko" }: EnergyBarProps) {
 
   if (!energy) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const pct = (energy.current / energy.max) * 100;
   const isLow = energy.current <= 3;
   const totalAvailable = energy.current + ((energy as EnergyState & { bonusEnergy?: number }).bonusEnergy ?? 0);

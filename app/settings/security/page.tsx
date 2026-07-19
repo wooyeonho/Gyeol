@@ -19,13 +19,13 @@ import {
   type SecurityEvent,
 } from "@/lib/security/audit-log";
 import { generateRecoveryPhrase } from "@/lib/security/e2e-vault";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { type AutoLockController } from "@/lib/security/auto-lock";
 import {
   auditAccount,
   securityScore as worldClassSecurityScore,
   lockdownFor,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   anonymousAccountNumber,
   type AuditFinding,
   type AuditSeverity,

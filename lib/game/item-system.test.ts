@@ -10,7 +10,7 @@ import {
   RARITY_ORDER,
   type Item,
   type ItemRarity,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   type ItemSlot,
 } from "./item-system";
 
