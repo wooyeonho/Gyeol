@@ -15,7 +15,7 @@ import { DiscussInChatButton } from "@/components/discover/discuss-in-chat";
 import { AgentCard } from "@/components/discover/agent-card";
 import { PageShell, itemVariants } from "@/components/discover/page-shell";
 import { PageSkeleton } from "@/components/discover/skeleton";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { type Geo } from "@/lib/travel/world-class-travel";
 
 type Agent = {

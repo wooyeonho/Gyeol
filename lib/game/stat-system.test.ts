@@ -91,7 +91,7 @@ describe("stat-system", () => {
 
   it("all stat configs have valid properties", () => {
      
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     for (const [_key, config] of Object.entries(STAT_CONFIG)) {
       expect(config.label.ko).toBeTruthy();
       expect(config.label.en).toBeTruthy();

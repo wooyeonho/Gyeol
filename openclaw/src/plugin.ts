@@ -243,7 +243,7 @@ export default function gyeolCronPlugin(api: any): void {
       description: job.description,
       parameters: { type: "object" as const, properties: {} },
        
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
       execute: async (_toolCallId: string, _params: unknown) => {
         const result = await runJob(job, logger);
         return {
@@ -261,7 +261,7 @@ export default function gyeolCronPlugin(api: any): void {
     description: "Test the Gyeol app HTTP endpoint to verify it is alive (watchdog)",
     parameters: { type: "object" as const, properties: {} },
      
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     execute: async (_toolCallId: string, _params: unknown) => {
       const result = await executeLifeline(logger);
       return {
@@ -278,7 +278,7 @@ export default function gyeolCronPlugin(api: any): void {
     description: "Run all Gyeol cron jobs sequentially (use for manual catch-up)",
     parameters: { type: "object" as const, properties: {} },
      
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     execute: async (_toolCallId: string, _params: unknown) => {
       const results: Record<string, unknown> = {};
       for (const job of GYEOL_JOBS) {

@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useCallback, useEffect, useRef, useMemo } from "react";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";
@@ -151,7 +151,7 @@ function dnaFloat(...vals: number[]): number {
  
 
 /** Mix DNA values into an integer in range [min, max] */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 function _dnaInt(min: number, max: number, ...vals: number[]): number {
   return min + Math.round(dnaFloat(...vals) * (max - min));
 }

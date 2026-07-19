@@ -18,7 +18,7 @@ import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/config"
 
 type LogTemplate = Partial<Record<Locale, string>> & { en: string };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 type ExtractResult = {
   /** Localized template to render (falls back to en). */
   template?: LogTemplate;

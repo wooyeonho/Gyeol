@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Build a preview DNA with edits applied
      
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { dna: previewDNA, changedAxes, totalDelta: _totalDelta } = applyDNAEdits(currentDNA, edits);
 
     if (changedAxes.length === 0) {

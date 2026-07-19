@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect */
+
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,9 +10,9 @@ import {
   getSpeciesCatalog,
   getCodex,
   getCompletionRate,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   isDiscovered,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   isOwned,
   getCodexEntry,
   type CatalogEntry,
@@ -23,7 +23,7 @@ import {
   getUndiscoveredHints,
   CODEX_MILESTONES,
   getCodexRarity,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   calculateRarityBoostedReward,
   type CodexRarity,
 } from "@/lib/game/codex-system";

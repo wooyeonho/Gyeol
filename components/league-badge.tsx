@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect */
+
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,12 +13,12 @@ import {
 } from "@/lib/game/ladder-system";
 import {
   getLeagueProgress as getLeagueTierProgress,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   getLeagueState,
   getTierInfo,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   TIERS_ORDERED,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   type Tier,
   type LeagueProgress,
 } from "@/lib/game/league-system";

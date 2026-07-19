@@ -6,11 +6,11 @@ import { getPromptStringsSync } from "@/lib/ai/prompts";
 import { buildPreferencePromptFragment, type UserPreferences } from "@/lib/creature/preference-memory";
 import {
   selectMemoriesForContext,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   scoreMemory,
   paramsForEmotion,
   personalityClauses,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   buildSystemPrompt as buildOrchestratorPrompt,
   type MemoryCandidate,
   type EmotionTone,

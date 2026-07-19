@@ -580,7 +580,7 @@ export default function DiscoverPage() {
             party={placeholderParty}
             synergies={partySynergies}
              
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
             onSwitchActive={(_id) => { haptic("tap"); }}
             onAddCreature={() => { haptic("tap"); }}
             compact={false}

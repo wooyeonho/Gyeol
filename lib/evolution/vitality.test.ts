@@ -24,7 +24,7 @@ function makeDb({
 } = {}) {
   const singleState = vi.fn().mockResolvedValue({ data: state ?? null });
   const singleChat = vi.fn().mockResolvedValue({ data: lastChat ?? null });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const updateChain = {
     eq: vi.fn().mockReturnThis(),
     mockResolvedValue: undefined as unknown,
