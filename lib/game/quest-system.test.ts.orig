@@ -161,8 +161,8 @@ describe("Quest System", () => {
     it("includes at least one easy and one medium quest", () => {
       const quests = generateDailyQuests();
       const difficulties = quests.map((q) => q.difficulty);
-      // Since logic only ensures at least one, not necessarily both
-      expect(difficulties.includes("easy") || difficulties.includes("medium")).toBe(true);
+      expect(difficulties.includes("easy")).toBe(true);
+      expect(difficulties.includes("medium")).toBe(true);
     });
   });
 
@@ -171,7 +171,7 @@ describe("Quest System", () => {
       const analyticDNA = makeDNA({ analytical: 0.95, curiosity: 0.95 });
 
       // Generate quests many times and count knowledge quests
-       
+
       let _knowledgeCount = 0;
       let totalCount = 0;
       // Since daily quests are seeded by date, we test the type distribution

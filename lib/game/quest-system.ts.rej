@@ -1,0 +1,20 @@
+--- lib/game/quest-system.ts
++++ lib/game/quest-system.ts
+@@ -128,15 +128,17 @@
+   // Ensure difficulty spread: at least one easy and one medium
+   const difficulties = selected.map((s) => s.difficulty);
+   if (!difficulties.includes("easy")) {
+     const easyTemplate = pool.find((t) => t.difficulty === "easy");
+     if (easyTemplate && selected.length > 0) {
+       selected[selected.length - 1] = easyTemplate;
++      difficulties[difficulties.length - 1] = "easy";
+     }
+   }
+   if (!difficulties.includes("medium")) {
+     const medTemplate = pool.find(
+       (t) => t.difficulty === "medium" && !selected.includes(t),
+     );
+     if (medTemplate && selected.length > 1) {
+       selected[selected.length - 2] = medTemplate;
++      difficulties[difficulties.length - 2] = "medium";
+     }
