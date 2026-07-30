@@ -1,3 +1,4 @@
+// guardrail test 2026-04-13 (삭제 예정)
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
