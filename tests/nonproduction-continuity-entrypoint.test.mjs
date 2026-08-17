@@ -31,4 +31,29 @@ describe("non-production continuity entrypoint", () => {
       await rm(rootDir, { recursive: true, force: true });
     }
   });
+
+  it("allows at most one independent writer to commit the same revision", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gyeol-continuity-lock-"));
+    try {
+      const first = createNonProductionContinuityEntrypoint({ ownerId: "owner-a", rootDir });
+      const second = createNonProductionContinuityEntrypoint({ ownerId: "owner-a", rootDir });
+      const attempts = await Promise.allSettled([
+        first.saveIfRevision({ id: "m1", consent: true, kind: "preference", key: "tone", value: "calm" }, 0),
+        second.saveIfRevision({ id: "m2", consent: true, kind: "preference", key: "pace", value: "steady" }, 0),
+      ]);
+      const successes = attempts.filter((result) => result.status === "fulfilled" && result.value?.ok === true);
+      expect(successes).toHaveLength(1);
+      const rejectedOrStale = attempts.filter((result) => result.status === "rejected" || (result.status === "fulfilled" && result.value?.ok === false));
+      expect(rejectedOrStale).toHaveLength(1);
+      if (attempts.some((result) => result.status === "rejected")) {
+        const rejected = attempts.find((result) => result.status === "rejected");
+        expect(String(rejected.reason)).toContain("memory_store_locked");
+      }
+      const restarted = createNonProductionContinuityEntrypoint({ ownerId: "owner-a", rootDir });
+      expect(await restarted.currentRevision()).toBe(1);
+      expect((await restarted.projectState({})).aiIdentity).toBe("AI_COMPANION");
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
 });
