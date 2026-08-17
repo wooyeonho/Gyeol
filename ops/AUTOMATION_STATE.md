@@ -7,58 +7,56 @@
 - Production/main write policy: NEVER write or merge to `main` automatically.
 
 ## RUN
-- RUN_TS: 2026-08-17 23:33:22 KST
-- RUN_ID: PA-20260817-233322-KST-01
-- Status: VERIFIED — first G1 trustworthy memory-state continuity contract is implemented and fresh exact-head CI, test, build, runtime and screen proof passed.
+- RUN_TS: 2026-08-18 00:16:21 KST
+- RUN_ID: PA-20260818-001621-KST-01
+- Status: VERIFIED — consent-explicit non-production memory storage with revoke/delete semantics is implemented, behavior-checked locally, and exact-head GYEOL CI completed successfully with build/runtime/screen proof.
 
 ## Product spine
 GYEOL is a relationship-based AI companion in which conversation becomes memory, memory changes state/personality/identity, and that identity is expressed through behavior, growth, manifestation, sound/voice, autonomous activity, and long-term continuity. Prioritize trustworthy relationship continuity over generic chatbot feature count.
 
-## Current Gate — G1 Trustworthy Memory-State Continuity Contract
-Establish the smallest deterministic contract proving that a consented conversation-derived memory can alter companion state and survive fresh-session rehydration while preserving clear AI identity and rejecting unconsented memory.
+## Current Gate — G1 Trustworthy Memory-State Continuity / Revocation
+Connect the deterministic consented-memory continuity contract to a non-production storage adapter and prove that revoked or deleted memory no longer influences state while explicit AI identity remains intact.
 
 ## Current-cycle actual work
-- Added `lib/identity/memory-continuity.mjs` with a fail-closed consent gate, deterministic preference-memory application, de-duplicated memory IDs, monotonic continuity version and explicit `AI_COMPANION` identity preservation.
-- Added `tests/memory-continuity.test.mjs` proving unconsented memory is rejected without state mutation and a consented preference survives serialize/rehydrate into a fresh session.
-- No production persistence, user-data migration, secret/auth change, billing or deployment mutation was introduced.
+- Added `lib/identity/memory-store-adapter.mjs` with consent-required save, revoke, delete, active-memory projection and explicit `AI_COMPANION` state preservation.
+- Added `tests/memory-store-adapter.test.mjs` proving unconsented storage is rejected, consented preference affects projected state, revocation removes that influence, deletion removes the record, and AI identity remains explicit.
+- No production database, user-data migration, secret/auth change, billing or deployment mutation was introduced.
 
 ## Implementation commits this run
-- `83e93a7d32f83f8562d775f3ffd6873b7e0e33ed` — consented memory continuity implementation.
-- `43559f088042f64dded609b84e900b32a9404c4f` — fresh-session continuity tests.
+- `217190693f6d80b445d7a59683e618c93b3e0395` — consent-explicit memory store adapter.
+- `9210e5b4d83e8634215b69334e95ae6ea447ed5a` — revoke/delete behavior tests.
 
 ## Verification
-- Local deterministic contract execution: 2/2 PASS; `node --check` PASS.
-- Fresh GYEOL CI run `32039734053` on exact implementation head completed the quality path successfully: security audit, lint, typecheck, `npm run test`, coverage, build, isolated exact-branch runtime start, companion browser capture and artifact upload all PASS.
-- Quality job: `95416789621` SUCCESS steps through exact-branch screen upload.
-- Dependency-remediation candidate job: `95416789709` SUCCESS through audit/lint/typecheck/test/build and lockfile candidate handling.
+- Current-run local behavioral smoke: consented preference projected; revocation removed its influence; explicit `AI_COMPANION` identity preserved — PASS.
+- Fresh exact-head GYEOL CI run `32042027879` completed `success` for head `9210e5b4d83e8634215b69334e95ae6ea447ed5a`.
+- CI covered security audit, lint, typecheck, full `npm run test`, coverage, build, exact-branch runtime start, real companion browser capture and artifact upload; dependency-remediation candidate path also completed successfully.
 
 ## Personas/counter-case
-- Companion Product Lead: wanted continuity behavior that is immediately observable in future sessions.
-- Memory/State Engineer: required a deterministic pure contract before wiring storage or generative behavior.
-- Safety/Privacy Lead: required explicit consent and persistent clear AI identity; rejected silent memory capture or language implying sentience.
-- Strongest counter-case: continuity can become manipulative if every conversation is silently retained or if remembered preferences are framed as human-like attachment. Decision: only consented memory changes state, and rehydration explicitly restores `AI_COMPANION` identity.
+- Companion Product Lead: wanted remembered preferences to survive future sessions but remain understandable and reversible.
+- Memory/State Engineer: required a deterministic storage boundary before wiring real persistence.
+- Safety/Privacy Lead: required explicit consent plus user-controlled revocation/deletion and rejected silent-retention semantics.
+- Strongest counter-case: “continuity” becomes coercive if remembered details cannot be revoked or if deletion merely hides UI while still influencing state. Decision: active projection excludes revoked records and deletion removes the record entirely.
 
 ## Safety / legal / privacy
 - No coercive attachment, abandonment/death pressure, deceptive sentience, minor-targeted dependency mechanic or exploitative loss-aversion monetization was added.
 - No production deployment, live secret/auth/security-policy change, billing, user-data mutation, public post or main merge occurred.
 
 ## Actual screen evidence
-- Real exact-head Actions artifact `hourly-operator-screen` id `9291744413`, digest `sha256:86d46ba9a0b8cc0548b2e961f4de0bc0d690c6ea83f57716b593cf6054154b43`, containing desktop/mobile `/demo` captures from implementation head `43559f088042f64dded609b84e900b32a9404c4f`.
-- The continuity contract itself is non-visual; screen proof demonstrates the exact implementation head still renders the canonical companion surface successfully.
-- No generated/mock proof used.
+- Real exact-head Actions artifact `hourly-operator-screen` id `9292161868`, digest `sha256:d76bbec8cc441d5d762295fed838e6643369ecab3ca29160f69552dde2451f0f`, from implementation head `9210e5b4d83e8634215b69334e95ae6ea447ed5a`.
+- The memory adapter is non-visual; the exact implementation head still passed canonical browser render capture. No generated/mock proof used.
 
 ## Recovery performed
-- No implementation defect required repair. The unrelated `pr-size-limit` push workflow reports failure outside the GYEOL quality gate; the canonical GYEOL CI quality and dependency-remediation jobs for this implementation both passed.
+- No implementation defect required repair; current-run local behavior check and exact-head CI both passed.
 
 ## Blocker
-- G1 persistence integration is not yet wired to actual consented conversation-memory storage. Production user-data persistence/auth/deployment remain owner-gated.
+- Adapter is intentionally non-production/in-memory and is not yet bound to authenticated durable user-memory persistence. Production user-data persistence/auth/deployment remains owner-gated.
 
 ## Owner approval needed
-- None for the next isolated non-production storage adapter/test. Production user-data migration, live auth/secrets/billing or deployment remain owner-gated.
+- None for the next isolated durable-adapter contract. Production user-data migration, live auth/secrets/billing or deployment remain owner-gated.
 
 ## Exact Next Gate
-- Inspect the existing memory persistence path and connect this pure continuity contract to one non-production, consent-explicit storage adapter with deletion/revocation semantics.
-- Prove: consented memory persists across fresh session; revoked/deleted memory no longer influences state; AI identity remains explicit; no attachment-pressure behavior is introduced.
+- Add an isolated durable adapter contract behind the same consent/revoke/delete interface, using a non-production repository boundary and owner-scoped records.
+- Prove: consented memory survives a fresh adapter/session; revoked/deleted memory cannot affect state; cross-user memory cannot be read/applied; AI identity remains explicit; no attachment-pressure behavior is introduced.
 
 ## Operating rules
 - Success requires real durable implementation plus same-cycle verification, not architecture reports.
