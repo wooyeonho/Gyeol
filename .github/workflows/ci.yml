@@ -45,3 +45,43 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  dependency-remediation-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Generate semver-compatible lockfile remediation candidate
+        run: npm audit fix --package-lock-only
+
+      - name: Install candidate lockfile
+        run: npm ci
+
+      - name: Verify candidate security audit
+        run: npm audit --audit-level=high
+
+      - name: Verify candidate lint
+        run: npm run lint
+
+      - name: Verify candidate typecheck
+        run: npm run typecheck
+
+      - name: Verify candidate tests
+        run: npm run test
+
+      - name: Verify candidate build
+        run: npm run build
+
+      - name: Upload reviewed lockfile candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-remediation-candidate
+          path: package-lock.json
