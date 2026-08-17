@@ -75,4 +75,18 @@ describe("NonProductionFileMemoryRepository", () => {
       expect(envelope.audit.at(-1)).toMatchObject({ revision: 3, action: "delete", memoryId: "m1" });
     } finally { await rm(rootDir, { recursive: true, force: true }); }
   });
+
+  it("rejects stale revision writes and deletes without mutating durable state", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gyeol-memory-"));
+    try {
+      const repo = new NonProductionFileMemoryRepository({ rootDir });
+      expect(await repo.currentRevision("owner-a")).toBe(0);
+      expect(await repo.putIfRevision("owner-a", "m1", { consent: true, value: "one" }, 0)).toEqual({ ok: true, revision: 1 });
+      expect(await repo.putIfRevision("owner-a", "m2", { consent: true, value: "two" }, 0)).toEqual({ ok: false, reason: "stale_memory_revision", currentRevision: 1 });
+      expect((await repo.list("owner-a")).map((m) => m.id)).toEqual(["m1"]);
+      expect(await repo.deleteIfRevision("owner-a", "m1", 0)).toEqual({ ok: false, reason: "stale_memory_revision", currentRevision: 1 });
+      expect(await repo.deleteIfRevision("owner-a", "m1", 1)).toEqual({ ok: true, revision: 2 });
+      expect(await repo.list("owner-a")).toEqual([]);
+    } finally { await rm(rootDir, { recursive: true, force: true }); }
+  });
 });
