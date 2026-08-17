@@ -59,8 +59,11 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Generate semver-compatible lockfile remediation candidate
-        run: npm audit fix --package-lock-only
+      - name: Regenerate lockfile with reviewed overrides
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Apply semver-compatible audit fixes to candidate lockfile
+        run: npm audit fix --package-lock-only || true
 
       - name: Install candidate lockfile
         run: npm ci
@@ -81,6 +84,7 @@ jobs:
         run: npm run build
 
       - name: Upload reviewed lockfile candidate
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-remediation-candidate
