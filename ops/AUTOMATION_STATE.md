@@ -2,53 +2,54 @@
 
 ## Canonical lane
 - Portfolio axis: Portfolio A
+- Canonical registry: For-Ai; Yeogie; 한끼안부; 계절·24절기(+사주); GYEOL. No retirement or omission.
 - Repository: `wooyeonho/Gyeol`
 - Automation branch: `automation/hourly-operator`
 - Production/main write policy: NEVER write or merge to `main` automatically.
+- Owner definition lock: GYEOL is a genuinely self-growing AI companion/pet with persistent memories, traits/personality parameters, skills/capabilities, relationship state, learned preferences/routines and versioned development history. Old local fact-registry identity is superseded/non-canonical. Growth must remain explicit, bounded and explainable; no deceptive sentience or coercive dependency.
 
 ## RUN
-- RUN_TS: 2026-08-18 20:03:37 KST
-- RUN_ID: PA-20260818-200337-KST-01
-- Status: VERIFIED — current-run database tombstone rule prevents stale revision-0 writers from recreating deleted relationship memory; exact implementation commit has current Vercel success status.
+- RUN_TS: 2026-08-19 01:44 KST
+- RUN_ID: PA-20260819-0144-KST-01
+- Selected project: GYEOL
+- Rotation: next project `For-Ai`.
+- Status: IMPLEMENTED / DATABASE-VERIFICATION-PENDING — explicit post-delete fresh-generation/re-consent mechanism and independent-connection regression harness are durably committed. Exact database execution is not claimed until current CI/PostgreSQL proof is observable.
 
-## Product spine
-GYEOL is a relationship-based AI companion in which conversation becomes memory, memory changes state/personality/identity, and identity is expressed through behavior, growth, manifestation, sound/voice, autonomous activity and long-term continuity. Trustworthy relationship continuity outranks generic chatbot feature count.
-
-## Current Gate — G1 Durable Trustworthy Memory Continuity
-Preserve delete as a durable privacy boundary so stale pre-delete writers cannot silently recreate owner memory while keeping explicit AI identity, consent/revoke semantics and owner isolation intact.
+## Current Gate
+Allow an intentional fresh relationship-memory generation after delete/re-consent without allowing stale pre-delete or prior-generation writers to recreate old memory.
 
 ## Personas / strongest counter-case
-- Companion Product Lead: relationship continuity must be trustworthy enough that delete means delete rather than a temporary local absence.
-- Distributed Memory Engineer: revision-0 inserts after delete must lose against a durable database tombstone.
-- Safety/Privacy Lead: deleted memory must remain unreadable and non-resurrectable without deceptive sentience or dependency pressure.
-- Strongest counter-case: physically deleting the CAS row resets the observable revision to zero, allowing a stale process to insert old relationship memory as if it were a first write. Decision: retain an identifier-minimal tombstone row that blocks revision-0 recreation.
+- Companion Product Lead: an owner must be able to intentionally restart the relationship after delete without hidden restoration of old memory.
+- Distributed Memory Engineer: generation identity must be checked independently from revision so old writers cannot become valid when revision resets to 1.
+- Safety/Privacy Lead: re-consent must be explicit, deleted memories must remain absent, and no sentience/dependency claim may be inferred from continuity machinery.
+- Strongest counter-case: resetting revision after delete can make a stale generation-1 writer look current in generation 2 unless every write is generation-bound.
 
 ## Current-cycle actual work
-- Updated `lib/identity/postgres-memory-cas.mjs` to add a `deleted` tombstone flag, fail ordinary saves against tombstoned rows, keep reads privacy-safe as empty revision-0 state, and convert delete from physical row removal into a revision-advancing tombstone update.
-- Updated `scripts/test-postgres-memory-cas.mjs` to prove a stale post-delete revision-0 save is rejected and the tombstone row remains consent=false, revoked=true and memory-empty.
+- `lib/identity/postgres-memory-cas.mjs`: added monotonic `generation`; normal save/revoke/delete are generation-bound; tombstoned reads expose empty memory plus current generation; new `beginFreshGeneration` requires explicit consent and exact tombstone generation, atomically increments generation, resets revision to 1 and accepts only explicitly supplied fresh memories.
+- `scripts/test-postgres-memory-cas.mjs`: added independent-connection assertions proving fresh generation 2 can start after delete, stale generation-1 writer loses even at revision 1, duplicate fresh-generation attempt loses, owner isolation remains intact, and old deleted memory is never restored.
 
-## Current-run implementation commits
-- `84f5245a58c89701d46e2073ff20182122ec8657`
-- `50498475803274d45ef56c0763fb6c99f1a228b8`
+## Durable artifacts
+- Implementation commit: `8eb793b7a2ccf60ad4493896d9f027d851337f9c`
+- Regression harness commit: `9846cefc893bf3dd097bb2b05ece78b937851ccc`
+- Branch: `automation/hourly-operator`
 
-## Verification PASS
-- Exact final implementation commit `50498475803274d45ef56c0763fb6c99f1a228b8` has current `Vercel: success`; no prior-cycle status is reused.
-- The branch PostgreSQL verification harness now contains explicit `stalePostDeleteRecreationRejected` and `tombstonePreserved` assertions.
+## Verification
+- GitHub contents writes succeeded for both implementation and regression harness.
+- Database execution PASS is intentionally not claimed in this run because the connected surface has not yet exposed an exact-head PostgreSQL/CI result for `9846cefc`.
 
-## Actual screen evidence
-- `ACTUAL SCREEN CAPTURE BLOCKED: current Gate is memory-store privacy/concurrency infrastructure and the connected runtime exposes exact-head deployment/build status but no rendered screenshot primitive for this backend-only change; stale companion screenshots are not reused.`
+## Security / privacy / legal / accessibility
+- Re-consent is explicit and fail-closed; no prior deleted memories are copied into the new generation; stale generation writers and duplicate re-consent attempts are rejected by database predicates.
+- AI identity remains `AI_COMPANION`; no consciousness/sentience claim, emotional blackmail, coercive dependency, real private data, public posting, spending, production schema migration, secrets, main write or production security change.
+- Backend-only artifact; accessibility/UI surface unchanged.
 
-## Recovery performed
-- Replaced physical row deletion with a reversible schema-compatible tombstone path and retained the public read contract as empty revision-0 state so product behavior does not expose tombstone internals.
-
-## Safety / legal / privacy
-- Explicit `AI_COMPANION` identity remains required; owner isolation, consent, revoke and delete semantics are preserved; no deceptive sentience, coercive attachment, abandonment/death manipulation, minor-targeted dependency design, production persistence/auth/secrets/billing/deployment or main merge was added.
+## Screen evidence
+- `ACTUAL SCREEN CAPTURE BLOCKED: this Gate is PostgreSQL memory-consent/concurrency infrastructure with no rendered UI delta; no exact-head browser/CI screenshot primitive is exposed in the connected surface.`
 
 ## Blocker
-- None for this branch-only tombstone Gate step.
+- Exact-head PostgreSQL execution result for the new generation-separation harness is not yet observable.
 
 ## Owner approval needed
-- Production persistence/schema migration remains owner-gated.
+- None for branch-only work. Production persistence/schema migration remains owner-gated.
 
 ## Exact Next Gate
-- add a new-generation/re-consent path that permits an intentional fresh relationship-memory generation after delete without allowing any stale pre-delete writer to win; prove generation separation across independent PostgreSQL connections before any production migration proposal.
+Obtain exact-head PostgreSQL PASS for `9846cefc`; then add an owner-facing correction/reset/export contract that exposes generation history without exposing deleted memory contents, with regression coverage before any production migration proposal.
