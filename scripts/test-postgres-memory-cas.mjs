@@ -43,6 +43,10 @@ assert.equal(revoked.aiIdentity, "AI_COMPANION");
 assert.deepEqual(await b.delete({ expectedRevision:2 }), { ok:false, reason:"stale_revision", currentRevision:3 });
 assert.deepEqual(await a.delete({ expectedRevision:3 }), { ok:true, revision:4 });
 assert.equal((await a.read()).revision, 0);
+const staleAfterDelete = await b.save({ expectedRevision:0, memories:[{ id:"deleted-return", text:"must stay deleted" }], consent:true });
+assert.deepEqual(staleAfterDelete, { ok:false, reason:"stale_revision", currentRevision:0 });
+const tombstoneCount = await adminQuery("select count(*)::int as n from gyeol_memory_cas where owner_id='owner-a' and deleted=true and revoked=true and consent=false and memories='[]'::jsonb");
+assert.equal(tombstoneCount.rows[0].n, 1);
 
 await Promise.all([adminPool.end(), poolA.end(), poolB.end(), poolOther.end()]);
 console.log(JSON.stringify({
@@ -51,6 +55,8 @@ console.log(JSON.stringify({
   ownerIsolation:true,
   staleWriteRejected:true,
   stalePostRevokeResurrectionRejected:true,
+  stalePostDeleteRecreationRejected:true,
+  tombstonePreserved:true,
   revokeClearsMemory:true,
   aiIdentity:"AI_COMPANION"
 }));
