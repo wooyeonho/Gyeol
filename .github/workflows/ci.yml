@@ -49,7 +49,11 @@ jobs:
       - name: Test
         run: npm run test
       - name: Prove external shared-store CAS on isolated PostgreSQL
-        run: node scripts/test-postgres-memory-cas.mjs
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          node scripts/test-postgres-memory-cas.mjs 2>&1 | tee artifacts/postgres-memory-cas.txt
+          grep -q 'PASS' artifacts/postgres-memory-cas.txt
       - name: Coverage
         run: npx vitest run --coverage 2>&1 | tee coverage-output.txt || true
       - name: Build
@@ -82,11 +86,13 @@ jobs:
           "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/gyeol-mobile.png http://127.0.0.1:3000/demo
           test -s artifacts/gyeol-desktop.png
           test -s artifacts/gyeol-mobile.png
-      - name: Upload exact-branch screen evidence
+      - name: Upload exact-branch verification evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hourly-operator-screen
           path: |
+            artifacts/postgres-memory-cas.txt
             artifacts/gyeol-desktop.png
             artifacts/gyeol-mobile.png
 
