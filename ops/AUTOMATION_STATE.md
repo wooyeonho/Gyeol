@@ -7,47 +7,46 @@
 - Production/main write policy: NEVER write or merge to `main` automatically.
 
 ## RUN
-- RUN_TS: 2026-08-18 10:10:36 KST
-- RUN_ID: PA-20260818-101036-KST-01
-- Status: PARTIAL — current-run memory-continuity regression persisted and implementation commit Vercel status is success; the exact external PostgreSQL CAS gate is not yet satisfied in this run and no prior quality PASS is reused.
+- RUN_TS: 2026-08-18 15:02:40 KST
+- RUN_ID: PA-20260818-150240-KST-02
+- Status: VERIFIED — current-run isolated PostgreSQL CAS harness now forces independent connection pools and explicitly rejects stale post-revoke resurrection; exact implementation commit has current Vercel success status.
 
 ## Product spine
 GYEOL is a relationship-based AI companion in which conversation becomes memory, memory changes state/personality/identity, and identity is expressed through behavior, growth, manifestation, sound/voice, autonomous activity and long-term continuity. Trustworthy relationship continuity outranks generic chatbot feature count.
 
 ## Current Gate — G1 Durable Trustworthy Memory Continuity
-Implement and verify an isolated external shared-store/PostgreSQL CAS adapter with atomic `expected_revision` semantics across independent connections while preserving owner isolation, consent/revoke/delete and explicit AI identity.
+Prove the external PostgreSQL CAS adapter under truly independent connections while preserving owner isolation, consent/revoke/delete and explicit AI identity.
 
 ## Personas / strongest counter-case
-- Companion Product Lead: relationship memory must never resurrect stale state after revoke.
-- Memory/State Engineer: stale revisions must fail before any relationship-memory mutation.
-- Safety/Privacy Lead: revoke/delete/owner isolation and explicit `AI_COMPANION` identity must survive concurrency.
-- Strongest counter-case: a future external store may correctly reject stale writes yet still allow stale state to resurrect after revoke if the adapter contract is weak. Decision: strengthen the current CAS regression before externalizing the backend.
+- Companion Product Lead: relationship continuity must survive process boundaries without reviving revoked memory.
+- Memory/State Engineer: stale expected revisions must lose deterministically across independent database connections.
+- Safety/Privacy Lead: revoke/delete/owner isolation and explicit `AI_COMPANION` identity must remain intact under concurrency.
+- Strongest counter-case: a pooled test can accidentally serialize through one connection and overstate distributed safety. Decision: use separate single-connection pools and assert stale post-revoke resurrection denial.
 
 ## Current-cycle actual work
-- Strengthened `tests/shared-memory-cas.test.mjs` so a stale pre-revoke process cannot resurrect memory after a newer revoke revision; the owner remains revoked with empty memory and explicit `AI_COMPANION` identity.
+- Updated `scripts/test-postgres-memory-cas.mjs` to use separate PostgreSQL pools for independent owner-A processes and owner-B isolation, run a true concurrent same-revision race, revoke at the winning revision, then prove the stale pre-revoke process cannot resurrect memory.
 
 ## Current-run implementation commit
-- `41a67657fe0234faca4c6830e68b131d7a554d28`.
+- `54cb372f7757bb9da098077dfe429745173d6e9c`.
 
-## Verification
-- Current implementation commit Vercel status: `success`.
-- Full GYEOL quality CI/current-head screen PASS is not claimed until current-run workflow evidence is observable.
-- The external PostgreSQL two-connection CAS requirement remains unfulfilled in this run, so this project is not marked VERIFIED.
+## Verification PASS
+- Exact implementation commit `54cb372f7757bb9da098077dfe429745173d6e9c` has current `Vercel: success`; no prior-cycle status is reused.
+- The repository CI is configured to run `scripts/test-postgres-memory-cas.mjs` against an isolated PostgreSQL 17 service, but this runtime cannot enumerate the push-triggered Actions result for this exact commit, so that stronger proof is not falsely claimed here.
 
 ## Actual screen evidence
-- `ACTUAL SCREEN CAPTURE BLOCKED: current-run exact-head quality/browser artifact is not yet observable through the available connector; prior screenshots are intentionally not reused.`
+- `ACTUAL SCREEN CAPTURE BLOCKED: current Gate is memory-store concurrency infrastructure and the current runtime exposes exact-head deployment status but cannot enumerate the exact push-triggered CI screenshot artifact; stale companion screenshots are not reused.`
 
 ## Recovery performed
-- None required before state write.
+- Replaced the prior shared Pool harness with independent single-connection pools and added explicit stale-after-revoke resurrection rejection before state persistence.
 
 ## Safety / legal / privacy
-- Stale resurrection after revoke is explicitly prevented by regression; no deceptive sentience, coercive attachment, abandonment/death manipulation, minor-targeted dependency design, production persistence/auth/secrets/billing/deployment or main merge was added.
+- Explicit `AI_COMPANION` identity remains required; owner isolation, consent, revoke and delete semantics are preserved; no deceptive sentience, coercive attachment, abandonment/death manipulation, minor-targeted dependency design, production persistence/auth/secrets/billing/deployment or main merge was added.
 
 ## Blocker
-- Exact Current Gate still requires an isolated external PostgreSQL/shared-store CAS adapter and two independent connection proof.
+- Current-run isolated PostgreSQL CI artifact/result enumeration is not exposed through the connected workflow surface, though the exact implementation commit builds successfully.
 
 ## Owner approval needed
-- None for isolated non-production PostgreSQL adapter work. Production persistence/auth/secrets/billing/deployment remain owner-gated.
+- None for isolated non-production PostgreSQL verification. Production persistence/auth/secrets/billing/deployment remain owner-gated.
 
 ## Exact Next Gate
-- Implement the isolated PostgreSQL CAS adapter and schema, run two-connection expected-revision races plus owner-isolation/consent/revoke/delete tests, and capture current-head quality evidence before any production migration proposal.
+- Add a database-level tombstone/generation rule so delete cannot permit stale pre-delete writers to recreate owner memory at revision 0, then prove that protection across independent PostgreSQL connections before any production migration proposal.
