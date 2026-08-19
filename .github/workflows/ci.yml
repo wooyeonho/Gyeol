@@ -48,6 +48,14 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm run test
+      - name: Prove bounded owner memory controls
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          node scripts/test-memory-owner-controls.mjs 2>&1 | tee artifacts/memory-owner-controls.txt
+          grep -q '"status":"PASS"' artifacts/memory-owner-controls.txt
+          grep -q '"deletedMemoryContentsExcluded":true' artifacts/memory-owner-controls.txt
+          grep -q '"freshGenerationRequiresConsent":true' artifacts/memory-owner-controls.txt
       - name: Prove external shared-store CAS on isolated PostgreSQL
         run: |
           mkdir -p artifacts
@@ -92,6 +100,7 @@ jobs:
         with:
           name: hourly-operator-screen
           path: |
+            artifacts/memory-owner-controls.txt
             artifacts/postgres-memory-cas.txt
             artifacts/gyeol-desktop.png
             artifacts/gyeol-mobile.png
