@@ -29,7 +29,6 @@ interface AgentStore {
 }
 
 const MAX_RETRIES = 2;
-const RETRY_DELAYS = [1000, 3000];
 
 export const useAgentStore = create<AgentStore>((set) => ({
   agentId: null, agentState: null, engagement: null, planTier: "free", loading: true, error: false, evolutionEvent: null,
@@ -59,7 +58,8 @@ export const useAgentStore = create<AgentStore>((set) => ({
       } catch (e) {
         console.error(`[AgentStore] fetchAgentState attempt ${attempt + 1} failed`, e);
         if (attempt < MAX_RETRIES) {
-          await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+          const delay = 1000 * Math.pow(2, attempt) + Math.random() * 500;
+          await new Promise((r) => setTimeout(r, delay));
         }
       }
     }

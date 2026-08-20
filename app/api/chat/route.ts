@@ -239,19 +239,23 @@ export async function POST(req: NextRequest) {
       const cfg = (context.agentState.config ?? {}) as Record<string, unknown>;
       if (!cfg.preferred_locale || cfg.preferred_locale !== normalizedLocale) {
         after(async () => {
-          const { data: freshRow } = await service
-            .from("agent_state")
-            .select("config")
-            .eq("agent_id", agentId)
-            .maybeSingle();
-          const freshConfig = (freshRow as { config?: Record<string, unknown> } | null)?.config ?? {};
-          await service
-            .from("agent_state")
-            .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
-            .eq("agent_id", agentId)
-            .then(({ error: syncErr }: { error: { message: string } | null }) => {
-              if (syncErr) log.error("[Chat] preferred_locale sync failed", syncErr instanceof Error ? syncErr : { detail: String(syncErr) });
-            });
+          try {
+            const { data: freshRow } = await service
+              .from("agent_state")
+              .select("config")
+              .eq("agent_id", agentId)
+              .maybeSingle();
+            const freshConfig = (freshRow as { config?: Record<string, unknown> } | null)?.config ?? {};
+            await service
+              .from("agent_state")
+              .update({ config: { ...freshConfig, preferred_locale: normalizedLocale } })
+              .eq("agent_id", agentId)
+              .then(({ error: syncErr }: { error: { message: string } | null }) => {
+                if (syncErr) log.error("[Chat] preferred_locale sync failed", syncErr instanceof Error ? syncErr : { detail: String(syncErr) });
+              });
+          } catch (syncFatalErr) {
+            log.error("[Chat] Fatal error during locale sync in after()", { error: syncFatalErr instanceof Error ? syncFatalErr.message : String(syncFatalErr) });
+          }
         });
       }
     }
@@ -462,51 +466,57 @@ export async function POST(req: NextRequest) {
 
     // P1A: Move ALL post-processing into after() — stream closes immediately
     after(async () => {
-      const fullResponse = getFullResponse();
-      recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
-        agentId,
-        durationMs: Date.now() - requestStartedAt,
-        replyLength: fullResponse.length,
-        userId: user.id,
-      });
       try {
-        await persistChatTurn({
-          agentId,
-          agentState: context.agentState,
-          durationMs: Date.now() - requestStartedAt,
-          message,
-          reply: fullResponse,
-          writer: service,
-        });
-        // Advance engagement streak + award XP (non-fatal)
-        try {
-          await ensureLeagueEnrollment(user.id);
-          await recordActivity(user.id, "chat:message");
-        } catch {
-          // non-fatal — engagement is best-effort
-        }
-
-        // Slow Path feed: queue raw conversation pair for OpenClaw deep DNA analysis.
-        // Fire-and-forget — failure must never surface to the user.
-        const dnaSnapshot = (context.agentState?.genome as { dna?: Record<string, number> } | null)?.dna;
-        if (dnaSnapshot) {
-          service
-            .from("interaction_logs")
-            .insert({
-              agent_id:    agentId,
-              chat_log:    { user: message, assistant: fullResponse },
-              current_dna: dnaSnapshot,
-            })
-            .then(undefined, () => {});
-        }
-      } catch (error) {
-        recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
+        const fullResponse = getFullResponse();
+        recordServerEvent(PRODUCT_EVENT.chatStreamCompleted, {
           agentId,
           durationMs: Date.now() - requestStartedAt,
-          messageLength: message.length,
+          replyLength: fullResponse.length,
           userId: user.id,
         });
-        log.error("[PostStream]", error instanceof Error ? error : { detail: String(error) });
+        try {
+          await persistChatTurn({
+            agentId,
+            agentState: context.agentState,
+            durationMs: Date.now() - requestStartedAt,
+            message,
+            reply: fullResponse,
+            writer: service,
+          });
+          // Advance engagement streak + award XP (non-fatal)
+          try {
+            await ensureLeagueEnrollment(user.id);
+            await recordActivity(user.id, "chat:message");
+          } catch {
+            // non-fatal — engagement is best-effort
+          }
+
+          // Slow Path feed: queue raw conversation pair for OpenClaw deep DNA analysis.
+          // Fire-and-forget — failure must never surface to the user.
+          const dnaSnapshot = (context.agentState?.genome as { dna?: Record<string, number> } | null)?.dna;
+          if (dnaSnapshot) {
+            const { error: insertErr } = await service
+              .from("interaction_logs")
+              .insert({
+                agent_id:    agentId,
+                chat_log:    { user: message, assistant: fullResponse },
+                current_dna: dnaSnapshot,
+              });
+            if (insertErr) {
+               log.error("[Chat] Interaction log insert failed", { error: insertErr instanceof Error ? insertErr.message : String(insertErr) });
+            }
+          }
+        } catch (error) {
+          recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
+            agentId,
+            durationMs: Date.now() - requestStartedAt,
+            messageLength: message.length,
+            userId: user.id,
+          });
+          log.error("[PostStream]", error instanceof Error ? error : { detail: String(error) });
+        }
+      } catch (fatalError) {
+        log.error("Fatal error in after() block during chat post-processing", { error: fatalError instanceof Error ? fatalError.message : String(fatalError) });
       }
     });
 

@@ -80,6 +80,8 @@ export interface InnerProps {
   locale?: string;
   /** Called once the WebGL canvas DOM element is available — use to expose canvas for capture */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+  /** Indicates whether the client is a mobile device to downscale dpr */
+  isMobile?: boolean;
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -850,7 +852,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={props.isMobile ? [1, 1] : [1, 1.5]}
         gl={{
           antialias: true,
           powerPreference: "default",
