@@ -288,6 +288,7 @@ export function VoidCanvas({
           forceState={forceState}
           idleBehaviorParams={idleBehaviorParams}
           idleBehavior={idleBehavior}
+          isMobile={isMobile}
         />
       ) : (
         <CssVoidFallback
