@@ -103,7 +103,8 @@ export default function Soundscape({
       disposeRef.current = null;
       setPlaying(false);
     };
-  }, [enabled, soundProfile, voiceHint]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, soundProfile]);
 
   // ── Creature emotion sounds — play on mood change ──
   const lastMoodRef = useRef<string | null>(null);
