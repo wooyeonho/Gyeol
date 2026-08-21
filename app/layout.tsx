@@ -23,6 +23,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { CatchBoundary } from "@/components/ui/catch-boundary";
+import { Suspense } from "react";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -189,22 +190,24 @@ export default async function RootLayout({
           <WebPushManager />
           <CookieConsent />
           <OfflineIndicator />
-          <GlobalCelebration />
-          <EngagementCelebrationHost />
-          <GlobalKeyboardProvider />
-          <CommandPalette locale={locale} />
-          <VitalsReporter />
-          <PwaInstallPrompt />
-          <ToastProvider />
-          <OfflineBanner />
-          <NavigationHub />
-          <AnalyticsProvider>
-            <SwipeNavigation>
-              <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
-              </CatchBoundary>
-            </SwipeNavigation>
-          </AnalyticsProvider>
+          <CatchBoundary>
+            <GlobalCelebration />
+            <EngagementCelebrationHost />
+            <GlobalKeyboardProvider />
+            <CommandPalette locale={locale} />
+            <VitalsReporter />
+            <PwaInstallPrompt />
+            <ToastProvider />
+            <OfflineBanner />
+            <NavigationHub />
+            <AnalyticsProvider>
+              <SwipeNavigation>
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </Suspense>
+              </SwipeNavigation>
+            </AnalyticsProvider>
+          </CatchBoundary>
         </I18nProvider>
         </ReducedMotionProvider>
       </body>
