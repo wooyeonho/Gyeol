@@ -9,6 +9,7 @@ const withBundleAnalyzer = withBundleAnalyzerPkg({
 
 const nextConfig: NextConfig = {
   experimental: {
+    viewTransition: true,
   },
   images: {
     // Allow next/image to optimize AI-generated portraits from Supabase Storage.
