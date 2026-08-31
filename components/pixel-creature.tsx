@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useCallback, useEffect, useRef, useMemo } from "react";
 import type { ResolvedIdentityAppearance } from "@/lib/identity/appearance";

@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/preserve-manual-memoization, react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
