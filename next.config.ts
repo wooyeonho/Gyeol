@@ -9,7 +9,7 @@ const withBundleAnalyzer = withBundleAnalyzerPkg({
 
 const nextConfig: NextConfig = {
   experimental: {
-    viewTransition: true,
+    // viewTransition is not supported in this Next.js 16 ExperimentalConfig
   },
   images: {
     // Allow next/image to optimize AI-generated portraits from Supabase Storage.
