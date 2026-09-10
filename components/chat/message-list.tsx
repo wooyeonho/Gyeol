@@ -68,6 +68,7 @@ const messageVariants = {
  */
 const VISIBLE_MESSAGE_CAP = 300;
 
+
 export function MessageList({
   messages,
   isStreaming,
