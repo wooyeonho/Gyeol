@@ -29,6 +29,7 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { SCENE_CONFIG } from "@/lib/visual-config";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 
 export interface InnerProps {
   shape: string;
@@ -827,6 +828,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
 }
 
 export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+  const { isMobile } = useDevicePerformance();
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -850,7 +852,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={isMobile ? 1 : [1, 1.5]}
         gl={{
           antialias: true,
           powerPreference: "default",
