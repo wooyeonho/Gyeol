@@ -274,6 +274,7 @@ export function VoidCanvas({
           background={background}
           motionBias={motionBias}
           pulseScale={pulseScale}
+          isMobile={isMobile}
           onTap={onTap}
           breathPhase={breathPhase}
           creatureActivity={creatureActivity}
