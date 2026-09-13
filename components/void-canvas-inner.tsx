@@ -29,6 +29,7 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { SCENE_CONFIG } from "@/lib/visual-config";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 
 export interface InnerProps {
   shape: string;
@@ -846,11 +847,13 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     [wrapperRef],
   );
 
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
+
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={reducedVisualMode ? [1, 1] : isMobile ? [1, 1.25] : [1, 1.5]}
         gl={{
           antialias: true,
           powerPreference: "default",
