@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ThreeErrorBoundary } from "./three-error-boundary";
 import { useMemo, useCallback } from "react";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
 import { useDevicePerformance } from "@/hooks/use-device-performance";
@@ -262,7 +263,8 @@ export function VoidCanvas({
   return (
     <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
-        <VoidCanvasInner
+        <ThreeErrorBoundary fallback={<CssVoidFallback color={color} size={effectiveSize} glow={effectiveGlow} vitality={vitality} isListening={isListening} motionBias={motionBias} pulseScale={pulseScale} onTap={onTap} breathPhase={breathPhase} creatureActivity={creatureActivity} excitePulse={excitePulse} forceState={forceState} />}>
+          <VoidCanvasInner
           shape={shape}
           color={color}
           size={effectiveSize}
@@ -289,6 +291,7 @@ export function VoidCanvas({
           idleBehaviorParams={idleBehaviorParams}
           idleBehavior={idleBehavior}
         />
+        </ThreeErrorBoundary>
       ) : (
         <CssVoidFallback
           color={color}
