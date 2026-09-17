@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-location-assign-relative-destination */
 "use client";
 
 /**
@@ -45,7 +46,7 @@ export function PremiumGate({
 
   const handleCheckout = useCallback((plan: "pro" | "premium") => {
     // Navigate to checkout via billing API
-    window.location.href = `/plans?upgrade=${plan}`;
+    window.location.assign(`/plans?upgrade=${plan}`);
   }, []);
 
   if (hasAccess) {

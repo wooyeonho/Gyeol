@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-location-assign-relative-destination */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -382,7 +383,7 @@ export default function SecurityCenterPage() {
                     setDeleting(true);
                     try {
                       const res = await fetch("/api/gdpr/delete", { method: "DELETE" });
-                      if (res.ok) window.location.href = "/";
+                      if (res.ok) window.location.assign("/");
                     } catch { /* silent */ }
                     setDeleting(false);
                     setDeleteConfirm(false);
