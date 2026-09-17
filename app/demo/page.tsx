@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-location-assign-relative-destination */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -185,7 +186,7 @@ export default function DemoPage() {
       sessionStorage.setItem("gyeol_demo_dna", JSON.stringify(dna));
       if (soulReading) sessionStorage.setItem("gyeol_demo_reading", soulReading);
     } catch {}
-    window.location.href = "/signup?from=demo";
+    window.location.assign("/signup?from=demo");
   }, [dna, soulReading]);
 
   const handleShare = useCallback(() => {

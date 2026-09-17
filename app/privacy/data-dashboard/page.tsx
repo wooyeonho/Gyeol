@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-location-assign-relative-destination */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -223,7 +224,7 @@ export default function DataDashboardPage() {
       const res = await fetch("/api/gdpr/delete", { method: "POST" });
       if (res.ok) {
         setDeleted(true);
-        setTimeout(() => { window.location.href = "/"; }, 3000);
+        setTimeout(() => { window.location.assign("/"); }, 3000);
       }
     } finally {
       setDeleting(false);
