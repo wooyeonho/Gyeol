@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
@@ -198,13 +199,15 @@ export default async function RootLayout({
           <ToastProvider />
           <OfflineBanner />
           <NavigationHub />
-          <AnalyticsProvider>
-            <SwipeNavigation>
-              <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
-              </CatchBoundary>
-            </SwipeNavigation>
-          </AnalyticsProvider>
+          <CatchBoundary>
+            <AnalyticsProvider>
+              <SwipeNavigation>
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </Suspense>
+              </SwipeNavigation>
+            </AnalyticsProvider>
+          </CatchBoundary>
         </I18nProvider>
         </ReducedMotionProvider>
       </body>
