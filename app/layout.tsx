@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
+import React from "react";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { DocumentLocaleSync } from "@/components/document-locale-sync";
@@ -201,7 +202,9 @@ export default async function RootLayout({
           <AnalyticsProvider>
             <SwipeNavigation>
               <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                <React.Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </React.Suspense>
               </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
