@@ -497,7 +497,7 @@ export async function POST(req: NextRequest) {
               chat_log:    { user: message, assistant: fullResponse },
               current_dna: dnaSnapshot,
             })
-            .then(undefined, () => {});
+            .then(undefined, (err) => { log.error("[PostStream] Interaction log insert failed:", err); });
         }
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {

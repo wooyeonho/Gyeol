@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -524,6 +525,7 @@ function Scene({
   const [tapBounce, setTapBounce] = useState(0);
   const [heartBurst, setHeartBurst] = useState(0);
   const tapDecay = useRef(0);
+  const { isMobile } = useDevicePerformance();
 
   // Zelda-like touch physics engine — full gesture classification + physics response
   const pointerDownTimeRef = useRef(0);
@@ -765,33 +767,33 @@ function Scene({
       {/* Bloom: DNA visual params primary source + rarity boost.
           sceneVisualParams.bloomIntensity replaces the archetype-bucket lookup —
           openness/intensity/creativity drive glow directly from raw DNA values. */}
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={SCENE_CONFIG.bloomLuminanceThreshold}
-          luminanceSmoothing={SCENE_CONFIG.bloomLuminanceSmoothing}
-          intensity={Math.min(SCENE_CONFIG.bloomMaxIntensity, (() => {
-            if (sceneVisualParams) {
-              // DNA-driven bloom + rarity bonus for high-rarity creatures
-              return sceneVisualParams.bloomIntensity + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.35;
-            }
-            // Fallback: archetype bucket (used when no DNA is present)
-            const arch = species?.archetype;
-            const base = (() => {
-              switch (arch) {
-                case "ethereal": case "spectral": return 1.0;
-                case "volcanic": return 0.6;
-                case "crystalline": return 0.5;
-                case "fluid": return 0.4;
-                case "organic": case "verdant": return 0.3;
-                case "mechanical": return 0.2;
-                default: return 0.5;
+      {!isMobile && (
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={SCENE_CONFIG.bloomLuminanceThreshold}
+            luminanceSmoothing={SCENE_CONFIG.bloomLuminanceSmoothing}
+            intensity={Math.min(SCENE_CONFIG.bloomMaxIntensity, (() => {
+              if (sceneVisualParams) {
+                return sceneVisualParams.bloomIntensity + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.35;
               }
-            })();
-            return base + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.4;
-          })())}
-          mipmapBlur
-        />
-      </EffectComposer>
+              const arch = species?.archetype;
+              const base = (() => {
+                switch (arch) {
+                  case "ethereal": case "spectral": return 1.0;
+                  case "volcanic": return 0.6;
+                  case "crystalline": return 0.5;
+                  case "fluid": return 0.4;
+                  case "organic": case "verdant": return 0.3;
+                  case "mechanical": return 0.2;
+                  default: return 0.5;
+                }
+              })();
+              return base + (species?.rarity ?? 0) * SCENE_CONFIG.bloomMaxIntensity * 0.4;
+            })())}
+            mipmapBlur
+          />
+        </EffectComposer>
+      )}
     </>
   );
 }
