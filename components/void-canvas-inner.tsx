@@ -31,6 +31,8 @@ import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
 
 export interface InnerProps {
+  isMobile?: boolean;
+  reducedVisualMode?: boolean;
   shape: string;
   color: string;
   size: number;
@@ -826,7 +828,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
-export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, isMobile, reducedVisualMode, onCanvasReady, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -850,7 +852,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={reducedVisualMode ? [0.5, 1] : isMobile ? [0.75, 1.5] : [1, 2]}
         gl={{
           antialias: true,
           powerPreference: "default",
