@@ -490,17 +490,16 @@ export async function POST(req: NextRequest) {
         // Fire-and-forget — failure must never surface to the user.
         const dnaSnapshot = (context.agentState?.genome as { dna?: Record<string, number> } | null)?.dna;
         if (dnaSnapshot) {
-          try {
-            await service
-              .from("interaction_logs")
-              .insert({
-                agent_id:    agentId,
-                chat_log:    { user: message, assistant: fullResponse },
-                current_dna: dnaSnapshot,
-              });
-          } catch (insertError) {
-            log.error("[PostStream] DB Insert Error", insertError instanceof Error ? insertError : { detail: String(insertError) });
-          }
+          service
+            .from("interaction_logs")
+            .insert({
+              agent_id:    agentId,
+              chat_log:    { user: message, assistant: fullResponse },
+              current_dna: dnaSnapshot,
+            })
+            .then(undefined, (insertError) => {
+              log.error("[PostStream] DB Insert Error", insertError instanceof Error ? insertError : { detail: String(insertError) });
+            });
         }
       } catch (error) {
         recordServerEvent(PRODUCT_EVENT.chatPostProcessFailed, {
