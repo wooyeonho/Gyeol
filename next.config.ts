@@ -9,6 +9,7 @@ const withBundleAnalyzer = withBundleAnalyzerPkg({
 
 const nextConfig: NextConfig = {
   experimental: {
+    // @ts-expect-error - viewTransition is supported in this version's engine but might be missing from NextConfig types
     viewTransition: true,
   },
   images: {
