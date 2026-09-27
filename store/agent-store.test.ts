@@ -83,10 +83,21 @@ describe("agent-store", () => {
   });
 
   it("should handle failed fetchAgentState exceptions", async () => {
+    vi.useFakeTimers();
+
     global.fetch = vi.fn().mockRejectedValue(new Error("Network Error"));
 
     const store = useAgentStore.getState();
-    await store.fetchAgentState();
+    const fetchPromise = store.fetchAgentState();
+
+    // Fast forward to allow all 3 retries (1000 + 2000 + 4000 = 7000 + jitter)
+    await vi.runAllTimersAsync();
+    await vi.runAllTimersAsync();
+    await vi.runAllTimersAsync();
+    await vi.runAllTimersAsync();
+
+    await fetchPromise;
+    vi.useRealTimers();
 
     const newState = useAgentStore.getState();
     expect(newState.loading).toBe(false);

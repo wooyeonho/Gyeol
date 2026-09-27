@@ -68,7 +68,8 @@ const messageVariants = {
  */
 const VISIBLE_MESSAGE_CAP = 300;
 
-function pickEvolutionCopy(locale: string | undefined, dnaShift?: string[], traitEmerged?: { id: string; name: { ko: string; en: string } }[]) {
+function // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  pickEvolutionCopy(locale: string | undefined, dnaShift?: string[], traitEmerged?: { id: string; name: { ko: string; en: string } }[]) {
   const isKo = locale?.startsWith("ko") ?? true;
   const axisSet = new Set(dnaShift ?? []);
   const traitIds = new Set((traitEmerged ?? []).map((trait) => trait.id));
