@@ -28,8 +28,9 @@ interface AgentStore {
   patchDna: (dna: CreatureDNA) => void;
 }
 
-const MAX_RETRIES = 2;
-const RETRY_DELAYS = [1000, 3000];
+const MAX_RETRIES = 3;
+const BASE_DELAY = 1000;
+const MAX_DELAY = 10000;
 
 export const useAgentStore = create<AgentStore>((set) => ({
   agentId: null, agentState: null, engagement: null, planTier: "free", loading: true, error: false, evolutionEvent: null,
@@ -59,7 +60,8 @@ export const useAgentStore = create<AgentStore>((set) => ({
       } catch (e) {
         console.error(`[AgentStore] fetchAgentState attempt ${attempt + 1} failed`, e);
         if (attempt < MAX_RETRIES) {
-          await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+          const delay = Math.min(BASE_DELAY * Math.pow(2, attempt) + Math.random() * 500, MAX_DELAY);
+          await new Promise((r) => setTimeout(r, delay));
         }
       }
     }
