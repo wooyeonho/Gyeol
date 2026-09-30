@@ -86,4 +86,4 @@
 4.  **[P1 Security - 무결성 확보]:** lib/ai/system-prompt.ts 에서 sanitizeForPrompt 를 500자로 슬라이스하며 엄격한 방어를 갖추도록 수정 (SEC-01).
 5.  **[P1 Vitality Fix - 이중차감 방지]:** lib/evolution/vitality.ts 에서 vitality_processed_at 기반 증분 감쇠 로직 적용 (FIX-03).
 
-제가 직접 이 보고서와 함께 실제 코드 패치(FIX-01, FIX-02, FIX-03, FIX-04, SEC-01)를 진행하여 즉각적인 아키텍처 안정화를 도모하겠습니다.
+이 보고서를 기반으로 필요한 수정 사항을 반영하는 추가 작업을 제안합니다.
