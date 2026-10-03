@@ -6,6 +6,7 @@ import { Float } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { CreatureDNA } from "@/lib/genome/dna";
 import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
@@ -827,6 +828,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
 }
 
 export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -841,6 +843,8 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     onCanvasReady?.(canvas);
   });
 
+  const calculatedDpr = (isMobile || reducedVisualMode) ? [1, 1] : [1, 1.5];
+
   const getCanvas = useCallback(
     () => canvasRef.current ?? (wrapperRef.current?.querySelector("canvas") as HTMLCanvasElement | null),
     [wrapperRef],
@@ -850,7 +854,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={calculatedDpr as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
