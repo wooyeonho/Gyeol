@@ -44,8 +44,8 @@ describe("router integration", () => {
     let attempt = 0;
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
       attempt++;
-      if (attempt <= 2) {
-        // First pass: all 2 models fail
+      if (attempt <= 1) {
+        // First pass: all 1 models fail
         throw new Error("model timeout");
       }
       // Second pass: first model succeeds
@@ -65,8 +65,8 @@ describe("router integration", () => {
     expect(result).toEqual({ key: "value" });
     // Verify the 500ms backoff happened
     expect(elapsed).toBeGreaterThanOrEqual(400);
-    // Total calls: 2 (first pass) + 1 (second pass success) = 3
-    expect(attempt).toBe(3);
+    // Total calls: 1 (first pass) + 1 (second pass success) = 2
+    expect(attempt).toBe(2);
   });
 
   it("generateJSON returns null when all retries fail", async () => {

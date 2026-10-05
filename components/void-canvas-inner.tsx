@@ -12,6 +12,7 @@ import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { OmniEngine } from "@/components/creature/omni-engine";
 import type { VesselContext } from "@/lib/creature/vessel-system";
 import { AnimatePresence } from "framer-motion";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { ShareCardGenerator, RARITY_COLOR } from "@/components/ui/share-card-generator";
 import type { RareMutation, RarityTier } from "@/lib/cron-core/openclaw-dna";
 import {
@@ -531,11 +532,12 @@ function Scene({
   const pointerMoveDistRef = useRef(0);
   const lastHitPointRef = useRef<{ x: number; y: number; z: number }>({ x: 0, y: 0, z: 0 });
   const physicsStateRef = useRef<TouchPhysicsState>(createInitialPhysicsState());
-  const [physicsScale, setPhysicsScale] = useState(1);
-  const [physicsFlash, setPhysicsFlash] = useState(0);
+  const [physicsScale] = useState(1); // Set once for initial mount
+
 
   const hudRing1Ref = useRef<THREE.Mesh>(null);
   const hudRing2Ref = useRef<THREE.Mesh>(null);
+  const creatureGroupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
     if (tapDecay.current > 0) {
@@ -546,8 +548,9 @@ function Scene({
     const ps = physicsStateRef.current;
     if (ps.scaleMult !== 1 || ps.flash > 0.01) {
       physicsStateRef.current = tickPhysicsState(ps, delta * 1000);
-      setPhysicsScale(physicsStateRef.current.scaleMult);
-      setPhysicsFlash(physicsStateRef.current.flash);
+      if (creatureGroupRef.current) {
+         creatureGroupRef.current.scale.setScalar(physicsStateRef.current.scaleMult * pulseScaleOverride);
+      }
     }
     // HUD ring slow rotation
     if (hudRing1Ref.current) hudRing1Ref.current.rotation.z += SCENE_CONFIG.hudRing1RotSpeed;
@@ -604,8 +607,9 @@ function Scene({
 
     // Apply physics response (bounce, flash, eye reaction)
     physicsStateRef.current = applyPhysicsResponse(physicsStateRef.current, response, now);
-    setPhysicsScale(physicsStateRef.current.scaleMult);
-    setPhysicsFlash(response.flashIntensity);
+    if (creatureGroupRef.current) {
+      creatureGroupRef.current.scale.setScalar(physicsStateRef.current.scaleMult * pulseScaleOverride);
+    }
 
     // Head zone tap → heart particle burst (caught by existing Bloom)
     if (bodyPart === "head") {
@@ -619,7 +623,7 @@ function Scene({
     const reaction = getPetReactionProfile(dna ?? undefined);
     onCreatureTouch?.(response.affinityDelta, reaction);
     pointerStartRef.current = null;
-  }, [onCreatureTouch, dna, clearHapticInterval]);
+  }, [onCreatureTouch, dna, clearHapticInterval, pulseScaleOverride]);
 
   const handlePointerMove = useCallback((e: { point?: { x: number; y: number; z: number } }) => {
     if (!pointerStartRef.current) return;
@@ -721,7 +725,7 @@ function Scene({
         rotationIntensity={rotationIntensity * sleepFloatMult}
         floatIntensity={floatIntensity * sleepFloatMult}
       >
-        <group scale={pulseScale} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove}>
+        <group ref={creatureGroupRef} scale={physicsScale * pulseScaleOverride} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerMove={handlePointerMove}>
           {dna ? (
             <OmniEngine
               dna={dna}
@@ -841,6 +845,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     onCanvasReady?.(canvas);
   });
 
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
   const getCanvas = useCallback(
     () => canvasRef.current ?? (wrapperRef.current?.querySelector("canvas") as HTMLCanvasElement | null),
     [wrapperRef],
@@ -850,7 +855,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={(reducedVisualMode || isMobile) ? [1, 1] : [1, 1.5] as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
