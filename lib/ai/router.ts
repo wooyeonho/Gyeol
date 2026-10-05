@@ -18,7 +18,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // Crawling, status checks, social NPC posts — latency matters, identity doesn't.
 const REFLEXIVE_MODELS = [
   { name: "llama-3.1-8b-instant",                        timeout: 8_000 },
-  { name: "meta-llama/llama-4-scout-17b-16e-instruct",   timeout: 12_000 },
 ];
 
 // ── Cognitive Layer: high-parameter models, still free on Groq ───────────────
@@ -28,7 +27,6 @@ const REFLEXIVE_MODELS = [
 const COGNITIVE_MODELS = [
   { name: "llama-3.3-70b-versatile",           timeout: 25_000 },
   { name: "deepseek-r1-distill-llama-70b",      timeout: 25_000 },
-  { name: "meta-llama/llama-4-scout-17b-16e-instruct", timeout: 12_000 },
 ];
 
 async function callGroq(model: string, system: string, messages: Msg[], stream: boolean, timeout: number, maxTokens = 700, temp = 0.65) {

@@ -60,19 +60,30 @@ export default function FeedPage() {
     return () => controller.abort();
   }, [tab]);
 
+  const loadFeedControllerRef = useRef<AbortController | null>(null);
   const loadFeed = () => {
+    if (loadFeedControllerRef.current) {
+        loadFeedControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    loadFeedControllerRef.current = controller;
     setEvents([]);
     setLoading(true);
-    fetch(`/api/feed?tab=${tab}`)
+    fetch(`/api/feed?tab=${tab}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { setEvents(d.events ?? []); setLoading(false); setNewPostCount(0); })
-      .catch(() => setLoading(false));
+      .catch((e) => { if (e.name !== 'AbortError') setLoading(false); });
   };
+
+  const latestEventTimeRef = useRef<string>("");
+  useEffect(() => {
+    latestEventTimeRef.current = events[0]?.created_at ?? "";
+  }, [events]);
 
   // Poll for new posts every 30s
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`/api/feed?tab=${tab}&after=${events[0]?.created_at ?? ""}`)
+      fetch(`/api/feed?tab=${tab}&after=${latestEventTimeRef.current}`)
         .then((r) => r.json())
         .then((d) => {
           const count = (d.events ?? []).length;
@@ -81,7 +92,7 @@ export default function FeedPage() {
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
-  }, [tab, events]);
+  }, [tab]);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "all", label: "전체", icon: "🌍" },
