@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -829,6 +830,9 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
 export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
+  const calculatedDpr = reducedVisualMode || isMobile ? [1, 1] : [1, 1.5];
+
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
@@ -850,7 +854,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={calculatedDpr as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
