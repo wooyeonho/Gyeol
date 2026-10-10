@@ -263,6 +263,7 @@ export function VoidCanvas({
     <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
         <VoidCanvasInner
+          dpr={(reducedVisualMode || isMobile) ? [1, 1] as [number, number] : [1, 1.5] as [number, number]}
           shape={shape}
           color={color}
           size={effectiveSize}

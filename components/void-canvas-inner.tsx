@@ -80,6 +80,7 @@ export interface InnerProps {
   locale?: string;
   /** Called once the WebGL canvas DOM element is available — use to expose canvas for capture */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+  dpr?: [number, number];
 }
 
 const OrbMaterial = React.memo(function OrbMaterial({ color, opacity, emissiveIntensity = 0.28 }: { color: string; opacity: number; emissiveIntensity?: number }) {
@@ -826,7 +827,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
-export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, dpr, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -850,7 +851,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={dpr || [1, 1.5]}
         gl={{
           antialias: true,
           powerPreference: "default",
