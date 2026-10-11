@@ -22,6 +22,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { CommandPalette } from "@/components/command-palette";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { OfflineBanner } from "@/components/ui/offline-banner";
+import { Suspense } from "react";
 import { CatchBoundary } from "@/components/ui/catch-boundary";
 
 const pretendard = localFont({
@@ -201,7 +202,9 @@ export default async function RootLayout({
           <AnalyticsProvider>
             <SwipeNavigation>
               <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                <Suspense fallback={<div />}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </Suspense>
               </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
