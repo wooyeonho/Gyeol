@@ -29,6 +29,7 @@ import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behav
 import { SCENE_CONFIG } from "@/lib/visual-config";
 import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 
 export interface InnerProps {
   shape: string;
@@ -831,6 +832,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   // Expose the WebGL canvas element to the parent and store it for ViralShareCard
@@ -850,7 +852,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={(reducedVisualMode || isMobile ? [1, 1] : [1, 1.5]) as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",

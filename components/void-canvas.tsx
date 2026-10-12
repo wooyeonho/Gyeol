@@ -132,7 +132,8 @@ function CssVoidFallback({
           style={{
             width: size * 5,
             height: size * 5,
-            transform: `translate(${(forceState?.position.x ?? 0) * 100}px, ${-(forceState?.position.y ?? 0) * 100}px) scale(${effectiveScale * (forceState?.scalePulse ?? 1)})`,
+            transform: `translate3d(${(forceState?.position.x ?? 0) * 100}px, ${-(forceState?.position.y ?? 0) * 100}px, 0) scale(${effectiveScale * (forceState?.scalePulse ?? 1)})`,
+            willChange: "transform",
             transition: "transform 80ms ease-out",
           }}
         >
@@ -150,7 +151,8 @@ function CssVoidFallback({
             style={{
               width: size * 3.5,
               height: size * 3.5,
-              transform: "translate(-50%, -50%)",
+              transform: "translate3d(-50%, -50%, 0)",
+              willChange: "transform",
               border: `1.5px solid ${secondaryColor}40`,
               boxShadow: `0 0 ${breathGlow * 1.2}px ${color}30 inset`,
             }}
@@ -161,7 +163,8 @@ function CssVoidFallback({
             style={{
               width: size * 2.8,
               height: size * 2.8,
-              transform: "translate(-50%, -50%)",
+              transform: "translate3d(-50%, -50%, 0)",
+              willChange: "transform",
               background: `radial-gradient(circle, ${color} 0%, ${secondaryColor} 50%, transparent 75%)`,
               opacity: effectiveOpacity,
               boxShadow: `0 0 ${breathGlow * 1.5}px ${color}`,
@@ -173,7 +176,8 @@ function CssVoidFallback({
             style={{
               width: size * 1.6,
               height: size * 1.6,
-              transform: "translate(-50%, -50%)",
+              transform: "translate3d(-50%, -50%, 0)",
+              willChange: "transform",
               background: `radial-gradient(circle, #ffffff 0%, ${color} 55%, transparent 80%)`,
               opacity: coreOpacity,
               boxShadow: `0 0 ${size * 0.5}px ${color}80`,
@@ -186,7 +190,8 @@ function CssVoidFallback({
               style={{
                 width: size * 3,
                 height: size * 3,
-                transform: "translate(-50%, -50%)",
+                transform: "translate3d(-50%, -50%, 0)",
+              willChange: "transform",
                 border: `2px solid ${color}`,
                 opacity: excitePulse * 0.6,
                 boxShadow: `0 0 ${excitePulse * 30}px ${color}60`,
