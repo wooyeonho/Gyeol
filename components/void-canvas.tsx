@@ -257,12 +257,14 @@ export function VoidCanvas({
   // import already defers the heavy code. Adding a second idle-callback delay
   // causes a visible sphere/blob flash on every mount, which makes the
   // creature look like it "keeps changing back to a sphere" during nav.
+  const calculatedDpr = reducedVisualMode || isMobile ? [1, 1] : [1, 1.5];
   const shouldUseThree = enableThree && !reducedVisualMode;
 
   return (
     <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
       {shouldUseThree ? (
         <VoidCanvasInner
+          dpr={calculatedDpr as [number, number]}
           shape={shape}
           color={color}
           size={effectiveSize}
