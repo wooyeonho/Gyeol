@@ -23,7 +23,6 @@ import { CommandPalette } from "@/components/command-palette";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { CatchBoundary } from "@/components/ui/catch-boundary";
-import { Suspense } from "react";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -202,9 +201,7 @@ export default async function RootLayout({
           <AnalyticsProvider>
             <SwipeNavigation>
               <CatchBoundary>
-                <Suspense fallback={null}>
-                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
-                </Suspense>
+                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
               </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
