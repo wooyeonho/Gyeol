@@ -57,11 +57,17 @@
     "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.1.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.4.2",
     "node-cron": "^4.2.1",
     "pg": "^8.20.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "brace-expansion": "1.1.21",
+    "braces": "3.0.3",
+    "micromatch": "4.0.8",
+    "fast-glob": "3.3.3"
   }
 }
