@@ -3,6 +3,7 @@
 import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import type { CreatureActivity } from "@/hooks/use-creature-state";
@@ -833,6 +834,9 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
   const handleRestored = useCallback(() => setContextLost(false), []);
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
+  const calculatedDpr = reducedVisualMode || isMobile ? [1, 1] : [1, 1.5];
+
   // Expose the WebGL canvas element to the parent and store it for ViralShareCard
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
@@ -850,7 +854,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={calculatedDpr as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
