@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Noto_Serif_KR } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { I18nProvider } from "@/components/i18n-provider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
@@ -201,7 +202,9 @@ export default async function RootLayout({
           <AnalyticsProvider>
             <SwipeNavigation>
               <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-black text-white/50">Loading...</div>}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </Suspense>
               </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
