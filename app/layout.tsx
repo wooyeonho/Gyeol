@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
@@ -201,7 +202,9 @@ export default async function RootLayout({
           <AnalyticsProvider>
             <SwipeNavigation>
               <CatchBoundary>
-                <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black text-white/50 text-sm">Loading...</div>}>
+                  <main id="main-content" role="main" aria-label="GYEOL">{children}</main>
+                </Suspense>
               </CatchBoundary>
             </SwipeNavigation>
           </AnalyticsProvider>
