@@ -24,6 +24,7 @@ import {
   type TouchPhysicsState,
 } from "@/lib/creature/touch-physics";
 import { haptic } from "@/lib/micro-interactions";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import type { ForceState } from "@/lib/creature/force-system";
 import type { IdleBehaviorParams, IdleBehavior } from "@/lib/creature/idle-behaviors";
 import { SCENE_CONFIG } from "@/lib/visual-config";
@@ -31,6 +32,7 @@ import { calculateVisualParams } from "@/lib/genome/visual-params";
 import { getPetReactionProfile, type PetReactionProfile } from "@/lib/creature/care-loop";
 
 export interface InnerProps {
+  reducedVisualMode?: boolean;
   shape: string;
   color: string;
   size: number;
@@ -518,6 +520,7 @@ function Scene({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   dna, mood, conversationEnergy = 0, genLevel, forceState, idleBehaviorParams, idleBehavior,
   rarityTier,
+  reducedVisualMode,
 }: InnerProps) {
   const opacity = propOpacity ?? Math.max(0.3, vitality);
   const animScale = animation === "pulse-fast" ? 1.06 : animation === "breathe-slow" ? 1.03 : 1;
@@ -765,6 +768,7 @@ function Scene({
       {/* Bloom: DNA visual params primary source + rarity boost.
           sceneVisualParams.bloomIntensity replaces the archetype-bucket lookup —
           openness/intensity/creativity drive glow directly from raw DNA values. */}
+      {!reducedVisualMode && (
       <EffectComposer>
         <Bloom
           luminanceThreshold={SCENE_CONFIG.bloomLuminanceThreshold}
@@ -792,6 +796,7 @@ function Scene({
           mipmapBlur
         />
       </EffectComposer>
+      )}
     </>
   );
 }
@@ -832,6 +837,14 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
+
+  const calculatedDpr = useMemo(() => {
+    if (reducedVisualMode || isMobile) return [1, 1];
+    return [1, 1.5];
+  }, [reducedVisualMode, isMobile]);
+
+  const effectiveParticles = reducedVisualMode || isMobile ? Math.floor(props.particles * 0.5) : props.particles;
 
   // Expose the WebGL canvas element to the parent and store it for ViralShareCard
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -850,7 +863,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={calculatedDpr as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
@@ -859,7 +872,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
           preserveDrawingBuffer: true, // required for toDataURL() capture without black screen
         }}
       >
-        <Scene {...props} rarityTier={rarityTier} />
+        <Scene {...props} particles={effectiveParticles} rarityTier={rarityTier} reducedVisualMode={reducedVisualMode} />
       </Canvas>
       {contextLost && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white/40 text-sm">
