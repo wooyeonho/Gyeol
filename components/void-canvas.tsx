@@ -132,7 +132,8 @@ function CssVoidFallback({
           style={{
             width: size * 5,
             height: size * 5,
-            transform: `translate(${(forceState?.position.x ?? 0) * 100}px, ${-(forceState?.position.y ?? 0) * 100}px) scale(${effectiveScale * (forceState?.scalePulse ?? 1)})`,
+            transform: `translate3d(${(forceState?.position.x ?? 0) * 100}px, ${-(forceState?.position.y ?? 0) * 100}px, 0) scale(${effectiveScale * (forceState?.scalePulse ?? 1)})`,
+            willChange: "transform",
             transition: "transform 80ms ease-out",
           }}
         >

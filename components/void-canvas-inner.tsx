@@ -826,11 +826,14 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
+import { useDevicePerformance } from "@/hooks/use-device-performance";
+
 export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
   const handleRestored = useCallback(() => setContextLost(false), []);
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
   const wrapperRef = useContextRecovery(handleLost, handleRestored);
 
   // Expose the WebGL canvas element to the parent and store it for ViralShareCard
@@ -850,9 +853,9 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={(reducedVisualMode || isMobile) ? [1, 1] : [1, 1.5]}
         gl={{
-          antialias: true,
+          antialias: !reducedVisualMode,
           powerPreference: "default",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,
