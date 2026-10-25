@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const parsed = await parseBody(request, researchTaskPatchSchema);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      console.error(parsed.error); return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { task_id: taskId, action } = parsed.data;
 
