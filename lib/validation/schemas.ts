@@ -221,9 +221,7 @@ export const generateBodySchema = z.object({
 
 // ── /api/social/posts/[postId]/reaction POST ──
 export const socialReactionToggleBodySchema = z.object({
-  reaction_type: z.enum(["like", "curious", "support"], {
-    errorMap: () => ({ message: "Invalid reaction type" }),
-  }),
+  reaction_type: z.enum(["like", "curious", "support"], { message: "Invalid reaction type" }),
 });
 
 // ── /api/iot POST ──
