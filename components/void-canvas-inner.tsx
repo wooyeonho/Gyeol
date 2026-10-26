@@ -11,6 +11,7 @@ import { deriveSpecies } from "@/lib/genome/species";
 import { deriveDNAAppearance } from "@/lib/genome/appearance";
 import { OmniEngine } from "@/components/creature/omni-engine";
 import type { VesselContext } from "@/lib/creature/vessel-system";
+import { useDevicePerformance } from "@/hooks/use-device-performance";
 import { AnimatePresence } from "framer-motion";
 import { ShareCardGenerator, RARITY_COLOR } from "@/components/ui/share-card-generator";
 import type { RareMutation, RarityTier } from "@/lib/cron-core/openclaw-dna";
@@ -827,6 +828,8 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
 }
 
 export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+  const { isMobile, reducedVisualMode } = useDevicePerformance();
+  const calculatedDpr = isMobile || reducedVisualMode ? [1, 1] : [1, 1.5];
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -850,7 +853,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={calculatedDpr as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
