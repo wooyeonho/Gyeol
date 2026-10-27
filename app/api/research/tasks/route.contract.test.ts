@@ -79,7 +79,8 @@ describe("/api/research/tasks contract", () => {
       },
     });
 
-    const taskUuid = "00000000-0000-0000-0000-000000000001";
+    const taskUuid = "550e8400-e29b-41d4-a716-446655440000";
+    (ensurePrimaryAgent as Mock).mockResolvedValue({ agentId: "550e8400-e29b-41d4-a716-446655440001", hasState: true });
     (createServiceClient as Mock).mockReturnValue({
       from: (table: string) => {
         expect(table).toBe("research_tasks");
@@ -101,10 +102,11 @@ describe("/api/research/tasks contract", () => {
     const res = await PATCH(
       new NextRequest("http://localhost/api/research/tasks", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Origin": "http://localhost" },
         body: JSON.stringify({ task_id: taskUuid, action: "cancel" }),
       })
     );
+    if (res.status !== 200) console.log(await res.text());
     expect(res.status).toBe(200);
     expect(eq).toHaveBeenCalledWith("id", taskUuid);
   });
