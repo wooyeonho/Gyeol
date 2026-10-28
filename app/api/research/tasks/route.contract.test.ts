@@ -79,7 +79,7 @@ describe("/api/research/tasks contract", () => {
       },
     });
 
-    const taskUuid = "00000000-0000-0000-0000-000000000001";
+    const taskUuid = "00000000-0000-4000-8000-000000000001";
     (createServiceClient as Mock).mockReturnValue({
       from: (table: string) => {
         expect(table).toBe("research_tasks");
