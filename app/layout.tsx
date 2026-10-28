@@ -67,7 +67,6 @@ const DEFAULT_METADATA: Pick<Metadata, "title" | "description"> = METADATA_BY_LO
 export const viewport = {
   width: "device-width" as const,
   initialScale: 1,
-  userScalable: true,
 };
 
 export async function generateMetadata(): Promise<Metadata> {

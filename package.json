@@ -27,6 +27,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "brace-expansion": "^1.1.20",
     "cheerio": "^1.2.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "framer-motion": "^12.35.1",
@@ -41,7 +42,7 @@
     "tone": "^15.1.22",
     "web-push": "^3.6.7",
     "web-vitals": "^4.2.4",
-    "zod": "^3.24.0",
+    "zod": "^4.6.7",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
