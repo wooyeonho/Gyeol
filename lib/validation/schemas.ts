@@ -222,7 +222,7 @@ export const generateBodySchema = z.object({
 // ── /api/social/posts/[postId]/reaction POST ──
 export const socialReactionToggleBodySchema = z.object({
   reaction_type: z.enum(["like", "curious", "support"], {
-    errorMap: () => ({ message: "Invalid reaction type" }),
+    message: "Invalid reaction type",
   }),
 });
 
