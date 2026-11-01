@@ -1,0 +1,9 @@
+
+1. **Report Generation**: Write the architectural status report to `REPORT.md` directly.
+2. **Resolve P0/P1 Build and Architecture Issues**:
+   - Fix `next.config.ts`: Remove `viewTransition` to resolve TS2353.
+   - Fix `app/layout.tsx`: Wrap main content with `Suspense` inside `CatchBoundary` for robust hydration and error fallback. Replace `bg-black` with `bg-background` and `text-white` with `text-foreground` on the body tag for theme compatibility.
+   - Fix `app/page.tsx`: Attach `AbortController` to the `/api/creature/portrait` fetch call to prevent race conditions on unmount. Replace `bg-cyan-500` with `bg-accent` for retry button on error state. Add `creature` object back to dependencies where necessary to resolve lint errors, while keeping the logic stable.
+   - Fix `lib/ai/system-prompt.ts`: Implement `sanitizeForPrompt` for memory data sanitization to prevent prompt injection.
+3. **Execute Testing and Pre-commit Steps**: Ensure the codebase builds correctly with tests and typechecks, maintaining a clean state without linting or TS errors. Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+4. **Final Submission**: Use `submit` tool with the `REPORT.md` content as the description.
