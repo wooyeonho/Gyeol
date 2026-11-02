@@ -55,7 +55,7 @@ interface VoidCanvasProps {
 
 const VoidCanvasInner = dynamic(
   () => import("./void-canvas-inner").then((m) => m.VoidCanvasInner),
-  { ssr: false },
+  { ssr: false } // Removed loading fallback as it causes hydrations issues here if not careful, we rely on shouldUseThree
 );
 
 function CssVoidFallback({
@@ -260,7 +260,7 @@ export function VoidCanvas({
   const shouldUseThree = enableThree && !reducedVisualMode;
 
   return (
-    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background }}>
+    <div className={contained ? "absolute inset-0" : "fixed inset-0 z-0"} style={{ backgroundColor: background, willChange: 'transform, opacity' }}>
       {shouldUseThree ? (
         <VoidCanvasInner
           shape={shape}
