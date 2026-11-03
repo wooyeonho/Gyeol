@@ -280,6 +280,8 @@ export function VoidCanvas({
           excitePulse={excitePulse}
           pointerNorm={pointerNorm}
           restoring3dLabel={restoring3dLabel}
+          isMobile={isMobile}
+          reducedVisualMode={reducedVisualMode}
           dna={dna}
           mood={mood}
           onCreatureTouch={handleCreatureTouch}
