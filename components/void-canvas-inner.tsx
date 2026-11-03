@@ -56,6 +56,10 @@ export interface InnerProps {
   pointerNorm?: { x: number; y: number };
   /** Translated label for WebGL context-loss overlay */
   restoring3dLabel?: string;
+  /** Whether the device is a mobile device */
+  isMobile?: boolean;
+  /** Whether the device prefers reduced visuals (low concurrency, mobile, saving data, slow network, etc) */
+  reducedVisualMode?: boolean;
   /** Creature DNA for procedural rendering */
   dna?: CreatureDNA | null;
   /** Current mood for visual modulation */
@@ -850,7 +854,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={(props.reducedVisualMode || props.isMobile) ? ([1, 1] as [number, number]) : ([1, 1.5] as [number, number])}
         gl={{
           antialias: true,
           powerPreference: "default",
