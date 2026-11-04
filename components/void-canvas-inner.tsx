@@ -826,7 +826,7 @@ function useContextRecovery(onLost: () => void, onRestored: () => void) {
   return domRef;
 }
 
-export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, ...props }: InnerProps) {
+export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, onCanvasReady, isMobile, reducedVisualMode, ...props }: InnerProps & { isMobile?: boolean, reducedVisualMode?: boolean }) {
   const [contextLost, setContextLost] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(!!rareMutation);
   const handleLost = useCallback(() => setContextLost(true), []);
@@ -850,7 +850,7 @@ export function VoidCanvasInner({ restoring3dLabel, rareMutation, rarityTier, on
     <div ref={wrapperRef} className="relative w-full h-full">
       <Canvas
         camera={{ position: [1.8, 0.9, 4.4], fov: 42 }}
-        dpr={[1, 1.5]}
+        dpr={((isMobile || reducedVisualMode) ? [1, 1] : [1, 1.5]) as [number, number]}
         gl={{
           antialias: true,
           powerPreference: "default",
