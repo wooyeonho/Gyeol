@@ -63,5 +63,10 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "brace-expansion": "1.1.21",
+    "glob": "9.0.0",
+    "minimatch": "7.0.0"
   }
 }
