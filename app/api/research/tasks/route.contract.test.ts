@@ -18,13 +18,22 @@ vi.mock("@/lib/security/csrf", () => ({
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
-  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+  checkRateLimit: vi.fn().mockResolvedValue(true),
 }));
 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensurePrimaryAgent } from "@/lib/agents/primary";
 import { GET, PATCH } from "./route";
+import { parseBody } from "@/lib/validation/schemas";
+
+vi.mock("@/lib/validation/schemas", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    parseBody: vi.fn().mockResolvedValue({ success: true, data: { task_id: "00000000-0000-0000-0000-000000000001", action: "cancel" } })
+  };
+});
 
 describe("/api/research/tasks contract", () => {
   beforeEach(() => {
