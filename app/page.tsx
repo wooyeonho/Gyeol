@@ -571,7 +571,7 @@ export default function Home() {
   const creatureSize = Math.min(200, Math.max(56, (visual.size ?? 24) * 4));
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-black" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
+    <div className="flex h-[100dvh] flex-col bg-background" style={{ "--creature-primary": appearance.palette.primary } as React.CSSProperties}>
       {showCeremony && (
         <EvolutionCeremony
           level={evolutionEvent.level!}
