@@ -29,6 +29,7 @@ export function evaluateLowDeviceProfile(params: {
 }
 
 type DevicePerformanceResult = {
+  dpr: [number, number];
   isLowDevice: boolean;
   isMobile: boolean;
   reducedVisualMode: boolean;
@@ -36,7 +37,7 @@ type DevicePerformanceResult = {
 
 function computeProfile(): DevicePerformanceResult {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
-    return { isLowDevice: false, isMobile: false, reducedVisualMode: false };
+    return { isLowDevice: false, isMobile: false, reducedVisualMode: false, dpr: [1, 2] };
   }
   const nav = navigator as NavigatorWithDeviceMemory;
   const connection = nav.connection;
@@ -61,7 +62,8 @@ function computeProfile(): DevicePerformanceResult {
     saveData,
     effectiveType: connection?.effectiveType,
   });
-  return { isLowDevice, isMobile, reducedVisualMode };
+  const dpr: [number, number] = (isMobile || reducedVisualMode) ? [1, 1] : [1, 1.5];
+  return { isLowDevice, isMobile, reducedVisualMode, dpr };
 }
 
 export function useDevicePerformance(): DevicePerformanceResult {
